@@ -1,0 +1,33 @@
+\documentclass{article}
+\title{Stile User's Guide}
+\begin{document}
+\maketitle
+
+\section{Installation}
+
+Stile is a Python package that relies on the numerical package NumPy.  It is known to work for
+Python v2.7 and NumPy v; it is designed to work for Python v2.6+ and NumPy vX but may not have been
+tested on all possible configurations.  
+
+\subsection{Dependencies}
+Stile is designed to run what it can and ignore what it can't.  Therefore, there is very little
+in the way of required dependencies: only Python v2.6+ and NumPy v+. We divide the following list 
+into {\em recommended} dependencies, which are necessary for some (but not all) of the systematics
+tests, and {\em optional} dependencies, which make the code work better or faster or more easily, but
+which are not required for any test.
+
+\subsubsection{Recommended dependencies}
+
+\begin{itemize}
+\item corr2 ().  Any test which relies on a correlation function calls this program.
+\item GalSim ().  Any test which requires moments measured on images will use GalSim (unless the 
+moments are given as precomputed entries in a catalog).
+\item astropy or pyfits.  Required to read FITS tables or images.
+\end{itemize}
+
+\subsubsection{Optional dependencies}
+\begin{itemize}
+\item pyyaml.  Makes configuration file writing much easier.
+\end{itemize}
+
+\end{document}
