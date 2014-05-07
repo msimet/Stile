@@ -65,7 +65,7 @@ def read_ascii_table(file_name, startline=None, comment=None):
 
     f=open(file_name,'r')
     if startline:
-        for i in range(startline):
+        for i in range(startline-1):
             f.readline()
     d = [line.split() for line in f.readlines()]
     f.close()
@@ -82,4 +82,25 @@ def read_ascii_table(file_name, startline=None, comment=None):
     types = ','.join([get_vector_type(d_arr[:,i]) for i in range(len(d_arr[0]))])
     return numpy.array(d,dtype=types)
 
-
+def write_point(f,line,pos):
+    if pos>=0:
+        f.write(str(line[pos])+' ')
+    else:
+        f.write('0 ')
+    
+def write_ascii_table(file_name,data_array,cols=None):
+    if not cols:
+        cols = [i for i in range(len(data_array.dtypes.names))]
+    else:
+        tcols = [i for i in range(len(cols))]
+        names = data_array.dtype.names
+        for i,col in enumerate(cols):
+            if col in names:        
+                tcols[i] = names.index(col)
+            else:
+                tcols[i] = -1
+    with open(file_name,'w') as f:
+        for line in data_array:
+            [write_point(f,line,pos) for pos in cols]
+            f.write('\n')    
+    

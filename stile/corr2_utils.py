@@ -18,7 +18,7 @@ options = {
     'file_name': 
         {'type': (str,list),
          'val': None,
-         'status': 'captured'},
+         'status': 'disallowed_file'},
     'do_auto_corr': 
         {'type': (bool,),
          'val': None,
@@ -30,15 +30,15 @@ options = {
     'file_name2': 
         {'type': (str,list),
          'val': None,
-         'status': 'captured'},
+         'status': 'disallowed_file'},
     'rand_file_name': 
         {'type': (str,list),
          'val': None,
-         'status': 'captured'},
+         'status': 'disallowed_file'},
     'rand_file_name2': 
         {'type': (str,list),
          'val': None,
-         'status': 'captured'},
+         'status': 'disallowed_file'},
     'file_list': 
         {'type': (str,list),
          'val': None,
@@ -174,7 +174,7 @@ options = {
     'smooth_scale':
         {'type': (float,),
          'val': None,
-         'status': 'allowed'},
+         'status': 'disallowed_computation'},
     'n2_file_name':
         {'type': (str,),
          'val': None,
@@ -186,7 +186,7 @@ options = {
     'n2_statistic':
         {'type': (str,),
          'val': ['compensated','simple'],
-         'status': 'allowed'},
+         'status': 'disallowed_computation'},
     'ng_file_name':
         {'type': (str,),
          'val': None,
@@ -194,7 +194,7 @@ options = {
     'ng_statistic':
         {'type': (str,),
          'val': ['compensated','simple'],
-         'status': 'allowed'},
+         'status': 'disallowed_computation'},
     'g2_file_name':
         {'type': (str,),
          'val': None,
@@ -206,7 +206,7 @@ options = {
     'nk_statistic':
         {'type': (str,),
          'val': ['compensated','simple'],
-         'status': 'allowed'},
+         'status': 'disallowed_computation'},
     'k2_file_name':
         {'type': (str,),
          'val': None,
@@ -295,6 +295,126 @@ column_maps = {
          'sig_nmnorm','nnnorm','sig_nnnorm'] ]
 }
 
+def parser():
+    import argparse
+    p = argparse.Parser()
+    p.add_argument('--file_type',
+                   help="File type (ASCII or FITS) -- only allowed by certain DataHandlers",
+                   dest='file_type')
+    p.add_argument('--delimiter',
+                   help="ASCII file column delimiter -- only allowed by certain DataHandlers",
+                   dest='comment_marker')
+    p.add_argument('--comment_marker',
+                   help="ASCII file comment-line marker -- only allowed by certain DataHandlers",
+                   dest='comment_marker')
+    p.add_argument('--first_row',
+                   help="First row of the file(s) to be considered -- only allowed by certain "+
+                        "DataHandlers",
+                   dest='first_row')
+    p.add_argument('--last_row',
+                   help="Last row of the file(s) to be considered -- only allowed by certain "+
+                        "DataHandlers",
+                   dest='last_row')
+    p.add_argument('--comment_marker',
+                   help="ASCII file comment-line marker -- only allowed by certain DataHandlers",
+                   dest='comment_marker')
+    p.add_argument('--x_col',
+                   help="Number of the x-position column -- only allowed by certain DataHandlers",
+                   dest='x_col')
+    p.add_argument('--y_col',
+                   help="Number of the y-position column -- only allowed by certain DataHandlers",
+                   dest='y_col')
+    p.add_argument('--ra_col',
+                   help="Number of the ra column -- only allowed by certain DataHandlers",
+                   dest='ra_col')
+    p.add_argument('--dec_col',
+                   help="Number of the dec column -- only allowed by certain DataHandlers",
+                   dest='dec_col')
+    p.add_argument('--x_units',
+                   help="X-column units (radians, hours, degrees, arcmin, arcsec)",
+                   dest='x_units')
+    p.add_argument('--y_units',
+                   help="Y-column units (radians, hours, degrees, arcmin, arcsec)",
+                   dest='y_units')
+    p.add_argument('--ra_units',
+                   help="RA-column units (radians, hours, degrees, arcmin, arcsec)",
+                   dest='ra_units')
+    p.add_argument('--dec_units',
+                   help="dec-column units (radians, hours, degrees, arcmin, arcsec)",
+                   dest='dec_units')
+    p.add_argument('--g1_col',
+                   help="Number of the g1 column -- only allowed by certain DataHandlers",
+                   dest='g1_col')
+    p.add_argument('--g2_col',
+                   help="Number of the g2 column -- only allowed by certain DataHandlers",
+                   dest='g2_col')
+    p.add_argument('--k_col',
+                   help="Number of the kappa [scalar] column -- only allowed by certain "+
+                        "DataHandlers",
+                   dest='k_col')
+    p.add_argument('--w_col',
+                   help="Number of the weight column -- only allowed by certain DataHandlers",
+                   dest='w_col')
+    p.add_argument('--flip_g1',
+                   help="Flip the sign of g1 (default: False)",
+                   dest='flip_g1',default=False)
+    p.add_argument('--flip_g2',
+                   help="Flip the sign of g2 (default: False)",
+                   dest='flip_g2',default=False)
+    p.add_argument('--project',
+                   help="Corr2 option: use a tangent-plane projection instead of curved-sky "+
+                        "(this is a negligible performance improvement, and not recommended)",
+                   dest='project')
+    p.add_argument('--project_ra',
+                   help="Corr2 option: the RA of the tangent point for projection, used in "+
+                        "conjunction with --project, and not recommended",
+                   dest='project_ra')
+    p.add_argument('--project_dec',
+                   help="Corr2 option: the dec of the tangent point for projection, used in "+
+                        "conjunction with --project, and not recommended",
+                   dest='project_dec')
+    p.add_argument('--min_sep',
+                   help="Minimum separation for the corr2 correlation functions",
+                   dest='min_sep')
+    p.add_argument('--max_sep',
+                   help="Maximum separation for the corr2 correlation functions",
+                   dest='max_sep')
+    p.add_argument('--nbins',
+                   help="Number of bins for the corr2 correlation functions",
+                   dest='nbins')
+    p.add_argument('--bin_size',
+                   help="Bin width for the corr2 correlation functions",
+                   dest='bin_size')
+    p.add_argument('--sep_units',
+                   help="Units for the max_sep/min_sep/bin_size parameters for the corr2 "+
+                        "correlation functions",
+                   dest='max_sep')
+    p.add_argument('--bin_slop',
+                   help="A parameter relating to accuracy of the corr2 bins--changing is not "+
+                        "recommended",
+                   dest='bin_slop')
+    p.add_argument('--precision',
+                   help="Number of digits after (scientific notation) decimal point in corr2 "+
+                        "(default: 3)",
+                   dest='precision')
+    p.add_argument('--m2_uform',
+                   help="Set to 'Schneider' to use the Schneider rather than the Crittenden forms "+
+                        "of the aperture mass statistic in corr2 (see corr2 Read.me for more info)",
+                   dest='m2_uform')
+    p.add_argument('-v','--verbose',
+                   help="Level of verbosity",
+                   dest='verbose')
+    p.add_argument('--num_threads',
+                   help='Number of OpenMP threads (corr2) or multprocessing.Pool processors '+
+                        '(Stile) to use; default is to automatically determine',
+                   dest='num_threads')
+    p.add_argument('--split_method',
+                   help="One of 'mean', 'median', or 'middle', directing corr2 how to split the "
+                        "tree into child nodes. (default: 'mean')",
+                   dest='split_method')
+    return p                   
+
+
 def check_options(input_dict, check_status=True):
     """
     A function that checks the (key,value) pairs of the dict passed to it against the corr2 options 
@@ -361,16 +481,15 @@ def write_corr2_param_file(param_file_name,**kwargs):
     @param param_file_name May be a file name or any object with a .write(...) attribute.
     @param kwargs          A set of corr2 parameters, represented as a dict.
     """
-    
     if isinstance(param_file_name,str):
-        f=open(param_file_name)
+        f=open(param_file_name,'w')
         close_file=True
     else:
         f=param_file_name
         close_file=False
     for key in kwargs:
         if key in options:
-            f.write(key+' = ' + kwargs[key]+'\n')
+            f.write(key+' = ' + str(kwargs[key])+'\n')
         elif isinstance(kwargs[key],dict):
             write_corr2_param_file(f,kwargs[key])
         else:
@@ -380,7 +499,7 @@ def write_corr2_param_file(param_file_name,**kwargs):
     if close_file:
         f.close()
         
-def read_corr2_output_file(file_name,file_type):
+def read_corr2_results_file(file_name,file_type):
     """
     Read in the given file_name of type file_type.  Cast it into a numpy.recarray with the
     appropriate column mappings from column_maps and return it.
@@ -392,22 +511,20 @@ def read_corr2_output_file(file_name,file_type):
     @returns         A numpy.recarray corresponding to the data in file_name.
     """    
     import stile_utils
+    import file_io
     if file_type not in column_maps:
         raise ValueError('Unknown file_type %s in corr2_utils.read_corr2_output_file. Available ' 
                            'file types are: %s.'%' '.join(sorted(column_maps.keys())))
-    output = numpy.loadtxt(file_name)
-    if not output:
+    #output = numpy.loadtxt(file_name)
+    # Currently there is a bug in corr2 that puts some text output into results files...
+    output = file_io.read_ascii_table(file_name,comment='R',startline=2)
+    if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
-    lenline = output.shape[-1]
-    use_col_map = None
-    for col_map in column_maps[file_type]:
-        if len(col_list)==lenline:
-            use_col_map = col_map
-    if not use_col_map:
-        raise RuntimeError('Output from corr2 (file %s) does not have a number of columns '
-                           'corresponding to a column mapping that corr2_utils knows for file_type '
-                           '%s.'%(file_name,file_type))
-    return stile_utils.make_recarray(output,cols=use_col_map,only_floats=True)
+    with open(file_name) as f:
+        cols = f.readline().split()
+    cols = cols[1:]
+    cols = [col for col in cols if col!='.']
+    return stile_utils.make_recarray(output,fields=cols,only_floats=True)
 
 def add_corr2_dict(input_dict):
     """
@@ -428,4 +545,22 @@ def add_corr2_dict(input_dict):
         input_dict['corr2_options'] = corr2_dict
     return input_dict
     
+def make_corr2_cols(cols,use_as_k=None):
+    if isinstance(cols,dict):
+        new_cols = [0 for i in range(max([cols[key] for key in cols.keys()]))]
+        for key in cols:
+            new_cols[cols[key]] = key
+        cols=new_cols
+    
+    corr2_params = {}
+    col_params = ['x','y','ra','dec','g1','g2','k','w']
+    for cp in col_params:
+        if cp in cols:
+            corr2_params[cp+'_col'] = cols.index(cp)+1
+    if 'weight' in cols and not 'w' in cols:
+        corr2_params['w_col'] = cols.index('weight')+1
+    if use_as_k and use_as_k in cols:
+        corr2_params['k_col'] = cols.index(use_as_k)+1
+        
+    return corr2_params
 
