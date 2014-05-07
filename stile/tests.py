@@ -11,9 +11,9 @@ class Test:
     longname = a string to denote this test within program text outputs
     
     It should define the following methods:
-    __call__(self, stile_args, data, **kwargs) = run the test.  **kwargs may include data2 (source 
-        data set for lens-source pairs), random and random2 (random data sets corresponding to data
-        and data2), bin_list (list of SingleBins already applied to the data).
+    __call__(self, stile_args, data_handler, data, **kwargs) = run the test.  **kwargs may include 
+        data2 (source data set for lens-source pairs), random and random2 (random data sets 
+        corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
     """
     shortname = ''
     longname = ''
@@ -39,15 +39,16 @@ class CorrelationFunctionTest(Test):
                              'kg','m2','nm','norm') to request from corr2.
         @param dh            A DataHandler object describing the data set given in the data lists
                              below.
-        @param data          A file name, NumPy array, list of file names, or list of NumPy arrays
-                             which should be analyzed by corr2.  Arrays or lists of arrays will
-                             be written to temporary files. 
+        @param data          A tuple whose first element is a string "name" or "list", corresponding
+                             to the corr2 arg to write to, and whose second element is the name of a
+                             file that exists in the filesystem.
         @param data2         If this is a cross-correlation, two sets of data are required; this 
-                             kwarg should contain the second set. (default: None)
-        @param random        A random data set corresponding to the contents of data. 
+                             kwarg should contain the second set in the same format as data. 
                              (default: None)
-        @param random2       A random data set corresponding to the contents of data2. 
-                             (default: None)
+        @param random        A random data set corresponding to the contents of data, in the same 
+                             format. (default: None)
+        @param random2       A random data set corresponding to the contents of data2, in the same
+                             format. (default: None)
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file.
         @returns             a numpy.recarray of the corr2 outputs.
         """
@@ -60,7 +61,7 @@ class CorrelationFunctionTest(Test):
         delete_files = []
         
         corr2_options = stile_args['corr2_options']
-        corr2_options.update(kwargs)
+        corr2_options.update(kwargs) # TODO: Don't know if this will work if we actually pass kwargs
         corr2_options['file_'+data[0]] = data[1]
         if data2:
             corr2_options['file_'+data2[0]+'2'] = data2[1]
