@@ -13,14 +13,30 @@ class BinList:
     @param column    Which column of data to apply the binning system to
     @param bin_list  A list of bin endpoints such that bin_list[0] <= (bin 0 data) < bin_list[1],
                      bin_list[1] <= (bin 1 data) < bin_list[2], etc; each interval is assumed to be
-                     [low,high).
+                     [low,high) and the list must be monotonic.
     """
     def __init__(self,column,bin_list):
+        if not isinstance(column,str):
+            raise TypeError('Column description must be a string. Passed value: '+str(column))
+        if not bin_list:
+            raise TypeError('Must pass a non-empty bin_list')
         self.column = column
+        monotonic = numpy.array(bin_list[1:])-numpy.array(bin_list[:-1])
+        if numpy.all(monotonic>0):
+            self.reverse = False
+        elif numpy.all(monotonic<0):
+            self.reverse = True
+            bin_list.reverse()
+        else:
+            raise ValueError('bin_list must be monotonically increasing or decreasing. Passed '+
+                             'list: %s'%bin_list)
         self.bin_list = bin_list
     def __call__(self):
-        return [SingleBin(column=self.column,low=low,high=high,shortname=str(i)) 
+        return_list = [SingleBin(column=self.column,low=low,high=high,shortname=str(i)) 
                         for i, (low, high) in  enumerate(zip(self.bin_list[:-1],self.bin_list[1:]))]
+        if self.reverse:
+            return_list.reverse()
+        return return_list
 
 class BinStep:
     """
@@ -43,10 +59,12 @@ class BinStep:
                      bin edges will also be in linear space. (default: False)
     """
     def __init__(self,column,low=None,high=None,step=None,n_bins=None,use_log=False):
+        if not isinstance(column,str):
+            raise TypeError('Column description must be a string. Passed value: '+str(column))
         self.column = column
         n_none = (low is None) + (high is None) + (step is None) + (n_bins is None)
         if n_none>1:
-            raise ValueError('Must pass at least three of low, high, step, n_bins')
+            raise TypeError('Must pass at least three of low, high, step, n_bins')
         if high==low:
             raise ValueError('High must be != low. Given arguments: %f %f'%(high,low))
         if step is not None and step==0:
@@ -91,15 +109,24 @@ class BinStep:
             self.step = step
             self.n_bins = n_bins
             self.low = high-n_bins*step
+        if self.step<0:
+            self.low = self.low+self.n_bins*self.step
+            self.step*=-1
+            self.reverse = True
+        else:
+            self.reverse = False
     def __call__(self):
         if self.use_log:
-            return [SingleBin(column=self.column,low=numpy.exp(self.low+i*self.step),
-                              high=numpy.exp(self.low+(i+1)*self.step),
-                              shortname=str(i)) for i in range(self.n_bins)]
+            return_list = [SingleBin(column=self.column,low=numpy.exp(self.low+i*self.step),
+                                     high=numpy.exp(self.low+(i+1)*self.step),
+                                     shortname=str(i)) for i in range(self.n_bins)]
         else:
-            return [SingleBin(column=self.column,low=self.low+i*self.step,
-                              high=self.low+(i+1)*self.step,shortname=str(i)) 
-                              for i in range(self.n_bins)]
+            return_list = [SingleBin(column=self.column,low=self.low+i*self.step,
+                                     high=self.low+(i+1)*self.step,shortname=str(i)) 
+                                     for i in range(self.n_bins)]
+        if self.reverse:
+            return_list.reverse()
+        return return_list
 
         
 class SingleBin:
@@ -119,11 +146,11 @@ class SingleBin:
     """
     def __init__(self,column,low,high,shortname,longname=None):
         if not isinstance(column,str):
-            raise ValueError('Column description must be a string. Passed value: '+str(column))
+            raise TypeError('Column description must be a string. Passed value: '+str(column))
         if high < low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
         if not isinstance(shortname,str) or (longname and not isinstance(longname,str)):
-            raise ValueError("Shortname and longname must be strings")
+            raise TypeError("Shortname and longname must be strings")
         self.column = column
         self.low = low
         self.high = high
@@ -167,8 +194,8 @@ class BinFunction:
             try:
                 self.n_bins = function.n_bins
             except:
-                raise ValueError("Argument n_bins must be passed directly or as the attribute "+
-                                   "function.n_bins!")
+                raise TypeError("Argument n_bins must be passed directly or as the attribute "+
+                                 "function.n_bins!")
         else:
             self.n_bins = n_bins
         self.returns_bools = returns_bools
@@ -183,16 +210,16 @@ class SingleFunctionBin(SingleBin):
     class.  Unlike SingleBins, there are no public column, low, or high attributes, as these are
     assumed to be insufficient to describe the behavior of the binning scheme.    
     
-    @param function The function that returns the bin information
-    @param n        Which bin this SingleFunctionBin considers
-    @param high     The upper edge of the bin (exclusive)
-    @param shortname A string denoting this bin in filenames (default: str(n))
-    @param longname A string denoting this bin in program text outputs/plots (default: shortname)  
+    @param function       The function that returns the bin information
+    @param n              Which bin this SingleFunctionBin considers
+    @param returns_bools  True if the function returns bools, else False (default: False)
+    @param shortname      A string denoting this bin in filenames (default: str(n))
+    @param longname       A string denoting this bin in program outputs/plots (default: shortname)  
     """
-    def __init__(self,function,n,returns_bools, shortname=None, longname=None):
+    def __init__(self,function,n,returns_bools=False, shortname=None, longname=None):
         if (shortname and not isinstance(shortname,str)) or (
                 longname and not isinstance(longname,str)):
-            raise ValueError("Shortname and longname must be strings")
+            raise TypeError("Shortname and longname must be strings")
         if shortname is not None:
             self.shortname = shortname
         else:
@@ -208,7 +235,7 @@ class SingleFunctionBin(SingleBin):
         else:
             self.__call__=self._call_int
     def _call_int(self,data):
-        return self.function(data)==n
+        return self.function(data)==self.n
     def _call_bool(self,data):
-        return self.function(data,n)    
+        return self.function(data,self.n)    
         
