@@ -43,7 +43,9 @@ class BinStep:
     An object which returns bin definitions (a list of SingleBins) following the simple 
     constant-step bins described by the input arguments. Can handle linear-space and log-space 
     binning (default is linear). AT LEAST THREE of the arguments (low,high,step,n_bins) must be 
-    passed; if all four are passed they will be checked for consistency.
+    passed; if all four are passed they will be checked for consistency.  If low, high, and step are
+    passed, high may be slightly increased to ensure an integer number of bins, so users who need
+    a hard cutoff at high are suggested to use n_bins instead.
     
     @param column    Which column of data to apply the binning system to
     @param low       The low edge of the lowest bin, inclusive; should be in linear space regardless
