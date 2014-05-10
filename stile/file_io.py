@@ -69,6 +69,8 @@ def read_ascii_table(file_name, startline=None, comment=None):
             f.readline()
     d = [line.split() for line in f.readlines()]
     f.close()
+    if not d:
+        return numpy.array([])
     if len(d[-1])==0: # In case of trailing newline
         d = d[:-1]
     if comment:

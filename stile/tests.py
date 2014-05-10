@@ -81,7 +81,7 @@ class CorrelationFunctionTest(Test):
         else:
             output_file = dh.get_output_path(self.shortname)
         corr2_options[correlation_function_type+'_file_name'] = output_file
-        stile.write_corr2_param_file(param_file,**corr2_options)
+        stile.write_corr2_param_file(param_file,corr2_options)
         
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', param_file])

@@ -16,7 +16,7 @@ import numpy
 #              (Stile should silently pass it through to corr2).
 options = {
     'file_name': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'do_auto_corr': 
@@ -28,31 +28,31 @@ options = {
          'val': None,
          'status': 'disallowed_computation'},
     'file_name2': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'rand_file_name': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'rand_file_name2': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'file_list': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'file_list2': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'rand_file_list': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'rand_file_list2': 
-        {'type': (str,list),
+        {'type': (str,),
          'val': None,
          'status': 'disallowed_file'},
     'file_type': 
@@ -93,20 +93,20 @@ options = {
          'status': 'captured'},
     'x_units':
         {'type': (str,),
-         'val': None,
-         'status': 'allowed'},
+         'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
+         'status': 'captured'},
     'y_units':
         {'type': (str,),
-         'val': None,
-         'status': 'allowed'},
+         'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
+         'status': 'captured'},
     'ra_units':
         {'type': (str,),
-         'val': None,
-         'status': 'allowed'},
+         'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
+         'status': 'captured'},
     'dec_units':
         {'type': (str,),
-         'val': None,
-         'status': 'allowed'},
+         'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
+         'status': 'captured'},
     'g1_col':
         {'type': (int,str),
          'val': None,
@@ -126,19 +126,19 @@ options = {
     'flip_g1':
         {'type': (bool,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'flip_g2':
         {'type': (bool,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'pairwise':
         {'type': (bool,),
          'val': None,
          'status': 'disallowed_computation'},
     'project':
         {'type': (bool,),
-         'val': None},
-         'status': 'allowed',
+         'val': None,
+         'status': 'allowed'},
     'project_ra':
         {'type': (float,),
          'val': None,
@@ -150,22 +150,22 @@ options = {
     'min_sep':
         {'type': (float,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'max_sep':
         {'type': (float,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'nbins':
         {'type': (float,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'bin_size':
         {'type': (float,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'sep_units':
         {'type': (str,),
-         'val': None,
+         'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
          'status': 'allowed'},
     'bin_slop':
         {'type': (float,),
@@ -175,10 +175,6 @@ options = {
         {'type': (float,),
          'val': None,
          'status': 'disallowed_computation'},
-    'n2_file_name':
-        {'type': (str,),
-         'val': None,
-         'status': 'disallowed_file'},
     'n2_file_name':
         {'type': (str,),
          'val': None,
@@ -213,7 +209,7 @@ options = {
          'status': 'disallowed_file'},
     'kg_file_name':
         {'type': (str,),
-         'val': ['compensated','simple'],
+         'val': None,
          'status': 'disallowed_file'},
     'precision': 
         {'type': (int,),
@@ -247,53 +243,6 @@ options = {
         {'type': (str,),
          'val': ["mean","median","middle"],
          'status': 'allowed'}}
-
-# column_maps is a dict of the column names for all the corr2 output file types.  Sometimes there
-# are different numbers of columns for the same file type depending on options.  Right now, however,
-# the possible numbers of columns are not degenerate, so we can match it up simply by checking
-# for the list of column names with the right length.
-column_maps = {
-    'n2': [
-            ['r_nominal','r_mean','omega','sig_omega','dd','rr'],
-            ['r_nominal','r_mean','omega','sig_omega','dd','rr','dr','rd'] ],
-    'ng': [
-            ['r_nominal','r_mean','gamt','gamx','sig'],
-            ['r_nominal','r_mean','gamt','gamx','sig','weight','npairs','gamT_d','gamX_d',
-             'weight_d','npairs_d','gamT_r','gamX_r','weight_r','npairs_r'],
-            ['r_nominal','r_mean','gamt','gamx','sig','r_sm','gamT_sm','sig_sm'],
-            ['r_nominal','r_mean','gamt','gamx','sig','weight','npairs','gamT_d','gamX_d',
-             'weight_d','npairs_d','gamT_r','gamX_r','weight_r','npairs_r','r_sm','gamT_sm',
-             'sig_sm'] ],
-    'g2': [
-        ['r_nominal','r_mean','xi+','xi-','xi+_im','xi-_im','sig_xi','weight','npairs'],
-        ['r_nominal','r_mean','xi+','xi-','xi+_im','xi-_im','sig_xi','weight','npairs',
-         'r_sm','xi+_sm','xi-_sm','sig_sm'] ],
-    'nk': [
-        ['r_nominal','r_mean','kappa_mean','sig','weight','npairs'],
-        ['r_nominal','r_mean','kappa_mean','sig','kappa_d','weight_d','pairs_d','kappa_r',
-         'weight_r','npairs_r'],
-        ['r_nominal','r_mean','kappa_mean','sig','weight','npairs','r_sm','kappa_sm','sig_sm'],
-        ['r_nominal','r_mean','kappa_mean','sig','kappa_d','weight_d','pairs_d','kappa_r',
-         'weight_r','npairs_r','r_sm','kappa_sm','sig_sm'] ],
-    'k2': [
-        ['r_nominal','r_mean','xi','sig_xi','weight','npairs'],
-        ['r_nominal','r_mean','xi','sig_xi','weight','npairs','r_sm','xi_sm','sig_sm'] ],
-    'kg': [
-        ['r_nominal','r_mean','kgamT_mean','kgamX_mean','sig','weight','npairs'],
-        ['r_nominal','r_mean','kgamT_mean','kgamX_mean','sig','kgamT_d','kgamX_d','weight_d',
-         'npairs_d','kgamT_r','kgamX_r','weight_r','npairs_r'],
-        ['r_nominal','r_mean','kgamT_mean','kgamX_mean','sig','weight','npairs','r_sm','kgamT_sm',
-         'sig_sm'],
-        ['r_nominal','r_mean','kgamT_mean','kgamX_mean','sig','kgamT_d','kgamX_d','weight_d',
-         'npairs_d','kgamT_r','kgamX_r','weight_r','npairs_r','r_sm','kgamT_sm','sig_sm'] ],
-    'm2': [
-        ['r','map^2_mean','mx^2_mean','mmx_mean_a','mmx_mean_b','sig_map','gam^2_mean','sig_gam']],
-    'nm': [
-        ['r','nmap_mean','nmx_mean','sig_nmap'] ],
-    'norm': [
-        ['r','nmap_mean','nmx_mean','sig_nm','n^2_mean','sig_n^2','map^2_mean','sig_mm','nmnorm',
-         'sig_nmnorm','nnnorm','sig_nnnorm'] ]
-}
 
 def parser():
     import argparse
@@ -331,16 +280,20 @@ def parser():
                    help="Number of the dec column -- only allowed by certain DataHandlers",
                    dest='dec_col')
     p.add_argument('--x_units',
-                   help="X-column units (radians, hours, degrees, arcmin, arcsec)",
+                   help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only allowed "+
+                        "by certain DataHandlers",
                    dest='x_units')
     p.add_argument('--y_units',
-                   help="Y-column units (radians, hours, degrees, arcmin, arcsec)",
+                   help="Y-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
+                        "by certain DataHandlers",
                    dest='y_units')
     p.add_argument('--ra_units',
-                   help="RA-column units (radians, hours, degrees, arcmin, arcsec)",
+                   help="RA-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
+                        "by certain DataHandlers",
                    dest='ra_units')
     p.add_argument('--dec_units',
-                   help="dec-column units (radians, hours, degrees, arcmin, arcsec)",
+                   help="dec-column units (radians, hours, degrees, arcmin, arcsec) -- only "+
+                        "allowed by certain DataHandlers",
                    dest='dec_units')
     p.add_argument('--g1_col',
                    help="Number of the g1 column -- only allowed by certain DataHandlers",
@@ -429,27 +382,28 @@ def check_options(input_dict, check_status=True):
                         do it.  (default: True)
     @returns            The input dict, unchanged.            
     """
-    
+    #TODO: add check_required to make sure it has all necessary keys
     for key in input_dict:
         if key not in options:
             raise ValueError('Option %s not understood by Stile and not a recognized corr2 '
                                'option.  Please check syntax and try again.'%key)                         
         else:
             ok = options[key]
-            if ok['status']=='disallowed_file':
-                raise ValueError('Option %s for corr2 is forbidden by Stile, which may need to '
-                                 'write multiple output files of this type.  Please remove this '
-                                 'option from your syntax, and check the documentation for where '
-                                 'the relevant output files will be located.'%key)
-            elif ok['status']=='disallowed_computation':
-                raise ValueError('Option %s for corr2 is forbidden by Stile, which controls '
-                                 'the necessary correlation functions.  Depending on your needs, '
-                                 'please either remove this option from your syntax or consider '
-                                 'running corr2 as a standalone program.'%key)
-            elif ok['status']=='captured':
-                raise ValueError('Option %s should have been captured by the input parser for '
-                                 'Stile, but it was not.  This is a bug; please '
-                                 'open an issue at http://github.com/msimet/Stile/issues.'%key)
+            if check_status:
+                if ok['status']=='disallowed_file':
+                    raise ValueError('Option %s for corr2 is forbidden by Stile, which may need to '
+                                     'write multiple output files of this type.  Please remove this '
+                                     'option from your syntax, and check the documentation for '
+                                     'where the relevant output files will be located.'%key)
+                elif ok['status']=='disallowed_computation':
+                    raise ValueError('Option %s for corr2 is forbidden by Stile, which controls '
+                                     'the necessary correlation functions.  Depending on your '
+                                     'needs, please either remove this option from your syntax or '
+                                     'consider running corr2 as a standalone program.'%key)
+                elif ok['status']=='captured':
+                    raise ValueError('Option %s should have been captured by the input parser for '
+                                     'Stile, but it was not.  This is a bug; please '
+                                     'open an issue at http://github.com/msimet/Stile/issues.'%key)
             if type(input_dict[key]) not in ok['type']:
                 # The unknown arguments are passed as strings.  Since the string may not be the
                 # desired option, try casting the value into the correct type or types and see if
@@ -471,15 +425,15 @@ def check_options(input_dict, check_status=True):
                                      'check syntax and try again.'%(key,', '.join(ok['val'])))
     return input_dict
     
-def write_corr2_param_file(param_file_name,**kwargs):
+def write_corr2_param_file(param_file_name,corr2_dict,**kwargs):
     """
-    Write the given kwargs to a corr2 param file if they are in the options dict above.  If the
-    value of a (key,value) pair is a dict, this function is called recursively on the items in the 
-    dict, to allow a separate (eg) corr2_options dict that gets handed around Stile without 
-    interference, in addition to the arguments that corr2 needs to run.  
+    Write the given corr2 parameters to a corr2 param file if they are in the options dict above.  
     
     @param param_file_name May be a file name or any object with a .write(...) attribute.
-    @param kwargs          A set of corr2 parameters, represented as a dict.
+    @param corr2_dict      A dict containing corr2 parameters.
+    @param kwargs          Any extra keys to be added to the given corr2_dict.  If they conflict,
+                           the keys given in the kwargs will silently supercede the values in the
+                           corr2_dict.
     """
     if isinstance(param_file_name,str):
         f=open(param_file_name,'w')
@@ -487,19 +441,17 @@ def write_corr2_param_file(param_file_name,**kwargs):
     else:
         f=param_file_name
         close_file=False
-    for key in kwargs:
+    if kwargs:
+        corr2_dict.update(kwargs)
+    for key in corr2_dict:
         if key in options:
-            f.write(key+' = ' + str(kwargs[key])+'\n')
-        elif isinstance(kwargs[key],dict):
-            write_corr2_param_file(f,kwargs[key])
+            f.write(key+' = ' + str(corr2_dict[key])+'\n')
         else:
-            raise ValueError("Unknown key %s passed to write_corr2_param_file.  This is a bug; "
-                             "please check your code if it's yours, or open an issue at "
-                             "http://github.com/msimet/Stile/issues if it's ours."%key)
+            raise ValueError("Unknown corr2 key %s."%key)
     if close_file:
         f.close()
         
-def read_corr2_results_file(file_name,file_type):
+def read_corr2_results_file(file_name):
     """
     Read in the given file_name of type file_type.  Cast it into a numpy.recarray with the
     appropriate column mappings from column_maps and return it.
@@ -512,9 +464,6 @@ def read_corr2_results_file(file_name,file_type):
     """    
     import stile_utils
     import file_io
-    if file_type not in column_maps:
-        raise ValueError('Unknown file_type %s in corr2_utils.read_corr2_output_file. Available ' 
-                           'file types are: %s.'%' '.join(sorted(column_maps.keys())))
     #output = numpy.loadtxt(file_name)
     # Currently there is a bug in corr2 that puts some text output into results files...
     output = file_io.read_ascii_table(file_name,comment='R',startline=2)
@@ -535,32 +484,42 @@ def add_corr2_dict(input_dict):
     @returns          The input_dict with an added or updated key 'corr2_options' whose value is a
                       dict containing the (key,value) pairs from input_dict that apply to corr2
     """    
-    corr2_dict={}
+    #TODO: think about corr2_options vs corr2_params etc
+    corr2_dict = {}
+    new_dict = copy.deepcopy(input_dict)
     for key in options:
         if key in input_dict:
             corr2_dict[key] = input_dict[key]
-    if 'corr2_options' in input_dict:
-        input_dict['corr2_options'].update(corr2_dict)
+    if 'corr2_options' in new_dict:
+        new_dict['corr2_options'].update(corr2_dict)
     else:
-        input_dict['corr2_options'] = corr2_dict
-    return input_dict
+        new_dict['corr2_options'] = corr2_dict
+    return new_dict
     
 def make_corr2_cols(cols,use_as_k=None):
-    if isinstance(cols,dict):
-        new_cols = [0 for i in range(max([cols[key] for key in cols.keys()]))]
-        for key in cols:
-            new_cols[cols[key]] = key
-        cols=new_cols
+    """
+    Takes an input dict or list of columns and extracts the right variables for the column keys in a
+    corr2 parameters file.
     
+    @param cols     A list of strings denoting the columns of a file (first column is first element
+                    of list, etc), or a dict with the key-value pairs "string column name": column 
+                    number
+    @param use_as_k Which column to use as the "kappa" (scalar) column, if given (default: None)
+    @returns        A dict containing the column key-value pairs for corr2
+    """
     corr2_params = {}
     col_params = ['x','y','ra','dec','g1','g2','k','w']
-    for cp in col_params:
-        if cp in cols:
-            corr2_params[cp+'_col'] = cols.index(cp)+1
-    if 'weight' in cols and not 'w' in cols:
-        corr2_params['w_col'] = cols.index('weight')+1
-    if use_as_k and use_as_k in cols:
-        corr2_params['k_col'] = cols.index(use_as_k)+1
-        
+    if isinstance(cols,dict):
+        for col in col_params:
+            if col in cols and isinstance(cols[col],int):
+                corr2_params[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
+        if use_as_k and use_as_k in cols and isinstance(cols[use_as_k],int):
+            corr2_params['k_col'] = cols[use_as_k]+1
+    elif hasattr(cols,'__getitem__'):
+        for cp in col_params:
+            if cp in cols:
+                corr2_params[cp+'_col'] = cols.index(cp)+1
+        if use_as_k and use_as_k in cols:
+            corr2_params['k_col'] = cols.index(use_as_k)+1
     return corr2_params
 
