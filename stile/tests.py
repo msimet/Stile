@@ -86,7 +86,7 @@ class CorrelationFunctionTest(Test):
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', param_file])
 
-        return_value  = stile.read_corr2_results_file(output_file,correlation_function_type)
+        return_value  = stile.read_corr2_results_file(output_file)
         for handle in file_handles:
             os.close(handle)
         for file_name in delete_files:
