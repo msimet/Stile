@@ -65,19 +65,17 @@ def read_ascii_table(file_name, startline=None, comment=None):
 
     f=open(file_name,'r')
     if startline:
-        for i in range(startline-1):
+        for i in range(startline):
             f.readline()
     d = [line.split() for line in f.readlines()]
     f.close()
     if not d:
-        return numpy.array([])
-    if len(d[-1])==0: # In case of trailing newline
-        d = d[:-1]
+        return numpy.array
     if comment:
         lenc = len(comment)
-        d = [tuple(dd) for dd in d if dd[0].strip()[:lenc]!=comment]
+        d = [tuple(dd) for dd in d if dd and dd[0].strip()[:lenc]!=comment]
     else:
-        d = [tuple(dd) for dd in d]
+        d = [tuple(dd) for dd in d if dd]
     if len(d)==0:
         return []
     d_arr = numpy.array(d)
@@ -92,7 +90,7 @@ def write_point(f,line,pos):
     
 def write_ascii_table(file_name,data_array,cols=None):
     if not cols:
-        cols = [i for i in range(len(data_array.dtypes.names))]
+        cols = [i for i in range(len(data_array.dtype.names))]
     else:
         tcols = [i for i in range(len(cols))]
         names = data_array.dtype.names
