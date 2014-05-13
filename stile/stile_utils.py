@@ -205,7 +205,7 @@ def make_files(dh, data, data2=None, random=None, random2=None):
         # need to fix this more completely/robustly, but to get things working for now...
         if hasattr(data,'dtype') and hasattr(data.dtype,'names'):
             cols = data.dtype.names
-        elif hasattr(data[0],'dtype') and hasattr(data[0].dtype,'names')
+        elif hasattr(data[0],'dtype') and hasattr(data[0].dtype,'names'):
             cols = data[0].dtype.names
         else:
             cols = ['id','ra','dec','z','g1','g2']
