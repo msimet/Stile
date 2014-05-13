@@ -77,6 +77,7 @@ def make_recarray(d,fields=None,only_floats=False):
     @returns      A numpy.recarray with the same shape as d except that the innermost dimension 
                   has turned into a record field, optionally with field names appropriately replaced
     """
+    #TODO: these are not real recarrays; change either name or function
     if hasattr(d,'dtype') and hasattr(d.dtype,'names'):
         pass
     else:
@@ -201,7 +202,13 @@ def make_files(dh, data, data2=None, random=None, random2=None):
         for key in aw_set:
             cols[aw_set[key]] = key
     else:
-        cols = ['id','ra','dec','z','g1','g2']
+        # need to fix this more completely/robustly, but to get things working for now...
+        if hasattr(data,'dtype') and hasattr(data.dtype,'names'):
+            cols = data.dtype.names
+        elif hasattr(data[0],'dtype') and hasattr(data[0].dtype,'names')
+            cols = data[0].dtype.names
+        else:
+            cols = ['id','ra','dec','z','g1','g2']
 
     handles = []
     deletes = []
