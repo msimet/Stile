@@ -244,7 +244,7 @@ options = {
          'val': ["mean","median","middle"],
          'status': 'allowed'}}
 
-def parser():
+def Parser():
     import argparse
     p = argparse.Parser()
     p.add_argument('--file_type',
@@ -368,7 +368,7 @@ def parser():
     return p                   
 
 
-def check_options(input_dict, check_status=True):
+def CheckOptions(input_dict, check_status=True):
     """
     A function that checks the (key,value) pairs of the dict passed to it against the corr2 options 
     dict.  If the key is not understood, or if check_status is True and the key is not allowed or 
@@ -425,7 +425,7 @@ def check_options(input_dict, check_status=True):
                                      'check syntax and try again.'%(key,', '.join(ok['val'])))
     return input_dict
     
-def write_corr2_param_file(param_file_name,corr2_dict,**kwargs):
+def WriteCorr2ParamFile(param_file_name,corr2_dict,**kwargs):
     """
     Write the given corr2 parameters to a corr2 param file if they are in the options dict above.  
     
@@ -451,7 +451,7 @@ def write_corr2_param_file(param_file_name,corr2_dict,**kwargs):
     if close_file:
         f.close()
         
-def read_corr2_results_file(file_name):
+def ReadCorr2ResultsFile(file_name):
     """
     Read in the given file_name of type file_type.  Cast it into a numpy.recarray with the
     appropriate column mappings from column_maps and return it.
@@ -466,16 +466,17 @@ def read_corr2_results_file(file_name):
     import file_io
     #output = numpy.loadtxt(file_name)
     # Currently there is a bug in corr2 that puts some text output into results files...
-    output = file_io.read_ascii_table(file_name,comment='R',startline=2)
+    output = file_io.ReadAsciiTable(file_name,comment='R',start_line=2)
+    
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
     with open(file_name) as f:
         cols = f.readline().split()
     cols = cols[1:]
     cols = [col for col in cols if col!='.']
-    return stile_utils.make_recarray(output,fields=cols,only_floats=True)
+    return stile_utils.MakeRecarray(output,fields=cols,only_floats=True)
 
-def add_corr2_dict(input_dict):
+def AddCorr2Dict(input_dict):
     """
     Take an input_dict, harvest the options you'll need for corr2, and create a new 'corr2_options'
     key in the input_dict containing these values (or update the existing 'corr2_options' key).
@@ -496,7 +497,7 @@ def add_corr2_dict(input_dict):
         new_dict['corr2_options'] = corr2_dict
     return new_dict
     
-def make_corr2_cols(cols,use_as_k=None):
+def MakeCorr2Cols(cols,use_as_k=None):
     """
     Takes an input dict or list of columns and extracts the right variables for the column keys in a
     corr2 parameters file.

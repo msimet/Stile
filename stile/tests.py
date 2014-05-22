@@ -7,16 +7,16 @@ import stile
 class Test:
     """
     A Test is a lensing systematics test of some sort.  It should define the following attributes:
-    shortname = a string that can be used in filenames to denote this test
-    longname = a string to denote this test within program text outputs
+    short_name = a string that can be used in filenames to denote this test
+    long_name = a string to denote this test within program text outputs
     
     It should define the following methods:
     __call__(self, stile_args, data_handler, data, **kwargs) = run the test.  **kwargs may include 
         data2 (source data set for lens-source pairs), random and random2 (random data sets 
         corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
     """
-    shortname = ''
-    longname = ''
+    short_name = ''
+    long_name = ''
     def __init__(self):
         pass
     def __call__(self):
@@ -30,7 +30,7 @@ class CorrelationFunctionTest(Test):
     CorrelationFunctionTest; see the docstring for CorrelationFunctionTest.get_correlation_function
     for information on how to write further tests using it.
     """
-    def get_correlation_function(self, stile_args, dh, correlation_function_type, data, data2=None, 
+    def getCorrelationFunction(self, stile_args, dh, correlation_function_type, data, data2=None, 
                                  random=None, random2=None, **kwargs):
         """
         Sets up and calls corr2 on the given set of data.
@@ -77,16 +77,16 @@ class CorrelationFunctionTest(Test):
         file_handles.append(handle)
         delete_files.append(param_file)
         if 'bins_name' in stile_args:
-            output_file = dh.get_output_path(self.shortname+stile_args['bins_name'])
+            output_file = dh.getOutputPath(self.short_name+stile_args['bins_name'])
         else:
-            output_file = dh.get_output_path(self.shortname)
+            output_file = dh.getOutputPath(self.short_name)
         corr2_options[correlation_function_type+'_file_name'] = output_file
-        stile.write_corr2_param_file(param_file,corr2_options)
+        stile.WriteCorr2ParamFile(param_file,corr2_options)
         
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', param_file])
 
-        return_value  = stile.read_corr2_results_file(output_file)
+        return_value  = stile.ReadCorr2ResultsFile(output_file)
         for handle in file_handles:
             os.close(handle)
         for file_name in delete_files:
@@ -94,11 +94,11 @@ class CorrelationFunctionTest(Test):
         return return_value
         
 class TestXShear(CorrelationFunctionTest):
-    shortname = 'realshear'
-    longname = 'Shear of galaxies around real objects'
+    short_name = 'realshear'
+    long_name = 'Shear of galaxies around real objects'
 
     def __call__(self,stile_args,dh,data,data2,random=None,random2=None):
         corr2_options = stile_args['corr2_options']
-        return self.get_correlation_function(stile_args,dh,'ng',data,data2,random,random2,
+        return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
                                               **corr2_options)
 

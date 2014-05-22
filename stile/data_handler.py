@@ -9,22 +9,22 @@ class DataHandler:
     def __init__(self):
         raise NotImplementedError()
     
-    def list_data(self,format=None,epoch=None,extent=None,cols=None):
+    def listData(self,format=None,epoch=None,extent=None,cols=None):
         raise NotImplementedError()
     
-    def get_data(self,ident,bin_list=None,format=None,epoch=None,extent=None,force=False):
+    def getData(self,ident,bin_list=None,format=None,epoch=None,extent=None,force=False):
         """
         Return some data matching the given parameters.  This can be a numpy.recarray, a tuple
         (file_name, column_mapping) for a file already existing on the filesystem, or a list of 
         either of those things (but NOT BOTH!).
         
-        If get_data ever returns a (list of) (file_name, column_mapping) tuple(s), then calling
-        dh.get_data(file_name,force=True) should return the contents of that file, even if the 
+        If getData ever returns a (list of) (file_name, column_mapping) tuple(s), then calling
+        dh.getData(file_name,force=True) should return the contents of that file, even if the 
         "ident"s are not normally file names.
         """ 
         raise NotImplementedError()
 
-    def get_output_path(self,extension='.dat',multi_file=False,*args):
+    def getOutputPath(self,extension='.dat',multi_file=False,*args):
         """
         Return a path to an output file given a list of strings that should appear in the output
         filename, taking care not to clobber other files (unless requested).

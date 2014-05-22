@@ -13,7 +13,7 @@ except:
         has_fits=False
 import numpy
 
-def read_fits_image(file_name,hdu=0):
+def ReadFitsImage(file_name,hdu=0):
     """
     Return the data from a single HDU extension of the FITS file file_name.  Technically this
     doesn't have to be an image as the method is the same for table data; it's called "image" 
@@ -34,7 +34,7 @@ def read_fits_image(file_name,hdu=0):
     else:
         raise ImportError('No FITS handler found!')
     
-def read_fits_table(file_name,hdu=1):
+def ReadFitsTable(file_name,hdu=1):
     """
     This function exists so you can read_fits_table(file_name) rather than remembering that
     table data is usually in extension 1.
@@ -45,7 +45,7 @@ def read_fits_table(file_name,hdu=1):
     """
     return read_fits_image(file_name,hdu=1)
 
-def read_ascii_table(file_name, startline=None, comment=None):
+def ReadAsciiTable(file_name, start_line=None, comment=None):
     """
     Read in an ASCII table, and represent it via the simplest possible form for each column.  
     
@@ -61,16 +61,16 @@ def read_ascii_table(file_name, startline=None, comment=None):
                      (default: None)
     @returns         a numpy array containing the data in the file file_name
     """
-    from stile_utils import get_vector_type
+    from stile_utils import GetVectorType
 
     f=open(file_name,'r')
-    if startline:
-        for i in range(startline):
+    if start_line:
+        for i in range(start_line-1):
             f.readline()
     d = [line.split() for line in f.readlines()]
     f.close()
     if not d:
-        return numpy.array
+        return numpy.array([])
     if comment:
         lenc = len(comment)
         d = [tuple(dd) for dd in d if dd and dd[0].strip()[:lenc]!=comment]
@@ -79,16 +79,16 @@ def read_ascii_table(file_name, startline=None, comment=None):
     if len(d)==0:
         return []
     d_arr = numpy.array(d)
-    types = ','.join([get_vector_type(d_arr[:,i]) for i in range(len(d_arr[0]))])
+    types = ','.join([GetVectorType(d_arr[:,i]) for i in range(len(d_arr[0]))])
     return numpy.array(d,dtype=types)
 
-def write_point(f,line,pos):
+def WritePoint(f,line,pos):
     if pos>=0:
         f.write(str(line[pos])+' ')
     else:
         f.write('0 ')
     
-def write_ascii_table(file_name,data_array,cols=None):
+def WriteAsciiTable(file_name,data_array,cols=None):
     if not cols:
         cols = [i for i in range(len(data_array.dtype.names))]
     else:
@@ -101,6 +101,6 @@ def write_ascii_table(file_name,data_array,cols=None):
                 tcols[i] = -1
     with open(file_name,'w') as f:
         for line in data_array:
-            [write_point(f,line,pos) for pos in cols]
+            [WritePoint(f,line,pos) for pos in cols]
             f.write('\n')    
     

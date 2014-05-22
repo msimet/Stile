@@ -1,5 +1,5 @@
-"""
-binning.py: Contains definitions of Bin* classes that generate binning schemes and the SingleBins
+"""@file binning.py
+Contains definitions of Bin* classes that generate binning schemes and the SingleBins
 objects they create which can be applied to data to limit it to the bin in question.
 """
 
@@ -32,7 +32,7 @@ class BinList:
                              'list: %s'%bin_list)
         self.bin_list = bin_list
     def __call__(self):
-        return_list = [SingleBin(column=self.column,low=low,high=high,shortname=str(i)) 
+        return_list = [SingleBin(column=self.column,low=low,high=high,short_name=str(i)) 
                         for i, (low, high) in  enumerate(zip(self.bin_list[:-1],self.bin_list[1:]))]
         if self.reverse:
             return_list.reverse()
@@ -121,10 +121,10 @@ class BinStep:
         if self.use_log:
             return_list = [SingleBin(column=self.column,low=numpy.exp(self.low+i*self.step),
                                      high=numpy.exp(self.low+(i+1)*self.step),
-                                     shortname=str(i)) for i in range(self.n_bins)]
+                                     short_name=str(i)) for i in range(self.n_bins)]
         else:
             return_list = [SingleBin(column=self.column,low=self.low+i*self.step,
-                                     high=self.low+(i+1)*self.step,shortname=str(i)) 
+                                     high=self.low+(i+1)*self.step,short_name=str(i)) 
                                      for i in range(self.n_bins)]
         if self.reverse:
             return_list.reverse()
@@ -144,23 +144,23 @@ class SingleBin:
     @param low      The lower edge of the bin (inclusive)
     @param high     The upper edge of the bin (exclusive)
     @param shorname A string denoting this bin in filenames
-    @param longname A string denoting this bin in program text outputs/plots (default: "low-high")  
+    @param long_name A string denoting this bin in program text outputs/plots (default: "low-high")  
     """
-    def __init__(self,column,low,high,shortname,longname=None):
+    def __init__(self,column,low,high,short_name,long_name=None):
         if not isinstance(column,str):
             raise TypeError('Column description must be a string. Passed value: '+str(column))
         if high < low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
-        if not isinstance(shortname,str) or (longname and not isinstance(longname,str)):
-            raise TypeError("Shortname and longname must be strings")
+        if not isinstance(short_name,str) or (long_name and not isinstance(long_name,str)):
+            raise TypeError("Short_name and long_name must be strings")
         self.column = column
         self.low = low
         self.high = high
-        self.shortname = shortname
-        if longname:
-            self.longname = longname
+        self.short_name = short_name
+        if long_name:
+            self.long_name = long_name
         else:
-            self.longname = str(low)+'-'+str(high)
+            self.long_name = str(low)+'-'+str(high)
     def __call__(self,data):
         """
         Given data, returns an array of bools such that array[SingleBin()] gives only the data 
@@ -215,21 +215,21 @@ class SingleFunctionBin(SingleBin):
     @param function       The function that returns the bin information
     @param n              Which bin this SingleFunctionBin considers
     @param returns_bools  True if the function returns bools, else False (default: False)
-    @param shortname      A string denoting this bin in filenames (default: str(n))
-    @param longname       A string denoting this bin in program outputs/plots (default: shortname)  
+    @param short_name     A string denoting this bin in filenames (default: str(n))
+    @param long_name       A string denoting this bin in program outputs/plots (default: short_name)  
     """
-    def __init__(self,function,n,returns_bools=False, shortname=None, longname=None):
-        if (shortname and not isinstance(shortname,str)) or (
-                longname and not isinstance(longname,str)):
-            raise TypeError("Shortname and longname must be strings")
-        if shortname is not None:
-            self.shortname = shortname
+    def __init__(self,function,n,returns_bools=False, short_name=None, long_name=None):
+        if (short_name and not isinstance(short_name,str)) or (
+                long_name and not isinstance(long_name,str)):
+            raise TypeError("short_name and long_name must be strings")
+        if short_name is not None:
+            self.short_name = short_name
         else:
-            self.shortname = str(n)
-        if longname is not None:
-            self.longname = longname
+            self.short_name = str(n)
+        if long_name is not None:
+            self.long_name = long_name
         else:
-            self.longname = self.shortname
+            self.long_name = self.short_name
         self.function=function
         self.n=n
         if returns_bools:

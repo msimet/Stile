@@ -41,12 +41,12 @@ def test_BinStep_SingleBin_creation():
     hsn = stile.BinStep('column_0',high=6,step=1,n_bins=6)
     reverse_lhs = stile.BinStep('column_0',low=6,high=0,step=-1)
     
-    expected_obj_list = [stile.binning.SingleBin('column_0',low=0,high=1,shortname='b'), 
-                         stile.binning.SingleBin('column_0',low=1,high=2,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=2,high=3,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=3,high=4,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=4,high=5,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=5,high=6,shortname='b')]
+    expected_obj_list = [stile.binning.SingleBin('column_0',low=0,high=1,short_name='b'), 
+                         stile.binning.SingleBin('column_0',low=1,high=2,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=2,high=3,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=3,high=4,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=4,high=5,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=5,high=6,short_name='b')]
 
     names = ["passed low, high, and step",
              "passed low, high, and n_bins",
@@ -72,11 +72,11 @@ def test_BinStep_SingleBin_creation():
     hsn = stile.BinStep('column_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
     reverse_lhs = stile.BinStep('column_0',low=8,high=0.25,step=-numpy.log(2.),use_log=True)        
     
-    expected_obj_list = [stile.binning.SingleBin('column_0',low=0.25,high=0.5,shortname='b'), 
-                         stile.binning.SingleBin('column_0',low=0.5,high=1.,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=1.,high=2.,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=2.,high=4.,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=4.,high=8.,shortname='b')]
+    expected_obj_list = [stile.binning.SingleBin('column_0',low=0.25,high=0.5,short_name='b'), 
+                         stile.binning.SingleBin('column_0',low=0.5,high=1.,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=1.,high=2.,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=2.,high=4.,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=4.,high=8.,short_name='b')]
 
     names = ["passed low, high, and step",
              "passed low, high, and n_bins",
@@ -99,12 +99,12 @@ def test_BinList_SingleBin_creation():
     t0 = time.time()
     obj = stile.BinList('column_0',[0,1.1,1.9,3.0,4.0,5.0,6.5])
     
-    expected_obj_list = [stile.binning.SingleBin('column_0',low=0,high=1.1,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=1.1,high=1.9,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=1.9,high=3,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=3,high=4,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=4,high=5,shortname='b'),
-                         stile.binning.SingleBin('column_0',low=5,high=6.5,shortname='b')]
+    expected_obj_list = [stile.binning.SingleBin('column_0',low=0,high=1.1,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=1.1,high=1.9,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=1.9,high=3,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=3,high=4,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=4,high=5,short_name='b'),
+                         stile.binning.SingleBin('column_0',low=5,high=6.5,short_name='b')]
 
     obj_list = obj()
 
@@ -339,9 +339,9 @@ def test_bin_creation_errors():
 
 def test_singlebin_input_errors():
     t0 = time.time()
-    sb = stile.binning.SingleBin('column_0',low=0,high=10,shortname='boo')
+    sb = stile.binning.SingleBin('column_0',low=0,high=10,short_name='boo')
     sfb = stile.binning.SingleFunctionBin(binfunction,1)
-    sb.longname # check that this was made properly
+    sb.long_name # check that this was made properly
     numpy.testing.assert_raises(TypeError,sb,[1,2,3,4])
     #numpy.testing.assert_raises(TypeError,sfb,[1,2,3,4]) # Question: enforce this?
     numpy.testing.assert_raises(ValueError,sb,numpy.array([1,2,3,4]))

@@ -21,15 +21,15 @@ def main():
                                      'sep_units': 'degrees',
                                      'nbins': 20
                                      } }
-    data_ids = dh.list_data('pair','single','field','table')
+    data_ids = dh.listData('pair','single','field','table')
     
     # do a test without binning
-    data = dh.get_data(data_ids[0],'pair','single','field','table')
-    data2 = dh.get_data(data_ids[1],'pair','single','field','table')
+    data = dh.getData(data_ids[0],'pair','single','field','table')
+    data2 = dh.getData(data_ids[1],'pair','single','field','table')
     
     # convert all files to files on disk if they aren't already
-    data, data2, _, _, corr2_params, handles, deletes = stile.make_files(dh, data, data2)
-    stile_args['corr2_options'].update(corr2_params)
+    data, data2, _, _, corr2_params, handles, deletes = stile.MakeFiles(dh, data, data2)
+    stile_args['corr2_options'].update(corr2_params) #TODO: stop mixing args/params/options names
     
     # run the test
     results = test(stile_args,dh,data,data2)
@@ -39,6 +39,7 @@ def main():
     for delete in deletes:
         if os.file_exists(delete):
             os.remove(delete)
+    # Plot the results
     P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
     P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
     P.xscale('log')
@@ -47,22 +48,22 @@ def main():
     P.ylabel('<gam>')
     P.title('All data')
     P.legend()
-    P.savefig(test.shortname+'.png')
+    P.savefig(test.short_name+'.png')
     P.clf()
     print "Done with unbinned test"
     
     # do with binning
-    data = dh.get_data(data_ids[0],'pair','single','field','table')
+    data = dh.getData(data_ids[0],'pair','single','field','table')
     # turns a list of binning schemes into a pseudo-nested list of single bins
-    expanded_bin_list = stile.expand_bin_list(bin_list)
+    expanded_bin_list = stile.ExpandBinList(bin_list)
     handles_list = []
     deletes_list = []
     # for each set of bins, do the test as above
     for bin_list in expanded_bin_list:
-        stile_args['bins_name'] = '-'.join([bl.shortname for bl in bin_list])
-        data2 = dh.get_data(data_ids[1],'pair','single','field','table',bin_list=bin_list)
+        stile_args['bins_name'] = '-'.join([bl.short_name for bl in bin_list])
+        data2 = dh.getData(data_ids[1],'pair','single','field','table',bin_list=bin_list)
         
-        new_data, new_data2, _, _, corr2_params, handles, deletes = stile.make_files(dh,data,data2)
+        new_data, new_data2, _, _, corr2_params, handles, deletes = stile.MakeFiles(dh,data,data2)
         handles_list.append(handles)
         deletes_list.append(deletes)
         stile_args['corr2_options'].update(corr2_params)
@@ -76,7 +77,7 @@ def main():
         P.xlim([0.05,0.7])
         P.title('Bins'+stile_args['bins_name'])
         P.legend()
-        P.savefig(test.shortname+stile_args['bins_name']+'.png')
+        P.savefig(test.short_name+stile_args['bins_name']+'.png')
         P.clf()
         print "Done with binned test", stile_args['bins_name']
     for handle in set(handles):

@@ -5,17 +5,17 @@ functions.
 
 import numpy
 
-def parser():
+def Parser():
     """
     Returns an argparse Parser object with input args used by Stile and corr2.
     """
     import corr2_utils
     import argparse
-    p = argparse.Parser(parent=corr2_utils.parser)
+    p = argparse.Parser(parent=corr2_utils.Parser())
     #TODO: add, obviously, EVERYTHING ELSE
     return p
 
-def expand_bin_list(bin_list):
+def ExpandBinList(bin_list):
     """
     Take a list of Bin* objects, and expand them to return a list of SimpleBins to step through.  
     E.g., if the user passes a list :
@@ -47,7 +47,7 @@ def expand_bin_list(bin_list):
     return data_bins
 
 
-def get_vector_type(x):
+def GetVectorType(x):
     """
     Figure out the least-precise type that can represent an entire vector of data.
 
@@ -65,7 +65,7 @@ def get_vector_type(x):
             pass
     return 'S'+str(max([len(xx) for xx in x]))
 
-def make_recarray(d,fields=None,only_floats=False):
+def MakeRecarray(d,fields=None,only_floats=False):
     """
     Turn a regular NumPy array into a numpy.recarray, with optional field name description.
 
@@ -104,7 +104,7 @@ def make_recarray(d,fields=None,only_floats=False):
     return d
     
         
-def make_files(dh, data, data2=None, random=None, random2=None):
+def MakeFiles(dh, data, data2=None, random=None, random2=None):
     """
     Pick which files need to be written to a file for corr2, and which can be passed simply as a
     filename. This takes care of making temporary files, checking that the column mapping is
@@ -250,7 +250,7 @@ def make_files(dh, data, data2=None, random=None, random2=None):
                     handle, data_file = tempfile.mkstemp(dh.temp_dir)
                     handles.append(handle)
                     deletes.append(data_file)
-                    file_io.write_ascii_table(data_file,data_list,cols=cols)
+                    file_io.WriteAsciiTable(data_file,data_list,cols=cols)
                     new_data_list.append(data_file)
                 else: 
                     for dl in data_list:
@@ -283,6 +283,6 @@ def make_files(dh, data, data2=None, random=None, random2=None):
             file_args.append(None)
     new_data, new_data2, new_random, new_random2 = file_args
     
-    corr2_params = corr2_utils.make_corr2_cols(cols)
+    corr2_params = corr2_utils.MakeCorr2Cols(cols)
     return new_data, new_data2, new_random, new_random2, corr2_params, handles, deletes
 

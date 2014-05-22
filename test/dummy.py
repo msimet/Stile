@@ -6,12 +6,12 @@ class DummyDataHandler(stile.DataHandler):
     def __init__(self):
         self.source_file_name = 'test_source_catalog.dat'
         self.lens_file_name = 'test_lens_catalog.dat'
-        self.read_method = stile.read_ascii_table
+        self.read_method = stile.ReadAsciiTable
         self.fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5} 
         self.output_path='.'
-    def list_file_types(self):
+    def listFileTypes(self):
         return [['pair','single','pointing','table']]
-    def list_data(self,pair_or_single,epoch,extent,data_format,random=False):
+    def listData(self,pair_or_single,epoch,extent,data_format,random=False):
         if (epoch=='single' and 
             (extent=='pointing' or extent=='field' or extent=='survey') and
             data_format=='table' and not random):
@@ -27,7 +27,7 @@ class DummyDataHandler(stile.DataHandler):
         else:
             raise ValueError('DummyDataHandler does not contain data of this type: %s %s %s %s'%(
                                 pair_or_single,epoch,extent,data_format)) 
-    def get_data(self,id,pair_or_single,epoch,extent,data_format,
+    def getData(self,id,pair_or_single,epoch,extent,data_format,
                       random=False,bin_list=None,force=False):
         #TODO: think about what happens if a file gets rewritten due to column mapping...
         if not data_format=='table':
@@ -40,7 +40,7 @@ class DummyDataHandler(stile.DataHandler):
             if not bin_list and not force:
                 return (id,self.fields)
             else:
-                data = stile.make_recarray(self.read_method(id),fields=self.fields)
+                data = stile.MakeRecarray(self.read_method(id),fields=self.fields)
                 if bin_list:
                     for bin in bin_list:
                         data = data[bin(data)]
