@@ -454,12 +454,9 @@ def WriteCorr2ParamFile(param_file_name,corr2_dict,**kwargs):
 def ReadCorr2ResultsFile(file_name):
     """
     Read in the given file_name of type file_type.  Cast it into a numpy.recarray with the
-    appropriate column mappings from column_maps and return it.
+    appropriate fields and return it.
     
     @param file_name The location of an output file from corr2.
-    @param file_type The type of correlation function that was run; available options can be found
-                     by printing the keys of corr2_utils.column_maps or checking the corr2
-                     documentation.
     @returns         A numpy.recarray corresponding to the data in file_name.
     """    
     import stile_utils
@@ -471,10 +468,10 @@ def ReadCorr2ResultsFile(file_name):
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
     with open(file_name) as f:
-        cols = f.readline().split()
-    cols = cols[1:]
-    cols = [col for col in cols if col!='.']
-    return stile_utils.MakeRecarray(output,fields=cols,only_floats=True)
+        fields = f.readline().split()
+    fields = fields[1:]
+    fields = [field for field in fields if fields!='.']
+    return stile_utils.MakeRecarray(output,fields=fields,only_floats=True)
 
 def AddCorr2Dict(input_dict):
     """
@@ -500,7 +497,8 @@ def AddCorr2Dict(input_dict):
 def MakeCorr2Cols(cols,use_as_k=None):
     """
     Takes an input dict or list of columns and extracts the right variables for the column keys in a
-    corr2 parameters file.
+    corr2 parameters file.  Note that we generally call these "fields" in Stile, but for 
+    compatability with corr2 config files they're called "cols" here.
     
     @param cols     A list of strings denoting the columns of a file (first column is first element
                     of list, etc), or a dict with the key-value pairs "string column name": column 

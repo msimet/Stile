@@ -9,16 +9,16 @@ class DataHandler:
     def __init__(self):
         raise NotImplementedError()
     
-    def listData(self,format=None,epoch=None,extent=None,cols=None):
+    def listData(self,format=None,epoch=None,extent=None,fields=None):
         raise NotImplementedError()
     
     def getData(self,ident,bin_list=None,format=None,epoch=None,extent=None,force=False):
         """
         Return some data matching the given parameters.  This can be a numpy.recarray, a tuple
-        (file_name, column_mapping) for a file already existing on the filesystem, or a list of 
+        (file_name, field_schema) for a file already existing on the filesystem, or a list of 
         either of those things (but NOT BOTH!).
         
-        If getData ever returns a (list of) (file_name, column_mapping) tuple(s), then calling
+        If getData ever returns a (list of) (file_name, field_schema) tuple(s), then calling
         dh.getData(file_name,force=True) should return the contents of that file, even if the 
         "ident"s are not normally file names.
         """ 

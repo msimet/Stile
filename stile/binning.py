@@ -10,17 +10,17 @@ class BinList:
     An object which returns bin definitions (a list of SingleBins) following the bin edge
     definitions given as the input bin_list.  
     
-    @param column    Which column of data to apply the binning system to
+    @param field     Which data field to apply the binning system to
     @param bin_list  A list of bin endpoints such that bin_list[0] <= (bin 0 data) < bin_list[1],
                      bin_list[1] <= (bin 1 data) < bin_list[2], etc; each interval is assumed to be
                      [low,high) and the list must be monotonic.
     """
-    def __init__(self,column,bin_list):
-        if not isinstance(column,str):
-            raise TypeError('Column description must be a string. Passed value: '+str(column))
+    def __init__(self,field,bin_list):
+        if not isinstance(field,str):
+            raise TypeError('Field description must be a string. Passed value: '+str(field))
         if not bin_list:
             raise TypeError('Must pass a non-empty bin_list')
-        self.column = column
+        self.field = field
         monotonic = numpy.array(bin_list[1:])-numpy.array(bin_list[:-1])
         if numpy.all(monotonic>0):
             self.reverse = False
@@ -32,7 +32,7 @@ class BinList:
                              'list: %s'%bin_list)
         self.bin_list = bin_list
     def __call__(self):
-        return_list = [SingleBin(column=self.column,low=low,high=high,short_name=str(i)) 
+        return_list = [SingleBin(field=self.field,low=low,high=high,short_name=str(i)) 
                         for i, (low, high) in  enumerate(zip(self.bin_list[:-1],self.bin_list[1:]))]
         if self.reverse:
             return_list.reverse()
@@ -47,7 +47,7 @@ class BinStep:
     passed, high may be slightly increased to ensure an integer number of bins, so users who need
     a hard cutoff at high are suggested to use n_bins instead.
     
-    @param column    Which column of data to apply the binning system to
+    @param field     Which field of data to apply the binning system to
     @param low       The low edge of the lowest bin, inclusive; should be in linear space regardless
                      of use_log (default: None)
     @param high      The high edge of the highest bin, exclusive; should be in linear space
@@ -60,10 +60,10 @@ class BinStep:
                      all arguments except step should be given in linear space, and the returned
                      bin edges will also be in linear space. (default: False)
     """
-    def __init__(self,column,low=None,high=None,step=None,n_bins=None,use_log=False):
-        if not isinstance(column,str):
-            raise TypeError('Column description must be a string. Passed value: '+str(column))
-        self.column = column
+    def __init__(self,field,low=None,high=None,step=None,n_bins=None,use_log=False):
+        if not isinstance(field,str):
+            raise TypeError('Field description must be a string. Passed value: '+str(field))
+        self.field = field
         n_none = (low is None) + (high is None) + (step is None) + (n_bins is None)
         if n_none>1:
             raise TypeError('Must pass at least three of low, high, step, n_bins')
@@ -119,11 +119,11 @@ class BinStep:
             self.reverse = False
     def __call__(self):
         if self.use_log:
-            return_list = [SingleBin(column=self.column,low=numpy.exp(self.low+i*self.step),
+            return_list = [SingleBin(field=self.field,low=numpy.exp(self.low+i*self.step),
                                      high=numpy.exp(self.low+(i+1)*self.step),
                                      short_name=str(i)) for i in range(self.n_bins)]
         else:
-            return_list = [SingleBin(column=self.column,low=self.low+i*self.step,
+            return_list = [SingleBin(field=self.field,low=self.low+i*self.step,
                                      high=self.low+(i+1)*self.step,short_name=str(i)) 
                                      for i in range(self.n_bins)]
         if self.reverse:
@@ -140,20 +140,20 @@ class SingleBin:
     of the class.  The endpoints are assumed to be [low,high), that is, low <= data < high, with
     defined relational operators.  
     
-    @param column   The index of the column containing the data to be binned (must be str)
+    @param field    The index of the field containing the data to be binned (must be str)
     @param low      The lower edge of the bin (inclusive)
     @param high     The upper edge of the bin (exclusive)
     @param shorname A string denoting this bin in filenames
     @param long_name A string denoting this bin in program text outputs/plots (default: "low-high")  
     """
-    def __init__(self,column,low,high,short_name,long_name=None):
-        if not isinstance(column,str):
-            raise TypeError('Column description must be a string. Passed value: '+str(column))
+    def __init__(self,field,low,high,short_name,long_name=None):
+        if not isinstance(field,str):
+            raise TypeError('Field description must be a string. Passed value: '+str(field))
         if high < low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
         if not isinstance(short_name,str) or (long_name and not isinstance(long_name,str)):
             raise TypeError("Short_name and long_name must be strings")
-        self.column = column
+        self.field = field
         self.low = low
         self.high = high
         self.short_name = short_name
@@ -165,20 +165,20 @@ class SingleBin:
         """
         Given data, returns an array of bools such that array[SingleBin()] gives only the data 
         within the bounds [self.low,self.high).
-        @param data   An array of data which can be indexed by self.column
+        @param data   An array of data which can be indexed by self.field
         @returns      An array of bools indicating which of the data points are in the given range
         """
-        return (data[self.column]>=self.low) & (data[self.column]<self.high)
+        return (data[self.field]>=self.low) & (data[self.field]<self.high)
     
 class BinFunction:
     """
     An object which returns bin definitions (a list of SingleFunctionBins) following the definitions
     given in initialization.  Note that unlike other SingleBins, the SingleFunctionBins created
-    by BinFunction do not have public column, low, or high attributes, since the function is assumed
+    by BinFunction do not have public field, low, or high attributes, since the function is assumed
     to be too complex for such parameterization.
     
     @param function       The function to be applied to the data (an entire array, not just a 
-                          column).  The function should return an array of ints corresponding to the
+                          field).  The function should return an array of ints corresponding to the
                           bin numbers of the data rows (unless return_bools is set, see below).  The
                           function should take a data array as its only argument, unless
                           return_bools is set to True, in which case it should take a bin number as
@@ -209,7 +209,7 @@ class SingleFunctionBin(SingleBin):
     A class that contains the information for one particular bin generated from a function. The 
     class can also be called with a data array to generate an array of bools such that 
     array[SingleBin()] gives only the data within the bounds of the particular instance of the 
-    class.  Unlike SingleBins, there are no public column, low, or high attributes, as these are
+    class.  Unlike SingleBins, there are no public field, low, or high attributes, as these are
     assumed to be insufficient to describe the behavior of the binning scheme.    
     
     @param function       The function that returns the bin information

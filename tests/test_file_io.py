@@ -64,7 +64,7 @@ def test_ReadAsciiTable():
     results = stile.ReadAsciiTable('test_data/table_with_string.dat',comment='s')
     numpy.testing.assert_equal(results,table2_withstring)
     numpy.testing.assert_raises(IndexError,stile.ReadAsciiTable,
-                                'test_data/table_with_missing_column.dat')
+                                'test_data/table_with_missing_field.dat')
     t1 = time.time()
     print "Time to test ASCII table read: ", 1000*(t1-t0), "ms"
     
