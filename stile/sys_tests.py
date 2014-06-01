@@ -1,19 +1,20 @@
-"""@file tests.py
+"""@file sys_tests.py
 Contains the class definitions of the Stile systematics tests.
 """
 import numpy
 import stile
 
-class Test:
+class SysTest:
     """
-    A Test is a lensing systematics test of some sort.  It should define the following attributes:
-    short_name = a string that can be used in filenames to denote this test
-    long_name = a string to denote this test within program text outputs
+    A SysTest is a lensing systematics test of some sort.  It should define the following 
+	attributes:
+    short_name = a string that can be used in filenames to denote this systematics test
+    long_name = a string to denote this systematics test within program text outputs
     
     It should define the following methods:
-    __call__(self, stile_args, data_handler, data, **kwargs) = run the test.  **kwargs may include 
-        data2 (source data set for lens-source pairs), random and random2 (random data sets 
-        corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
+    __call__(self, stile_args, data_handler, data, **kwargs) = run the SysTest.  **kwargs may 
+	include data2 (source data set for lens-source pairs), random and random2 (random data sets 
+	corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
     """
     short_name = ''
     long_name = ''
@@ -22,13 +23,14 @@ class Test:
     def __call__(self):
         raise NotImplementedError()
         
-class CorrelationFunctionTest(Test):
+class CorrelationFunctionSysTest(SysTest):
     """
-    A base class for the Stile tests that use correlation functions.  This implements the class 
-    method get_correlation_function, which runs corr2 (via a call to the subprocess module) on a 
-    given set of data.  Exact arguments to this method should be created by child classes of
-    CorrelationFunctionTest; see the docstring for CorrelationFunctionTest.get_correlation_function
-    for information on how to write further tests using it.
+    A base class for the Stile systematics tests that use correlation functions. This implements the
+	class method get_correlation_function, which runs corr2 (via a call to the subprocess module) on
+	a given set of data.  Exact arguments to this method should be created by child classes of
+    CorrelationFunctionSysTest; see the docstring for 
+    CorrelationFunctionSysTest.get_correlation_function for information on how to write further 
+    tests using it.
     """
     def getCorrelationFunction(self, stile_args, dh, correlation_function_type, data, data2=None, 
                                  random=None, random2=None, **kwargs):
@@ -93,7 +95,7 @@ class CorrelationFunctionTest(Test):
             os.remove(file_name)
         return return_value
         
-class TestXShear(CorrelationFunctionTest):
+class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
 
