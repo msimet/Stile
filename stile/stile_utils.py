@@ -4,6 +4,8 @@ functions.
 """
 
 import numpy
+import weakref
+import os
 
 def Parser():
     """
@@ -102,7 +104,34 @@ def MakeRecarray(d,fields=None,only_floats=False):
         else:
             raise RuntimeError('Cannot use given fields: '+str(fields))
     return d
-    
+
+class OSFile:
+	def __init__(self,dh,data_id,cols=None,delete_when_done=True,is_array=False):
+		import file_io
+		import tempfile
+		self.data_id = weakref.ref(data_id)
+		self.dh = weakref.ref(dh)
+		self.cols = cols
+		if is_array:
+			self.data = data_id
+		else:
+			self.data = dh.getData(data_id,force=True)
+		self.delete_when_done = delete_when_done
+		self.handle, self.file_name = tempfile.mkstemp(dh.temp_dir)
+		file_io.WriteAsciiTable(self.file_name,self.data,cols=self.cols)
+		if not self.cols:
+			try:
+				self.cols = self.file_name.dtype.names
+			except:
+				pass
+	def __repr__(self):
+		return self.file_name
+	def __del__(self):
+		os.close(self.handle)
+		if self.delete_when_done:
+			if os.file_exists(self.file_name):
+				os.remove(self.file_name)
+	
         
 def MakeFiles(dh, data, data2=None, random=None, random2=None):
     """
@@ -118,22 +147,17 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     @param data2   The second set of data that will be passed for cross-correlations
     @param random  The random data set corresponding to data
     @param random2 The random data set corresponding to data2
-    @returns       A 7-item tuple with the following items: 
+    @returns       A 5-item tuple with the following items: 
                      new_data, new_data2, new_random, new_random2, - with arrays replaced by files
-                     corr2_params, - column mappings to be added to corr2
-                     handles,      - open-file handles to be closed later (AFTER file use, as
-                                     some OSes will delete these temporary files if they're closed!)
-                     deletes       - names of files to be deleted after use.
+						(technically OSFile objects)
+                     corr2_params - column mappings to be added to corr2
     """
     
     #TODO: do this in a smarter way that only cares about the columns we'll be using
     #TODO: check FITS/ASCII
     #TODO: proper corr2 params for FITS columns
     #TODO: think about how this works if we rewrite a data set we want to come back to
-    import os
     import corr2_utils
-    import file_io
-    import tempfile
     already_written = []
     aw_files = []
     to_write = []
@@ -148,11 +172,33 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
             else:
                 raise RuntimeError("Data tuple appears to point to an existing file %s, but that "+
                                    "file is not found according to os.path.isfile()"%data_list[0])
+        elif hasattr(data_list,'data_id'):
+            if os.path.isfile(data_list.file_name):
+                already_written.append(data_list.file_name)
+                aw_files.append(data_list.file_name)
+            else:
+                raise RuntimeError("Data item appears to be an OSFile object, but does not point "+
+								   "to an existing object: %s"%data_list[0])
         elif hasattr(data_list,'__getitem__'):
             # We don't want to cycle through a whole data array, so first check whether the first 
             # item points to a file..
             if isinstance(data_list[0],tuple):
                 if os.path.isfile(data_list[0][0]):
+                    for dl in data_list:
+                        if os.path.isfile(dl[0]):
+                            already_written.append(dl[1])
+                            aw_files.append(dl[0])
+						elif hasattr(dl,'file_name') and os.path.isfile(dl.file_name):
+                            already_written.append(dl.file_name) # NO! TODO
+                            aw_files.append(dl.file_name)
+                        else:
+                            raise RuntimeError("Data item appears to be an OSFile object, but does "+
+											   "not point to an existing object: %s"%data_list[0])
+                else:
+						raise RuntimeError("Data item appears to be an OSFile object, but does "+
+										   "not point to an existing object: %s"%data_list[0])
+		    elif hasattr(data_list[0],'data_id'):
+                if os.path.isfile(data_list[0].data_id):
                     for dl in data_list:
                         if os.path.isfile(dl[0]):
                             already_written.append(dl[1])
@@ -165,6 +211,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                     raise RuntimeError("Data tuple appears to point to an existing file %s, but "+
                                        "that file is not found according to "+
                                        "os.path.isfile()"%data_list[0][0])
+				
     # Check column mappings for consistency
     if already_written:
         while True:
@@ -210,8 +257,6 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
         else:
             cols = ['id','ra','dec','z','g1','g2']
 
-    handles = []
-    deletes = []
     new_data = []
     new_data2 = []
     new_random = []
@@ -225,33 +270,19 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
         elif isinstance(data_list,tuple):
             if os.path.isfile(data_list[0]):
                 if data_list[0] in to_write:
-                    data = dh.get_data(data_list[0],force=True)
-                    handle, data_file = tempfile.mkstemp(dh.temp_dir)
-                    handles.append(handle)
-                    deletes.append(data_file)
-                    file_io.write_ascii_table(data_file,data,cols=cols)
-                    new_data_list.append(data_file)
+                    new_data_list.append(OSFile(dh,data_list[0],cols=cols))
                 else:
                     new_data_list.append(data_list[0])
         elif hasattr(data_list,'__getitem__'):
             if isinstance(data_list[0],tuple):
                 for dl in data_list:
                     if dl[0] in to_write:
-                        data = dh.get_data(dl[0],force=True)
-                        handle, data_file = tempfile.mkstemp(dh.temp_dir)
-                        handles.append(handle)
-                        deletes.append(data_file)
-                        file_io.write_ascii_table(data_file,data,cols=cols)
-                        new_data_list.append(data_file)
+                        new_data_list.append(OSFile(dh,dl[0],cols=cols))
                     else:
                         new_data_list.append(dl[0])
             else:
                 if hasattr(data_list,'dtype') and hasattr(data_list.dtype,'names'): 
-                    handle, data_file = tempfile.mkstemp(dh.temp_dir)
-                    handles.append(handle)
-                    deletes.append(data_file)
-                    file_io.WriteAsciiTable(data_file,data_list,cols=cols)
-                    new_data_list.append(data_file)
+                    new_data_list.append(OSFile(dh,data_file,cols=cols,is_array=True))
                 else: 
                     for dl in data_list:
                         #TODO: think about making numpy.recarrays that pass isinstance calls for
@@ -260,23 +291,13 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                             raise RuntimeError("Cannot parse data: should be a tuple, "+
                                                "numpy.recarray, or an unmixed list of one or the "+
                                                "other.  Given:"+str(data_list))
-                        handle, data_file = tempfile.mkstemp(dh.temp_dir)
-                        handles.append(handle)
-                        deletes.append(data_file)
-                        file_io.write_ascii_table(data_file,dl,cols=cols)
-                        new_data_list.append(data_file)
+						new_data_list.append(OSFile(dh,dl,cols=cols,is_array=True))
     
     # Lists of files need to be written to a separate file to be read in; do that.
     file_args = []
     for file_list in [new_data, new_data2, new_random, new_random2]:
         if len(file_list)>1:
-            handle, data_file = tempfile.mkstemp(dh.temp_dir)
-            handles.append(handle)
-            deletes.append(data_file)
-            with open(data_file,'w') as d:
-                for fl in file_list:
-                    d.write(fl+'\n')
-            file_args.append(('list',data_file))
+			file_args.append(('list',OSFile(dh,file_list,is_array=True)))
         elif len(file_list)==1:
             file_args.append(('name',file_list[0]))
         else:
@@ -284,5 +305,5 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     new_data, new_data2, new_random, new_random2 = file_args
     
     corr2_params = corr2_utils.MakeCorr2Cols(cols)
-    return new_data, new_data2, new_random, new_random2, corr2_params, handles, deletes
+    return new_data, new_data2, new_random, new_random2, corr2_params
 
