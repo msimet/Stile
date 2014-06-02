@@ -297,7 +297,7 @@ def test_BinList():
             numpy.testing.assert_equal(results,expected_bin_array_6[i],
                                        err_msg=err_msg%(bin_array_6,i))
     t1 = time.time()
-    print "Time to test ListBin binning: ", 1000*(t1-t0), "ms"
+    print "Time to test BinList binning: ", 1000*(t1-t0), "ms"
 
 def test_bin_creation_errors():
     t0 = time.time()

@@ -178,7 +178,7 @@ def test_ReadCorr2ResultsFile():
     numpy.testing.assert_raises(RuntimeError,stile.ReadCorr2ResultsFile,
                                 'test_data/empty_file.dat')
     t1 = time.time()
-    print "Time to test read_corr2_results_file: ", 1000*(t1-t0), "ms"
+    print "Time to test ReadCorr2ResultsFile: ", 1000*(t1-t0), "ms"
 
 def test_AddCorr2Dict():
     t0 = time.time()
@@ -190,7 +190,7 @@ def test_AddCorr2Dict():
         raise TypeError('All entries from the dict should have been copied to the "corr2_options" '+
                         'key of the new dict')
     t1 = time.time()
-    print "Time to test add_corr2_dict: ", 1000*(t1-t0), "ms"
+    print "Time to test AddCorr2Dict: ", 1000*(t1-t0), "ms"
 
 def test_MakeCorr2Cols():
     t0 = time.time()
@@ -213,7 +213,7 @@ def test_MakeCorr2Cols():
     numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict2),list2_results)
     
     t1 = time.time()
-    print "Time to test make_corr2_cols: ", 1000*(t1-t0), "ms"
+    print "Time to test MakeCorr2Cols: ", 1000*(t1-t0), "ms"
     
 if __name__=='__main__':
     test_CheckArguments()
