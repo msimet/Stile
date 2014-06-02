@@ -7,14 +7,14 @@ import stile
 class SysTest:
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following 
-	attributes:
+    attributes:
     short_name = a string that can be used in filenames to denote this systematics test
     long_name = a string to denote this systematics test within program text outputs
     
     It should define the following methods:
     __call__(self, stile_args, data_handler, data, **kwargs) = run the SysTest.  **kwargs may 
-	include data2 (source data set for lens-source pairs), random and random2 (random data sets 
-	corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
+    include data2 (source data set for lens-source pairs), random and random2 (random data sets 
+    corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
     """
     short_name = ''
     long_name = ''
@@ -26,8 +26,8 @@ class SysTest:
 class CorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-	class method get_correlation_function, which runs corr2 (via a call to the subprocess module) on
-	a given set of data.  Exact arguments to this method should be created by child classes of
+    class method get_correlation_function, which runs corr2 (via a call to the subprocess module) on
+    a given set of data.  Exact arguments to this method should be created by child classes of
     CorrelationFunctionSysTest; see the docstring for 
     CorrelationFunctionSysTest.get_correlation_function for information on how to write further 
     tests using it.
