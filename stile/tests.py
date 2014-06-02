@@ -73,18 +73,18 @@ class CorrelationFunctionTest(Test):
             else:
                 raise ValueError("random2 data set passed without corresponding data2 data set!")
 
-        handle, param_file = tempfile.mkstemp(dir=dh.temp_dir)
+        handle, config_file = tempfile.mkstemp(dir=dh.temp_dir)
         file_handles.append(handle)
-        delete_files.append(param_file)
+        delete_files.append(config_file)
         if 'bins_name' in stile_args:
             output_file = dh.getOutputPath(self.short_name+stile_args['bins_name'])
         else:
             output_file = dh.getOutputPath(self.short_name)
         corr2_options[correlation_function_type+'_file_name'] = output_file
-        stile.WriteCorr2ParamFile(param_file,corr2_options)
+        stile.WriteCorr2ConfigurationFile(config_file,corr2_options)
         
         #TODO: don't hard-code the name of corr2!
-        subprocess.check_call(['corr2', param_file])
+        subprocess.check_call(['corr2', config_file])
 
         return_value  = stile.ReadCorr2ResultsFile(output_file)
         for handle in file_handles:

@@ -109,7 +109,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     Pick which files need to be written to a file for corr2, and which can be passed simply as a
     filename. This takes care of making temporary files, checking that the field schema is
     consistent in any existing files and rewrites the ones that do not match the dominant field 
-    schema if necessary, and figuring out the corr2 column parameters (eg ra_col).
+    schema if necessary, and figuring out the corr2 column arguments (eg ra_col).
     
     @param dh      A DataHandler instance
     @param data    The data that will be passed to the Stile tests. Can be a 
@@ -120,7 +120,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     @param random2 The random data set corresponding to data2
     @returns       A 7-item tuple with the following items: 
                      new_data, new_data2, new_random, new_random2, - with arrays replaced by files
-                     corr2_params, - dictionary of parameters to be added to corr2
+                     corr2_kwargs, - dictionary of kwargs to be passed to corr2
                      handles,      - open-file handles to be closed later (AFTER file use, as
                                      some OSes will delete these temporary files if they're closed!)
                      deletes       - names of files to be deleted after use.
@@ -128,7 +128,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     
     #TODO: do this in a smarter way that only cares about the fields we'll be using
     #TODO: check FITS/ASCII
-    #TODO: proper corr2 params for FITS columns
+    #TODO: proper corr2 kwargs for FITS columns
     #TODO: think about how this works if we rewrite a data set we want to come back to
     import os
     import corr2_utils
@@ -283,6 +283,6 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
             file_args.append(None)
     new_data, new_data2, new_random, new_random2 = file_args
     
-    corr2_params = corr2_utils.MakeCorr2Cols(fields)
-    return new_data, new_data2, new_random, new_random2, corr2_params, handles, deletes
+    corr2_kwargs = corr2_utils.MakeCorr2Cols(fields)
+    return new_data, new_data2, new_random, new_random2, corr2_kwargs, handles, deletes
 

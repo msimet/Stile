@@ -14,7 +14,7 @@ class DataHandler:
     
     def getData(self,ident,bin_list=None,format=None,epoch=None,extent=None,force=False):
         """
-        Return some data matching the given parameters.  This can be a numpy.recarray, a tuple
+        Return some data matching the given kwargs.  This can be a numpy.recarray, a tuple
         (file_name, field_schema) for a file already existing on the filesystem, or a list of 
         either of those things (but NOT BOTH!).
         

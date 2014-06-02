@@ -154,22 +154,22 @@ def test_CheckOptions():
     t1 = time.time()
     print "Time to test corr2_utils.check_options: ", 1000*(t1-t0), "ms"
     
-def test_WriteCorr2ParamFile():
+def test_WriteCorr2ConfigurationFile():
     import tempfile
     import os
     t0 = time.time()
     handle, f2 = tempfile.mkstemp(dir='.')
-    stile.WriteCorr2ParamFile(f2,dict2)
-    if not compare_text_files(f2,'test_data/corr2_dict2_param_file.dat'):
+    stile.WriteCorr2ConfigurationFile(f2,dict2)
+    if not compare_text_files(f2,'test_data/corr2_dict2_config_file.dat'):
         os.close(handle)
         #os.remove(f2)
-        raise AssertionError('write_corr2_param_file() produced incorrect output for test params '+
-                             'dict dict2')
+        raise AssertionError('WriteCorr2ConfigurationFile() produced incorrect output for test '+
+                             'args dict dict2')
     else:
         os.close(handle)
         os.remove(f2)
     t1 = time.time()
-    print "Time to test write_corr2_param_file: ", 1000*(t1-t0), "ms"
+    print "Time to test WriteCorr2ConfigurationFile: ", 1000*(t1-t0), "ms"
     
 def test_ReadCorr2ResultsFile():
     t0 = time.time()
@@ -217,7 +217,7 @@ def test_MakeCorr2Cols():
     
 if __name__=='__main__':
     test_CheckOptions()
-    test_WriteCorr2ParamFile()
+    test_WriteCorr2ConfigurationFile()
     test_ReadCorr2ResultsFile()
     test_AddCorr2Dict()
     test_MakeCorr2Cols()
