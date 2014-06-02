@@ -50,7 +50,7 @@ class CorrelationFunctionTest(Test):
         @param random2       A random data set corresponding to the contents of data2, in the same
                              format. (default: None)
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file.
-        @returns             a numpy.recarray of the corr2 outputs.
+        @returns             a numpy array of the corr2 outputs.
         """
         #TODO: know what kinds of data this needs and make sure it has it
         import tempfile

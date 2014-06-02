@@ -454,11 +454,11 @@ def WriteCorr2ConfigurationFile(config_file_name,corr2_dict,**kwargs):
         
 def ReadCorr2ResultsFile(file_name):
     """
-    Read in the given file_name of type file_type.  Cast it into a numpy.recarray with the
+    Read in the given file_name of type file_type.  Cast it into a formatted numpy array with the
     appropriate fields and return it.
     
     @param file_name The location of an output file from corr2.
-    @returns         A numpy.recarray corresponding to the data in file_name.
+    @returns         A numpy array corresponding to the data in file_name.
     """    
     import stile_utils
     import file_io
@@ -472,7 +472,7 @@ def ReadCorr2ResultsFile(file_name):
         fields = f.readline().split()
     fields = fields[1:]
     fields = [field for field in fields if fields!='.']
-    return stile_utils.MakeRecarray(output,fields=fields,only_floats=True)
+    return stile_utils.FormatArray(output,fields=fields,only_floats=True)
 
 def AddCorr2Dict(input_dict):
     """

@@ -65,19 +65,20 @@ def GetVectorType(x):
             pass
     return 'S'+str(max([len(xx) for xx in x]))
 
-def MakeRecarray(d,fields=None,only_floats=False):
+def FormatArray(d,fields=None,only_floats=False):
     """
-    Turn a regular NumPy array into a numpy.recarray, with optional field name description.
+    Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
+    description.
 
     @param d      A NumPy array (or other iterable which satisfies hasattr(d,'shape')).
     @param fields A dictionary whose keys are the names of the fields you'd like for the output 
                   array, and whose values are field numbers (starting with 0) whose names those keys 
                   should replace. (default: None)
     @param only_floats All fields are floats, don't check for data type (default: False)
-    @returns      A numpy.recarray with the same shape as d except that the innermost dimension 
-                  has turned into a record field, optionally with field names appropriately replaced
+    @returns      A formatted numpy array with the same shape as d except that the innermost 
+                  dimension has turned into a record field, optionally with field names 
+                  appropriately replaced.
     """
-    #TODO: these are not real recarrays; change either name or function
     if hasattr(d,'dtype') and hasattr(d.dtype,'names'):
         pass
     else:
@@ -113,7 +114,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     
     @param dh      A DataHandler instance
     @param data    The data that will be passed to the Stile tests. Can be a 
-                   (file_name,field_schema) tuple, a NumPy record array, or a list of one or the 
+                   (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
                    other of those options (but NOT both!)
     @param data2   The second set of data that will be passed for cross-correlations
     @param random  The random data set corresponding to data
@@ -254,11 +255,9 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                     new_data_list.append(data_file)
                 else: 
                     for dl in data_list:
-                        #TODO: think about making numpy.recarrays that pass isinstance calls for
-                        #numpy.recarray!
                         if not hasattr(dl,'dtype') or not hasattr(dl.dtype,'names'):
                             raise RuntimeError("Cannot parse data: should be a tuple, "+
-                                               "numpy.recarray, or an unmixed list of one or the "+
+                                               "numpy array, or an unmixed list of one or the "+
                                                "other.  Given:"+str(data_list))
                         handle, data_file = tempfile.mkstemp(dh.temp_dir)
                         handles.append(handle)
