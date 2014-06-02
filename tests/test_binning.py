@@ -273,7 +273,7 @@ def test_BinList():
         err_msg = ("BinList"+name+"failed to produce correct binning for array %s in bin # %i")
         obj_list = obj()
         if len(obj_list)!=6:
-            raise RuntimeError('Wrong number of bins created from ListBin'+name+': '+
+            raise RuntimeError('Wrong number of bins created from BinList'+name+': '+
                                  str(len(obj_list)))
         if obj==obj_reverse:
             obj_list.reverse()
