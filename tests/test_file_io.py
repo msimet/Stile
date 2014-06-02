@@ -78,10 +78,10 @@ def test_WriteAsciiTable():
     results = stile.ReadAsciiTable(filename)
     numpy.testing.assert_equal(table1.astype('f'),results.astype('f')) 
 
-    col_list = ['f3','f4','f6','f0','f2','f1','f5']
-    stile.file_io.WriteAsciiTable(filename,table1,cols=col_list)
+    field_list = ['f3','f4','f6','f0','f2','f1','f5']
+    stile.file_io.WriteAsciiTable(filename,table1,fields=field_list)
     results = stile.ReadAsciiTable(filename)
-    numpy.testing.assert_equal(table1[col_list].astype('f'),results.astype('f'))
+    numpy.testing.assert_equal(table1[field_list].astype('f'),results.astype('f'))
     os.close(handle)
     if os.path.isfile(filename):
         os.remove(filename)

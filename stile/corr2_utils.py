@@ -416,13 +416,13 @@ def CheckArguments(input_dict, check_status=True):
                     except:
                         pass
                 if not type_ok:
-                    raise ValueError("Argument %s is a corr2 argument, but the type of the given "+
+                    raise ValueError(("Argument %s is a corr2 argument, but the type of the given "+
                                      "value %s does not match corr2's requirements.  Please "+
-                                     "check syntax and try again."%(key,input_dict[key]))
+                                     "check syntax and try again.")%(key,input_dict[key]))
             if c2k['val']:
                 if input_dict[key] not in c2k['val']:
                     raise ValueError('Corr2 argument %s only accepts the values [%s].  Please '
-                                     'check syntax and try again.'%(key,', '.join(ok['val'])))
+                                     'check syntax and try again.'%(key,', '.join(c2k['val'])))
     return input_dict
     
 def WriteCorr2ConfigurationFile(config_file_name,corr2_dict,**kwargs):
@@ -471,7 +471,7 @@ def ReadCorr2ResultsFile(file_name):
     with open(file_name) as f:
         fields = f.readline().split()
     fields = fields[1:]
-    fields = [field for field in fields if fields!='.']
+    fields = [field for field in fields if field!='.']
     return stile_utils.FormatArray(output,fields=fields,only_floats=True)
 
 def AddCorr2Dict(input_dict):
@@ -511,7 +511,7 @@ def MakeCorr2Cols(cols,use_as_k=None):
     if isinstance(cols,dict):
         for col in col_args:
             if col in cols and isinstance(cols[col],int):
-                corr2_args[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
+                corr2_kwargs[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
         if use_as_k and use_as_k in cols and isinstance(cols[use_as_k],int):
             corr2_kwargs['k_col'] = cols[use_as_k]+1
     elif hasattr(cols,'__getitem__'):

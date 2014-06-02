@@ -183,10 +183,10 @@ def test_ReadCorr2ResultsFile():
 def test_AddCorr2Dict():
     t0 = time.time()
     new_dict = stile.corr2_utils.AddCorr2Dict(dict1)
-    if new_dict['corr2_options']:
-        raise TypeError('The "corr2_options" key of the new dict should have no entries')
+    if new_dict['corr2_kwargs']:
+        raise TypeError('The "corr2_kwargs" key of the new dict should have no entries')
     new_dict = stile.corr2_utils.AddCorr2Dict(dict2)
-    if not new_dict['corr2_options']==dict2:
+    if not new_dict['corr2_kwargs']==dict2:
         raise TypeError('All entries from the dict should have been copied to the "corr2_options" '+
                         'key of the new dict')
     t1 = time.time()
