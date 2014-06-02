@@ -28,8 +28,8 @@ def main():
     data2 = dh.getData(data_ids[1],'pair','single','field','table')
     
     # convert all files to files on disk if they aren't already
-    data, data2, _, _, corr2_params, handles, deletes = stile.MakeFiles(dh, data, data2)
-    stile_args['corr2_options'].update(corr2_params) #TODO: stop mixing args/params/options names
+    data, data2, _, _, corr2_kwargs, handles, deletes = stile.MakeFiles(dh, data, data2)
+    stile_args['corr2_options'].update(corr2_kwargs) 
     
     # run the test
     results = test(stile_args,dh,data,data2)
@@ -63,10 +63,10 @@ def main():
         stile_args['bins_name'] = '-'.join([bl.short_name for bl in bin_list])
         data2 = dh.getData(data_ids[1],'pair','single','field','table',bin_list=bin_list)
         
-        new_data, new_data2, _, _, corr2_params, handles, deletes = stile.MakeFiles(dh,data,data2)
+        new_data, new_data2, _, _, corr2_kwargs, handles, deletes = stile.MakeFiles(dh,data,data2)
         handles_list.append(handles)
         deletes_list.append(deletes)
-        stile_args['corr2_options'].update(corr2_params)
+        stile_args['corr2_options'].update(corr2_kwargs)
         
         results = test(stile_args,dh,new_data,new_data2)
         P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
