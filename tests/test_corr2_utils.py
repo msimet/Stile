@@ -138,21 +138,21 @@ def compare_text_files(f1,f2, reorder=True):
         f2_data.sort()
     return f1_data==f2_data
 
-def test_CheckOptions():
+def test_CheckArguments():
     t0 = time.time()
              
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict1,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict2,check_status=True)
-    stile.corr2_utils.CheckOptions(dict2,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict3,check_status=True)
-    stile.corr2_utils.CheckOptions(dict3,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict4,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict4,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict5,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict5,check_status=False)
-    stile.corr2_utils.CheckOptions(dict6,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict1,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict2,check_status=True)
+    stile.corr2_utils.CheckArguments(dict2,check_status=False)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict3,check_status=True)
+    stile.corr2_utils.CheckArguments(dict3,check_status=False)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,check_status=False)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,check_status=False)
+    stile.corr2_utils.CheckArguments(dict6,check_status=True)
     t1 = time.time()
-    print "Time to test corr2_utils.check_options: ", 1000*(t1-t0), "ms"
+    print "Time to test corr2_utils.CheckArguments: ", 1000*(t1-t0), "ms"
     
 def test_WriteCorr2ConfigurationFile():
     import tempfile
@@ -216,7 +216,7 @@ def test_MakeCorr2Cols():
     print "Time to test make_corr2_cols: ", 1000*(t1-t0), "ms"
     
 if __name__=='__main__':
-    test_CheckOptions()
+    test_CheckArguments()
     test_WriteCorr2ConfigurationFile()
     test_ReadCorr2ResultsFile()
     test_AddCorr2Dict()

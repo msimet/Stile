@@ -60,16 +60,16 @@ class CorrelationFunctionTest(Test):
         file_handles = []
         delete_files = []
         
-        corr2_options = stile_args['corr2_options']
-        corr2_options.update(kwargs) # TODO: Don't know if this will work if we actually pass kwargs
-        corr2_options['file_'+data[0]] = data[1]
+        corr2_kwargs = stile_args['corr2_kwargs']
+        corr2_kwargs.update(kwargs) # TODO: Don't know if this will work if we actually pass kwargs
+        corr2_kwargs['file_'+data[0]] = data[1]
         if data2:
-            corr2_options['file_'+data2[0]+'2'] = data2[1]
+            corr2_kwargs['file_'+data2[0]+'2'] = data2[1]
         if random:
-            corr2_options['rand_'+random[0]] = random[1]
+            corr2_kwargs['rand_'+random[0]] = random[1]
         if random2:
             if data:
-                corr2_options['rand_'+random2[0]+'2'] = random2[1]
+                corr2_kwargs['rand_'+random2[0]+'2'] = random2[1]
             else:
                 raise ValueError("random2 data set passed without corresponding data2 data set!")
 
@@ -80,8 +80,8 @@ class CorrelationFunctionTest(Test):
             output_file = dh.getOutputPath(self.short_name+stile_args['bins_name'])
         else:
             output_file = dh.getOutputPath(self.short_name)
-        corr2_options[correlation_function_type+'_file_name'] = output_file
-        stile.WriteCorr2ConfigurationFile(config_file,corr2_options)
+        corr2_kwargs[correlation_function_type+'_file_name'] = output_file
+        stile.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
         
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', config_file])
@@ -98,7 +98,7 @@ class TestXShear(CorrelationFunctionTest):
     long_name = 'Shear of galaxies around real objects'
 
     def __call__(self,stile_args,dh,data,data2,random=None,random2=None):
-        corr2_options = stile_args['corr2_options']
+        corr2_kwargs = stile_args['corr2_kwargs']
         return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
-                                              **corr2_options)
+                                              **corr2_kwargs)
 
