@@ -4,7 +4,7 @@ Contains elements of Stile needed to interface with Mike Jarvis's corr2 program.
 import copy
 import numpy
 
-# A dictionary containing all corr2 command line arguments.  (At the moment we only support v X.x,
+# A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
 # so only one dict is here; later versions of Stile may need to implement if statements here for
 # the corr2 versions.)  The arguments themselves are mapped onto dicts with the following keys: 
 #    'type': a tuple of the allowed input types.  
