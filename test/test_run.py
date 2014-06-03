@@ -14,13 +14,13 @@ def main():
                 stile.BinStep('dec',low=-1,high=1,step=1)]
     test = stile.TestXShear()
     
-    stile_args = {'corr2_options': { 'ra_units': 'degrees', 
-                                     'dec_units': 'degrees',
-                                     'min_sep': 0.05,
-                                     'max_sep': 1,
-                                     'sep_units': 'degrees',
-                                     'nbins': 20
-                                     } }
+    stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
+                                    'dec_units': 'degrees',
+                                    'min_sep': 0.05,
+                                    'max_sep': 1,
+                                    'sep_units': 'degrees',
+                                    'nbins': 20
+                                    } }
     data_ids = dh.listData('pair','single','field','table')
     
     # do a test without binning
@@ -29,7 +29,7 @@ def main():
     
     # convert all files to files on disk if they aren't already
     data, data2, _, _, corr2_kwargs, handles, deletes = stile.MakeFiles(dh, data, data2)
-    stile_args['corr2_options'].update(corr2_kwargs) 
+    stile_args['corr2_kwargs'].update(corr2_kwargs) 
     
     # run the test
     results = test(stile_args,dh,data,data2)
@@ -66,7 +66,7 @@ def main():
         new_data, new_data2, _, _, corr2_kwargs, handles, deletes = stile.MakeFiles(dh,data,data2)
         handles_list.append(handles)
         deletes_list.append(deletes)
-        stile_args['corr2_options'].update(corr2_kwargs)
+        stile_args['corr2_kwargs'].update(corr2_kwargs)
         
         results = test(stile_args,dh,new_data,new_data2)
         P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
