@@ -65,19 +65,20 @@ def GetVectorType(x):
             pass
     return 'S'+str(max([len(xx) for xx in x]))
 
-def MakeRecarray(d,fields=None,only_floats=False):
+def FormatArray(d,fields=None,only_floats=False):
     """
-    Turn a regular NumPy array into a numpy.recarray, with optional field name description.
+    Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
+    description.
 
     @param d      A NumPy array (or other iterable which satisfies hasattr(d,'shape')).
     @param fields A dictionary whose keys are the names of the fields you'd like for the output 
                   array, and whose values are field numbers (starting with 0) whose names those keys 
                   should replace. (default: None)
     @param only_floats All fields are floats, don't check for data type (default: False)
-    @returns      A numpy.recarray with the same shape as d except that the innermost dimension 
-                  has turned into a record field, optionally with field names appropriately replaced
+    @returns      A formatted numpy array with the same shape as d except that the innermost 
+                  dimension has turned into a record field, optionally with field names 
+                  appropriately replaced.
     """
-    #TODO: these are not real recarrays; change either name or function
     if hasattr(d,'dtype') and hasattr(d.dtype,'names'):
         pass
     else:
@@ -107,28 +108,28 @@ def MakeRecarray(d,fields=None,only_floats=False):
 def MakeFiles(dh, data, data2=None, random=None, random2=None):
     """
     Pick which files need to be written to a file for corr2, and which can be passed simply as a
-    filename. This takes care of making temporary files, checking that the column mapping is
-    consistent in any existing files and rewrites the ones that do not match the dominant column 
-    mapping if necessary, and figuring out the corr2 column parameters (eg ra_col).
+    filename. This takes care of making temporary files, checking that the field schema is
+    consistent in any existing files and rewrites the ones that do not match the dominant field 
+    schema if necessary, and figuring out the corr2 column arguments (eg ra_col).
     
     @param dh      A DataHandler instance
-    @param data    The data that will be passed to the Stile tests. Can be a (file_name,column_map)
-                   tuple, a NumPy record array, or a list of one or the other of those options (but
-                   NOT both!)
+    @param data    The data that will be passed to the Stile tests. Can be a 
+                   (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
+                   other of those options (but NOT both!)
     @param data2   The second set of data that will be passed for cross-correlations
     @param random  The random data set corresponding to data
     @param random2 The random data set corresponding to data2
     @returns       A 7-item tuple with the following items: 
                      new_data, new_data2, new_random, new_random2, - with arrays replaced by files
-                     corr2_params, - column mappings to be added to corr2
+                     corr2_kwargs, - dictionary of kwargs to be passed to corr2
                      handles,      - open-file handles to be closed later (AFTER file use, as
                                      some OSes will delete these temporary files if they're closed!)
                      deletes       - names of files to be deleted after use.
     """
     
-    #TODO: do this in a smarter way that only cares about the columns we'll be using
+    #TODO: do this in a smarter way that only cares about the fields we'll be using
     #TODO: check FITS/ASCII
-    #TODO: proper corr2 params for FITS columns
+    #TODO: proper corr2 kwargs for FITS columns
     #TODO: think about how this works if we rewrite a data set we want to come back to
     import os
     import corr2_utils
@@ -137,7 +138,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     already_written = []
     aw_files = []
     to_write = []
-    # First check for already-written files, and grab their column mappings
+    # First check for already-written files, and grab their field schema
     for data_list in [data, data2, random, random2]:
         if data_list is None or len(data_list)==0:
             continue
@@ -165,7 +166,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                     raise RuntimeError("Data tuple appears to point to an existing file %s, but "+
                                        "that file is not found according to "+
                                        "os.path.isfile()"%data_list[0][0])
-    # Check column mappings for consistency
+    # Check field schema for consistency
     if already_written:
         while True:
             all_same = True
@@ -198,17 +199,17 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
         aw_set = already_written[0]
         for aw in already_written[1:]:
             aw_set.update(aw)
-        cols = [0 for i in range(max([aw_set[key] for key in aw_set.keys()])+1)]
+        fields = [0 for i in range(max([aw_set[key] for key in aw_set.keys()])+1)]
         for key in aw_set:
-            cols[aw_set[key]] = key
+            fields[aw_set[key]] = key
     else:
         # need to fix this more completely/robustly, but to get things working for now...
         if hasattr(data,'dtype') and hasattr(data.dtype,'names'):
-            cols = data.dtype.names
+            fields = data.dtype.names
         elif hasattr(data[0],'dtype') and hasattr(data[0].dtype,'names'):
-            cols = data[0].dtype.names
+            fields = data[0].dtype.names
         else:
-            cols = ['id','ra','dec','z','g1','g2']
+            fields = ['id','ra','dec','z','g1','g2']
 
     handles = []
     deletes = []
@@ -229,7 +230,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                     handle, data_file = tempfile.mkstemp(dh.temp_dir)
                     handles.append(handle)
                     deletes.append(data_file)
-                    file_io.write_ascii_table(data_file,data,cols=cols)
+                    file_io.write_ascii_table(data_file,data,fields=fields)
                     new_data_list.append(data_file)
                 else:
                     new_data_list.append(data_list[0])
@@ -241,7 +242,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                         handle, data_file = tempfile.mkstemp(dh.temp_dir)
                         handles.append(handle)
                         deletes.append(data_file)
-                        file_io.write_ascii_table(data_file,data,cols=cols)
+                        file_io.write_ascii_table(data_file,data,fields=fields)
                         new_data_list.append(data_file)
                     else:
                         new_data_list.append(dl[0])
@@ -250,20 +251,18 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                     handle, data_file = tempfile.mkstemp(dh.temp_dir)
                     handles.append(handle)
                     deletes.append(data_file)
-                    file_io.WriteAsciiTable(data_file,data_list,cols=cols)
+                    file_io.WriteAsciiTable(data_file,data_list,fields=fields)
                     new_data_list.append(data_file)
                 else: 
                     for dl in data_list:
-                        #TODO: think about making numpy.recarrays that pass isinstance calls for
-                        #numpy.recarray!
                         if not hasattr(dl,'dtype') or not hasattr(dl.dtype,'names'):
                             raise RuntimeError("Cannot parse data: should be a tuple, "+
-                                               "numpy.recarray, or an unmixed list of one or the "+
+                                               "numpy array, or an unmixed list of one or the "+
                                                "other.  Given:"+str(data_list))
                         handle, data_file = tempfile.mkstemp(dh.temp_dir)
                         handles.append(handle)
                         deletes.append(data_file)
-                        file_io.write_ascii_table(data_file,dl,cols=cols)
+                        file_io.write_ascii_table(data_file,dl,fields=fields)
                         new_data_list.append(data_file)
     
     # Lists of files need to be written to a separate file to be read in; do that.
@@ -283,6 +282,6 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
             file_args.append(None)
     new_data, new_data2, new_random, new_random2 = file_args
     
-    corr2_params = corr2_utils.MakeCorr2Cols(cols)
-    return new_data, new_data2, new_random, new_random2, corr2_params, handles, deletes
+    corr2_kwargs = corr2_utils.MakeCorr2Cols(fields)
+    return new_data, new_data2, new_random, new_random2, corr2_kwargs, handles, deletes
 

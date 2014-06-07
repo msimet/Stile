@@ -29,7 +29,7 @@ class DummyDataHandler(stile.DataHandler):
                                 pair_or_single,epoch,extent,data_format)) 
     def getData(self,id,pair_or_single,epoch,extent,data_format,
                       random=False,bin_list=None,force=False):
-        #TODO: think about what happens if a file gets rewritten due to column mapping...
+        #TODO: think about what happens if a file gets rewritten due to field schema...
         if not data_format=='table':
             raise ValueError('Only table data provided by DummyDataHandler')
         if not epoch=='single':
@@ -40,7 +40,7 @@ class DummyDataHandler(stile.DataHandler):
             if not bin_list and not force:
                 return (id,self.fields)
             else:
-                data = stile.MakeRecarray(self.read_method(id),fields=self.fields)
+                data = stile.FormatArray(self.read_method(id),fields=self.fields)
                 if bin_list:
                     for bin in bin_list:
                         data = data[bin(data)]

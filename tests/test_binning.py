@@ -11,42 +11,42 @@ import time
 
 # Test values for later tests
 bin_array_1 = [[0.5],[1.5],[2.5],[3.5],[4.5]]
-bin_array_1 = numpy.array([tuple(b) for b in bin_array_1],dtype=[('column_0',float)] )
+bin_array_1 = numpy.array([tuple(b) for b in bin_array_1],dtype=[('field_0',float)] )
 bin_array_2 = [[1],[2],[3],[4],[5]]
-bin_array_2 = numpy.array([tuple(b) for b in bin_array_2],dtype=[('column_0',float)] )
+bin_array_2 = numpy.array([tuple(b) for b in bin_array_2],dtype=[('field_0',float)] )
 bin_array_3 = [[0.5],[0.5],[5.5],[4.5],[3.5]]
-bin_array_3 = numpy.array([tuple(b) for b in bin_array_3],dtype=[('column_0',float)] )
+bin_array_3 = numpy.array([tuple(b) for b in bin_array_3],dtype=[('field_0',float)] )
 bin_array_4 = [0.5,1.5,2.5,3.5,4.5]
 bin_array_4 = numpy.array([tuple(bin_array_4)],
-                          dtype=[('column_0',float), ('column_1',float), ('column_2',float),    
-                                 ('column_3',float), ('column_4',float)] )
+                          dtype=[('field_0',float), ('field_1',float), ('field_2',float),    
+                                 ('field_3',float), ('field_4',float)] )
 bin_array_5 = [[1.,2.],[3.,4.],[5.,6.]]
 bin_array_5 = numpy.array([tuple(b) for b in bin_array_5],
-                          dtype=[('column_0',float),('column_1',float)] )
+                          dtype=[('field_0',float),('field_1',float)] )
 bin_array_6 = [[-1],[1]]
-bin_array_6 = numpy.array([tuple(b) for b in bin_array_6],dtype=[('column_0',float)] )
+bin_array_6 = numpy.array([tuple(b) for b in bin_array_6],dtype=[('field_0',float)] )
 
 def binfunction(x):
     return numpy.ceil(x)
 
 def compare_single_bin(b1,b2):
-    assert b1.column==b2.column
+    assert b1.field==b2.field
     numpy.testing.assert_almost_equal([b1.low,b1.high],[b2.low,b2.high])
 
 def test_BinStep_SingleBin_creation():
     t0 = time.time()
-    lhs = stile.BinStep('column_0',low=0,high=6,step=1)
-    lhn = stile.BinStep('column_0',low=0,high=6,n_bins=6)
-    lsn = stile.BinStep('column_0',low=0,step=1,n_bins=6)
-    hsn = stile.BinStep('column_0',high=6,step=1,n_bins=6)
-    reverse_lhs = stile.BinStep('column_0',low=6,high=0,step=-1)
+    lhs = stile.BinStep('field_0',low=0,high=6,step=1)
+    lhn = stile.BinStep('field_0',low=0,high=6,n_bins=6)
+    lsn = stile.BinStep('field_0',low=0,step=1,n_bins=6)
+    hsn = stile.BinStep('field_0',high=6,step=1,n_bins=6)
+    reverse_lhs = stile.BinStep('field_0',low=6,high=0,step=-1)
     
-    expected_obj_list = [stile.binning.SingleBin('column_0',low=0,high=1,short_name='b'), 
-                         stile.binning.SingleBin('column_0',low=1,high=2,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=2,high=3,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=3,high=4,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=4,high=5,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=5,high=6,short_name='b')]
+    expected_obj_list = [stile.binning.SingleBin('field_0',low=0,high=1,short_name='b'), 
+                         stile.binning.SingleBin('field_0',low=1,high=2,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=2,high=3,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=3,high=4,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=4,high=5,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=5,high=6,short_name='b')]
 
     names = ["passed low, high, and step",
              "passed low, high, and n_bins",
@@ -66,17 +66,17 @@ def test_BinStep_SingleBin_creation():
             raise AssertionError('BinStep ('+name+') created incorrect SingleBins!')
 
 
-    lhs = stile.BinStep('column_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
-    lhn = stile.BinStep('column_0',low=0.25,high=8,n_bins=5,use_log=True)
-    lsn = stile.BinStep('column_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
-    hsn = stile.BinStep('column_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
-    reverse_lhs = stile.BinStep('column_0',low=8,high=0.25,step=-numpy.log(2.),use_log=True)        
+    lhs = stile.BinStep('field_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
+    lhn = stile.BinStep('field_0',low=0.25,high=8,n_bins=5,use_log=True)
+    lsn = stile.BinStep('field_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
+    hsn = stile.BinStep('field_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
+    reverse_lhs = stile.BinStep('field_0',low=8,high=0.25,step=-numpy.log(2.),use_log=True)        
     
-    expected_obj_list = [stile.binning.SingleBin('column_0',low=0.25,high=0.5,short_name='b'), 
-                         stile.binning.SingleBin('column_0',low=0.5,high=1.,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=1.,high=2.,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=2.,high=4.,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=4.,high=8.,short_name='b')]
+    expected_obj_list = [stile.binning.SingleBin('field_0',low=0.25,high=0.5,short_name='b'), 
+                         stile.binning.SingleBin('field_0',low=0.5,high=1.,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=1.,high=2.,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=2.,high=4.,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=4.,high=8.,short_name='b')]
 
     names = ["passed low, high, and step",
              "passed low, high, and n_bins",
@@ -97,14 +97,14 @@ def test_BinStep_SingleBin_creation():
 
 def test_BinList_SingleBin_creation():
     t0 = time.time()
-    obj = stile.BinList('column_0',[0,1.1,1.9,3.0,4.0,5.0,6.5])
+    obj = stile.BinList('field_0',[0,1.1,1.9,3.0,4.0,5.0,6.5])
     
-    expected_obj_list = [stile.binning.SingleBin('column_0',low=0,high=1.1,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=1.1,high=1.9,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=1.9,high=3,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=3,high=4,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=4,high=5,short_name='b'),
-                         stile.binning.SingleBin('column_0',low=5,high=6.5,short_name='b')]
+    expected_obj_list = [stile.binning.SingleBin('field_0',low=0,high=1.1,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=1.1,high=1.9,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=1.9,high=3,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=3,high=4,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=4,high=5,short_name='b'),
+                         stile.binning.SingleBin('field_0',low=5,high=6.5,short_name='b')]
 
     obj_list = obj()
 
@@ -115,7 +115,7 @@ def test_BinList_SingleBin_creation():
     except AssertionError:
         raise AssertionError('BinList created incorrect SingleBins!')
 
-    obj = stile.BinList('column_0',[6.5,5.0,4.0,3.0,1.9,1.1,0])
+    obj = stile.BinList('field_0',[6.5,5.0,4.0,3.0,1.9,1.1,0])
     obj_list = obj()
     obj_list.reverse()
     if not len(obj_list)==6:
@@ -128,11 +128,11 @@ def test_BinList_SingleBin_creation():
 
 def test_BinStep_linear():
     t0 = time.time()
-    lhs = stile.BinStep('column_0',low=0,high=6,step=1)
-    lhn = stile.BinStep('column_0',low=0,high=6,n_bins=6)
-    lsn = stile.BinStep('column_0',low=0,step=1,n_bins=6)
-    hsn = stile.BinStep('column_0',high=6,step=1,n_bins=6)
-    reverse_lhs = stile.BinStep('column_0',low=6,high=0,step=-1)
+    lhs = stile.BinStep('field_0',low=0,high=6,step=1)
+    lhn = stile.BinStep('field_0',low=0,high=6,n_bins=6)
+    lsn = stile.BinStep('field_0',low=0,step=1,n_bins=6)
+    hsn = stile.BinStep('field_0',high=6,step=1,n_bins=6)
+    reverse_lhs = stile.BinStep('field_0',low=6,high=0,step=-1)
     
     names = ["passed low, high, and step",
              "passed low, high, and n_bins",
@@ -190,11 +190,11 @@ def test_BinStep_linear():
 
 def test_BinStep_log():
     t0 = time.time()
-    lhs = stile.BinStep('column_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
-    lhn = stile.BinStep('column_0',low=0.25,high=8,n_bins=5,use_log=True)
-    lsn = stile.BinStep('column_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
-    hsn = stile.BinStep('column_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
-    reverse_lhs = stile.BinStep('column_0',low=8,high=0.25,step=-numpy.log(2.),use_log=True)        
+    lhs = stile.BinStep('field_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
+    lhn = stile.BinStep('field_0',low=0.25,high=8,n_bins=5,use_log=True)
+    lsn = stile.BinStep('field_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
+    hsn = stile.BinStep('field_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
+    reverse_lhs = stile.BinStep('field_0',low=8,high=0.25,step=-numpy.log(2.),use_log=True)        
     names = ["passed low, high, and step",
              "passed low, high, and n_bins",
              "passed low, step, and n_bins",
@@ -249,8 +249,8 @@ def test_BinStep_log():
 
 def test_BinList():
     t0 = time.time()
-    obj_forward = stile.BinList('column_0',[0,1.,1.9,3.0,4.0,5.0,6.5])
-    obj_reverse = stile.BinList('column_0',[6.5,5.0,4.0,3.0,1.9,1.,0])
+    obj_forward = stile.BinList('field_0',[0,1.,1.9,3.0,4.0,5.0,6.5])
+    obj_reverse = stile.BinList('field_0',[6.5,5.0,4.0,3.0,1.9,1.,0])
     
     names = [" ", " (reversed) "]
     objs = [obj_forward,obj_reverse]
@@ -273,7 +273,7 @@ def test_BinList():
         err_msg = ("BinList"+name+"failed to produce correct binning for array %s in bin # %i")
         obj_list = obj()
         if len(obj_list)!=6:
-            raise RuntimeError('Wrong number of bins created from ListBin'+name+': '+
+            raise RuntimeError('Wrong number of bins created from BinList'+name+': '+
                                  str(len(obj_list)))
         if obj==obj_reverse:
             obj_list.reverse()
@@ -297,7 +297,7 @@ def test_BinList():
             numpy.testing.assert_equal(results,expected_bin_array_6[i],
                                        err_msg=err_msg%(bin_array_6,i))
     t1 = time.time()
-    print "Time to test ListBin binning: ", 1000*(t1-t0), "ms"
+    print "Time to test BinList binning: ", 1000*(t1-t0), "ms"
 
 def test_bin_creation_errors():
     t0 = time.time()
@@ -339,7 +339,7 @@ def test_bin_creation_errors():
 
 def test_singlebin_input_errors():
     t0 = time.time()
-    sb = stile.binning.SingleBin('column_0',low=0,high=10,short_name='boo')
+    sb = stile.binning.SingleBin('field_0',low=0,high=10,short_name='boo')
     sfb = stile.binning.SingleFunctionBin(binfunction,1)
     sb.long_name # check that this was made properly
     numpy.testing.assert_raises(TypeError,sb,[1,2,3,4])
@@ -347,9 +347,9 @@ def test_singlebin_input_errors():
     numpy.testing.assert_raises(ValueError,sb,numpy.array([1,2,3,4]))
     #numpy.testing.assert_raises(TypeError,sfb,numpy.array([1,2,3,4]))
     numpy.testing.assert_raises(ValueError,sb,
-                                numpy.array([(1,),(2,),(3,),(4,)],dtype=[('column_1',int)]))
+                                numpy.array([(1,),(2,),(3,),(4,)],dtype=[('field_1',int)]))
     #numpy.testing.assert_raises(ValueError,sfb,
-    #                            numpy.array([(1,),(2,),(3,),(4,)],dtype=[('column_1',int)]))
+    #                            numpy.array([(1,),(2,),(3,),(4,)],dtype=[('field_1',int)]))
     numpy.testing.assert_raises(TypeError,sb,3)
     #numpy.testing.assert_raises(TypeError,sfb,3)
     t1 = time.time()

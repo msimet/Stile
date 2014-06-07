@@ -4,17 +4,17 @@ Contains elements of Stile needed to interface with Mike Jarvis's corr2 program.
 import copy
 import numpy
 
-# A dictionary containing all corr2 command line options.  (At the moment we only support v X.x, so
-# only one dict is here; later versions of Stile may need to implement if statements here for the
-# corr2 versions.)  The options themselves are mapped onto dicts with the following keys: 
+# A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
+# so only one dict is here; later versions of Stile may need to implement if statements here for
+# the corr2 versions.)  The arguments themselves are mapped onto dicts with the following keys: 
 #    'type': a tuple of the allowed input types.  
 #    'val' : if the value must be one of a limited set of options, they are given here; else None.
-#    'status': whether or not this is a corr2 option that Stile will pass through without 
+#    'status': whether or not this is a corr2 argument that Stile will pass through without 
 #              altering.  The options are 'disallowed_computation' (Stile makes these choices),
 #              'disallowed_file' (the DataHandler makes these choices), 'captured' (Stile should 
 #              have harvested this for its own use--if it didn't that's a bug); and 'allowed' 
 #              (Stile should silently pass it through to corr2).
-options = {
+corr2_kwargs = {
     'file_name': 
         {'type': (str,),
          'val': None,
@@ -315,15 +315,15 @@ def Parser():
                    help="Flip the sign of g2 (default: False)",
                    dest='flip_g2',default=False)
     p.add_argument('--project',
-                   help="Corr2 option: use a tangent-plane projection instead of curved-sky "+
+                   help="Corr2 argument: use a tangent-plane projection instead of curved-sky "+
                         "(this is a negligible performance improvement, and not recommended)",
                    dest='project')
     p.add_argument('--project_ra',
-                   help="Corr2 option: the RA of the tangent point for projection, used in "+
+                   help="Corr2 argument: the RA of the tangent point for projection, used in "+
                         "conjunction with --project, and not recommended",
                    dest='project_ra')
     p.add_argument('--project_dec',
-                   help="Corr2 option: the dec of the tangent point for projection, used in "+
+                   help="Corr2 argument: the dec of the tangent point for projection, used in "+
                         "conjunction with --project, and not recommended",
                    dest='project_dec')
     p.add_argument('--min_sep',
@@ -339,7 +339,7 @@ def Parser():
                    help="Bin width for the corr2 correlation functions",
                    dest='bin_size')
     p.add_argument('--sep_units',
-                   help="Units for the max_sep/min_sep/bin_size parameters for the corr2 "+
+                   help="Units for the max_sep/min_sep/bin_size arguments for the corr2 "+
                         "correlation functions",
                    dest='max_sep')
     p.add_argument('--bin_slop',
@@ -368,83 +368,84 @@ def Parser():
     return p                   
 
 
-def CheckOptions(input_dict, check_status=True):
+def CheckArguments(input_dict, check_status=True):
     """
-    A function that checks the (key,value) pairs of the dict passed to it against the corr2 options 
-    dict.  If the key is not understood, or if check_status is True and the key is not allowed or 
-    should have been captured by the main Stile program, an error is raised.  If the key is allowed,
-    the type and/or values are checked against the corr2 requirements.
+    A function that checks the (key,value) pairs of the dict passed to it against the corr2 
+    arguments dict.  If the key is not understood, or if check_status is True and the key is not 
+    allowed or should have been captured by the main Stile program, an error is raised.  If the key
+    is allowed, the type and/or values are checked against the corr2 requirements.
     
-    @param input_dict   A dict which will be used to write a corr2 param file
+    @param input_dict   A dict which will be used to write a corr2 configuration file
     @param check_status A flag indicating whether to check the status of the keys in the dict.  This
                         should be done when eg reading in arguments from the command line; later 
-                        checks for type safety, after Stile has added its own parameters, shouldn't
+                        checks for type safety, after Stile has added its own kwargs, shouldn't
                         do it.  (default: True)
     @returns            The input dict, unchanged.            
     """
     #TODO: add check_required to make sure it has all necessary keys
     for key in input_dict:
-        if key not in options:
-            raise ValueError('Option %s not understood by Stile and not a recognized corr2 '
-                               'option.  Please check syntax and try again.'%key)                         
+        if key not in corr2_kwargs:
+            raise ValueError('Argument %s not understood by Stile and not a recognized corr2 '
+                               'argument.  Please check syntax and try again.'%key)                         
         else:
-            ok = options[key]
+            c2k = corr2_kwargs[key]
             if check_status:
-                if ok['status']=='disallowed_file':
-                    raise ValueError('Option %s for corr2 is forbidden by Stile, which may need to '
-                                     'write multiple output files of this type.  Please remove this '
-                                     'option from your syntax, and check the documentation for '
-                                     'where the relevant output files will be located.'%key)
-                elif ok['status']=='disallowed_computation':
-                    raise ValueError('Option %s for corr2 is forbidden by Stile, which controls '
-                                     'the necessary correlation functions.  Depending on your '
-                                     'needs, please either remove this option from your syntax or '
-                                     'consider running corr2 as a standalone program.'%key)
-                elif ok['status']=='captured':
-                    raise ValueError('Option %s should have been captured by the input parser for '
+                if c2k['status']=='disallowed_file':
+                    raise ValueError('Argument %s for corr2 is forbidden by Stile, which may need '+
+                                     'to write multiple output files of this type.  Please remove '+
+                                     'this argument from your syntax, and check the documentation '+
+                                     'for where the relevant output files will be located.'%key)
+                elif c2k['status']=='disallowed_computation':
+                    raise ValueError('Argument %s for corr2 is forbidden by Stile, which controls '+
+                                     'the necessary correlation functions.  Depending on your '+
+                                     'needs, please either remove this argument from your syntax '+
+                                     'or consider running corr2 as a standalone program.'%key)
+                elif c2k['status']=='captured':
+                    raise ValueError('Argument %s should have been captured by the input parser for '
                                      'Stile, but it was not.  This is a bug; please '
                                      'open an issue at http://github.com/msimet/Stile/issues.'%key)
-            if type(input_dict[key]) not in ok['type']:
+            if type(input_dict[key]) not in c2k['type']:
                 # The unknown arguments are passed as strings.  Since the string may not be the
-                # desired option, try casting the value into the correct type or types and see if
+                # desired argument, try casting the value into the correct type or types and see if
                 # it works or raises an error; if at least one works, pass, else raise an error.
                 type_ok = False
-                for options_type in ok['type']:
+                for arg_type in c2k['type']:
                     try:
-                        options_type(input_dict[key])
+                        arg_type(input_dict[key])
                         type_ok=True
                     except:
                         pass
                 if not type_ok:
-                    raise ValueError("Option %s is a corr2 option, but the type of the given "
-                                     "argument %s does not match corr2's requirements.  Please "
-                                     "check syntax and try again."%(key,input_dict[key]))
-            if ok['val']:
-                if input_dict[key] not in ok['val']:
-                    raise ValueError('Corr2 option %s only accepts the values [%s].  Please '
-                                     'check syntax and try again.'%(key,', '.join(ok['val'])))
+                    raise ValueError(("Argument %s is a corr2 argument, but the type of the given "+
+                                     "value %s does not match corr2's requirements.  Please "+
+                                     "check syntax and try again.")%(key,input_dict[key]))
+            if c2k['val']:
+                if input_dict[key] not in c2k['val']:
+                    raise ValueError('Corr2 argument %s only accepts the values [%s].  Please '
+                                     'check syntax and try again.'%(key,', '.join(c2k['val'])))
     return input_dict
     
-def WriteCorr2ParamFile(param_file_name,corr2_dict,**kwargs):
+def WriteCorr2ConfigurationFile(config_file_name,corr2_dict,**kwargs):
     """
-    Write the given corr2 parameters to a corr2 param file if they are in the options dict above.  
+    Write the given corr2 kwargs to a corr2 configuration file if they are in the arguments dict 
+    above. 
     
-    @param param_file_name May be a file name or any object with a .write(...) attribute.
-    @param corr2_dict      A dict containing corr2 parameters.
-    @param kwargs          Any extra keys to be added to the given corr2_dict.  If they conflict,
-                           the keys given in the kwargs will silently supercede the values in the
-                           corr2_dict.
+    @param config_file_name May be a file name or any object with a .write(...) attribute.
+    @param corr2_dict       A dict containing corr2 kwargs.
+    @param kwargs           Any extra keys to be added to the given corr2_dict.  If they conflict,
+                            the keys given in the kwargs will silently supercede the values in the
+                            corr2_dict.
     """
-    if isinstance(param_file_name,str):
-        f=open(param_file_name,'w')
-        close_file=True
-    else:
-        f=param_file_name
+    if hasattr(config_file_name,'write'):
+        f=config_file_name
         close_file=False
+    else:
+        f=open(config_file_name,'w')
+        close_file=True
     if kwargs:
         corr2_dict.update(kwargs)
     for key in corr2_dict:
-        if key in options:
+        if key in corr2_kwargs:
             f.write(key+' = ' + str(corr2_dict[key])+'\n')
         else:
             raise ValueError("Unknown corr2 key %s."%key)
@@ -453,14 +454,11 @@ def WriteCorr2ParamFile(param_file_name,corr2_dict,**kwargs):
         
 def ReadCorr2ResultsFile(file_name):
     """
-    Read in the given file_name of type file_type.  Cast it into a numpy.recarray with the
-    appropriate column mappings from column_maps and return it.
+    Read in the given file_name of type file_type.  Cast it into a formatted numpy array with the
+    appropriate fields and return it.
     
     @param file_name The location of an output file from corr2.
-    @param file_type The type of correlation function that was run; available options can be found
-                     by printing the keys of corr2_utils.column_maps or checking the corr2
-                     documentation.
-    @returns         A numpy.recarray corresponding to the data in file_name.
+    @returns         A numpy array corresponding to the data in file_name.
     """    
     import stile_utils
     import file_io
@@ -471,36 +469,36 @@ def ReadCorr2ResultsFile(file_name):
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
     with open(file_name) as f:
-        cols = f.readline().split()
-    cols = cols[1:]
-    cols = [col for col in cols if col!='.']
-    return stile_utils.MakeRecarray(output,fields=cols,only_floats=True)
+        fields = f.readline().split()
+    fields = fields[1:]
+    fields = [field for field in fields if field!='.']
+    return stile_utils.FormatArray(output,fields=fields,only_floats=True)
 
 def AddCorr2Dict(input_dict):
     """
-    Take an input_dict, harvest the options you'll need for corr2, and create a new 'corr2_options'
-    key in the input_dict containing these values (or update the existing 'corr2_options' key).
+    Take an input_dict, harvest the kwargs you'll need for corr2, and create a new 'corr2_args'
+    key in the input_dict containing these values (or update the existing 'corr2_args' key).
     
     @param input_dict A dict containing some (key,value) pairs that apply to corr2
-    @returns          The input_dict with an added or updated key 'corr2_options' whose value is a
+    @returns          The input_dict with an added or updated key 'corr2_kwargs' whose value is a
                       dict containing the (key,value) pairs from input_dict that apply to corr2
     """    
-    #TODO: think about corr2_options vs corr2_params etc
     corr2_dict = {}
     new_dict = copy.deepcopy(input_dict)
-    for key in options:
+    for key in corr2_kwargs:
         if key in input_dict:
             corr2_dict[key] = input_dict[key]
-    if 'corr2_options' in new_dict:
-        new_dict['corr2_options'].update(corr2_dict)
+    if 'corr2_kwargs' in new_dict:
+        new_dict['corr2_kwargs'].update(corr2_dict)
     else:
-        new_dict['corr2_options'] = corr2_dict
+        new_dict['corr2_kwargs'] = corr2_dict
     return new_dict
     
 def MakeCorr2Cols(cols,use_as_k=None):
     """
     Takes an input dict or list of columns and extracts the right variables for the column keys in a
-    corr2 parameters file.
+    corr2 configuration file.  Note that we generally call these "fields" in Stile, but for 
+    compatibility with corr2 config files they're called "cols" here.
     
     @param cols     A list of strings denoting the columns of a file (first column is first element
                     of list, etc), or a dict with the key-value pairs "string column name": column 
@@ -508,19 +506,19 @@ def MakeCorr2Cols(cols,use_as_k=None):
     @param use_as_k Which column to use as the "kappa" (scalar) column, if given (default: None)
     @returns        A dict containing the column key-value pairs for corr2
     """
-    corr2_params = {}
-    col_params = ['x','y','ra','dec','g1','g2','k','w']
+    corr2_kwargs = {}
+    col_args = ['x','y','ra','dec','g1','g2','k','w']
     if isinstance(cols,dict):
-        for col in col_params:
+        for col in col_args:
             if col in cols and isinstance(cols[col],int):
-                corr2_params[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
+                corr2_kwargs[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
         if use_as_k and use_as_k in cols and isinstance(cols[use_as_k],int):
-            corr2_params['k_col'] = cols[use_as_k]+1
+            corr2_kwargs['k_col'] = cols[use_as_k]+1
     elif hasattr(cols,'__getitem__'):
-        for cp in col_params:
+        for cp in col_args:
             if cp in cols:
-                corr2_params[cp+'_col'] = cols.index(cp)+1
+                corr2_kwargs[cp+'_col'] = cols.index(cp)+1
         if use_as_k and use_as_k in cols:
-            corr2_params['k_col'] = cols.index(use_as_k)+1
-    return corr2_params
+            corr2_kwargs['k_col'] = cols.index(use_as_k)+1
+    return corr2_kwargs
 
