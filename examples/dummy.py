@@ -40,7 +40,7 @@ class DummyDataHandler(stile.DataHandler):
             if not bin_list and not force:
                 return (id,self.fields)
             else:
-                data = stile.MakeRecarray(self.read_method(id),fields=self.fields)
+                data = stile.FormatArray(self.read_method(id),fields=self.fields)
                 if bin_list:
                     for bin in bin_list:
                         data = data[bin(data)]
