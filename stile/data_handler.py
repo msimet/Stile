@@ -1,5 +1,5 @@
 """
-data_handler.py: defines the classes that serve data to the various Stile tests.
+data_handler.py: defines the classes that serve data to the various Stile systematics tests.
 """
 import os
 import glob
@@ -33,12 +33,12 @@ class DataHandler:
         @param multi_file Whether multiple files with the same args will be created within a single
                           run of Stile. This appends a number to the file name; if clobbering is 
                           allowed, this argument also prevents Stile from writing over outputs from 
-                          the same test during the same run.
+                          the same systematics test during the same run.
         @returns A path to an output file meeting the input specifications.
         """ 
         #TODO: clobbering
-        test = '_'.join(args)
-        base_path = os.path.join(self.output_path,test)
+        sys_test = '_'.join(args)
+        base_path = os.path.join(self.output_path,sys_test)
         if multi_file:
             nfiles = glob.glob(base_path+'*'+extension)
             return os.path.join(self.output_path,base_path+'-'+str(nfiles)+extension)
