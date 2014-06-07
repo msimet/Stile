@@ -2,7 +2,7 @@
 Contains definitions of Bin* classes that generate binning schemes and the SingleBins
 objects they create which can be applied to data to limit it to the bin in question.
 """
-
+#TODO: binning for images
 import numpy
 
 class BinList:
