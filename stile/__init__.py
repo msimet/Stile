@@ -4,4 +4,4 @@ from binning import BinList, BinStep, BinFunction
 import corr2_utils
 from corr2_utils import WriteCorr2ParamFile, ReadCorr2ResultsFile
 from data_handler import DataHandler
-from tests import TestXShear
+from sys_tests import RealShearSysTest
