@@ -47,12 +47,12 @@ def ReadFitsTable(file_name,hdu=1):
 
 def ReadAsciiTable(file_name, start_line=None, comment=None):
     """
-    Read in an ASCII table, and represent it via the simplest possible form for each column.  
+    Read in an ASCII table, and represent it via the simplest possible form for each field.  
     
-    If you know your data contains only numbers (no strings), type safety and proper column
+    If you know your data contains only numbers (no strings), type safety and proper field
     alignment can be better handled by the functions numpy.loadtxt() [complete table] or
-    numpy.genfromtxt() [missing columns].  This function is mostly useful if you have
-    string data and don't want to skip those columns or turn the file into a FITS table.
+    numpy.genfromtxt() [missing fields].  This function is mostly useful if you have
+    string data and don't want to skip those fields or turn the file into a FITS table.
     
     @param file_name The name of the file containing the ASCII table
     @param startline The number of the line to start on. startline=1 skips the first line of the
@@ -88,19 +88,19 @@ def WritePoint(f,line,pos):
     else:
         f.write('0 ')
     
-def WriteAsciiTable(file_name,data_array,cols=None):
-    if not cols:
-        cols = [i for i in range(len(data_array.dtype.names))]
+def WriteAsciiTable(file_name,data_array,fields=None):
+    if not fields:
+        fields = [i for i in range(len(data_array.dtype.names))]
     else:
-        tcols = [i for i in range(len(cols))]
+        tfields = [i for i in range(len(fields))]
         names = data_array.dtype.names
-        for i,col in enumerate(cols):
-            if col in names:        
-                tcols[i] = names.index(col)
+        for i,field in enumerate(fields):
+            if field in names:        
+                tfields[i] = names.index(field)
             else:
-                tcols[i] = -1
+                tfields[i] = -1
     with open(file_name,'w') as f:
         for line in data_array:
-            [WritePoint(f,line,pos) for pos in cols]
+            [WritePoint(f,line,pos) for pos in fields]
             f.write('\n')    
     
