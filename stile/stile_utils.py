@@ -285,3 +285,37 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     corr2_kwargs = corr2_utils.MakeCorr2Cols(fields)
     return new_data, new_data2, new_random, new_random2, corr2_kwargs, handles, deletes
 
+class Stats:
+    """A Stats object can carry around and output the statistics of some array.
+
+    Currently it can carry around two types of statistics:
+
+    (1) Basic array statistics: min, max, median, mean, standard deviation, variance.
+
+    (2) Percentiles: the value at a given percentile level.
+
+    The StatsSysTest class in `sys_tests.py` can be used to create and populate values for one of
+    these objects.  Presently it is necessary to update both the definition of the Stats class and
+    the StatsSysTest class if you want to add / remove tests.  In future we might want to make
+    changes necessary in only one place (e.g., by storing in the Stats object the name of the
+    function to be used for populating that field, so that StatsSysTest objects just iterate over
+    members of the Stats object and call the relevant function).
+
+    Also note that if we want things like skewness and kurtosis, we either need to calculate them
+    directly or use scipy, since numpy does not include those.
+    """
+    self.min = None
+    self.max = None
+    self.median = None
+    self.mean = None
+    self.stddev = None
+    self.variance = None
+    self.percentiles = None
+    self.values = None
+
+    def prettyPrint(self):
+        """This routine will print the contents of the Stats object in a nice format."""
+        # First check whether this has any values that are not None.  If not, then just return or
+        # throw exception or something.
+        # Loop over simple statistics and print them.
+        # Loop over combinations of percentiles and values, and print them.
