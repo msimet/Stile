@@ -104,3 +104,49 @@ class RealShearSysTest(CorrelationFunctionSysTest):
         return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
                                               **corr2_kwargs)
 
+class StatsSysTest(SysTest):
+    """
+    A class for the Stile systematics tests that use basic statistical quantities. It uses NumPy
+    routines for all the innards, and saves the results in a stile.Stats object (basically a dict;
+    see stats.py) that can carry around the information, print the results in a useful format, write
+    to file, or (eventually) become an argument to plotting routines that might output some of the
+    results on plots.
+
+    One of the calculations it does is find the percentiles of the given quantity.  The percentile
+    levels to use can be set when the StatsSysTest is initialized, or when it is called.  These
+    percentiles must be provided as an iterable (list, tuple, or NumPy array).
+    """
+    short_name = 'stats'
+    long_name = 'Calculate basic statistics of a given quantity'
+
+    def __init__(self, percentiles=[2.2, 16., 50., 84., 97.8]):
+        self.percentiles = percentiles
+
+    def __call__(self, array, percentiles=None):
+        """Calling a StatsSysTest with a given array argument as `array` will cause it to carry out
+        all the statistics test and populate a stile.Stats object with the results, which it returns
+        to the user.  The `array` can in principle be multi-dimensional, but that detail is ignored;
+        if you want to get statistics of one column in a 2d array, for example, then for `array` you
+        should pass in that particular column.
+
+        The user can optionally pass in percentiles at which it wants to get values; if None, then
+        it uses the values that were used when initializing the StatsSysTest object.
+        """
+        # Set the percentile levels, if the user provided them.  Otherwise use what was set up at
+        # the time of initialization.
+        if percentiles is not None: self.percentiles = percentiles
+
+        # Check to make sure that percentiles is iterable (list, numpy array, tuple, ...)
+        if not hasattr(self.percentiles, '__iter__'):
+            raise RuntimeError('List of percentiles is not an iterable (list, tuple, NumPy array)!')
+
+        # Collapse multi-dimensional arrays to 1d
+
+        # Create the output object, a stile.Stats() object.
+
+        # Populate the basic entries, like median, mean, standard deviation.
+        # Populate things like skewness, kurtosis.  (Check list of NumPy options for more things
+        # that could be useful.)
+        # Populate the percentiles and values.
+        # Return.
+
