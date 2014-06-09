@@ -144,9 +144,9 @@ class StatsSysTest(SysTest):
 
         # Create the output object, a stile.Stats() object.
 
+        # TODO: make options for NaN testing and rejection, outlier rejection, etc.!
+
         # Populate the basic entries, like median, mean, standard deviation.
-        # Populate things like skewness, kurtosis.  (Check list of NumPy options for more things
-        # that could be useful.)
         # Populate the percentiles and values.
         # Return.
 
