@@ -108,9 +108,9 @@ class StatsSysTest(SysTest):
     """
     A class for the Stile systematics tests that use basic statistical quantities. It uses NumPy
     routines for all the innards, and saves the results in a stile.Stats object (basically a dict;
-    see stats.py) that can carry around the information, print the results in a useful format, write
-    to file, or (eventually) become an argument to plotting routines that might output some of the
-    results on plots.
+    see stile_utils.py) that can carry around the information, print the results in a useful format,
+    write to file, or (eventually) become an argument to plotting routines that might output some of
+    the results on plots.
 
     One of the calculations it does is find the percentiles of the given quantity.  The percentile
     levels to use can be set when the StatsSysTest is initialized, or when it is called.  These
