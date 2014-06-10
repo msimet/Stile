@@ -59,10 +59,62 @@ def test_statsystest_basic():
     t2 = time.time()
     print 'time for %s = %.2f'%(funcname(),t2-t1)
 
+def test_statsystest_exceptions():
+    """Make sure StatSysTest throws exceptions at appropriate times."""
+    t1 = time.time()
+    
+    foo = stile.sys_tests.StatSysTest()
+    try:
+        # Input 'array' is something silly, like a float, or None, or a string.
+        numpy.testing.assert_raises(RuntimeError,foo,3.)
+        numpy.testing.assert_raises(RuntimeError,foo,None)
+        numpy.testing.assert_raises(RuntimeError,foo,'bar')
+
+        # Called on a catalog without specifying field.
+        schema = [("item1", float), ("item2", float)]
+        test_arr = numpy.zeros(20,dtype=numpy.dtype(schema))
+        numpy.testing.assert_raises(RuntimeError,foo,test_arr)
+        # Called on a catalog that doesn't contain that field.
+        numpy.testing.assert_raises(RuntimeError,foo,test_arr,field='item3')
+        # Called on something with NaN without keyword to ignore them.
+        x = numpy.empty(10)
+        x[3] = numpy.nan
+        numpy.testing.assert_raises(RuntimeError,foo,x)
+        # Called on something that has no entries that aren't NaN, with exclusion flag, so we end up
+        # with a useful array of length zero.
+        x = numpy.empty(10)
+        x.fill(numpy.nan)
+        numpy.testing.assert_raises(RuntimeError,foo,x,ignore_bad=True)
+    except ImportError:
+        print 'The assert_raises tests require nose'
+
+    t2 = time.time()
+    print 'time for %s = %.2f'%(funcname(),t2-t1)
+
+def test_statsystest_catalogs():
+    """Make sure StatSysTest throws exceptions at appropriate times."""
+    t1 = time.time()
+
+    t2 = time.time()
+    print 'time for %s = %.2f'%(funcname(),t2-t1)
+
+def test_statsystest_badvalues():
+    """Make sure StatSysTest throws exceptions at appropriate times."""
+    t1 = time.time()
+
+    t2 = time.time()
+    print 'time for %s = %.2f'%(funcname(),t2-t1)
+
+def test_statsystest_percentiles():
+    """Make sure StatSysTest throws exceptions at appropriate times."""
+    t1 = time.time()
+
+    t2 = time.time()
+    print 'time for %s = %.2f'%(funcname(),t2-t1)
 
 if __name__ =='__main__':
     test_statsystest_basic()
-    #test_statsystest_exceptions()
-    #test_statsystest_catalogs()
-    #test_statsystest_badvalues()
-    #test_statsystest_percentiles()
+    test_statsystest_exceptions()
+    test_statsystest_catalogs()
+    test_statsystest_badvalues()
+    test_statsystest_percentiles()
