@@ -107,46 +107,100 @@ class RealShearSysTest(CorrelationFunctionSysTest):
 class StatSysTest(SysTest):
     """
     A class for the Stile systematics tests that use basic statistical quantities. It uses NumPy
-    routines for all the innards, and saves the results in a stile.Stats object (basically a dict;
-    see stile_utils.py) that can carry around the information, print the results in a useful format,
-    write to file, or (eventually) become an argument to plotting routines that might output some of
-    the results on plots.
+    routines for all the innards, and saves the results in a stile.Stats object (see stile_utils.py)
+    that can carry around the information, print the results in a useful format, write to file, or
+    (eventually) become an argument to plotting routines that might output some of the results on
+    plots.
 
     One of the calculations it does is find the percentiles of the given quantity.  The percentile
     levels to use can be set when the StatSysTest is initialized, or when it is called.  These
     percentiles must be provided as an iterable (list, tuple, or NumPy array).
+
+    The objects on which this systematics test is used should be either (a) a simple iterable like a
+    list, tuple, or NumPy array, or (b) a structure NumPy array with fields.  In case (a), the
+    dimensionality of the NumPy array is ignored, and statistics are calculated over all
+    dimensions.  In case (b), the user must give a field name using the `field` keyword argument,
+    either at initialization or when calling the test.
+
+    For both the `percentile` and `field` arguments, the behavior is different if the keyword
+    argument is used at the time of initialization or calling.  When used at the time of
+    initialization, that value will be used for all future calls unless called with another value
+    for those arguments.  However, the value of `percentile` and `field` for calls after that will
+    revert back to the original value from the time of initialization.
+
     """
     short_name = 'stats'
     long_name = 'Calculate basic statistics of a given quantity'
 
-    def __init__(self, percentiles=[2.2, 16., 50., 84., 97.8]):
+    def __init__(self, percentiles=[2.2, 16., 50., 84., 97.8], field=None):
         self.percentiles = percentiles
+        self.field = field
 
-    def __call__(self, array, percentiles=None):
+    def __call__(self, array, percentiles=None, field=None):
         """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
         all the statistics test and populate a stile.Stats object with the results, which it returns
-        to the user.  The `array` can in principle be multi-dimensional, but that detail is ignored;
-        if you want to get statistics of one column in a 2d array, for example, then for `array` you
-        should pass in that particular column.
-
-        The user can optionally pass in percentiles at which it wants to get values; if None, then
-        it uses the values that were used when initializing the StatSysTest object.
+        to the user.
         """
-        # Set the percentile levels, if the user provided them.  Otherwise use what was set up at
-        # the time of initialization.
-        if percentiles is not None: self.percentiles = percentiles
+        # Set the percentile levels and field, if the user provided them.  Otherwise use what was
+        # set up at the time of initialization.
+        if percentiles is not None: use_percentiles = percentiles
+        else: use_percentiles = self.percentiles
+        if field is not None: use_field = field
+        else: use_field = self.field
 
         # Check to make sure that percentiles is iterable (list, numpy array, tuple, ...)
-        if not hasattr(self.percentiles, '__iter__'):
+        if not hasattr(use_percentiles, '__iter__'):
             raise RuntimeError('List of percentiles is not an iterable (list, tuple, NumPy array)!')
 
-        # Collapse multi-dimensional arrays to 1d
+        # Check types for input things and make sure it all makes sense, including consistency with
+        # the field.  First of all, it should be iterable:
+        if not hasattr(array, '__iter__'):
+            raise RuntimeError('Input array is not an iterable (list, tuple, NumPy array)!')
+        # If it's a multi-dimensional NumPy array, tuple, or list, we don't care - the functions
+        # we'll use below will simply work as if it's a 1d NumPy array, collapsing all rows of a
+        # multi-dimensional array implicitly.  The only thing we have to worry about is if this is
+        # really a structured catalog.  The cases to check are:
+        # (a) Is it a structured catalog?  If so, we must have some value for `use_field` that is
+        #     not None and that is in the catalog.  We can check the values in the catalog using
+        #     array.dtype.field.keys(), which returns a list of the field names.
+        # (b) Is `use_field` set, but this is not a catalog?  If so, we'll issue a warning (not
+        #     exception!) and venture bravely onwards using the entire array, leaving it to the user
+        #     to decide if they are okay with that.
+        # We begin with taking care of case (a).
+        if array.dtype.fields is not None:
+            # It's a catalog, not a simple array
+            if use_field is None:
+                raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
+            if use_field not in array.dtype.field.keys():
+                raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
+                                   (use_field,array.dtype.field.keys()))
+        # Now take care of case (b):
+        if array.dtype.fields is None and use_field is not None:
+            import warnings
+            warnings.warn('Field is selected, but input array is not a catalog!'
+                          'Ignoring field choice and continuing')
+
+        # Finally, choose whatever we're going to work on.
+        if array.dtype.fields is not None:
+            use_array = array[use_field]
+        else:
+            use_array = array.copy()
 
         # Create the output object, a stile.Stats() object.
+        result = stile.stile_utils.Stats()
 
-        # TODO: make options for NaN testing and rejection, outlier rejection, etc.!
+        # Populate the basic entries, like median, mean, standard deviation, etc.
+        result.min = numpy.min(use_array)
+        result.max = numpy.max(use_array)
+        result.N = len(use_array)
+        result.median = numpy.median(use_array)
+        result.stddev = numpy.std(use_array)
+        result.variance = numpy.var(use_array)
+        result.mean = numpy.mean(use_array)
 
-        # Populate the basic entries, like median, mean, standard deviation.
         # Populate the percentiles and values.
-        # Return.
+        result.percentiles = use_percentiles
+        result.values = numpy.percentile(use_array, use_percentiles)
 
+        # Return.
+        return result
