@@ -200,9 +200,9 @@ class StatSysTest(SysTest):
 
         # Reject NaN / Inf values, if requested to do so.
         if ignore_bad:
-            cond = np.logical_and.reduce(
-                [np.isnan(use_array) == False,
-                 np.isinf(use_array) == False]
+            cond = numpy.logical_and.reduce(
+                [numpy.isnan(use_array) == False,
+                 numpy.isinf(use_array) == False]
                 )
             use_array = use_array[cond]
 
@@ -212,7 +212,7 @@ class StatSysTest(SysTest):
         # Populate the basic entries, like median, mean, standard deviation, etc.
         result.min = numpy.min(use_array)
         # Now do a check for NaN / inf, and raise an exception.
-        if np.isnan(result.min) or np.isinf(result.min):
+        if numpy.isnan(result.min) or numpy.isinf(result.min):
             raise RuntimeError("NaN or Inf values detected in input array!")
         result.max = numpy.max(use_array)
         result.N = len(use_array)
