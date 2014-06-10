@@ -290,7 +290,8 @@ class Stats:
 
     Currently it can carry around two types of statistics:
 
-    (1) Basic array statistics: min, max, median, mean, standard deviation, variance.
+    (1) Basic array statistics: length (N), min, max, median, mean, standard deviation (stddev),
+        variance.
 
     (2) Percentiles: the value at a given percentile level.
 
@@ -302,21 +303,35 @@ class Stats:
     members of the Stats object and call the relevant function).
 
     Also note that if we want things like skewness and kurtosis, we either need to calculate them
-    directly or use scipy, since numpy does not include those.
+    directly or use scipy, since numpy does not include those.  For now, they are not included.
     """
-    min = None
-    max = None
-    median = None
-    mean = None
-    stddev = None
-    variance = None
+    simple_stats = ['min', 'max', 'median', 'mean', 'stddev', 'variance', 'N']
+    for stat in simple_stats:
+        init_str = stat + '=None'
+        exec init_str
+
     percentiles = None
     values = None
-    N = None
 
     def prettyPrint(self):
-        """This routine will print the contents of the Stats object in a nice format."""
-        # First check whether this has any values that are not None.  If not, then just return or
-        # throw exception or something.
-        # Loop over simple statistics and print them.
+        """This routine will print the contents of the Stats object in a nice format.
+
+        We assume that the Stats object was created by a StatSysTest, so that certain sanity checks
+        have already been done (e.g., self.percentiles, if not None, is iterable)."""
+        # Preamble:
+        print 'Summary statistics:'
+
+        # Loop over simple statistics and print them, if not None.  Generically if one is None then
+        # all will be, so just check one.
+        if self.min is not None:
+            for stat in self.simple_stats:
+                this_string = 'this_val = self.'+stat
+                exec this_string
+                print '\t%s: %f'%(stat, this_val)
+            print ''
+
         # Loop over combinations of percentiles and values, and print them.
+        if self.percentiles is not None:
+            print 'Below are lists of (percentile, value) combinations:'
+            for index in range(len(self.percentiles)):
+                print '\t%f %f'%(self.percentiles[index],self.values[index])
