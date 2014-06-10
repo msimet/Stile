@@ -222,7 +222,11 @@ class StatSysTest(SysTest):
         if numpy.isnan(result.min) or numpy.isinf(result.min):
             raise RuntimeError("NaN or Inf values detected in input array!")
         result.max = numpy.max(use_array)
-        result.N = len(use_array)
+        # To get the length, be careful: multi-dimensional arrays need flattening!
+        if hasattr(use_array, 'dtype'):
+            result.N = len(use_array.flatten())
+        else:
+            result.N = len(use_array)
         result.median = numpy.median(use_array)
         result.stddev = numpy.std(use_array)
         result.variance = numpy.var(use_array)
