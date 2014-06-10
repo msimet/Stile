@@ -212,6 +212,8 @@ class StatSysTest(SysTest):
                  numpy.isinf(use_array) == False]
                 )
             use_array = use_array[cond]
+            if len(use_array) == 0:
+                raise RuntimeError("No good entries left to use after excluding bad values!")
 
         # Create the output object, a stile.Stats() object.
         result = stile.stile_utils.Stats()
