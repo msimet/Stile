@@ -131,6 +131,13 @@ class StatSysTest(SysTest):
     By default, the systematics tester will simply return a Stats object for the user.  However,
     calling it with `verbose=True` will result in the statistics being printed directly using the
     Stats.prettyPrint() function.
+
+    Ordinarily, a StatSysTest object will throw an exception if asked to run on an array that has
+    any Nans or infinite values.  The `ignore_bad` keyword (at the time when the StatSytTest is
+    called, not initialized) changes this behavior so these bad values are quietly ignored.
+
+    Options to consider adding in future: weighted sums and other weighted statistics; outlier
+    rejection.
     """
     short_name = 'stats'
     long_name = 'Calculate basic statistics of a given quantity'
@@ -139,7 +146,7 @@ class StatSysTest(SysTest):
         self.percentiles = percentiles
         self.field = field
 
-    def __call__(self, array, percentiles=None, field=None, verbose=False):
+    def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False):
         """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
         all the statistics test and populate a stile.Stats object with the results, which it returns
         to the user.
@@ -183,11 +190,21 @@ class StatSysTest(SysTest):
             warnings.warn('Field is selected, but input array is not a catalog!'
                           'Ignoring field choice and continuing')
 
-        # Finally, choose whatever we're going to work on.
+        # Finally, choose whatever we're going to work on.  If we're just using the original array
+        # as-is, simply make a copy so that later manipulations (e.g., NaN-rejection) do not change
+        # the input array.
         if array.dtype.fields is not None:
             use_array = array[use_field]
         else:
             use_array = array.copy()
+
+        # Reject NaN / Inf values, if requested to do so.
+        if ignore_bad:
+            cond = np.logical_and.reduce(
+                [np.isnan(use_array) == False,
+                 np.isinf(use_array) == False]
+                )
+            use_array = use_array[cond]
 
         # Create the output object, a stile.Stats() object.
         result = stile.stile_utils.Stats()
