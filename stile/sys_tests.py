@@ -107,10 +107,10 @@ class RealShearSysTest(CorrelationFunctionSysTest):
 class StatSysTest(SysTest):
     """
     A class for the Stile systematics tests that use basic statistical quantities. It uses NumPy
-    routines for all the innards, and saves the results in a stile.Stats object (see stile_utils.py)
-    that can carry around the information, print the results in a useful format, write to file, or
-    (eventually) become an argument to plotting routines that might output some of the results on
-    plots.
+    routines for all the innards, and saves the results in a stile.stile_utils.Stats object (see
+    stile_utils.py) that can carry around the information, print the results in a useful format,
+    write to file, or (eventually) become an argument to plotting routines that might output some of
+    the results on plots.
 
     One of the calculations it does is find the percentiles of the given quantity.  The percentile
     levels to use can be set when the StatSysTest is initialized, or when it is called.  These
@@ -128,6 +128,9 @@ class StatSysTest(SysTest):
     for those arguments.  However, the value of `percentile` and `field` for calls after that will
     revert back to the original value from the time of initialization.
 
+    By default, the systematics tester will simply return a Stats object for the user.  However,
+    calling it with `verbose=True` will result in the statistics being printed directly using the
+    Stats.prettyPrint() function.
     """
     short_name = 'stats'
     long_name = 'Calculate basic statistics of a given quantity'
@@ -136,7 +139,7 @@ class StatSysTest(SysTest):
         self.percentiles = percentiles
         self.field = field
 
-    def __call__(self, array, percentiles=None, field=None):
+    def __call__(self, array, percentiles=None, field=None, verbose=False):
         """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
         all the statistics test and populate a stile.Stats object with the results, which it returns
         to the user.
@@ -201,6 +204,10 @@ class StatSysTest(SysTest):
         # Populate the percentiles and values.
         result.percentiles = use_percentiles
         result.values = numpy.percentile(use_array, use_percentiles)
+
+        # Print, if verbose=True.
+        if verbose:
+            result.prettyPrint()
 
         # Return.
         return result
