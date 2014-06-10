@@ -117,7 +117,7 @@ class StatSysTest(SysTest):
     percentiles must be provided as an iterable (list, tuple, or NumPy array).
 
     The objects on which this systematics test is used should be either (a) a simple iterable like a
-    list, tuple, or NumPy array, or (b) a structure NumPy array with fields.  In case (a), the
+    list, tuple, or NumPy array, or (b) a structured NumPy array with fields.  In case (a), the
     dimensionality of the NumPy array is ignored, and statistics are calculated over all
     dimensions.  In case (b), the user must give a field name using the `field` keyword argument,
     either at initialization or when calling the test.
@@ -148,7 +148,7 @@ class StatSysTest(SysTest):
 
     def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False):
         """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
-        all the statistics test and populate a stile.Stats object with the results, which it returns
+        all the statistics tests and populate a stile.Stats object with the results, which it returns
         to the user.
         """
         # Set the percentile levels and field, if the user provided them.  Otherwise use what was
@@ -193,13 +193,13 @@ class StatSysTest(SysTest):
             # Now take care of case (b):
             if array.dtype.fields is None and use_field is not None:
                 import warnings
-                warnings.warn('Field is selected, but input array is not a catalog!'
+                warnings.warn('Field is selected, but input array is not a catalog! '
                               'Ignoring field choice and continuing')
         else:
             # If it's a list or tuple, also do the check for whether use_field is set.
             if use_field is not None:
                 import warnings
-                warnings.warn('Field is selected, but input array is not a catalog!'
+                warnings.warn('Field is selected, but input array is not a catalog! '
                               'Ignoring field choice and continuing')
             # Also, make a copy.
             import copy
