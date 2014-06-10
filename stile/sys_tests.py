@@ -104,7 +104,7 @@ class RealShearSysTest(CorrelationFunctionSysTest):
         return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
                                               **corr2_kwargs)
 
-class StatsSysTest(SysTest):
+class StatSysTest(SysTest):
     """
     A class for the Stile systematics tests that use basic statistical quantities. It uses NumPy
     routines for all the innards, and saves the results in a stile.Stats object (basically a dict;
@@ -113,7 +113,7 @@ class StatsSysTest(SysTest):
     the results on plots.
 
     One of the calculations it does is find the percentiles of the given quantity.  The percentile
-    levels to use can be set when the StatsSysTest is initialized, or when it is called.  These
+    levels to use can be set when the StatSysTest is initialized, or when it is called.  These
     percentiles must be provided as an iterable (list, tuple, or NumPy array).
     """
     short_name = 'stats'
@@ -123,14 +123,14 @@ class StatsSysTest(SysTest):
         self.percentiles = percentiles
 
     def __call__(self, array, percentiles=None):
-        """Calling a StatsSysTest with a given array argument as `array` will cause it to carry out
+        """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
         all the statistics test and populate a stile.Stats object with the results, which it returns
         to the user.  The `array` can in principle be multi-dimensional, but that detail is ignored;
         if you want to get statistics of one column in a 2d array, for example, then for `array` you
         should pass in that particular column.
 
         The user can optionally pass in percentiles at which it wants to get values; if None, then
-        it uses the values that were used when initializing the StatsSysTest object.
+        it uses the values that were used when initializing the StatSysTest object.
         """
         # Set the percentile levels, if the user provided them.  Otherwise use what was set up at
         # the time of initialization.

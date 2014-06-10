@@ -294,11 +294,11 @@ class Stats:
 
     (2) Percentiles: the value at a given percentile level.
 
-    The StatsSysTest class in `sys_tests.py` can be used to create and populate values for one of
+    The StatSysTest class in `sys_tests.py` can be used to create and populate values for one of
     these objects.  Presently it is necessary to update both the definition of the Stats class and
-    the StatsSysTest class if you want to add / remove tests.  In future we might want to make
+    the StatSysTest class if you want to add / remove tests.  In future we might want to make
     changes necessary in only one place (e.g., by storing in the Stats object the name of the
-    function to be used for populating that field, so that StatsSysTest objects just iterate over
+    function to be used for populating that field, so that StatSysTest objects just iterate over
     members of the Stats object and call the relevant function).
 
     Also note that if we want things like skewness and kurtosis, we either need to calculate them
