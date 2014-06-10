@@ -182,9 +182,9 @@ class StatSysTest(SysTest):
                 # It's a catalog, not a simple array
                 if use_field is None:
                     raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
-                if use_field not in array.dtype.field.keys():
+                if use_field not in array.dtype.fields.keys():
                     raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
-                                       (use_field,array.dtype.field.keys()))
+                                       (use_field,array.dtype.fields.keys()))
                 # Select the appropriate field for this catalog.
                 use_array = array[use_field]
             else:
