@@ -194,6 +194,9 @@ class StatSysTest(SysTest):
 
         # Populate the basic entries, like median, mean, standard deviation, etc.
         result.min = numpy.min(use_array)
+        # Now do a check for NaN / inf, and raise an exception.
+        if np.isnan(result.min) or np.isinf(result.min):
+            raise RuntimeError("NaN or Inf values detected in input array!")
         result.max = numpy.max(use_array)
         result.N = len(use_array)
         result.median = numpy.median(use_array)
