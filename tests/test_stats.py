@@ -130,23 +130,7 @@ def test_statsystest_catalogs():
     t2 = time.time()
     print 'time for %s = %.2f'%(funcname(),t2-t1)
 
-def test_statsystest_badvalues():
-    """Make sure StatSysTest throws exceptions at appropriate times."""
-    t1 = time.time()
-
-    t2 = time.time()
-    print 'time for %s = %.2f'%(funcname(),t2-t1)
-
-def test_statsystest_percentiles():
-    """Make sure StatSysTest throws exceptions at appropriate times."""
-    t1 = time.time()
-
-    t2 = time.time()
-    print 'time for %s = %.2f'%(funcname(),t2-t1)
-
 if __name__ =='__main__':
-    #test_statsystest_basic()
-    #test_statsystest_exceptions()
+    test_statsystest_basic()
+    test_statsystest_exceptions()
     test_statsystest_catalogs()
-    #test_statsystest_badvalues()
-    #test_statsystest_percentiles()
