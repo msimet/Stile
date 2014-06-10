@@ -177,26 +177,33 @@ class StatSysTest(SysTest):
         #     exception!) and venture bravely onwards using the entire array, leaving it to the user
         #     to decide if they are okay with that.
         # We begin with taking care of case (a).
-        if array.dtype.fields is not None:
-            # It's a catalog, not a simple array
-            if use_field is None:
-                raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
-            if use_field not in array.dtype.field.keys():
-                raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
-                                   (use_field,array.dtype.field.keys()))
-        # Now take care of case (b):
-        if array.dtype.fields is None and use_field is not None:
-            import warnings
-            warnings.warn('Field is selected, but input array is not a catalog!'
-                          'Ignoring field choice and continuing')
-
-        # Finally, choose whatever we're going to work on.  If we're just using the original array
-        # as-is, simply make a copy so that later manipulations (e.g., NaN-rejection) do not change
-        # the input array.
-        if array.dtype.fields is not None:
-            use_array = array[use_field]
+        if hasattr(array, 'dtype'):
+            if array.dtype.fields is not None:
+                # It's a catalog, not a simple array
+                if use_field is None:
+                    raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
+                if use_field not in array.dtype.field.keys():
+                    raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
+                                       (use_field,array.dtype.field.keys()))
+                # Select the appropriate field for this catalog.
+                use_array = array[use_field]
+            else:
+                # It's a simple array, so just make a copy to avoid modifying the input.
+                use_array = array.copy()
+            # Now take care of case (b):
+            if array.dtype.fields is None and use_field is not None:
+                import warnings
+                warnings.warn('Field is selected, but input array is not a catalog!'
+                              'Ignoring field choice and continuing')
         else:
-            use_array = array.copy()
+            # If it's a list or tuple, also do the check for whether use_field is set.
+            if use_field is not None:
+                import warnings
+                warnings.warn('Field is selected, but input array is not a catalog!'
+                              'Ignoring field choice and continuing')
+            # Also, make a copy.
+            import copy
+            use_array = copy.deepcopy(array)
 
         # Reject NaN / Inf values, if requested to do so.
         if ignore_bad:
