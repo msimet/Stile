@@ -44,7 +44,7 @@ def test_statsystest_basic():
     test_vec = gaussian_sigma*numpy.random.randn(n_points_test) + gaussian_mean
 
     # Run it through the StatSysTest framework and check that the outputs are as expected.
-    test_obj = stile.sys_tests.StatSysTest()
+    test_obj = stile.StatSysTest()
     result =  test_obj(test_vec)
     check_results(result)
 
@@ -63,7 +63,7 @@ def test_statsystest_exceptions():
     """Make sure StatSysTest throws exceptions at appropriate times."""
     t1 = time.time()
     
-    foo = stile.sys_tests.StatSysTest()
+    foo = stile.StatSysTest()
     try:
         # Input 'array' is something silly, like a float, or None, or a string.
         numpy.testing.assert_raises(RuntimeError,foo,3.)
@@ -103,7 +103,7 @@ def test_statsystest_catalogs():
     test_arr["item2"] = 2*numpy.arange(test_len)
 
     # Make sure it can get the stats for each field appropriately, for a catalog with two fields.
-    foo = stile.sys_tests.StatSysTest()
+    foo = stile.StatSysTest()
     res1 = foo(test_arr, field='item1')
     res2 = foo(test_arr, field='item2')
     numpy.testing.assert_equal(test_len, res1.N,
@@ -117,7 +117,7 @@ def test_statsystest_catalogs():
 
     # Make sure that if you set `field` at initialization, it always uses that field for multiple
     # calls, even reverting back after a single call using another field.
-    bar = stile.sys_tests.StatSysTest(field='item1')
+    bar = stile.StatSysTest(field='item1')
     res1 = bar(test_arr)
     res2 = bar(test_arr)
     res3 = bar(test_arr, field='item2')
