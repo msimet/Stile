@@ -92,8 +92,40 @@ def test_statsystest_exceptions():
     print 'time for %s = %.2f'%(funcname(),t2-t1)
 
 def test_statsystest_catalogs():
-    """Make sure StatSysTest throws exceptions at appropriate times."""
+    """Make sure StatSysTest deals with catalogs properly."""
     t1 = time.time()
+
+    test_len = 10
+
+    schema = [("item1", float), ("item2", float)]
+    test_arr = numpy.zeros(test_len,dtype=numpy.dtype(schema))
+    test_arr["item1"] = numpy.arange(test_len)
+    test_arr["item2"] = 2*numpy.arange(test_len)
+
+    # Make sure it can get the stats for each field appropriately, for a catalog with two fields.
+    foo = stile.sys_tests.StatSysTest()
+    res1 = foo(test_arr, field='item1')
+    res2 = foo(test_arr, field='item2')
+    numpy.testing.assert_equal(test_len, res1.N,
+                               err_msg='Wrong length recorded for array')
+    numpy.testing.assert_equal(test_len, res2.N,
+                               err_msg='Wrong length recorded for array')
+    numpy.testing.assert_almost_equal(0.5*(test_len-1.), res1.mean, decimal=7,
+                                      err_msg='Wrong mean for structured array')
+    numpy.testing.assert_almost_equal((test_len-1.), res2.mean, decimal=7,
+                                      err_msg='Wrong mean for structured array')
+
+    # Make sure that if you set `field` at initialization, it always uses that field for multiple
+    # calls, even reverting back after a single call using another field.
+    bar = stile.sys_tests.StatSysTest(field='item1')
+    res1 = bar(test_arr)
+    res2 = bar(test_arr)
+    res3 = bar(test_arr, field='item2')
+    res4 = bar(test_arr)
+    numpy.testing.assert_almost_equal(0.5*(test_len-1.), res1.mean, decimal=7)
+    numpy.testing.assert_almost_equal(0.5*(test_len-1.), res2.mean, decimal=7)
+    numpy.testing.assert_almost_equal((test_len-1.), res3.mean, decimal=7)
+    numpy.testing.assert_almost_equal(0.5*(test_len-1.), res4.mean, decimal=7)
 
     t2 = time.time()
     print 'time for %s = %.2f'%(funcname(),t2-t1)
@@ -113,8 +145,8 @@ def test_statsystest_percentiles():
     print 'time for %s = %.2f'%(funcname(),t2-t1)
 
 if __name__ =='__main__':
-    test_statsystest_basic()
-    test_statsystest_exceptions()
+    #test_statsystest_basic()
+    #test_statsystest_exceptions()
     test_statsystest_catalogs()
-    test_statsystest_badvalues()
-    test_statsystest_percentiles()
+    #test_statsystest_badvalues()
+    #test_statsystest_percentiles()
