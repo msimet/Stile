@@ -305,13 +305,14 @@ class Stats:
     Also note that if we want things like skewness and kurtosis, we either need to calculate them
     directly or use scipy, since numpy does not include those.  For now, they are not included.
     """
-    simple_stats = ['min', 'max', 'median', 'mean', 'stddev', 'variance', 'N']
-    for stat in simple_stats:
-        init_str = stat + '=None'
-        exec init_str
+    def __init__(self):
+        self.simple_stats = ['min', 'max', 'median', 'mean', 'stddev', 'variance', 'N']
+        for stat in self.simple_stats:
+            init_str = 'self.' + stat + '=None'
+            exec init_str
 
-    percentiles = None
-    values = None
+        self.percentiles = None
+        self.values = None
 
     def prettyPrint(self):
         """This routine will print the contents of the Stats object in a nice format.
