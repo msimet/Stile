@@ -143,6 +143,16 @@ class StatSysTest(SysTest):
     long_name = 'Calculate basic statistics of a given quantity'
 
     def __init__(self, percentiles=[2.2, 16., 50., 84., 97.8], field=None):
+        """Function to initialize a StatSysTest object.
+
+        @param percentiles     The percentile levels at which to find the value of the input array
+                               when called.  [default: [2.2, 16., 50., 84., 97.8].]
+        @param field           The name of the field to use in a NumPy structured array / catalog.
+                               [default: None, meaning we're using a simple array without field
+                               names.]
+
+        @returns the requested StatSysTest object.
+        """
         self.percentiles = percentiles
         self.field = field
 
@@ -150,6 +160,22 @@ class StatSysTest(SysTest):
         """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
         all the statistics tests and populate a stile.Stats object with the results, which it returns
         to the user.
+
+        @param array           The tuple, list, NumPy array, or structured NumPy array/catalog on
+                               which to carry out the calculations.
+        @param percentiles     The percentile levels to use for this particular calculation.
+                               [default: None, meaning use whatever levels were defined when
+                               initializing this StatSysTest object]
+        @param field           The name of the field to use in a NumPy structured array / catalog.
+                               [default: None, meaning use whatever field was defined when
+                               initializing this StatSysTest object]
+        @param verbose         If True, print the calculated statistics of the input `array` to
+                               screen.  If False, silently return the Stats object. [default:
+                               False.]
+        @param ignore_bad      If True, search for values that are NaN or Inf, and remove them
+                               before doing calculations.  [default: False.]
+
+        @returns a stile.stile_utils.Stats object
         """
         # Set the percentile levels and field, if the user provided them.  Otherwise use what was
         # set up at the time of initialization.
