@@ -247,8 +247,16 @@ class StatSysTest(SysTest):
         # `result` Stats object with the statistics.  (By default it always does percentiles, though
         # we could choose to change the percentile levels.)  Also note that if we want things like
         # skewness and kurtosis, we either need to calculate them directly or use scipy, since numpy
-        # does not include those.  For now, they are not included.
-        simple_stats=['min', 'max', 'median', 'mad', 'mean', 'stddev', 'variance', 'N']
+        # does not include those.  For now we use a try/except block to import scipy and calculate
+        # those values if possible, but silently ignore the import failure if scipy is not
+        # available.
+        try:
+            import scipy.stats
+            simple_stats=['min', 'max', 'median', 'mad', 'mean', 'stddev', 'variance', 'N',
+                          'skew', 'kurtosis']
+        except ImportError:
+            simple_stats=['min', 'max', 'median', 'mad', 'mean', 'stddev', 'variance', 'N']
+            
         result = stile.stile_utils.Stats(simple_stats=simple_stats)
 
         # Populate the basic entries, like median, mean, standard deviation, etc.
@@ -267,6 +275,11 @@ class StatSysTest(SysTest):
         result.stddev = numpy.std(use_array)
         result.variance = numpy.var(use_array)
         result.mean = numpy.mean(use_array)
+
+        if 'skew' in simple_stats:
+            # We were able to import SciPy, so calculate skewness and kurtosis.
+            result.skew = scipy.stats.skew(use_array)
+            result.kurtosis = scipy.stats.kurtosis(use_array)
 
         # Populate the percentiles and values.
         result.percentiles = use_percentiles
