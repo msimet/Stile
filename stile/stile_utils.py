@@ -291,7 +291,8 @@ class Stats:
     Currently it can carry around two types of statistics:
 
     (1) Basic array statistics: typically one would use length (N), min, max, median, mean, standard
-        deviation (stddev), variance, as defined using the `simple_stats` option at initialization.
+        deviation (stddev), variance, median absolute deviation ('mad') as defined using the
+        `simple_stats` option at initialization.
 
     (2) Percentiles: the value at a given percentile level.
 

@@ -248,7 +248,7 @@ class StatSysTest(SysTest):
         # we could choose to change the percentile levels.)  Also note that if we want things like
         # skewness and kurtosis, we either need to calculate them directly or use scipy, since numpy
         # does not include those.  For now, they are not included.
-        simple_stats=['min', 'max', 'median', 'mean', 'stddev', 'variance', 'N']
+        simple_stats=['min', 'max', 'median', 'mad', 'mean', 'stddev', 'variance', 'N']
         result = stile.stile_utils.Stats(simple_stats=simple_stats)
 
         # Populate the basic entries, like median, mean, standard deviation, etc.
@@ -263,6 +263,7 @@ class StatSysTest(SysTest):
         else:
             result.N = len(use_array)
         result.median = numpy.median(use_array)
+        result.mad = numpy.median(numpy.abs(use_array - result.median))
         result.stddev = numpy.std(use_array)
         result.variance = numpy.var(use_array)
         result.mean = numpy.mean(use_array)
