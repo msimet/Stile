@@ -215,8 +215,15 @@ class StatSysTest(SysTest):
             if len(use_array) == 0:
                 raise RuntimeError("No good entries left to use after excluding bad values!")
 
-        # Create the output object, a stile.Stats() object.
-        result = stile.stile_utils.Stats()
+        # Create the output object, a stile.Stats() object.  We gave to tell it which simple
+        # statistics to calculate.  If we want to change this list, we need to change both the
+        # `simple_stats` list below, and the code afterwards that calculates and populates the
+        # `result` Stats object with the statistics.  (By default it always does percentiles, though
+        # we could choose to change the percentile levels.)  Also note that if we want things like
+        # skewness and kurtosis, we either need to calculate them directly or use scipy, since numpy
+        # does not include those.  For now, they are not included.
+        simple_stats=['min', 'max', 'median', 'mean', 'stddev', 'variance', 'N']
+        result = stile.stile_utils.Stats(simple_stats=simple_stats)
 
         # Populate the basic entries, like median, mean, standard deviation, etc.
         result.min = numpy.min(use_array)

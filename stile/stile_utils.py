@@ -290,23 +290,17 @@ class Stats:
 
     Currently it can carry around two types of statistics:
 
-    (1) Basic array statistics: length (N), min, max, median, mean, standard deviation (stddev),
-        variance.
+    (1) Basic array statistics: typically one would use length (N), min, max, median, mean, standard
+        deviation (stddev), variance, as defined using the `simple_stats` option at initialization.
 
     (2) Percentiles: the value at a given percentile level.
 
     The StatSysTest class in `sys_tests.py` can be used to create and populate values for one of
-    these objects.  Presently it is necessary to update both the definition of the Stats class and
-    the StatSysTest class if you want to add / remove tests.  In future we might want to make
-    changes necessary in only one place (e.g., by storing in the Stats object the name of the
-    function to be used for populating that field, so that StatSysTest objects just iterate over
-    members of the Stats object and call the relevant function).
-
-    Also note that if we want things like skewness and kurtosis, we either need to calculate them
-    directly or use scipy, since numpy does not include those.  For now, they are not included.
+    these objects.  If you want to change the list of simple statistics, it's only necessary to
+    change the code there, not here.
     """
-    def __init__(self):
-        self.simple_stats = ['min', 'max', 'median', 'mean', 'stddev', 'variance', 'N']
+    def __init__(self, simple_stats):
+        self.simple_stats = simple_stats
         for stat in self.simple_stats:
             init_str = 'self.' + stat + '=None'
             exec init_str
@@ -324,7 +318,9 @@ class Stats:
 
         # Loop over simple statistics and print them, if not None.  Generically if one is None then
         # all will be, so just check one.
-        if self.min is not None:
+        test_str = "test_val = self."+("%s"%self.simple_stats[0])
+        exec test_str
+        if test_val is not None:
             for stat in self.simple_stats:
                 this_string = 'this_val = self.'+stat
                 exec this_string
