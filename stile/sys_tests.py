@@ -179,10 +179,8 @@ class StatSysTest(SysTest):
         """
         # Set the percentile levels and field, if the user provided them.  Otherwise use what was
         # set up at the time of initialization.
-        if percentiles is not None: use_percentiles = percentiles
-        else: use_percentiles = self.percentiles
-        if field is not None: use_field = field
-        else: use_field = self.field
+        use_percentiles = percentiles if percentiles is not None else self.percentiles
+        use_field = field if field is not None else self.field
 
         # Check to make sure that percentiles is iterable (list, numpy array, tuple, ...)
         if not hasattr(use_percentiles, '__iter__'):
