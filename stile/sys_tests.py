@@ -287,7 +287,7 @@ class StatSysTest(SysTest):
 
         # Print, if verbose=True.
         if verbose:
-            result.prettyPrint()
+            result.__str__()
 
         # Return.
         return result

@@ -309,7 +309,7 @@ class Stats:
         self.percentiles = None
         self.values = None
 
-    def prettyPrint(self):
+    def __str__(self):
         """This routine will print the contents of the Stats object in a nice format.
 
         We assume that the Stats object was created by a StatSysTest, so that certain sanity checks
