@@ -315,7 +315,7 @@ class Stats:
         We assume that the Stats object was created by a StatSysTest, so that certain sanity checks
         have already been done (e.g., self.percentiles, if not None, is iterable)."""
         # Preamble:
-        print 'Summary statistics:'
+        ret_str = 'Summary statistics:\n'
 
         # Loop over simple statistics and print them, if not None.  Generically if one is None then
         # all will be, so just check one.
@@ -325,11 +325,13 @@ class Stats:
             for stat in self.simple_stats:
                 this_string = 'this_val = self.'+stat
                 exec this_string
-                print '\t%s: %f'%(stat, this_val)
-            print ''
+                ret_str += '\t%s: %f\n'%(stat, this_val)
+            ret_str += '\n'
 
         # Loop over combinations of percentiles and values, and print them.
         if self.percentiles is not None:
-            print 'Below are lists of (percentile, value) combinations:'
+            ret_str += 'Below are lists of (percentile, value) combinations:\n'
             for index in range(len(self.percentiles)):
-                print '\t%f %f'%(self.percentiles[index],self.values[index])
+                ret_str += '\t%f %f\n'%(self.percentiles[index],self.values[index])
+
+        return ret_str
