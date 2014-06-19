@@ -67,9 +67,12 @@ class CachedDataHandler(DataHandler):
     taking disparate amounts of time to run.
     
     Data is cached such that the least recently used data is discarded first, if data must be
-    discarded to fit within max_cache.  Data should be cached before any binning takes place.  We
-    recommend that the method `initCache` is called at the end of the __init__ block for child
-    classes of CachedDataHandler.
+    discarded to fit within max_cache.  Data should be cached before any binning takes place.  The
+    method `initCache` should be called at the end of the __init__ block for child classes of
+    CachedDataHandler.
+    
+    The data is stored in a dict whose keys are the data idents.  If saveCache() is called with an
+    ident which is already in the cache, the data in the cache is overwritten.
     """
     def initCache(self,max_image_cache=1,max_catalog_cache=1)
         """
@@ -110,6 +113,7 @@ class CachedDataHandler(DataHandler):
                     recent = recent[1:]
                 cache[ident] = data
                 recent.append(ident)
+
     def getCache(self,ident,data_format):
         """
         Retrieve the data corresponding to `ident` from the cache corresponding to `data_format`.
@@ -126,6 +130,7 @@ class CachedDataHandler(DataHandler):
         recent.delete(ident)
         recent.append(ident)
         return cache[ident]
+        
     def inCache(self,ident,data_format):
         """
         Returns True if `ident` is in the cache corresponding to `data_format`.
@@ -134,6 +139,7 @@ class CachedDataHandler(DataHandler):
             return (ident in self._image_cache)
         else:
             return (ident in self._catalog_cache)
+            
     def clearCache(self,ident,data_format=None):
         """
         Remove the data corresponding to `ident` from one or both caches.  If `data_format`==None,
@@ -163,7 +169,7 @@ class HSCDataHandler(CachedDataHandler):
         max_catalog_cache = hsc_args.get('max_catalog_cache',max_cache)
         self.initCache(max_image_cache,max_catalog_cache)
 
-        def _modifyArray(self,data,required_fields):
+    def _modifyArray(self,data,required_fields):
         for key in data:
             sample = data[key][0]
             if isinstance(sample,MomentsD) or isinstance(sample,MomentsF):
