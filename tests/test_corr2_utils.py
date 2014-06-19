@@ -138,38 +138,38 @@ def compare_text_files(f1,f2, reorder=True):
         f2_data.sort()
     return f1_data==f2_data
 
-def test_CheckOptions():
+def test_CheckArguments():
     t0 = time.time()
              
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict1,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict2,check_status=True)
-    stile.corr2_utils.CheckOptions(dict2,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict3,check_status=True)
-    stile.corr2_utils.CheckOptions(dict3,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict4,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict4,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict5,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckOptions,dict5,check_status=False)
-    stile.corr2_utils.CheckOptions(dict6,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict1,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict2,check_status=True)
+    stile.corr2_utils.CheckArguments(dict2,check_status=False)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict3,check_status=True)
+    stile.corr2_utils.CheckArguments(dict3,check_status=False)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,check_status=False)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,check_status=True)
+    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,check_status=False)
+    stile.corr2_utils.CheckArguments(dict6,check_status=True)
     t1 = time.time()
-    print "Time to test corr2_utils.check_options: ", 1000*(t1-t0), "ms"
+    print "Time to test corr2_utils.CheckArguments: ", 1000*(t1-t0), "ms"
     
-def test_WriteCorr2ParamFile():
+def test_WriteCorr2ConfigurationFile():
     import tempfile
     import os
     t0 = time.time()
     handle, f2 = tempfile.mkstemp(dir='.')
-    stile.WriteCorr2ParamFile(f2,dict2)
-    if not compare_text_files(f2,'test_data/corr2_dict2_param_file.dat'):
+    stile.WriteCorr2ConfigurationFile(f2,dict2)
+    if not compare_text_files(f2,'test_data/corr2_dict2_config_file.dat'):
         os.close(handle)
         #os.remove(f2)
-        raise AssertionError('write_corr2_param_file() produced incorrect output for test params '+
-                             'dict dict2')
+        raise AssertionError('WriteCorr2ConfigurationFile() produced incorrect output for test '+
+                             'args dict dict2')
     else:
         os.close(handle)
         os.remove(f2)
     t1 = time.time()
-    print "Time to test write_corr2_param_file: ", 1000*(t1-t0), "ms"
+    print "Time to test WriteCorr2ConfigurationFile: ", 1000*(t1-t0), "ms"
     
 def test_ReadCorr2ResultsFile():
     t0 = time.time()
@@ -178,19 +178,19 @@ def test_ReadCorr2ResultsFile():
     numpy.testing.assert_raises(RuntimeError,stile.ReadCorr2ResultsFile,
                                 'test_data/empty_file.dat')
     t1 = time.time()
-    print "Time to test read_corr2_results_file: ", 1000*(t1-t0), "ms"
+    print "Time to test ReadCorr2ResultsFile: ", 1000*(t1-t0), "ms"
 
 def test_AddCorr2Dict():
     t0 = time.time()
     new_dict = stile.corr2_utils.AddCorr2Dict(dict1)
-    if new_dict['corr2_options']:
-        raise TypeError('The "corr2_options" key of the new dict should have no entries')
+    if new_dict['corr2_kwargs']:
+        raise TypeError('The "corr2_kwargs" key of the new dict should have no entries')
     new_dict = stile.corr2_utils.AddCorr2Dict(dict2)
-    if not new_dict['corr2_options']==dict2:
+    if not new_dict['corr2_kwargs']==dict2:
         raise TypeError('All entries from the dict should have been copied to the "corr2_options" '+
                         'key of the new dict')
     t1 = time.time()
-    print "Time to test add_corr2_dict: ", 1000*(t1-t0), "ms"
+    print "Time to test AddCorr2Dict: ", 1000*(t1-t0), "ms"
 
 def test_MakeCorr2Cols():
     t0 = time.time()
@@ -213,11 +213,11 @@ def test_MakeCorr2Cols():
     numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict2),list2_results)
     
     t1 = time.time()
-    print "Time to test make_corr2_cols: ", 1000*(t1-t0), "ms"
+    print "Time to test MakeCorr2Cols: ", 1000*(t1-t0), "ms"
     
 if __name__=='__main__':
-    test_CheckOptions()
-    test_WriteCorr2ParamFile()
+    test_CheckArguments()
+    test_WriteCorr2ConfigurationFile()
     test_ReadCorr2ResultsFile()
     test_AddCorr2Dict()
     test_MakeCorr2Cols()

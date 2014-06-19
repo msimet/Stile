@@ -52,7 +52,7 @@ class CorrelationFunctionSysTest(SysTest):
         @param random2       A random data set corresponding to the contents of data2, in the same
                              format. (default: None)
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file.
-        @returns             a numpy.recarray of the corr2 outputs.
+        @returns             a numpy array of the corr2 outputs.
         """
         #TODO: know what kinds of data this needs and make sure it has it
         import tempfile
@@ -62,31 +62,31 @@ class CorrelationFunctionSysTest(SysTest):
         file_handles = []
         delete_files = []
         
-        corr2_options = stile_args['corr2_options']
-        corr2_options.update(kwargs) # TODO: Don't know if this will work if we actually pass kwargs
-        corr2_options['file_'+data[0]] = data[1]
+        corr2_kwargs = stile_args['corr2_kwargs']
+        corr2_kwargs.update(kwargs) # TODO: Don't know if this will work if we actually pass kwargs
+        corr2_kwargs['file_'+data[0]] = data[1]
         if data2:
-            corr2_options['file_'+data2[0]+'2'] = data2[1]
+            corr2_kwargs['file_'+data2[0]+'2'] = data2[1]
         if random:
-            corr2_options['rand_'+random[0]] = random[1]
+            corr2_kwargs['rand_'+random[0]] = random[1]
         if random2:
             if data:
-                corr2_options['rand_'+random2[0]+'2'] = random2[1]
+                corr2_kwargs['rand_'+random2[0]+'2'] = random2[1]
             else:
                 raise ValueError("random2 data set passed without corresponding data2 data set!")
 
-        handle, param_file = tempfile.mkstemp(dir=dh.temp_dir)
+        handle, config_file = tempfile.mkstemp(dir=dh.temp_dir)
         file_handles.append(handle)
-        delete_files.append(param_file)
+        delete_files.append(config_file)
         if 'bins_name' in stile_args:
             output_file = dh.getOutputPath(self.short_name+stile_args['bins_name'])
         else:
             output_file = dh.getOutputPath(self.short_name)
-        corr2_options[correlation_function_type+'_file_name'] = output_file
-        stile.WriteCorr2ParamFile(param_file,corr2_options)
+        corr2_kwargs[correlation_function_type+'_file_name'] = output_file
+        stile.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
         
         #TODO: don't hard-code the name of corr2!
-        subprocess.check_call(['corr2', param_file])
+        subprocess.check_call(['corr2', config_file])
 
         return_value  = stile.ReadCorr2ResultsFile(output_file)
         for handle in file_handles:
@@ -100,7 +100,7 @@ class RealShearSysTest(CorrelationFunctionSysTest):
     long_name = 'Shear of galaxies around real objects'
 
     def __call__(self,stile_args,dh,data,data2,random=None,random2=None):
-        corr2_options = stile_args['corr2_options']
+        corr2_kwargs = stile_args['corr2_kwargs']
         return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
-                                              **corr2_options)
+                                              **corr2_kwargs)
 
