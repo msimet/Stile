@@ -5,16 +5,6 @@ functions.
 
 import numpy
 
-def Parser():
-    """
-    Returns an argparse Parser object with input args used by Stile and corr2.
-    """
-    import corr2_utils
-    import argparse
-    p = argparse.Parser(parent=corr2_utils.Parser())
-    #TODO: add, obviously, EVERYTHING ELSE
-    return p
-
 def ExpandBinList(bin_list):
     """
     Take a list of Bin* objects, and expand them to return a list of SimpleBins to step through.  
@@ -335,3 +325,51 @@ class Stats:
                 ret_str += '\t%f %f\n'%(self.percentiles[index],self.values[index])
 
         return ret_str
+
+def standardTests():
+    return [stile.StatSysTest(field='e1'), stile.StatSysTest(field='e2'), 
+            stile.RealShearSysTest()]
+
+formats = ['catalog','image']
+extents = ['CCD','field','catalog']
+epochs  = ['single','multiepoch']
+paired  = ['pair','single']            
+
+class Format:
+    def __init__(self,epoch,extent,format,pair=False):
+        if epoch in epochs:
+            self.epoch = epoch
+        else:
+            raise ValueError('epoch must be one of '+str(epochs))
+        if extent in extents:
+            self.extent = extent
+        else:
+            raise ValueError('extent must be one of '+str(extents))
+        if format in formats:
+            self.format = format
+        else:
+            raise ValueError('format must be one of '+str(formats))
+        if pair:
+            if isinstance(pair,str):
+                if pair in paired:
+                    self.pair = pair
+                else:
+                    raise ValueError('pair must be a bool, or one of '+str(paired))
+            else:
+                self.pair = 'pair'
+        else:
+            self.pair = 'single'
+    def asKwargs(self):
+        return {'epoch': self.epoch, 'extent': self.extent, 
+                'format': self.format, 'pair': self.pair}
+    def __hash__(self):
+        return '-'.join(self.epoch, self.extent, self.format, self.pair)
+    
+def getEmptyFormatDict(use_dict=False):
+    format_dict = {}
+    for format in formats:
+        for extent in extents:
+            for epoch in epochs:
+                for pair in paired:
+                    format_dict = {Format(self,extent,epoch,pair=pair): []}
+    return format_dict
