@@ -45,43 +45,16 @@ def ReadFitsTable(file_name,hdu=1):
     """
     return read_fits_image(file_name,hdu=1)
 
-def ReadAsciiTable(file_name, start_line=None, comment=None):
-    """
-    Read in an ASCII table, and represent it via the simplest possible form for each field.  
+def ReadAsciiTable(file_name, **kwargs):
+    d = numpy.genfromtxt(file_name,dtype=None,**kwargs)
+    if not d.dtype.names:
+        if isinstance(d.dtype,str):
+            dtype = ','.join([d.dtype]*len(d[0]))
+        else:
+            dtype = ','.join([d.dtype.char]*len(d[0]))
+        d = numpy.array([tuple(dd) for dd in d],dtype=dtype)
+    return d
     
-    If you know your data contains only numbers (no strings), type safety and proper field
-    alignment can be better handled by the functions numpy.loadtxt() [complete table] or
-    numpy.genfromtxt() [missing fields].  This function is mostly useful if you have
-    string data and don't want to skip those fields or turn the file into a FITS table.
-    
-    @param file_name The name of the file containing the ASCII table
-    @param startline The number of the line to start on. startline=1 skips the first line of the
-                     file, startline=2 skips the first two lines, etc. (default: None)
-    @param comment   Ignore any lines whose first non-whitespace characters are this string.
-                     (default: None)
-    @returns         a numpy array containing the data in the file file_name
-    """
-    from stile_utils import GetVectorType
-
-    f=open(file_name,'r')
-    if start_line:
-        for i in range(start_line-1):
-            f.readline()
-    d = [line.split() for line in f.readlines()]
-    f.close()
-    if not d:
-        return numpy.array([])
-    if comment:
-        lenc = len(comment)
-        d = [tuple(dd) for dd in d if dd and dd[0].strip()[:lenc]!=comment]
-    else:
-        d = [tuple(dd) for dd in d if dd]
-    if len(d)==0:
-        return []
-    d_arr = numpy.array(d)
-    types = ','.join([GetVectorType(d_arr[:,i]) for i in range(len(d_arr[0]))])
-    return numpy.array(d,dtype=types)
-
 def WritePoint(f,line,pos):
     if pos>=0:
         f.write(str(line[pos])+' ')

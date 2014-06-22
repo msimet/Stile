@@ -49,24 +49,6 @@ def ExpandBinList(bin_list):
     return data_bins
 
 
-def GetVectorType(x):
-    """
-    Figure out the least-precise type that can represent an entire vector of data.
-
-    @param x An iterable of data (a single scalar value will likely result in errors)
-    @returns a string usable in a NumPy dtype declaration for x
-    """
-    if not hasattr(x,'astype'):
-        x = numpy.array(x)
-    #TODO: better data types here
-    for var_type, type_name in [(int,'l'),(float,'d')]:
-        try:
-            x.astype(var_type)
-            return type_name
-        except:
-            pass
-    return 'S'+str(max([len(xx) for xx in x]))
-
 def FormatArray(d,fields=None,only_floats=False):
     """
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
@@ -107,32 +89,32 @@ def FormatArray(d,fields=None,only_floats=False):
     return d
 
 class OSFile:
-	def __init__(self,dh,data_id,fields=None,delete_when_done=True,is_array=False):
-		import file_io
-		import tempfile
-		self.data_id = weakref.ref(data_id)
-		self.dh = weakref.ref(dh)
-		self.fields = fields
-		if is_array:
-			self.data = data_id
-		else:
-			self.data = dh.getData(data_id,force=True)
-		self.delete_when_done = delete_when_done
-		self.handle, self.file_name = tempfile.mkstemp(dh.temp_dir)
-		file_io.WriteAsciiTable(self.file_name,self.data,fields=self.fields)
-		if not self.fields:
-			try:
-				self.fields = self.file_name.dtype.names
-			except:
-				pass
-	def __repr__(self):
-		return self.file_name
-	def __del__(self):
-		os.close(self.handle)
-		if self.delete_when_done:
-			if os.file_exists(self.file_name):
-				os.remove(self.file_name)
-	
+    def __init__(self,dh,data_id,fields=None,delete_when_done=True,is_array=False):
+        import file_io
+        import tempfile
+        self.data_id = weakref.ref(data_id)
+        self.dh = weakref.ref(dh)
+        self.fields = fields
+        if is_array:
+            self.data = data_id
+        else:
+            self.data = dh.getData(data_id,force=True)
+        self.delete_when_done = delete_when_done
+        self.handle, self.file_name = tempfile.mkstemp(dh.temp_dir)
+        file_io.WriteAsciiTable(self.file_name,self.data,fields=self.fields)
+        if not self.fields:
+            try:
+                self.fields = self.file_name.dtype.names
+            except:
+                pass
+    def __repr__(self):
+        return self.file_name
+    def __del__(self):
+        os.close(self.handle)
+        if self.delete_when_done:
+            if os.file_exists(self.file_name):
+                os.remove(self.file_name)
+    
         
 def MakeFiles(dh, data, data2=None, random=None, random2=None):
     """
@@ -150,7 +132,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
     @param random2 The random data set corresponding to data2
     @returns       A 5-item tuple with the following items: 
                      new_data, new_data2, new_random, new_random2, - with arrays replaced by files
-						(technically OSFile objects)
+                        (technically OSFile objects)
                      corr2_kwargs - dictionary of kwargs to be passed to corr2
     """
     
@@ -179,7 +161,7 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                 aw_files.append(data_list.file_name)
             else:
                 raise RuntimeError("Data item appears to be an OSFile object, but does not point "+
-								   "to an existing object: %s"%data_list[0])
+                                   "to an existing object: %s"%data_list[0])
         elif hasattr(data_list,'__getitem__'):
             # We don't want to cycle through a whole data array, so first check whether the first 
             # item points to a file..
@@ -189,16 +171,16 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                         if os.path.isfile(dl[0]):
                             already_written.append(dl[1])
                             aw_files.append(dl[0])
-						elif hasattr(dl,'file_name') and os.path.isfile(dl.file_name):
+                        elif hasattr(dl,'file_name') and os.path.isfile(dl.file_name):
                             already_written.append(dl.file_name) # NO! TODO
                             aw_files.append(dl.file_name)
                         else:
                             raise RuntimeError("Data item appears to be an OSFile object, but does "+
-											   "not point to an existing object: %s"%data_list[0])
+                                               "not point to an existing object: %s"%data_list[0])
                 else:
-						raise RuntimeError("Data item appears to be an OSFile object, but does "+
-										   "not point to an existing object: %s"%data_list[0])
-		    elif hasattr(data_list[0],'data_id'):
+                        raise RuntimeError("Data item appears to be an OSFile object, but does "+
+                                           "not point to an existing object: %s"%data_list[0])
+            elif hasattr(data_list[0],'data_id'):
                 if os.path.isfile(data_list[0].data_id):
                     for dl in data_list:
                         if os.path.isfile(dl[0]):
@@ -289,13 +271,13 @@ def MakeFiles(dh, data, data2=None, random=None, random2=None):
                             raise RuntimeError("Cannot parse data: should be a tuple, "+
                                                "numpy array, or an unmixed list of one or the "+
                                                "other.  Given:"+str(data_list))
-						new_data_list.append(OSFile(dh,dl,fields=fields,is_array=True))
+                        new_data_list.append(OSFile(dh,dl,fields=fields,is_array=True))
     
     # Lists of files need to be written to a separate file to be read in; do that.
     file_args = []
     for file_list in [new_data, new_data2, new_random, new_random2]:
         if len(file_list)>1:
-			file_args.append(('list',OSFile(dh,file_list,is_array=True)))
+            file_args.append(('list',OSFile(dh,file_list,is_array=True)))
         elif len(file_list)==1:
             file_args.append(('name',file_list[0]))
         else:

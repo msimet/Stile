@@ -55,16 +55,14 @@ def test_ReadFitsTable():
 
 def test_ReadAsciiTable():
     t0 = time.time()
-    results = stile.ReadAsciiTable('test_data/corr2_output.dat',comment='#')
+    # ReadAsciiTable is a wrapper for numpy.genfromtxt() that turns things into formatted arrays if
+    # necessary, so we don't really need to test much of the functionality--just make sure that
+    # both natively formatted arrays (table_with_string) and natively raw arrays (corr2_output) are
+    # both returned as formatted arrays.
+    results = stile.ReadAsciiTable('test_data/corr2_output.dat',comments='#')
     numpy.testing.assert_equal(results,table1)
-    results = stile.ReadAsciiTable('test_data/corr2_output.dat',start_line=3)
-    numpy.testing.assert_equal(results,table1[1:]) # since first skipped line is a comment
     results = stile.ReadAsciiTable('test_data/table_with_string.dat')
     numpy.testing.assert_equal(results,table2_withstring)
-    results = stile.ReadAsciiTable('test_data/table_with_string.dat',comment='s')
-    numpy.testing.assert_equal(results,table2_withstring)
-    numpy.testing.assert_raises(IndexError,stile.ReadAsciiTable,
-                                'test_data/table_with_missing_field.dat')
     t1 = time.time()
     print "Time to test ASCII table read: ", 1000*(t1-t0), "ms"
     
