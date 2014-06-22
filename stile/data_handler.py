@@ -45,3 +45,18 @@ class DataHandler:
         else:
             return os.path.join(self.output_path,base_path+extension)
 
+
+class ConfigDataHandler(CachedDataHandler):
+
+    def __init__(self,stile_args):
+        pass
+    def listFileTypes(self):
+        return [['pair','single','pointing','table']]
+    def listData(self,pair_or_single,epoch,extent,data_format,random=False):
+        pass
+    def getData(self,id,pair_or_single,epoch,extent,data_format,
+                      random=False,bin_list=None,force=False):
+        pass
+    
+                
+        
