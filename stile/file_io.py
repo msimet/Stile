@@ -46,14 +46,9 @@ def ReadFitsTable(file_name,hdu=1):
     return read_fits_image(file_name,hdu=1)
 
 def ReadAsciiTable(file_name, **kwargs):
+    import stile_utils
     d = numpy.genfromtxt(file_name,dtype=None,**kwargs)
-    if not d.dtype.names:
-        if isinstance(d.dtype,str):
-            dtype = ','.join([d.dtype]*len(d[0]))
-        else:
-            dtype = ','.join([d.dtype.char]*len(d[0]))
-        d = numpy.array([tuple(dd) for dd in d],dtype=dtype)
-    return d
+    return stile_utils.FormatArray(d)
     
 def WritePoint(f,line,pos):
     if pos>=0:

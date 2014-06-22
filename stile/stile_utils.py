@@ -54,26 +54,25 @@ def FormatArray(d,fields=None,only_floats=False):
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
     description.
 
-    @param d      A NumPy array (or other iterable which satisfies hasattr(d,'shape')).
+    @param d      A NumPy array
     @param fields A dictionary whose keys are the names of the fields you'd like for the output 
-                  array, and whose values are field numbers (starting with 0) whose names those keys 
-                  should replace. (default: None)
-    @param only_floats All fields are floats, don't check for data type (default: False)
+                  array, and whose values are field numbers (starting with 0) whose names those keys should replace; alternately, a list with the same length as the rows of d. 
+                  (default: None)
     @returns      A formatted numpy array with the same shape as d except that the innermost 
                   dimension has turned into a record field, optionally with field names 
                   appropriately replaced.
     """
-    if hasattr(d,'dtype') and hasattr(d.dtype,'names'):
+    if hasattr(d,'dtype') and hasattr(d.dtype,'names') and d.dtype.names:
         pass
     else:
         d_shape = d.shape
         new_d = d.reshape(-1,d_shape[-1])
         new_d = numpy.array(d)
-        if only_floats:
-            types = ','.join(['d']*len(new_d[0]))
+        if isinstance(d.dtype,str):
+            dtype = ','.join([d.dtype]*len(d[0]))
         else:
-            types = ','.join([get_vector_type(new_d[:,i]) for i in range(len(new_d[0]))])
-        d = numpy.array([tuple(nd) for nd in new_d],dtype=types)
+            dtype = ','.join([d.dtype.char]*len(d[0]))
+        d = numpy.array([tuple(nd) for nd in new_d],dtype=dtype)
         if len(d_shape)>1:
             d = d.reshape(d_shape[:-1])
     if fields:
