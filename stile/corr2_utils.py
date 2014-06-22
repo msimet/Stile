@@ -13,9 +13,8 @@ import os
 #    'val' : if the value must be one of a limited set of options, they are given here; else None.
 #    'status': whether or not this is a corr2 argument that Stile will pass through without 
 #              altering.  The options are 'disallowed_computation' (Stile makes these choices),
-#              'disallowed_file' (the DataHandler makes these choices), 'captured' (Stile should 
-#              have harvested this for its own use--if it didn't that's a bug); and 'allowed' 
-#              (Stile should silently pass it through to corr2).
+#              'disallowed_file' (the DataHandler makes these choices), and 'allowed' (Stile 
+#              should silently pass it through to corr2).
 corr2_kwargs = {
     'file_name': 
         {'type': (str,),
@@ -60,71 +59,71 @@ corr2_kwargs = {
     'file_type': 
         {'type': (str,),
          'val': ("ASCII","FITS"),
-         'status': 'captured'},
+         'status': 'allowed'},
     'delimiter': 
         {'type': (str,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'comment_marker': 
         {'type': (str,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'first_row':
         {'type': (int,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'last_row':
         {'type': (int,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'x_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'y_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'ra_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'dec_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'x_units':
         {'type': (str,),
          'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
-         'status': 'captured'},
+         'status': 'allowed'},
     'y_units':
         {'type': (str,),
          'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
-         'status': 'captured'},
+         'status': 'allowed'},
     'ra_units':
         {'type': (str,),
          'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
-         'status': 'captured'},
+         'status': 'allowed'},
     'dec_units':
         {'type': (str,),
          'val': ['radians', 'hours', 'degrees', 'arcmin', 'arcsec'],
-         'status': 'captured'},
+         'status': 'allowed'},
     'g1_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'g2_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'k_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'w_col':
         {'type': (int,str),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'flip_g1':
         {'type': (bool,),
          'val': None,
@@ -236,11 +235,11 @@ corr2_kwargs = {
     'verbose': 
         {'type': (int,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'num_threads':
         {'type': (int,),
          'val': None,
-         'status': 'captured'},
+         'status': 'allowed'},
     'split_method':
         {'type': (str,),
          'val': ["mean","median","middle"],
@@ -402,10 +401,6 @@ def CheckArguments(input_dict, check_status=True):
                                      'the necessary correlation functions.  Depending on your '+
                                      'needs, please either remove this argument from your syntax '+
                                      'or consider running corr2 as a standalone program.'%key)
-                elif c2k['status']=='captured':
-                    raise ValueError('Argument %s should have been captured by the input parser for '
-                                     'Stile, but it was not.  This is a bug; please '
-                                     'open an issue at http://github.com/msimet/Stile/issues.'%key)
             if type(input_dict[key]) not in c2k['type']:
                 # The unknown arguments are passed as strings.  Since the string may not be the
                 # desired argument, try casting the value into the correct type or types and see if
