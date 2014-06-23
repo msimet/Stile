@@ -87,3 +87,53 @@ def FormatArray(d,fields=None,only_floats=False):
             raise RuntimeError('Cannot use given fields: '+str(fields))
     return d
 
+class Stats:
+    """A Stats object can carry around and output the statistics of some array.
+
+    Currently it can carry around two types of statistics:
+
+    (1) Basic array statistics: typically one would use length (N), min, max, median, mean, standard
+        deviation (stddev), variance, median absolute deviation ('mad') as defined using the
+        `simple_stats` option at initialization.
+
+    (2) Percentiles: the value at a given percentile level.
+
+    The StatSysTest class in `sys_tests.py` can be used to create and populate values for one of
+    these objects.  If you want to change the list of simple statistics, it's only necessary to
+    change the code there, not here.
+    """
+    def __init__(self, simple_stats):
+        self.simple_stats = simple_stats
+        for stat in self.simple_stats:
+            init_str = 'self.' + stat + '=None'
+            exec init_str
+
+        self.percentiles = None
+        self.values = None
+
+    def __str__(self):
+        """This routine will print the contents of the Stats object in a nice format.
+
+        We assume that the Stats object was created by a StatSysTest, so that certain sanity checks
+        have already been done (e.g., self.percentiles, if not None, is iterable)."""
+        # Preamble:
+        ret_str = 'Summary statistics:\n'
+
+        # Loop over simple statistics and print them, if not None.  Generically if one is None then
+        # all will be, so just check one.
+        test_str = "test_val = self."+("%s"%self.simple_stats[0])
+        exec test_str
+        if test_val is not None:
+            for stat in self.simple_stats:
+                this_string = 'this_val = self.'+stat
+                exec this_string
+                ret_str += '\t%s: %f\n'%(stat, this_val)
+            ret_str += '\n'
+
+        # Loop over combinations of percentiles and values, and print them.
+        if self.percentiles is not None:
+            ret_str += 'Below are lists of (percentile, value) combinations:\n'
+            for index in range(len(self.percentiles)):
+                ret_str += '\t%f %f\n'%(self.percentiles[index],self.values[index])
+
+        return ret_str
