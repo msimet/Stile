@@ -74,6 +74,7 @@ def test_WriteAsciiTable():
     handle, filename = tempfile.mkstemp()
     stile.file_io.WriteAsciiTable(filename,table1)
     results = stile.ReadAsciiTable(filename)
+    print filename
     numpy.testing.assert_equal(table1.astype('f'),results.astype('f')) 
 
     field_list = ['f3','f4','f6','f0','f2','f1','f5']

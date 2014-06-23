@@ -3,6 +3,8 @@ Contains elements of Stile needed to interface with Mike Jarvis's corr2 program.
 """
 import copy
 import numpy
+import weakref
+import os
 
 # A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
 # so only one dict is here; later versions of Stile may need to implement if statements here for
@@ -464,7 +466,7 @@ def ReadCorr2ResultsFile(file_name):
     import file_io
     #output = numpy.loadtxt(file_name)
     # Currently there is a bug in corr2 that puts some text output into results files...
-    output = file_io.ReadAsciiTable(file_name,comment='R',start_line=2)
+    output = file_io.ReadAsciiTable(file_name,comments='R',skiprows=1)
     
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
@@ -528,15 +530,18 @@ class OSFile:
     def __init__(self,dh,data_id,fields=None,delete_when_done=True,is_array=False):
         import file_io
         import tempfile
-        self.data_id = weakref.ref(data_id)
-        self.dh = weakref.ref(dh)
+        self.data_id = data_id
+        self.dh = dh
         self.fields = fields
         if is_array:
             self.data = data_id
         else:
-            self.data = dh.getData(data_id,force=True)
+            try:
+                self.data = dh.getData(data_id,force=True)
+            except:
+                raise ValueError('Cannot get data_id %s from given data handler'%data_id)
         self.delete_when_done = delete_when_done
-        self.handle, self.file_name = tempfile.mkstemp(dh.temp_dir)
+        self.handle, self.file_name = tempfile.mkstemp(dir=dh.temp_dir)
         if not self.fields:
             try:
                 self.fields = self.file_name.dtype.names
@@ -548,7 +553,7 @@ class OSFile:
     def __del__(self):
         os.close(self.handle)
         if self.delete_when_done:
-            if os.file_exists(self.file_name):
+            if os.path.isfile(self.file_name):
                 os.remove(self.file_name)
 
 def _merge_fields(has_fields,old_fields,new_fields):
@@ -557,9 +562,11 @@ def _merge_fields(has_fields,old_fields,new_fields):
     if not has_fields:
         return True, new_fields
     else:
-        if isinstance(new_fields,dict):
-            new_fields = new_fields.keys()
-        return True, [old for old in old_fields if old in new_fields]
+        keys = old_fields.keys()
+        for key in keys:
+            if key not in new_fields:
+                del old_fields[key]
+        return True, old_fields
         
 def _check_fields(has_fields,already_written_files,fields,data_list):
     if isinstance(data_list,tuple):
@@ -584,7 +591,7 @@ def _check_fields(has_fields,already_written_files,fields,data_list):
 
 def _coerce_schema(schema):
     if isinstance(schema,list):
-        return dict([(i,schema[i]) for i in range(len(schema))])
+        return dict([(schema[i],i) for i in range(len(schema))])
     elif isinstance(schema,dict):
         return schema
     else:
@@ -600,14 +607,11 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
     @param dh      A DataHandler instance
     @param data    The data that will be passed to the Stile tests. Can be a 
                    (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
-                   other of those options (but NOT both!)
+                   other of those options.
     @param data2   The second set of data that will be passed for cross-correlations
     @param random  The random data set corresponding to data
     @param random2 The random data set corresponding to data2
-    @returns       A 5-item tuple with the following items: 
-                     new_data, new_data2, new_random, new_random2, - with arrays replaced by files
-                        (technically OSFile objects)
-                     corr2_kwargs - dictionary of kwargs to be passed to corr2
+    @returns       A corr2_kwargs dict containing the file names and column descriptions for corr2.
     """
     #TODO: do this in a smarter way that only cares about the fields we'll be using
     #TODO: check FITS/ASCII

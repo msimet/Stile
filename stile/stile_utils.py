@@ -4,7 +4,6 @@ functions.
 """
 
 import numpy
-import weakref
 import os
 
 def Parser():
@@ -62,16 +61,22 @@ def FormatArray(d,fields=None,only_floats=False):
                   dimension has turned into a record field, optionally with field names 
                   appropriately replaced.
     """
-    if hasattr(d,'dtype') and hasattr(d.dtype,'names') and d.dtype.names:
+    if hasattr(d,'dtype') and d.dtype.names:
         pass
     else:
         d_shape = d.shape
+        if len(d_shape)==1:
+            d = numpy.array([d])
+            d_shape = d.shape
         new_d = d.reshape(-1,d_shape[-1])
-        new_d = numpy.array(d)
         if isinstance(d.dtype,str):
             dtype = ','.join([d.dtype]*len(d[0]))
         else:
-            dtype = ','.join([d.dtype.char]*len(d[0]))
+            dtype_char = d.dtype.char
+            if dtype_char=='S' or dtype_char=='O' or dtype_char=='V' or dtype_char=='U':
+                dtype = ','.join([d.dtype.str[1:]]*len(d[0]))
+            else:
+                dtype = ','.join([dtype_char]*len(d[0]))
         d = numpy.array([tuple(nd) for nd in new_d],dtype=dtype)
         if len(d_shape)>1:
             d = d.reshape(d_shape[:-1])

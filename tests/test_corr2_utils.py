@@ -141,16 +141,26 @@ def compare_text_files(f1,f2, reorder=True):
 def test_CheckArguments():
     t0 = time.time()
              
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict1,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict2,check_status=True)
     stile.corr2_utils.CheckArguments(dict2,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict3,check_status=True)
     stile.corr2_utils.CheckArguments(dict3,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,check_status=False)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,check_status=True)
-    numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,check_status=False)
     stile.corr2_utils.CheckArguments(dict6,check_status=True)
+    try:
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict1,
+                                    check_status=True)
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict2,
+                                    check_status=True)
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict3,
+                                    check_status=True)
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,
+                                    check_status=True)
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict4,
+                                    check_status=False)
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,
+                                    check_status=True)
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.CheckArguments,dict5,
+                                    check_status=False)
+    except ImportError:
+        pass
     t1 = time.time()
     print "Time to test corr2_utils.CheckArguments: ", 1000*(t1-t0), "ms"
     
@@ -175,8 +185,11 @@ def test_ReadCorr2ResultsFile():
     t0 = time.time()
     arr = stile.ReadCorr2ResultsFile('test_data/corr2_output.dat')
     numpy.testing.assert_equal(arr,corr2_output)
-    numpy.testing.assert_raises(RuntimeError,stile.ReadCorr2ResultsFile,
+    try:
+        numpy.testing.assert_raises(RuntimeError,stile.ReadCorr2ResultsFile,
                                 'test_data/empty_file.dat')
+    except ImportError:
+        pass
     t1 = time.time()
     print "Time to test ReadCorr2ResultsFile: ", 1000*(t1-t0), "ms"
 
@@ -215,13 +228,73 @@ def test_MakeCorr2Cols():
     t1 = time.time()
     print "Time to test MakeCorr2Cols: ", 1000*(t1-t0), "ms"
 
+def test_OSFile():
+    t0 = time.time()
+    class temp_data_handler():
+        def __init__(self):
+            self.temp_dir = '.'
+    dh = temp_data_handler()
+    # count files since we want to check they're deleted properly
+    import os
+    nfiles = len(os.listdir('.'))
+    arr0 = [1,2,3,4,5]
+    arr1 = numpy.array([[1,2,3],[4.,5.,6.]])
+    arr2 = numpy.array([(1.5,2,3.5),(4,5,6)],dtype='d,l,d')
+    arr2.dtype.names = ['one','two','three']
+    OSFile0 = stile.corr2_utils.OSFile(dh,arr0,is_array=True)
+    OSFile1 = stile.corr2_utils.OSFile(dh,arr1,is_array=True)
+    OSFile2 = stile.corr2_utils.OSFile(dh,arr2,is_array=True)
+    OSFile3 = stile.corr2_utils.OSFile(dh,[OSFile0,OSFile1,OSFile2],is_array=True)
+    OSFile4 = stile.corr2_utils.OSFile(dh,arr2,is_array=True,fields=['two','three','one'])
+    OSFile5 = stile.corr2_utils.OSFile(dh,arr2,is_array=True,fields={'two':0,'three':1,'one':2})
+    numpy.testing.assert_equal(stile.ReadAsciiTable(OSFile0.file_name),
+                               numpy.array([tuple(arr0)],dtype='l,l,l,l,l'))
+    numpy.testing.assert_equal(stile.ReadAsciiTable(OSFile1.file_name),
+                               numpy.array([tuple(a) for a in arr1],dtype='l,l,l'))
+    # numpy.testing.assert_equal won't work on formatted arrays unless they have the same field
+    # description, so there's some annoying code in the next few lines to deal with this.
+    result = stile.ReadAsciiTable(OSFile2.file_name)
+    result.dtype.names = arr2.dtype.names # Fails in annoying ways otherwise
+    numpy.testing.assert_equal(result,arr2)
+    numpy.testing.assert_equal(stile.ReadAsciiTable(OSFile3.file_name),
+                               numpy.array(
+                                    [(OSFile0.file_name,OSFile1.file_name,OSFile2.file_name)],
+                                    dtype='S35,S35,S35'))
+    result = stile.ReadAsciiTable(OSFile4.file_name)
+    result.dtype.names=('two','three','one')
+    numpy.testing.assert_equal(result,arr2[['two','three','one']])
+    result = stile.ReadAsciiTable(OSFile5.file_name)
+    result.dtype.names=('two','three','one')
+    numpy.testing.assert_equal(result,arr2[['two','three','one']])
+    try:
+        numpy.testing.assert_raises(ValueError,stile.corr2_utils.OSFile,dh,0) 
+    except ImportError:
+        pass
+    del OSFile5
+    del OSFile4
+    del OSFile3
+    del OSFile2
+    del OSFile1
+    del OSFile0
+    nfiles2 = len(os.listdir('.'))
+    if not nfiles==nfiles2:
+        print "Different number of files in this directory post-OSFile testing. Unless another",
+        print "process has been writing files to this directory, there is a bug with OSFile."
+    t1 = time.time()
+    print "Time to test OSFile: ", 1000*(t1-t0), "ms"
+    
 def test_MakeCorr2FileKwargs():
     pass
     
 if __name__=='__main__':
+    try:
+        import nose
+    except:
+        print "assert_raises tests require nose"
     test_CheckArguments()
     test_WriteCorr2ConfigurationFile()
     test_ReadCorr2ResultsFile()
     test_AddCorr2Dict()
     test_MakeCorr2Cols()
+    test_OSFile()
 
