@@ -28,17 +28,11 @@ def main():
     data2 = dh.getData(data_ids[1],'pair','single','field','table')
     
     # convert all files to files on disk if they aren't already
-    data, data2, _, _, corr2_kwargs, handles, deletes = stile.MakeFiles(dh, data, data2)
+    corr2_kwargs = stile.MakeCorr2FileKwargs(dh,data,data2)
     stile_args['corr2_kwargs'].update(corr2_kwargs) 
     
     # run the test
     results = sys_test(stile_args,dh,data,data2)
-    # close and delete any temporary files
-    for handle in handles:
-        os.close(handle)
-    for delete in deletes:
-        if os.file_exists(delete):
-            os.remove(delete)
     # Plot the results
     P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
     P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
@@ -63,9 +57,7 @@ def main():
         stile_args['bins_name'] = '-'.join([bl.short_name for bl in bin_list])
         data2 = dh.getData(data_ids[1],'pair','single','field','table',bin_list=bin_list)
         
-        new_data, new_data2, _, _, corr2_kwargs, handles, deletes = stile.MakeFiles(dh,data,data2)
-        handles_list.append(handles)
-        deletes_list.append(deletes)
+        corr2_kwargs = stile.MakeCorr2FileKwargs(dh,data,data2)
         stile_args['corr2_kwargs'].update(corr2_kwargs)
         
         results = sys_test(stile_args,dh,new_data,new_data2)
@@ -80,11 +72,6 @@ def main():
         P.savefig(sys_test.short_name+stile_args['bins_name']+'.png')
         P.clf()
         print "Done with binned systematics test", stile_args['bins_name']
-    for handle in set(handles):
-        os.close(handle)
-    for delete in set(deletes):
-        if os.path.isfile(delete):
-            os.remove(delete)
 
 if __name__=='__main__':
     main()

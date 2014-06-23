@@ -214,6 +214,9 @@ def test_MakeCorr2Cols():
     
     t1 = time.time()
     print "Time to test MakeCorr2Cols: ", 1000*(t1-t0), "ms"
+
+def test_MakeCorr2FileKwargs():
+    pass
     
 if __name__=='__main__':
     test_CheckArguments()
