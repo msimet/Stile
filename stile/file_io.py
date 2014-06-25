@@ -50,6 +50,7 @@ def ReadAsciiTable(file_name, **kwargs):
     d = numpy.genfromtxt(file_name,dtype=None,**kwargs)
     return stile_utils.FormatArray(d)
 
+    
 # numpy.savetxt uses a completely different format specification language than the dtypes, so
 # this dict and the function _format_str take a formatted NumPy array and return something
 # that savetxt understands.  I've left the default field width (18 characters) for all
@@ -92,9 +93,11 @@ def WriteAsciiTable(file_name,data_array,fields=None):
         pass
     elif not data.dtype.names:
         raise ValueError('Fields kwarg only usable if data is a formatted NumPy array')
-    elif isinstance(fields,list):
+    elif isinstance(fields,(tuple,list)):
         if not len(set(fields))==len(fields):
             raise RuntimeError('Field description list has duplicate elements')
+        if isinstance(fields,tuple):
+            fields = list(fields)
         data = data[fields]
     elif isinstance(fields,dict):
         # Make a list that's only as long as it needs to be to cover the fields dict; populate it 

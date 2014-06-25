@@ -528,39 +528,60 @@ def MakeCorr2Cols(cols,use_as_k=None):
     
 class OSFile:
     def __init__(self,dh,data_id,fields=None,delete_when_done=True,is_array=False):
-        import file_io
-        import tempfile
-        self.data_id = data_id
-        self.dh = dh
-        self.fields = fields
-        if is_array:
-            self.data = data_id
+        if isinstance(data_id,OSFile) and (not fields or fields==data_id.fields):
+            # Not sure how to do this better
+            self.data_id = data_id.data_id
+            self.dh = data_id.dh
+            self.fields = data_id.fields
+            self.data = data_id.data
+            self.file_name = data_id.file_name
+            self.handle = data_id.handle
+            self.delete_when_done = data_id.delete_when_done
         else:
-            try:
-                self.data = dh.getData(data_id,force=True)
-            except:
-                raise ValueError('Cannot get data_id %s from given data handler'%data_id)
-        self.delete_when_done = delete_when_done
-        self.handle, self.file_name = tempfile.mkstemp(dir=dh.temp_dir)
-        if not self.fields:
-            try:
-                self.fields = self.file_name.dtype.names
-            except:
-                pass
-        file_io.WriteAsciiTable(self.file_name,self.data,fields=self.fields)
+            import file_io
+            import tempfile
+            self.data_id = data_id
+            self.dh = dh
+            self.fields = fields
+            if isinstance(self.data_id,OSFile):
+                self.data = self.data_id.data
+            elif is_array:
+                self.data = data_id
+            else:
+                try:
+                    self.data = dh.getData(data_id,force=True)
+                except:
+                    raise ValueError('Cannot get data_id %s from given data handler'%data_id)
+            self.delete_when_done = delete_when_done
+            self.handle, self.file_name = tempfile.mkstemp(dir=dh.temp_dir)
+            if not self.fields:
+                try:
+                    self.fields = self.data.dtype.names
+                except:
+                    pass
+            file_io.WriteAsciiTable(self.file_name,self.data,fields=self.fields)
     def __repr__(self):
         return self.file_name
     def __del__(self):
-        os.close(self.handle)
+        try:
+            os.close(self.handle)
+        except OSError: # in case already closed 
+            pass
         if self.delete_when_done:
             if os.path.isfile(self.file_name):
                 os.remove(self.file_name)
+    def __eq__(self,other):
+        # Mostly necessary for testing purposes
+        return (numpy.all(self.data_id==other.data_id) and self.dh==other.dh and
+                self.fields==other.fields and numpy.all(self.data==other.data) and
+                self.file_name==other.file_name and self.handle==other.handle and
+                self.delete_when_done==other.delete_when_done)
 
 def _merge_fields(has_fields,old_fields,new_fields):
     if not new_fields:
         return has_fields, old_fields
     if not has_fields:
-        return True, new_fields
+        return True, _coerce_schema(new_fields)
     else:
         keys = old_fields.keys()
         for key in keys:
@@ -579,18 +600,18 @@ def _check_fields(has_fields,already_written_files,fields,data_list):
             return has_fields, fields
         else:
             has_fields, fields = _merge_fields(has_fields,fields,data_list.fields)
-    elif hasattr(data_list,'dtype') and data.dtype.names:
-        has_fields, fields = _merge_fields(has_fields,fields,data_list.fields)
+    elif hasattr(data_list,'dtype') and data_list.dtype.names:
+        has_fields, fields = _merge_fields(has_fields,fields,data_list.dtype.names)
     elif hasattr(data_list,'__iter__'):
         for dl in data_list:
             has_fields, fields = _check_fields(has_fields,already_written_files,fields,dl)
-    else:
+    elif data_list:
         raise ValueError("Cannot understand data type (should be a NumPy formatted array or a "+
                          "tuple (file_name, field_description): "+str(data_list))
     return has_fields, fields
 
 def _coerce_schema(schema):
-    if isinstance(schema,list):
+    if isinstance(schema,(list,tuple)):
         return dict([(schema[i],i) for i in range(len(schema))])
     elif isinstance(schema,dict):
         return schema
@@ -622,7 +643,8 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
 
     # First check for already-written files, and grab their field schema
     for data_list in [data, data2, random, random2]:
-        if data_list is None or len(data_list)==0:
+        if (not isinstance(data_list,numpy.ndarray) and not data_list) or (
+            isinstance(data_list,numpy.ndarray) and len(data_list)==0):
             continue
         elif isinstance(data_list,tuple):
             if os.path.isfile(data_list[0]):
@@ -648,16 +670,17 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                         raise RuntimeError(("Data tuple appears to point to an existing file %s, "+
                                             "but that file is not found according to "+
                                             "os.path.isfile()")%data_list[0])
-                elif isinstance(data_list[0],OSFile):
+                elif isinstance(dl,OSFile):
                     if os.path.isfile(dl.file_name):
                         already_written_schema.append(_coerce_schema(dl.fields))
                         already_written_files.append(dl.file_name)
                     else:
                         raise RuntimeError("Data item appears to be an OSFile object, but does "+
                                            "not point to an existing object: %s"%data_list[0])
+                elif not hasattr(dl,'dtype'):
+                    raise ValueError("Cannot understand data: "+str(data_list))
         elif not hasattr(data_list,'dtype'):
             raise ValueError("Cannot understand data: "+str(data_list))
-
     # Check existing field schema for consistency.  (Corr2 only allows one schema specification.)
     if already_written_schema:
         while True:
@@ -668,14 +691,14 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                         all_same=False
             if all_same:
                 break
-            aw_keys = []
-            for aws in already_written_schema:
-                aw_keys += aws.keys()
-            aw_keys = set(aw_keys)
+            aw_keys = already_written_schema[0].keys()
+            for aws in already_written_schema[1:]:
+                for key in aw_keys:
+                    if key not in aws and key in aw_keys:
+                        del aw_keys[key]
             all_same = True
             for key in aw_keys:
-                n = [aw.get(key,None) for aw in already_written]
-                n = set([nn for nn in n if nn is not None])
+                n = set([aw[key] for aw in already_written_schema])
                 if len(n)>1:
                     all_same = False
                     break
@@ -683,25 +706,26 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                 break
             else:
                 # If they're inconsistent, remove the smallest file and repeat this loop
-                sizes = [os.path.getsize(awf) for awf in aw_files]
+                sizes = [os.path.getsize(awf) for awf in already_written_files]
                 remove = sizes.index(min(sizes))
-                to_write.append((aw_files[remove],already_written[remove]))
-                del already_written[remove]
-                del aw_files[remove]
-        aw_set = already_written[0]
-        for aw in already_written[1:]:
-            aw_set.update(aw)
-        fields = [0 for i in range(max([aw_set[key] for key in aw_set.keys()])+1)]
-        for key in aw_set:
-            fields[aw_set[key]] = key
-            
+                to_write.append(already_written_files[remove])
+                del already_written_files[remove]
+                del already_written_schema[remove]
+        fields = already_written_schema[0]
+        for aw in already_written_schema[1:]:
+            keys = fields.keys()
+            for key in keys:
+                if key not in aw:
+                    del fields[key]
+    else:
+        fields = []
+
     # Now make sure we have all the fields we need.
     has_fields = True if fields else False
     for data_list in [data, data2, random, random2]:
-        has_fields, fields = _check_fields(has_fields,already_written,fields,data_list)
+        has_fields, fields = _check_fields(has_fields,already_written_files,fields,data_list)
     if has_fields and not fields:
         raise RuntimeError('Intersection of field description for data files to write is empty.')
-
     new_data = []
     new_data2 = []
     new_random = []
@@ -710,12 +734,23 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
     # NOTE: currently not checking again that file exists
     for data_list, new_data_list in [(data,new_data), (data2,new_data2), 
                                      (random,new_random), (random2, new_random2)]:
-        if data_list is None or len(data_list)==0:
+        if (not isinstance(data_list,numpy.ndarray) and not data_list) or (
+                isinstance(data_list,numpy.ndarray) and len(data_list)==0):
             continue
         elif isinstance(data_list,tuple):
             if os.path.isfile(data_list[0]):
-                if data_list[0] in to_write:
-                    new_data_list.append(OSFile(dh,data_list[0],fields=fields))
+                data_fields = _coerce_schema(data_list[1])
+                # The "any(...)" bit here is to protect against the case where you use two identical
+                # filenames but different field descriptions, which would otherwise be caught by
+                # this check and rewritten.  (You could picture doing this if you had a catalog with
+                # two different shape definitions and wanted to correlate them, for example.)
+                if data_list[0] in to_write and any(
+                                              [data_fields[key]!=i for i,key in enumerate(fields)]):
+                    import file_io
+                    data = file_io.ReadAsciiTable(data_list[0])
+                    data.dtype.names = data_list[1]
+                    new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
+                    to_write.remove(data_list[0])
                 else:
                     new_data_list.append(data_list[0])
         elif isinstance(data_list,OSFile):
@@ -723,13 +758,18 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
         elif hasattr(data_list,'__getitem__'):
             if isinstance(data_list[0],tuple):
                 for dl in data_list:
-                    if dl[0] in to_write:
-                        new_data_list.append(OSFile(dh,dl[0],fields=fields))
+                    data_fields = _coerce_schema(dl[1])
+                    if dl[0] in to_write and any(
+                                              [data_fields[key]!=i for i,key in enumerate(fields)]):
+                        import file_io
+                        data = file_io.ReadAsciiTable(dl[0])
+                        data.dtype.names = dl[1]
+                        new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
                     else:
                         new_data_list.append(dl[0])
             else:
                 if hasattr(data_list,'dtype') and data_list.dtype.names: 
-                    new_data_list.append(OSFile(dh,data_file,fields=fields,is_array=True))
+                    new_data_list.append(OSFile(dh,data_list,fields=fields,is_array=True))
                 else: 
                     for dl in data_list:
                         if not hasattr(dl,'dtype') or not hasattr(dl.dtype,'names'):
@@ -751,9 +791,9 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
     
     corr2_kwargs = MakeCorr2Cols(fields)
     if file_args[0]:
-        corr2_kwargs['data_'+file_args[0][0]] = file_args[0][1]
+        corr2_kwargs['file_'+file_args[0][0]] = file_args[0][1]
     if file_args[1]:
-        corr2_kwargs['data_'+file_args[1][0]+'2'] = file_args[1][1]
+        corr2_kwargs['file_'+file_args[1][0]+'2'] = file_args[1][1]
     if file_args[2]:
         corr2_kwargs['random_'+file_args[2][0]] = file_args[2][1]
     if file_args[3]:
