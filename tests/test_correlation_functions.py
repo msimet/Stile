@@ -23,13 +23,13 @@ def test_CorrelationFunctionSysTest():
     dh = temp_data_handler()
     results = cf.getCorrelationFunction(stile_args,dh,'ng',
                                         ('name','../examples/example_lens_catalog.dat'),
-                                        ('name','../examples/example_source_catalog.dat')))
+                                        ('name','../examples/example_source_catalog.dat'))
     numpy.testing.assert_almost_equal(results,expected_result)
     kwargs = stile_args['corr2_kwargs']
     stile_args['corr2_kwargs'] = {}
     results2 = cf.getCorrelationFunction(stile_args,dh,'ng',
                                          ('name','../examples/example_lens_catalog.dat'),
-                                         ('name','../examples/example_source_catalog.dat')),
+                                         ('name','../examples/example_source_catalog.dat'),
                                          **kwargs)
     numpy.testing.assert_equal(results,results2)
     numpy.testing.assert_raises(,cf.getCorrelationFunction)

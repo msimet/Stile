@@ -466,7 +466,7 @@ def ReadCorr2ResultsFile(file_name):
     import file_io
     #output = numpy.loadtxt(file_name)
     # Currently there is a bug in corr2 that puts some text output into results files...
-    output = file_io.ReadAsciiTable(file_name,comments='R',skiprows=1)
+    output = file_io.ReadASCIITable(file_name,comments='R',skiprows=1)
     
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
@@ -474,7 +474,7 @@ def ReadCorr2ResultsFile(file_name):
         fields = f.readline().split()
     fields = fields[1:]
     fields = [field for field in fields if field!='.']
-    return stile_utils.FormatArray(output,fields=fields,only_floats=True)
+    return stile_utils.FormatArray(output,fields=fields)
 
 def AddCorr2Dict(input_dict):
     """
@@ -559,7 +559,7 @@ class OSFile:
                     self.fields = self.data.dtype.names
                 except:
                     pass
-            file_io.WriteAsciiTable(self.file_name,self.data,fields=self.fields)
+            file_io.WriteASCIITable(self.file_name,self.data,fields=self.fields)
     def __repr__(self):
         return self.file_name
     def __del__(self):
@@ -747,7 +747,7 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                 if data_list[0] in to_write and any(
                                               [data_fields[key]!=i for i,key in enumerate(fields)]):
                     import file_io
-                    data = file_io.ReadAsciiTable(data_list[0])
+                    data = file_io.ReadASCIITable(data_list[0])
                     data.dtype.names = data_list[1]
                     new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
                     to_write.remove(data_list[0])
@@ -762,7 +762,7 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                     if dl[0] in to_write and any(
                                               [data_fields[key]!=i for i,key in enumerate(fields)]):
                         import file_io
-                        data = file_io.ReadAsciiTable(dl[0])
+                        data = file_io.ReadASCIITable(dl[0])
                         data.dtype.names = dl[1]
                         new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
                     else:

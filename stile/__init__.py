@@ -1,4 +1,5 @@
-from file_io import ReadFitsImage, ReadFitsTable, ReadAsciiTable
+from file_io import ReadFITSImage, ReadFITSTable, ReadASCIITable, ReadTable, WriteTable
+from file_io import WriteASCIITable, WriteFITSTable
 from stile_utils import Parser, FormatArray, ExpandBinList
 from binning import BinList, BinStep, BinFunction
 import corr2_utils
