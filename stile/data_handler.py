@@ -5,7 +5,7 @@ import os
 import glob
 
 class DataHandler:
-    temp_dir = '.' # Can (should?) be overwritten by other DataHandlers
+    temp_dir = None # Can (should?) be overwritten by other DataHandlers
     def __init__(self):
         raise NotImplementedError()
     
@@ -249,7 +249,7 @@ class HSCDataHandler(CachedDataHandler):
             else:
                 epoch_key = ''
             data = self.butler.get(ident,epoch_key+'src')
-            if any(['psf' in rq for rq in required_fields]):
+            if any(['psf' in rq for rq in required_fields and rq not in data]):
                 data['psf'] = self.butler.get(ident,epoch_key+'psf')
             data = self._modifyArray(data,required_fields)
             self.saveCache(ident,data,'catalog')
