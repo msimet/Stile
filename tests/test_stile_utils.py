@@ -42,26 +42,43 @@ def test_ExpandBinList():
     from test_binning import compare_single_bin
     [(compare_single_bin(rpair[0],epair[0]), compare_single_bin(rpair[1],epair[1]))
                                                   for rpair, epair in zip(results,expected_results)]
-    #numpy.testing.assert_raises(ValueError,stile.ExpandBinList,bin_obj0,bin_obj1)
+    try: 
+        numpy.testing.assert_raises(ValueError,stile.ExpandBinList,bin_obj0,bin_obj1)
+    except ImportError:
+        print "nose is required for numpy.testing.assert_raises tests"
 
 def test_FormatArray():
-    #FormatArray(d,fields=None,only_floats=False)
-    pass
-
-def test_OSFile():
-    pass
-    
-def test_MakeFiles():
-    #MakeFiles(dh, data, data2=None, random=None, random2=None):
-    pass
+    data_raw = [(1,'hello',2.0),(3,'boo',5.0)]
+    data0 = numpy.array(data_raw)
+    data1 = numpy.array(data_raw,dtype='l,S5,d')
+    old_dnames = data1.dtype.names
+    result = stile.FormatArray(data0)
+    numpy.testing.assert_equal(result,data1.astype(result.dtype))
+    result = stile.FormatArray(data1)
+    numpy.testing.assert_equal(result,data1)
+    result = stile.FormatArray(data0,fields=['one','two','three'])
+    data1.dtype.names = result.dtype.names
+    numpy.testing.assert_equal(result,data1.astype(result.dtype))
+    numpy.testing.assert_equal(result.dtype.names,['one','two','three'])
+    result2 = stile.FormatArray(data0,fields={'one': 0, 'two': 1, 'three': 2})
+    numpy.testing.assert_equal(result,result2)
+    data1.dtype.names = old_dnames
+    result = stile.FormatArray(data1,fields=['one','two','three'])
+    data1.dtype.names = result.dtype.names
+    numpy.testing.assert_equal(result,data1.astype(result.dtype))
+    numpy.testing.assert_equal(result.dtype.names,['one','two','three'])
+    data1.dtype.names = old_dnames
+    result2 = stile.FormatArray(data1,fields={'one': 0, 'two': 1, 'three': 2})
+    numpy.testing.assert_equal(result,result2)
+    try:
+        numpy.testing.assert_raises(AttributeError,[1,2])
+    except ImportError:
+        print "nose is required for numpy.testing.assert_raises tests"
 
 def main():
     test_Parser()
     test_ExpandBinList()
-    test_GetVectorType()
     test_FormatArray()
-    test_OSFile()
-    test_MakeFiles()
 
 if __name__=='__main__':
     main()
