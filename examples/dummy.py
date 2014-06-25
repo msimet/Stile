@@ -6,7 +6,7 @@ class DummyDataHandler(stile.DataHandler):
     def __init__(self):
         self.source_file_name = 'example_source_catalog.dat'
         self.lens_file_name = 'example_lens_catalog.dat'
-        self.read_method = stile.ReadAsciiTable
+        self.read_method = stile.ReadASCIITable
         self.fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5} 
         self.output_path='.'
     def listFileTypes(self):

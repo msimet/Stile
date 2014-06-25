@@ -32,25 +32,16 @@ class CorrelationFunctionSysTest(SysTest):
     CorrelationFunctionSysTest.get_correlation_function for information on how to write further 
     tests using it.
     """
-    def getCorrelationFunction(self, stile_args, dh, correlation_function_type, data, data2=None, 
-                                 random=None, random2=None, **kwargs):
+    def getCorrelationFunction(self, stile_args, dh, correlation_function_type, **kwargs):
         """
-        Sets up and calls corr2 on the given set of data.
+        Sets up and calls corr2 on the given set of data.  The data files and random files should
+        be contained already in stile_args['corr2_kwargs'] or **kwargs.
+        
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
                              'kg','m2','nm','norm') to request from corr2.
         @param dh            A DataHandler object describing the data set given in the data lists
                              below.
-        @param data          A tuple whose first element is a string "name" or "list", corresponding
-                             to the corr2 arg to write to, and whose second element is the name of a
-                             file that exists in the filesystem.
-        @param data2         If this is a cross-correlation, two sets of data are required; this 
-                             kwarg should contain the second set in the same format as data. 
-                             (default: None)
-        @param random        A random data set corresponding to the contents of data, in the same 
-                             format. (default: None)
-        @param random2       A random data set corresponding to the contents of data2, in the same
-                             format. (default: None)
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file.
         @returns             a numpy array of the corr2 outputs.
         """
@@ -59,25 +50,18 @@ class CorrelationFunctionSysTest(SysTest):
         import subprocess
         import os
         
-        file_handles = []
-        delete_files = []
-        
         corr2_kwargs = stile_args['corr2_kwargs']
-        corr2_kwargs.update(kwargs) # TODO: Don't know if this will work if we actually pass kwargs
-        corr2_kwargs['file_'+data[0]] = data[1]
-        if data2:
-            corr2_kwargs['file_'+data2[0]+'2'] = data2[1]
-        if random:
-            corr2_kwargs['rand_'+random[0]] = random[1]
-        if random2:
-            if data:
-                corr2_kwargs['rand_'+random2[0]+'2'] = random2[1]
-            else:
-                raise ValueError("random2 data set passed without corresponding data2 data set!")
+        corr2_kwargs.update(kwargs)
+        if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
+            raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
+        if ('rand_list' in corr2_kwargs or 'rand_name' in corr2_kwargs):
+            if ('file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs) :
+                if not ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
+                    raise ValueError('Given random file for file 1 but not file 2')
+        elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
+            raise ValueError('Given random file for file 2, but not file 1')
 
         handle, config_file = tempfile.mkstemp(dir=dh.temp_dir)
-        file_handles.append(handle)
-        delete_files.append(config_file)
         if 'bins_name' in stile_args:
             output_file = dh.getOutputPath(self.short_name+stile_args['bins_name'])
         else:
@@ -89,20 +73,21 @@ class CorrelationFunctionSysTest(SysTest):
         subprocess.check_call(['corr2', config_file])
 
         return_value  = stile.ReadCorr2ResultsFile(output_file)
-        for handle in file_handles:
-            os.close(handle)
-        for file_name in delete_files:
-            os.remove(file_name)
+        os.close(handle)
+        os.remove(config_file)
         return return_value
         
 class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
 
-    def __call__(self,stile_args,dh,data,data2,random=None,random2=None):
+    def __call__(self,stile_args,dh,**kwargs):
+        if not (('file_name' in kwargs or 'file_list' in kwargs) and
+                 ('file_name2' in kwargs or 'file_list2' in kwargs)):
+            raise ValueError("Need to pass a file_name and file_name2 (or _list) as part of the "+
+                               "kwargs to RealShearSysTest")
         corr2_kwargs = stile_args['corr2_kwargs']
-        return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
-                                              **corr2_kwargs)
+        return self.getCorrelationFunction(stile_args,dh,'ng',**kwargs)
 
 class StatSysTest(SysTest):
     """
