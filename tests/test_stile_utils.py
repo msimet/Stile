@@ -43,7 +43,7 @@ def test_ExpandBinList():
     [(compare_single_bin(rpair[0],epair[0]), compare_single_bin(rpair[1],epair[1]))
                                                   for rpair, epair in zip(results,expected_results)]
     try: 
-        numpy.testing.assert_raises(ValueError,stile.ExpandBinList,bin_obj0,bin_obj1)
+        numpy.testing.assert_raises(TypeError,stile.ExpandBinList,bin_obj0,bin_obj1)
     except ImportError:
         print "nose is required for numpy.testing.assert_raises tests"
 
@@ -71,7 +71,7 @@ def test_FormatArray():
     result2 = stile.FormatArray(data1,fields={'one': 0, 'two': 1, 'three': 2})
     numpy.testing.assert_equal(result,result2)
     try:
-        numpy.testing.assert_raises(AttributeError,[1,2])
+        numpy.testing.assert_raises(TypeError,[1,2])
     except ImportError:
         print "nose is required for numpy.testing.assert_raises tests"
 

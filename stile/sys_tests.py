@@ -24,6 +24,7 @@ class SysTest:
         raise NotImplementedError()
         
 class CorrelationFunctionSysTest(SysTest):
+    short_name = 'corrfunc'
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method get_correlation_function, which runs corr2 (via a call to the subprocess module) on
@@ -49,8 +50,9 @@ class CorrelationFunctionSysTest(SysTest):
         import tempfile
         import subprocess
         import os
+        import copy
         
-        corr2_kwargs = stile_args['corr2_kwargs']
+        corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
         corr2_kwargs.update(kwargs)
         if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
             raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
@@ -86,7 +88,6 @@ class RealShearSysTest(CorrelationFunctionSysTest):
                  ('file_name2' in kwargs or 'file_list2' in kwargs)):
             raise ValueError("Need to pass a file_name and file_name2 (or _list) as part of the "+
                                "kwargs to RealShearSysTest")
-        corr2_kwargs = stile_args['corr2_kwargs']
         return self.getCorrelationFunction(stile_args,dh,'ng',**kwargs)
 
 class StatSysTest(SysTest):

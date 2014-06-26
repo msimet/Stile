@@ -190,7 +190,7 @@ def test_ReadCorr2ResultsFile():
     arr = stile.ReadCorr2ResultsFile('test_data/corr2_output.dat')
     numpy.testing.assert_equal(arr,corr2_output)
     try:
-        numpy.testing.assert_raises(RuntimeError,stile.ReadCorr2ResultsFile,
+        numpy.testing.assert_raises(StopIteration,stile.ReadCorr2ResultsFile,
                                 'test_data/empty_file.dat')
     except ImportError:
         pass
@@ -260,10 +260,12 @@ def test_OSFile():
     result = stile.ReadASCIITable(OSFile2.file_name)
     result.dtype.names = arr2.dtype.names # Fails in annoying ways otherwise
     numpy.testing.assert_equal(result,arr2)
+    str_len = max([len(OSFile0.file_name),len(OSFile1.file_name),len(OSFile2.file_name)])
+    str_dtype = ','.join(['S'+str(str_len)]*3)
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile3.file_name),
                                numpy.array(
                                     [(OSFile0.file_name,OSFile1.file_name,OSFile2.file_name)],
-                                    dtype='S35,S35,S35'))
+                                    dtype=str_dtype))
     result = stile.ReadASCIITable(OSFile4.file_name)
     result.dtype.names=('two','three','one')
     numpy.testing.assert_equal(result,arr2[['two','three','one']])

@@ -528,6 +528,10 @@ def MakeCorr2Cols(cols,use_as_k=None):
     
 class OSFile:
     def __init__(self,dh,data_id,fields=None,delete_when_done=True,is_array=False):
+        # Do these first to protect against annoying errors during cleanup if init fails
+        self.handle = -1
+        self.delete_when_done = delete_when_done
+        self.file_name = ''
         if isinstance(data_id,OSFile) and (not fields or fields==data_id.fields):
             # Not sure how to do this better
             self.data_id = data_id.data_id
