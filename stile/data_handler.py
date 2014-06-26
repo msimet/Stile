@@ -169,28 +169,39 @@ class HSCDataHandler(CachedDataHandler):
         max_catalog_cache = hsc_args.get('max_catalog_cache',max_cache)
         self.initCache(max_image_cache,max_catalog_cache)
 
+    def _fixCovMomentsD(self,arr,name):
+        pass
+    def _fixFlag(self,arr,name):
+        pass
+    def _fixArrayD(self,arr,name):
+        pass
+    def _fixPointD(self,arr,name):
+        pass
+    def _fixCovPointD(self,arr,name):
+        pass
+    def _fixCoord(self,arr,name):
+        pass
+    def _fixPSF(self,arr,name):
+        pass
+    
     def _modifyArray(self,data,required_fields):
-        for key in data:
-            sample = data[key][0]
-            if isinstance(sample,MomentsD) or isinstance(sample,MomentsF):
-                # coerce to array
-                pass
-            elif isinstance(sample,CovMomentsD) or isinstance(sample,CovMomentsF):
-                pass
-            elif isinstance(sample,Flag):
-                pass
-            elif isinstance(sample,ArrayD) or isinstance(sample,ArrayF):
-                pass
-            elif isinstance(sample,PointD) or isinstance(sample,PointF):
-                pass
-            elif isinstance(sample,CovPointD) or isinstance(sample,CovPointF):
-                pass
-            elif isinstance(sample,Coord):
-                pass
-            elif isinstance(sample,PSF):
-                pass
-            else:
-                continue
+        posskeys_fix = [('coord',self._fixCoord)] # and others
+        posskeys_ok = [('psf.flux','psf.flux')] # and others
+        cols = {}
+        dtypes = []
+        for key,stile_key in posskeys_ok:
+            if key in data.schema:
+                cols[stile_key] = append(data.get(key))
+                dtypes.append((stile_key,cols[-1].dtype))
+        for key,func in posskeys_fix:
+            if key in data.schema:
+                objs = func([data_point.get(key) for data_point in data],key)
+                for col, dtype in objs:
+                    cols[dtype[0]] = col
+                    dtypes.append(dtype)
+        data = numpy.zeros(len(data),dtype=dtypes)
+        for key in data.dtype.names:
+            data[key] = cols[key]
         return data
 
     def _makePSFImage(self,psf):
