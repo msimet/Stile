@@ -11,7 +11,7 @@ except ImportError:
 
 class temp_data_handler():
     def __init__(self):
-        self.temp_dir = '.'
+        self.temp_dir = None
     def getOutputPath(self,p):
         return p
 
@@ -90,3 +90,4 @@ if __name__=='__main__':
     print "Note: You may see some errors printed as we deliberately send wrong arguments to corr2.",
     print "You do not need to worry about these as long as the Python script completes correctly."
     test_CorrelationFunctionSysTest()
+

@@ -38,6 +38,12 @@ class CorrelationFunctionSysTest(SysTest):
         Sets up and calls corr2 on the given set of data.  The data files and random files should
         be contained already in stile_args['corr2_kwargs'] or **kwargs.
         
+        Note: by default, the corr2 configuration files are written to dh.temp_dir, which is 
+        probably your OS's default temp file directory.  If you are getting errors from corr2 here
+        that you don't understand, you can change this to a directory such as '.' that won't be 
+        automatically cleaned up; the configuration files will be written there and you can then
+        examine them.
+        
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
                              'kg','m2','nm','norm') to request from corr2.
