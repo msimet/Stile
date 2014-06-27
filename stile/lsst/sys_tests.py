@@ -1,13 +1,14 @@
-import pex.config
+import lsst.pex.config
 from .. import sys_tests
 import numpy
 
-adapter_registry = lsst.pex.config.makeRegistry()
+adapter_registry = lsst.pex.config.makeRegistry("Stile test outputs")
 
-class StarGalaxyCrossCorrelationAdapterConfig(pex.config.Config):
+class StarGalaxyCrossCorrelationAdapterConfig(lsst.pex.config.Config):
     pass
     
 class StarGalaxyCrossCorrelationAdapter(object):
+    ConfigClass = StarGalaxyCrossCorrelationAdapterConfig
     def __init__(self,config):
         self.config = config
         self.test = sys_tests.StarGalaxyCrossCorrelationSysTest()
@@ -22,14 +23,15 @@ class StarGalaxyCrossCorrelationAdapter(object):
     def getRequiredColumns(self):
         raise NotImplementedError()
     
-class StatsPSFFluxAdapterConfig(pex.config.Config):
+class StatsPSFFluxAdapterConfig(lsst.pex.config.Config):
     pass
     
 class StatsPSFFluxAdapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
     def __init__(self,config):
         self.config = config
-        self.test = sys_tests.Stats(field='psf.flux')
-        self.name = self.test.short_name+'_psf.flux'
+        self.test = sys_tests.StatSysTest(field='flux.psf')
+        self.name = self.test.short_name+'flux.psf'
 
     def __call__(self,*data):
         self.test(*data)
@@ -40,5 +42,6 @@ class StatsPSFFluxAdapter(object):
         return [return_cat]
         
     def getRequiredColumns(self):
-        return ['psf.flux']
+        return (('flux.psf',),)
         
+adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)

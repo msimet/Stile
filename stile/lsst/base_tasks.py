@@ -1,13 +1,13 @@
 import lsst.pex.config
 import lsst.pipe.base
-from lsst.pipe.tasks.dataIds import PerTractRawDataIDContainer
+from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from .sys_tests import adapter_registry
 import numpy
 
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
-    sys_tests = adapter_registry.make_field("tests to run",multi=True,
-                    default = ["StarGalaxyCrossCorrelation"])
+    sys_tests = adapter_registry.makeField("tests to run",multi=True,
+                    default = ["StatsPSFFlux"])
     
 class SysTestData(object):
     def __init__(self):
@@ -18,6 +18,7 @@ class SysTestData(object):
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     ConfigClass = CCDSingleEpochStileConfig
     required_columns = None
+    _DefaultName = "CCDSingleEpochStile"
     
     def __init__(self,**kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self,**kwargs)
@@ -35,27 +36,29 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
-            for (mask,cols) in zip(sys_test.mask_list,sys_test.cols_list):
+            for (mask,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
                 for col in cols:
+	            #print col, col in catalog.schema, catalog.schema, "check"
                     if not col in catalog.schema:
                         if not col in extra_col_dict:
-                            extra_col_dict[col] = numpy.zeroes(len(catalog))
+                            extra_col_dict[col] = numpy.zeros(len(catalog))
                             extra_col_dict[col].fill('nan')
-                        nan_mask = col_dict[col]=='nan'
+                        nan_mask = extra_col_dict[col]=='nan'
                         nan_and_col_mask = numpy.logical_and(nan_mask,mask)
                         extra_col_dict[col][nan_and_col_mask] = self.computeExtraColumn(                                             col,catalog[nan_and_col_mask])
             sys_data_list.append(sys_test_data)
         
         for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
             new_catalogs = []
-            for mask,cols in zip(sys_test.mask_list,sys_test.cols_list):
+            for mask,cols in zip(sys_test_data.mask_list,sys_test_data.cols_list):
+	    	new_catalog = {}
                 for column in cols:
                     if column in extra_col_dict:
                         new_catalog[column] = cols[column]
-                    else column in catalog.schema:
+                    elif column in catalog.schema:
                         new_catalog[column] = catalog[column]
                 new_catalogs.append(self.makeArray(new_catalog))
-            sys_test(*new_catalogs,verbose=True)
+            sys_test(*new_catalogs)
     
     def makeArray(self,catalog_dict):
         dtypes = []
@@ -73,7 +76,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=PerTractRawDataIDContainer)
+                               ContainerClass=PerTractCcdDataIdContainer)
         return parser
 
     def writeConfig(self, *args, **kwargs):
