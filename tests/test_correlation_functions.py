@@ -52,7 +52,7 @@ def test_CorrelationFunctionSysTest():
     col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
     cf = stile.sys_tests.CorrelationFunctionSysTest()
     dh = temp_data_handler()
-    results = cf.getCorrelationFunction(stile_args,dh,'ng',
+    results = cf.getCorrelationFunction(stile_args,'ng',None,None,
                                         file_name='../examples/example_lens_catalog.dat',
                                         file_name2='../examples/example_source_catalog.dat',
                                         **col_kwargs)
@@ -62,23 +62,32 @@ def test_CorrelationFunctionSysTest():
     kwargs = stile_args['corr2_kwargs']
     stile_args['corr2_kwargs'] = {}
     kwargs.update(col_kwargs)
-    results2 = cf.getCorrelationFunction(stile_args,dh,'ng',
+    results2 = cf.getCorrelationFunction(stile_args,'ng',
                                         file_name='../examples/example_lens_catalog.dat',
                                         file_name2='../examples/example_source_catalog.dat',
                                          **kwargs)
     numpy.testing.assert_equal(results,results2)
-    numpy.testing.assert_raises(TypeError,cf.getCorrelationFunction)
-    numpy.testing.assert_raises(subprocess.CalledProcessError,
-                                cf.getCorrelationFunction,stile_args,dh,'ng',
-                                file_name='../examples/example_lens_catalog.dat', **col_kwargs)
-    numpy.testing.assert_raises(ValueError,cf.getCorrelationFunction,stile_args,dh,'hello',
-                                file_name='../examples/example_lens_catalog.dat',
-                                file_name2='../examples/example_source_catalog.dat',**col_kwargs)
     realshear = stile.RealShearSysTest()
     results3 = realshear(stile_args,dh,file_name='../examples/example_lens_catalog.dat',
                                        file_name2='../examples/example_source_catalog.dat',
                                        **kwargs)
     numpy.testing.assert_equal(results,results3)
+    results3 = realshear(stile_args,dh,data=('../examples/example_lens_catalog.dat',
+                                             {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                       data2=('../examples/example_source_catalog.dat',
+                                             {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                       **kwargs)
+    numpy.testing.assert_equal(results,results3)
+    try:
+        numpy.testing.assert_raises(TypeError,cf.getCorrelationFunction)
+        numpy.testing.assert_raises(subprocess.CalledProcessError,
+                                    cf.getCorrelationFunction,stile_args,'ng',
+                                    file_name='../examples/example_lens_catalog.dat', **col_kwargs)
+        numpy.testing.assert_raises(ValueError,cf.getCorrelationFunction,stile_args,'hello',
+                                    file_name='../examples/example_lens_catalog.dat',
+                                    file_name2='../examples/example_source_catalog.dat',**col_kwargs)
+    except ImportError:
+        pass
     t1 = time.time()
     if os.path.isfile('realshear'):
         os.remove('realshear')
