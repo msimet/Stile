@@ -32,7 +32,7 @@ class CorrelationFunctionSysTest(SysTest):
     CorrelationFunctionSysTest.get_correlation_function for information on how to write further 
     tests using it.
     """
-    def getCorrelationFunction(self, stile_args, dh, correlation_function_type, data, data2=None, 
+    def getCorrelationFunction(self, stile_args, correlation_function_type, data, data2=None, 
                                  random=None, random2=None, **kwargs):
         """
         Sets up and calls corr2 on the given set of data.
@@ -99,17 +99,13 @@ class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
 
-    def __call__(self,stile_args,dh,data,data2,random=None,random2=None):
-        corr2_kwargs = stile_args['corr2_kwargs']
-        return self.getCorrelationFunction(stile_args,dh,'ng',data,data2,random,random2,
-                                              **corr2_kwargs)
+    def __call__(self,stile_args,data,data2,random=None,random2=None):
+        return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2)
 
 class StarGalaxyCrossCorrelationSysTest(CorrelationFunctionSysTest):
     short_name = 'stargalaxyxcorr'
     long_name = 'Cross-correlation of galaxy and star shapes'
 
-    def __call__(self,stile_args,dh,data,data2,random=None,random2=None):
-        corr2_kwargs = stile_args['corr2_kwargs']
-        return self.getCorrelationFunction(stile_args,dh,'gg',data,data2,random,random2,
-                                              **corr2_kwargs)
+    def __call__(self,stile_args,data,data2,random=None,random2=None):
+        return self.getCorrelationFunction(stile_args,dh,'gg',data,data2,random,random2)
 
