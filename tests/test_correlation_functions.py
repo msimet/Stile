@@ -68,14 +68,14 @@ def test_CorrelationFunctionSysTest():
                                          **kwargs)
     numpy.testing.assert_equal(results,results2)
     realshear = stile.RealShearSysTest()
-    results3 = realshear(stile_args,dh,file_name='../examples/example_lens_catalog.dat',
-                                       file_name2='../examples/example_source_catalog.dat',
-                                       **kwargs)
+    results3 = realshear(stile_args,file_name='../examples/example_lens_catalog.dat',
+                                    file_name2='../examples/example_source_catalog.dat',
+                                    **kwargs)
     numpy.testing.assert_equal(results,results3)
-    results3 = realshear(stile_args,dh,data=('../examples/example_lens_catalog.dat',
-                                             {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                       data2=('../examples/example_source_catalog.dat',
-                                             {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+    results3 = realshear(stile_args,data=('../examples/example_lens_catalog.dat',
+                                          {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                    data2=('../examples/example_source_catalog.dat',
+                                          {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
                                        **kwargs)
     numpy.testing.assert_equal(results,results3)
     try:
@@ -85,7 +85,8 @@ def test_CorrelationFunctionSysTest():
                                     file_name='../examples/example_lens_catalog.dat', **col_kwargs)
         numpy.testing.assert_raises(ValueError,cf.getCorrelationFunction,stile_args,'hello',
                                     file_name='../examples/example_lens_catalog.dat',
-                                    file_name2='../examples/example_source_catalog.dat',**col_kwargs)
+                                    file_name2='../examples/example_source_catalog.dat',
+                                    **col_kwargs)
     except ImportError:
         pass
     t1 = time.time()

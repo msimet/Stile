@@ -65,7 +65,7 @@ class CorrelationFunctionSysTest(SysTest):
             stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
         corr2_kwargs.update(kwargs)
-        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
+        corr2_file_kwargs = stile.MakeCorr2FileKwargs(None,data,data2,random,random2)
         corr2_kwargs.update(corr2_file_kwargs)
 
         if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
@@ -96,16 +96,16 @@ class CorrelationFunctionSysTest(SysTest):
         return_value = stile.ReadCorr2ResultsFile(output_file)
         for handle in handles:  
             os.close(handle)
-        for file in delete_files:
-            if os.path.isfile(file):
-                os.remove(config_file)
+        for file_name in delete_files:
+            if os.path.isfile(file_name):
+                os.remove(file_name)
         return return_value
         
 class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
 
-    def __call__(self,stile_args,data,data2,random=None,random2=None,**kwargs):
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
 
 class StatSysTest(SysTest):

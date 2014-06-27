@@ -1,11 +1,24 @@
 import numpy
 import time
+import tempfile
+import os
 try:
     import stile
 except:
     import sys
     sys.path.append('..')
     import stile
+try:
+    import nose
+except ImportError:
+    print 'The assert_raises tests require nose'
+
+def test_equal_formatted(arr1,arr2):
+    """
+    Test that two formatted arrays are equal.  Mostly useful for the FITS tests, where an otherwise
+    identical NumPy array and FITS_rec array will *not* appear equal.
+    """
+    pass
 
 # Test data tables.
 table1 = numpy.array(
@@ -45,13 +58,58 @@ table2_withstring = numpy.array([
 
 table3_singleline = numpy.array([(1.0,2.0,3,'hello')], dtype='d,d,l,S5')
 
+# contents of test_data/[table.fits,image_and_table.fits,two_tables.fits]
+fits_table = numpy.array([(1.5,'hello',2),(3,'goodbye',5)],
+                         dtype=[('q',float),('status','S7'),('final',int)])
+# contents of second extentions of test_data/two_tables.fits                         
+fits_table_2 = numpy.array([(1.5,2),(3.7,4),(1050.2,5)],dtype=[('red',float),('blue',int)])
+# contents of test_data/[image_int.fits,image_and_table.fits]
+fits_int_image = numpy.array([[1,2],[3,4]])
+# contents of test_data/image_float.fits
+fits_float_image = numpy.array([[1.0,2.1],[3.4,1.6]])
+
 def test_ReadFITSImage():
     if not stile.file_io.has_fits:
         print "No FITS handler found; skipping test of read_FITS_image"
-
+    else:
+        t0 = time.time()
+        numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_int.fits'),
+                                         fits_int_image)
+        numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_and_table.fits'),
+                                         fits_int_image)
+        numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_float.fits'),
+                                         fits_float_image)
+        try:
+            numpy.testing.assert_raises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
+        except ImportError:
+            pass
+        t1 = time.time()
+        print "Time to test FITS image read: ", 1000*(t1-t0), "ms"
+                                        
 def test_ReadFITSTable():
     if not stile.file_io.has_fits:
         print "No FITS handler found; skipping test of read_FITS_table"
+    else:
+        t0 = time.time()
+        result = stile.ReadFITSTable('test_data/table.fits')
+        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        result = stile.ReadTable('test_data/table.fits')
+        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        result = stile.ReadFITSTable('test_data/two_tables.fits')
+        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),
+                                   fits_table_2)
+        result = stile.ReadFITSTable('test_data/image_and_table.fits')
+        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        result = stile.ReadFITSTable('test_data/two_tables.fits',hdu=2)
+        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        result = stile.ReadTable('test_data/two_tables.fits',hdu=2)
+        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        try:
+            numpy.testing.assert_raises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
+        except ImportError:
+            pass
+        t1 = time.time()
+        print "Time to test FITS table read: ", 1000*(t1-t0), "ms"
 
 def test_ReadASCIITable():
     t0 = time.time()
@@ -63,13 +121,13 @@ def test_ReadASCIITable():
     numpy.testing.assert_equal(results,table1)
     results = stile.ReadASCIITable('test_data/table_with_string.dat')
     numpy.testing.assert_equal(results,table2_withstring)
+    results = stile.ReadTable('test_data/table_with_string.dat')
+    numpy.testing.assert_equal(results,table2_withstring)
     t1 = time.time()
     print "Time to test ASCII table read: ", 1000*(t1-t0), "ms"
     
 def test_WriteASCIITable():
     # Must be done after test_read_ASCII_table() since it uses the read_ASCII_table function!
-    import tempfile
-    import os
     t0 = time.time()
     handle, filename = tempfile.mkstemp()
     stile.file_io.WriteASCIITable(filename,table1)
@@ -83,19 +141,44 @@ def test_WriteASCIITable():
     os.close(handle)
     if os.path.isfile(filename):
         os.remove(filename)
+    if not stile.file_io.has_fits:
+        handle, filename = tempfile.mkstemp()
+        stile.file_io.WriteTable(filename,table1)
+        results = stile.ReadASCIITable(filename)
+        numpy.testing.assert_equal(table1.astype('f'),results.astype('f')) 
+        os.close(handle)
+        if os.path.isfile(filename):
+            os.remove(filename)
+        try:
+            numpy.testing.assert_raises(MemoryError,stile.WriteASCIITable,'t',[])
+        except ImportError:
+            pass
     t1 = time.time()
     print "Time to test ASCII table write: ", 1000*(t1-t0), "ms"
 
 def test_WriteFITSTable():
     if not stile.file_io.has_fits:
         print "No FITS handler found; skipping test of read_FITS_image"
-   
-def test_WriteTable():
-    pass
-    
-def test_ReadTable():
-    pass
-   
+    else:
+        t0 = time.time()
+        stile.WriteFITSTable('temp.fits',fits_table)
+        assert stile.file_io.fits_handler.FITSDiff('test_data/table.fits','temp.fits')
+        if os.path.isfile('temp.fits'):
+            os.remove('temp.fits')
+        handle, filename = tempfile.mkstemp()
+        stile.WriteTable(filename,fits_table_2)
+        numpy.testing.assert_equal(stile.ReadFITSTable('test_data/two_tables.fits',hdu=2),
+                                   stile.ReadFITSTable(filename))
+        os.close(handle)
+        if os.path.isfile(filename):
+            os.remove(filename)
+        try:
+            numpy.testing.assert_raises(MemoryError,stile.WriteFITSTable,'t',[])
+        except ImportError:
+            pass
+        t1 = time.time()
+        print "Time to test FITS table write: ", 1000*(t1-t0), "ms"
+          
 if __name__=='__main__':
     test_ReadFITSImage()
     test_ReadFITSTable()

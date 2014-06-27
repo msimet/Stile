@@ -1,4 +1,5 @@
 import numpy
+import time
 try:
     import stile
 except ImportError:
@@ -6,11 +7,8 @@ except ImportError:
     sys.path.append('..')
     import stile
 
-
-def test_Parser():
-    pass
-
 def test_ExpandBinList():
+    t0 = time.time()
     # Needs a callable object
     def return_objs(x,n):
         def func():
@@ -46,8 +44,11 @@ def test_ExpandBinList():
         numpy.testing.assert_raises(TypeError,stile.ExpandBinList,bin_obj0,bin_obj1)
     except ImportError:
         print "nose is required for numpy.testing.assert_raises tests"
+    t1 = time.time()
+    print "Time to test ExpandBinList: ", 1000*(t1-t0), "ms"
 
 def test_FormatArray():
+    t0 = time.time()
     data_raw = [(1,'hello',2.0),(3,'boo',5.0)]
     data0 = numpy.array(data_raw)
     data1 = numpy.array(data_raw,dtype='l,S5,d')
@@ -74,9 +75,10 @@ def test_FormatArray():
         numpy.testing.assert_raises(TypeError,[1,2])
     except ImportError:
         print "nose is required for numpy.testing.assert_raises tests"
-
+    t1 = time.time()
+    print "Time to test FormatArray: ", 1000*(t1-t0), "ms"
+    
 def main():
-    test_Parser()
     test_ExpandBinList()
     test_FormatArray()
 

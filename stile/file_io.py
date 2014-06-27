@@ -44,7 +44,7 @@ def ReadFITSTable(file_name,hdu=1):
     @param hdu       The HDU in which the requested data is located (default: 1)
     @returns         The contents of the requested HDU
     """
-    return read_fits_image(file_name,hdu=1)
+    return ReadFITSImage(file_name,hdu)
 
 def ReadASCIITable(file_name, **kwargs):
     """
@@ -80,7 +80,7 @@ def _format_str(dtype):
         else:
             return '%18'+_fmt_dict[char]
 
-def _handle_fields(data_array,fields):
+def _handleFields(data_array,fields):
     """
     Rearrange the data according to the fields specification.
     """
@@ -126,8 +126,17 @@ def WriteASCIITable(file_name,data_array,fields=None):
     contain spaces, the column descriptions won't hold properly, and you should probably use a 
     FITS file writer.
     """
-    data = _handle_fields(data_array,fields)
+    data = _handleFields(data_array,fields)
     numpy.savetxt(file_name,data,fmt=_format_str(data.dtype))
+
+_fits_dict = {'f': 'D', 'i': 'K'}
+def _coerceFitsFormat(fmt):
+    if 'S' in fmt.str:
+        return 'A'+fmt.str.split('S')[1]
+    for key in _fits_dict:
+        if key in fmt.str:
+            return _fits_dict[key]
+    return fmt
 
 def WriteFITSTable(file_name,data_array,fields=None):
     """
@@ -142,10 +151,19 @@ def WriteFITSTable(file_name,data_array,fields=None):
     At the moment, if your maximum column number in the fields dict is greater than the number of
     fields in the data_array, an error will occur.
     """
-    if not has_fits_handler:
+    if not has_fits:
         raise ImportError('FITS-type table requested, but no FITS handler found')
-    data = _handle_fields(data_array,fields)
-    # do some stuff
+    data = _handleFields(data_array,fields)
+    cols = [fits_handler.Column(name=data.dtype.names[i],format=_coerceFitsFormat(data.dtype[i]))
+               for i in range(len(data.dtype))]
+    table = fits_handler.new_table(cols)
+    table.data = data
+    # Next line is a kludge for some versions of PyFITS which will yell if you replace table data
+    # without doing this (fix from https://github.com/spacetelescope/PyFITS/issues/31)
+    table.data = numpy.array(table.data).view(table._data_type)
+    hdulist = fits_handler.HDUList([fits_handler.PrimaryHDU(),table])
+    hdulist.verify()
+    hdulist.writeto(file_name)
     
 def WriteTable(file_name,data_array,fields=None):
     """
@@ -166,7 +184,7 @@ def WriteTable(file_name,data_array,fields=None):
     """
     ext = os.path.splitext(file_name)[1]
     if not ext:
-        if has_fits_handler:
+        if has_fits:
             WriteFITSTable(file_name,data_array,fields)
         else:
             WriteASCIITable(file_name,data_array,fields)
@@ -195,4 +213,3 @@ def ReadTable(file_name,**kwargs):
         return ReadFITSTable(file_name,**kwargs)
     else:
         return ReadASCIITable(file_name,**kwargs)
-    
