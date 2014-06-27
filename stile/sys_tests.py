@@ -58,47 +58,62 @@ class CorrelationFunctionSysTest(SysTest):
         import subprocess
         import os
         import copy
+        handles = []
+        delete_files = []
         
+        if not 'corr2_kwargs' in stile_args:
+            stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
         corr2_kwargs.update(kwargs)
+        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
+        corr2_kwargs.update(corr2_file_kwargs)
+
         if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
             raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
         if ('rand_list' in corr2_kwargs or 'rand_name' in corr2_kwargs):
             if ('file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs) :
                 if not ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
                     raise ValueError('Given random file for file 1 but not file 2')
+            elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
+                raise ValueError('Given random file for file 2, but there is no file 2')
         elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
             raise ValueError('Given random file for file 2, but not file 1')
+            
+        handle, config_file = tempfile.mkstemp()
+        handles.append(handle)
+        delete_files.append(config_file)
+        handle, output_file = tempfile.mkstemp()
+        handles.append(handle)
+        delete_files.append(output_file)
 
-        handle, config_file = tempfile.mkstemp(dir=dh.temp_dir)
-        if 'bins_name' in stile_args:
-            output_file = dh.getOutputPath(self.short_name+stile_args['bins_name'])
-        else:
-            output_file = dh.getOutputPath(self.short_name)
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
+        
         stile.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
         
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', config_file])
 
-        return_value  = stile.ReadCorr2ResultsFile(output_file)
-        os.close(handle)
-        os.remove(config_file)
+        return_value = stile.ReadCorr2ResultsFile(output_file)
+        for handle in handles:  
+            os.close(handle)
+        for file in delete_files:
+            if os.path.isfile(file):
+                os.remove(config_file)
         return return_value
         
 class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
 
-    def __call__(self,stile_args,data,data2,random=None,random2=None):
-        return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2)
+    def __call__(self,stile_args,data,data2,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
 
 class StarGalaxyCrossCorrelationSysTest(CorrelationFunctionSysTest):
     short_name = 'stargalaxyxcorr'
     long_name = 'Cross-correlation of galaxy and star shapes'
 
-    def __call__(self,stile_args,data,data2,random=None,random2=None):
-        return self.getCorrelationFunction(stile_args,dh,'gg',data,data2,random,random2)
+    def __call__(self,stile_args,data,data2,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'gg',data,data2,random,random2,**kwargs)
 
 class StatSysTest(SysTest):
     """

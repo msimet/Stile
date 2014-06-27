@@ -55,10 +55,16 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     else column in catalog.schema:
                         new_catalog[column] = catalog[column]
                 new_catalogs.append(self.makeArray(new_catalog))
-            sys_test(*new_catalogs)
+            sys_test(*new_catalogs,verbose=True)
     
     def makeArray(self,catalog_dict):
-        raise NotImplementedError()
+        dtypes = []
+        for key in catalog_dict:
+            dtypes.append((key,catalog_dict[key].dtype))
+        data = numpy.zeros(len(catalog_dict[key]),dtype=dtypes)
+        for key in catalog_dict:
+            data[key] = catalog_dict[key]
+        return data
 
     def computeExtraColumn(self,col,data):
         raise NotImplementedError()
