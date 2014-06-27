@@ -45,42 +45,40 @@ table2_withstring = numpy.array([
 
 table3_singleline = numpy.array([(1.0,2.0,3,'hello')], dtype='d,d,l,S5')
 
-def test_ReadFitsImage():
+def test_ReadFITSImage():
     if not stile.file_io.has_fits:
-        print "No FITS handler found; skipping test of read_fits_image"
+        print "No FITS handler found; skipping test of read_FITS_image"
 
-def test_ReadFitsTable():
+def test_ReadFITSTable():
     if not stile.file_io.has_fits:
-        print "No FITS handler found; skipping test of read_fits_table"
+        print "No FITS handler found; skipping test of read_FITS_table"
 
-def test_ReadAsciiTable():
+def test_ReadASCIITable():
     t0 = time.time()
-    results = stile.ReadAsciiTable('test_data/corr2_output.dat',comment='#')
+    # ReadASCIITable is a wrapper for numpy.genfromtxt() that turns things into formatted arrays if
+    # necessary, so we don't really need to test much of the functionality--just make sure that
+    # both natively formatted arrays (table_with_string) and natively raw arrays (corr2_output) are
+    # both returned as formatted arrays.
+    results = stile.ReadASCIITable('test_data/corr2_output.dat',comments='#')
     numpy.testing.assert_equal(results,table1)
-    results = stile.ReadAsciiTable('test_data/corr2_output.dat',start_line=3)
-    numpy.testing.assert_equal(results,table1[1:]) # since first skipped line is a comment
-    results = stile.ReadAsciiTable('test_data/table_with_string.dat')
+    results = stile.ReadASCIITable('test_data/table_with_string.dat')
     numpy.testing.assert_equal(results,table2_withstring)
-    results = stile.ReadAsciiTable('test_data/table_with_string.dat',comment='s')
-    numpy.testing.assert_equal(results,table2_withstring)
-    numpy.testing.assert_raises(IndexError,stile.ReadAsciiTable,
-                                'test_data/table_with_missing_field.dat')
     t1 = time.time()
     print "Time to test ASCII table read: ", 1000*(t1-t0), "ms"
     
-def test_WriteAsciiTable():
-    # Must be done after test_read_ascii_table() since it uses the read_ascii_table function!
+def test_WriteASCIITable():
+    # Must be done after test_read_ASCII_table() since it uses the read_ASCII_table function!
     import tempfile
     import os
     t0 = time.time()
     handle, filename = tempfile.mkstemp()
-    stile.file_io.WriteAsciiTable(filename,table1)
-    results = stile.ReadAsciiTable(filename)
+    stile.file_io.WriteASCIITable(filename,table1)
+    results = stile.ReadASCIITable(filename)
     numpy.testing.assert_equal(table1.astype('f'),results.astype('f')) 
 
     field_list = ['f3','f4','f6','f0','f2','f1','f5']
-    stile.file_io.WriteAsciiTable(filename,table1,fields=field_list)
-    results = stile.ReadAsciiTable(filename)
+    stile.file_io.WriteASCIITable(filename,table1,fields=field_list)
+    results = stile.ReadASCIITable(filename)
     numpy.testing.assert_equal(table1[field_list].astype('f'),results.astype('f'))
     os.close(handle)
     if os.path.isfile(filename):
@@ -88,9 +86,19 @@ def test_WriteAsciiTable():
     t1 = time.time()
     print "Time to test ASCII table write: ", 1000*(t1-t0), "ms"
 
+def test_WriteFITSTable():
+    if not stile.file_io.has_fits:
+        print "No FITS handler found; skipping test of read_FITS_image"
+   
+def test_WriteTable():
+    pass
+    
+def test_ReadTable():
+    pass
+   
 if __name__=='__main__':
-    test_ReadFitsImage()
-    test_ReadFitsTable()
-    test_ReadAsciiTable()
-    test_WriteAsciiTable()
+    test_ReadFITSImage()
+    test_ReadFITSTable()
+    test_ReadASCIITable()
+    test_WriteASCIITable()
 

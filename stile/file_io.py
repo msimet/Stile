@@ -5,15 +5,16 @@ Simple file input/output.
 try:
     import pyfits as fits_handler
     has_fits=True
-except:
+except ImportError:
     try:
         import astropy.io.fits as fits_handler
         has_fits=True
-    except:
+    except ImportError:
         has_fits=False
 import numpy
+import os
 
-def ReadFitsImage(file_name,hdu=0):
+def ReadFITSImage(file_name,hdu=0):
     """
     Return the data from a single HDU extension of the FITS file file_name.  Technically this
     doesn't have to be an image as the method is the same for table data; it's called "image" 
@@ -34,7 +35,7 @@ def ReadFitsImage(file_name,hdu=0):
     else:
         raise ImportError('No FITS handler found!')
     
-def ReadFitsTable(file_name,hdu=1):
+def ReadFITSTable(file_name,hdu=1):
     """
     This function exists so you can read_fits_table(file_name) rather than remembering that
     table data is usually in extension 1.
@@ -45,62 +46,153 @@ def ReadFitsTable(file_name,hdu=1):
     """
     return read_fits_image(file_name,hdu=1)
 
-def ReadAsciiTable(file_name, start_line=None, comment=None):
+def ReadASCIITable(file_name, **kwargs):
     """
-    Read in an ASCII table, and represent it via the simplest possible form for each field.  
-    
-    If you know your data contains only numbers (no strings), type safety and proper field
-    alignment can be better handled by the functions numpy.loadtxt() [complete table] or
-    numpy.genfromtxt() [missing fields].  This function is mostly useful if you have
-    string data and don't want to skip those fields or turn the file into a FITS table.
-    
-    @param file_name The name of the file containing the ASCII table
-    @param startline The number of the line to start on. startline=1 skips the first line of the
-                     file, startline=2 skips the first two lines, etc. (default: None)
-    @param comment   Ignore any lines whose first non-whitespace characters are this string.
-                     (default: None)
-    @returns         a numpy array containing the data in the file file_name
+    Read an ASCII table from disk.  This is a small wrapper for numpy.genfromtxt() that returns the
+    kind of array we expect.  **kwargs should be suitable kwargs from numpy.genfromtxt().
     """
-    from stile_utils import GetVectorType
+    import stile_utils
+    d = numpy.genfromtxt(file_name,dtype=None,**kwargs)
+    return stile_utils.FormatArray(d)
 
-    f=open(file_name,'r')
-    if start_line:
-        for i in range(start_line-1):
-            f.readline()
-    d = [line.split() for line in f.readlines()]
-    f.close()
-    if not d:
-        return numpy.array([])
-    if comment:
-        lenc = len(comment)
-        d = [tuple(dd) for dd in d if dd and dd[0].strip()[:lenc]!=comment]
-    else:
-        d = [tuple(dd) for dd in d if dd]
-    if len(d)==0:
-        return []
-    d_arr = numpy.array(d)
-    types = ','.join([GetVectorType(d_arr[:,i]) for i in range(len(d_arr[0]))])
-    return numpy.array(d,dtype=types)
-
-def WritePoint(f,line,pos):
-    if pos>=0:
-        f.write(str(line[pos])+' ')
-    else:
-        f.write('0 ')
     
-def WriteAsciiTable(file_name,data_array,fields=None):
+# numpy.savetxt uses a completely different format specification language than the dtypes, so
+# this dict and the function _format_str take a formatted NumPy array and return something
+# that savetxt understands.  I've left the default field width (18 characters) for all
+# fields except the string-like ones, which have their own default widths, and the object-like
+# ones, which tend to have width ~1 when their string representations are longer--right now I set 
+# that to 60.
+_fmt_dict = {'?': 'u', 'B': 'c', 'I': 'u', 'H': 'u', 'L': 'u', 'Q': 'u', 'b': 'c', 'd': 'g', 'g': 'g', 'f': 'g', 'i': 'd', 'h': 'd', 'l': 'd', 'q': 'd'}
+
+def _format_str(dtype):
+    if dtype.names:
+        return [_format_str(dtype[i]) for i in range(len(dtype))]
+    else:
+        char = dtype.char
+        if char=='S' or char=='V' or char=='U':
+            width = dtype.str.split(char)[-1]
+            return '%'+str(width)+'s'
+        elif char=='O':
+            # Objects tend to have width-1 even if their string representations don't.
+            return '%-60s'
+        elif char=='B' or char=='G' or char=='F':
+            return '%18g %18g'
+        else:
+            return '%18'+_fmt_dict[char]
+
+def _handle_fields(data_array,fields):
+    """
+    Rearrange the data according to the fields specification.
+    """
+    data = numpy.array(data_array)
     if not fields:
-        fields = [i for i in range(len(data_array.dtype.names))]
+        pass
+    elif not data.dtype.names:
+        raise ValueError('Fields kwarg only usable if data is a formatted NumPy array')
+    elif isinstance(fields,(tuple,list)):
+        if not len(set(fields))==len(fields):
+            raise RuntimeError('Field description list has duplicate elements')
+        if isinstance(fields,tuple):
+            fields = list(fields)
+        data = data[fields]
+    elif isinstance(fields,dict):
+        # Make a list that's only as long as it needs to be to cover the fields dict; populate it 
+        # with the keys of fields, and then fill in any blank spaces with the unused fields from
+        # the original column descriptors.
+        old_fields = [name for name in data.dtype.names if name not in fields]
+        new_fields = ['']*(max(fields.values())+1)
+        for key in fields:
+            new_fields[fields[key]] = key
+        for i in range(len(new_fields)):
+            if not new_fields[i]:
+                new_fields[i] = old_fields.pop(0)
+        data = data[new_fields]
     else:
-        tfields = [i for i in range(len(fields))]
-        names = data_array.dtype.names
-        for i,field in enumerate(fields):
-            if field in names:        
-                tfields[i] = names.index(field)
-            else:
-                tfields[i] = -1
-    with open(file_name,'w') as f:
-        for line in data_array:
-            [WritePoint(f,line,pos) for pos in fields]
-            f.write('\n')    
+        raise ValueError("Fields description not understood: "+str(fields))
+    return data
+            
+def WriteASCIITable(file_name,data_array,fields=None):
+    """
+    Given a file_name and a data_array, write the data_array to the file_name as an ASCII file.
+    If fields is not None, this will rearrange a NumPy formatted array to the field 
+    specification (must be either a list of field names, or a dict of the form 
+    'field_name': field_position.  Note that in the second case, columns not indicated by the dict
+    are moved around to fill in any gaps, so if you specify, say, columns 0, 1, and 3, you may be
+    surprised by what is in column 2!
+    
+    At the moment, if your maximum column number in the fields dict is greater than the number of
+    fields in the data_array, an error will occur.  Also, if you send an object in the array whose 
+    string representation is >60 characters, it will be truncated to 60.  If you have strings which
+    contain spaces, the column descriptions won't hold properly, and you should probably use a 
+    FITS file writer.
+    """
+    data = _handle_fields(data_array,fields)
+    numpy.savetxt(file_name,data,fmt=_format_str(data.dtype))
+
+def WriteFITSTable(file_name,data_array,fields=None):
+    """
+    Given a file_name and a data_array, write the data_array to the file_name as a FITS file if
+    there is an available module to do so (pyfits or astropy.io.fits).  Otherwise, raise an error.
+    If fields is not None, this will rearrange a NumPy formatted array to the field specification 
+    (must be either a list of field names, or a dict of the form 'field_name': field_position.  
+    Note that in the second case, columns not indicated by the dict are moved around to fill in 
+    any gaps, so if you specify, say, columns 0, 1, and 3, you may be surprised by what is in 
+    column 2!
+    
+    At the moment, if your maximum column number in the fields dict is greater than the number of
+    fields in the data_array, an error will occur.
+    """
+    if not has_fits_handler:
+        raise ImportError('FITS-type table requested, but no FITS handler found')
+    data = _handle_fields(data_array,fields)
+    # do some stuff
+    
+def WriteTable(file_name,data_array,fields=None):
+    """
+    Pick a type of file (ASCII or FITS) and write to it.  If the file_name has an extention, it will
+    be used to determine the file type ('.fit' or '.fits' in any capitalization will be FITS, else
+    ASCII); if no extension, it will write a FITS file if a fits handler is found, else an ASCII 
+    file.  If you know which kind of file you want to write, you should use WriteFITSTable or
+    WriteASCIITable directly.
+    
+    If fields is not None, these functions will rearrange a NumPy formatted array to the field 
+    specification (must be either a list of field names, or a dict of the form 'field_name': 
+    field_position.  Note that in the second case, columns not indicated by the dict are moved 
+    around to fill in any gaps, so if you specify, say, columns 0, 1, and 3, you may be surprised 
+    by what is in column 2!
+    
+    At the moment, if your maximum column number in the fields dict is greater than the number of
+    fields in the data_array, an error will occur.
+    """
+    ext = os.path.splitext(file_name)[1]
+    if not ext:
+        if has_fits_handler:
+            WriteFITSTable(file_name,data_array,fields)
+        else:
+            WriteASCIITable(file_name,data_array,fields)
+    ext = ext.lower()
+    if ext=='.fit' or ext=='.fits':
+        WriteFITSTable(file_name,data_array,fields)
+    else:
+        WriteASCIITable(file_name,data_array,fields)
+
+def ReadTable(file_name,**kwargs):
+    """
+    Pick a proper (FITS or ASCII) reading function for a file containing a table and read the file
+    in.  If the file_name has an extention, it will be used to determine the file type ('.fit' or 
+    '.fits' in any capitalization will be FITS, else ASCII); if no extension, it will try reading
+    it as a FITS file, then as an ASCII file.  If you know which kind of file you want to read, 
+    you should use WriteFITSTable or WriteASCIITable directly.
+    """
+    ext = os.path.splitext(file_name)[1]
+    if not ext:
+        try:
+            return ReadFITSTable(file_name,**kwargs)
+        except:
+            return ReadASCIITable(file_name,**kwargs)
+    ext = ext.lower()
+    if ext=='.fit' or ext=='.fits':
+        return ReadFITSTable(file_name,**kwargs)
+    else:
+        return ReadASCIITable(file_name,**kwargs)
     

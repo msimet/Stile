@@ -300,58 +300,59 @@ def test_BinList():
     print "Time to test BinList binning: ", 1000*(t1-t0), "ms"
 
 def test_bin_creation_errors():
-    t0 = time.time()
-    # Invalid bounds in logarithmic BinStep
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',
-                                low=0,high=10,step=1,use_log=True)
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',
-                                low=10,high=-1,step=-1,use_log=True)
-    # Various not-enough-arguments errors to BinStep (probably overkill)
-    numpy.testing.assert_raises(TypeError,stile.BinStep)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c')
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1,high=2)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1,step=2)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1,n_bins=2)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',step=1)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',step=1,n_bins=2)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',step=1,high=2)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',n_bins=1)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',n_bins=1,high=2)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,'c',high=2)
-    # Inconsistent and nonsense arguments to BinStep
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=1,high=0,step=0.5)
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=0,high=1,step=-0.5)
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=0,high=5,step=1,n_bins=7)
-    stile.BinStep('c',low=0,high=-1,step=-0.5) # actually consistent
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=1,high=1,step=0.5)
-    numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=1,high=2,n_bins=-1)
-    numpy.testing.assert_raises(TypeError,stile.BinStep,0,low=0,high=5,step=1)
-    # Wrong arguments to BinList
-    numpy.testing.assert_raises(TypeError,stile.BinList,'c',[1,2,3],n_bins=1)
-    numpy.testing.assert_raises(ValueError,stile.BinList,'c',[1,3,2])
-    numpy.testing.assert_raises(TypeError,stile.BinList,0,[1,3])
-    numpy.testing.assert_raises(TypeError,stile.BinList,'c',[])
-    numpy.testing.assert_raises(TypeError,stile.BinList,[1,3,2])
-    numpy.testing.assert_raises(TypeError,stile.BinList,'c')
-    t1 = time.time()
-    print "Time to test bin object construction errors: ", 1000*(t1-t0), "ms"
+    try:
+        t0 = time.time()
+        # Invalid bounds in logarithmic BinStep
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',
+                                    low=0,high=10,step=1,use_log=True)
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',
+                                    low=10,high=-1,step=-1,use_log=True)
+        # Various not-enough-arguments errors to BinStep (probably overkill)
+        numpy.testing.assert_raises(TypeError,stile.BinStep)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c')
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1,high=2)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1,step=2)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',low=1,n_bins=2)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',step=1)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',step=1,n_bins=2)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',step=1,high=2)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',n_bins=1)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',n_bins=1,high=2)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,'c',high=2)
+        # Inconsistent and nonsense arguments to BinStep
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=1,high=0,step=0.5)
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=0,high=1,step=-0.5)
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=0,high=5,step=1,n_bins=7)
+        stile.BinStep('c',low=0,high=-1,step=-0.5) # actually consistent
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=1,high=1,step=0.5)
+        numpy.testing.assert_raises(ValueError,stile.BinStep,'c',low=1,high=2,n_bins=-1)
+        numpy.testing.assert_raises(TypeError,stile.BinStep,0,low=0,high=5,step=1)
+        # Wrong arguments to BinList
+        numpy.testing.assert_raises(TypeError,stile.BinList,'c',[1,2,3],n_bins=1)
+        numpy.testing.assert_raises(ValueError,stile.BinList,'c',[1,3,2])
+        numpy.testing.assert_raises(TypeError,stile.BinList,0,[1,3])
+        numpy.testing.assert_raises(TypeError,stile.BinList,'c',[])
+        numpy.testing.assert_raises(TypeError,stile.BinList,[1,3,2])
+        numpy.testing.assert_raises(TypeError,stile.BinList,'c')
+        t1 = time.time()
+        print "Time to test bin object construction errors: ", 1000*(t1-t0), "ms"
+    except ImportError:
+        print 'The assert_raises tests require nose'
 
 def test_singlebin_input_errors():
     t0 = time.time()
     sb = stile.binning.SingleBin('field_0',low=0,high=10,short_name='boo')
     sfb = stile.binning.SingleFunctionBin(binfunction,1)
     sb.long_name # check that this was made properly
-    numpy.testing.assert_raises(TypeError,sb,[1,2,3,4])
-    #numpy.testing.assert_raises(TypeError,sfb,[1,2,3,4]) # Question: enforce this?
-    numpy.testing.assert_raises(ValueError,sb,numpy.array([1,2,3,4]))
-    #numpy.testing.assert_raises(TypeError,sfb,numpy.array([1,2,3,4]))
-    numpy.testing.assert_raises(ValueError,sb,
-                                numpy.array([(1,),(2,),(3,),(4,)],dtype=[('field_1',int)]))
-    #numpy.testing.assert_raises(ValueError,sfb,
-    #                            numpy.array([(1,),(2,),(3,),(4,)],dtype=[('field_1',int)]))
-    numpy.testing.assert_raises(TypeError,sb,3)
-    #numpy.testing.assert_raises(TypeError,sfb,3)
+    try:
+        numpy.testing.assert_raises(TypeError,sb,[1,2,3,4])
+        numpy.testing.assert_raises(ValueError,sb,numpy.array([1,2,3,4]))
+        numpy.testing.assert_raises(ValueError,sb,
+                                    numpy.array([(1,),(2,),(3,),(4,)],dtype=[('field_1',int)]))
+        numpy.testing.assert_raises(TypeError,sb,3)
+    except ImportError:
+        print 'The assert_raises tests require nose'
     t1 = time.time()
     print "Time to test SingleBin data input errors: ", 1000*(t1-t0), "ms"
 
