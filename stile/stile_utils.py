@@ -16,38 +16,6 @@ def Parser():
     #TODO: add, obviously, EVERYTHING ELSE
     return p
 
-def ExpandBinList(bin_list):
-    """
-    Take a list of Bin* objects, and expand them to return a list of SimpleBins to step through.  
-    E.g., if the user passes a list :
-        >>> bin_list = [ListBin0, ListBin1]
-    where ListBin1.n_bins = 2 and ListBin2.n_bins = 3, then calling this function will return
-        >>> [[SimpleBinObject_0_0, SimpleBinObject_1_0],
-             [SimpleBinObject_0_0, SimpleBinObject_1_1],
-             [SimpleBinObject_0_0, SimpleBinObject_1_2],
-             [SimpleBinObject_0_1, SimpleBinObject_1_0],
-             [SimpleBinObject_0_1, SimpleBinObject_1_1],
-             [SimpleBinObject_0_1, SimpleBinObject_1_2]].
-    The first item in the list changes most slowly, then the second item, etc.
-             
-    @param bin_list  A list of Bin-type objects, such as the ones in binning.py, which when called
-                     return a list of items which behave like SimpleBins.  (No checks are made in
-                     this function that these are valid items.)
-    @returns         A list of lists of SimpleBins (or other items returned by calling the input
-                     items in bin_list), properly nested.
-    """
-    if not bin_list:
-        return []
-    # A copy of bin_list that we can alter without altering the parent list, but which doesn't 
-    # duplicate the objects in bin_list. (I think.)
-    bl = bin_list[:]
-    data_bins = [[]]
-    while bl:
-        this_bin = bl.pop()
-        data_bins = [[bin]+d for bin in this_bin() for d in data_bins]
-    return data_bins
-
-
 def FormatArray(d,fields=None):
     """
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
