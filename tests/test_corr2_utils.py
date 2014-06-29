@@ -255,9 +255,8 @@ def test_OSFile():
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile1.file_name),
                                numpy.array([tuple(a) for a in arr1],dtype='l,l,l'))
     # numpy.testing.assert_equal won't work on formatted arrays unless they have the same field
-    # description, so there's some annoying code in the next few lines to deal with this.
-    result = stile.ReadASCIITable(OSFile2.file_name)
-    result.dtype.names = arr2.dtype.names # Fails in annoying ways otherwise
+    # names, hence the "fields=" bit.
+    result = stile.ReadASCIITable(OSFile2.file_name,fields=arr2.dtype.names)
     numpy.testing.assert_equal(result,arr2)
     str_len = max([len(OSFile0.file_name),len(OSFile1.file_name),len(OSFile2.file_name)])
     str_dtype = ','.join(['S'+str(str_len)]*3)
@@ -265,11 +264,9 @@ def test_OSFile():
                                numpy.array(
                                     [(OSFile0.file_name,OSFile1.file_name,OSFile2.file_name)],
                                     dtype=str_dtype))
-    result = stile.ReadASCIITable(OSFile4.file_name)
-    result.dtype.names=('two','three','one')
+    result = stile.ReadASCIITable(OSFile4.file_name,fields=['two','three','one'])
     numpy.testing.assert_equal(result,arr2[['two','three','one']])
-    result = stile.ReadASCIITable(OSFile5.file_name)
-    result.dtype.names=('two','three','one')
+    result = stile.ReadASCIITable(OSFile5.file_name,fields=['two','three','one'])
     numpy.testing.assert_equal(result,arr2[['two','three','one']])
     assert OSFile6==OSFile2 # Fun fact: numpy.testing.assert_equal of objects ignores __eq__
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile4.file_name),

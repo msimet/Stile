@@ -90,6 +90,7 @@ def test_ReadFITSTable():
     if not stile.file_io.has_fits:
         print "No FITS handler found; skipping test of read_FITS_table"
     else:
+        #TODO: byteorder thing
         t0 = time.time()
         result = stile.ReadFITSTable('test_data/table.fits')
         numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)

@@ -13,6 +13,7 @@ except ImportError:
         has_fits=False
 import numpy
 import os
+import stile_utils
 
 def ReadFITSImage(file_name,hdu=0):
     """
@@ -35,7 +36,7 @@ def ReadFITSImage(file_name,hdu=0):
     else:
         raise ImportError('No FITS handler found!')
     
-def ReadFITSTable(file_name,hdu=1):
+def ReadFITSTable(file_name,hdu=1,fields=None):
     """
     This function exists so you can read_fits_table(file_name) rather than remembering that
     table data is usually in extension 1.
@@ -44,16 +45,19 @@ def ReadFITSTable(file_name,hdu=1):
     @param hdu       The HDU in which the requested data is located (default: 1)
     @returns         The contents of the requested HDU
     """
-    return ReadFITSImage(file_name,hdu)
+    return stile_utils.FormatArray(ReadFITSImage(file_name,hdu),fields=fields)
 
 def ReadASCIITable(file_name, **kwargs):
     """
     Read an ASCII table from disk.  This is a small wrapper for numpy.genfromtxt() that returns the
     kind of array we expect.  **kwargs should be suitable kwargs from numpy.genfromtxt().
     """
-    import stile_utils
+    if 'fields' in kwargs:
+        fields = kwargs.pop('fields')
+    else:
+        fields = None
     d = numpy.genfromtxt(file_name,dtype=None,**kwargs)
-    return stile_utils.FormatArray(d)
+    return stile_utils.FormatArray(d,fields=fields)
 
     
 # numpy.savetxt uses a completely different format specification language than the dtypes, so

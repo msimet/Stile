@@ -6,7 +6,6 @@ import numpy
 import os
 import file_io
 import tempfile
-import stile_utils
 
 # A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
 # so only one dict is here; later versions of Stile may need to implement if statements here for
@@ -777,7 +776,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
                 # two different shape definitions and wanted to correlate them, for example.)
                 if data_list[0] in to_write and any(
                                           [data_fields[key]!=fields[key] for key in fields.keys()]):
-                    data = stile_utils.FormatArray(file_io.ReadTable(data_list[0]),data_list[1])
+                    data = file_io.ReadTable(data_list[0],fields=data_list[1])
                     new_data_list.append(OSFile(data,fields=fields))
                     to_write.remove(data_list[0])
                 else:
@@ -790,7 +789,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
                     data_fields = _coerce_schema(dl[1])
                     if dl[0] in to_write and any(
                                           [data_fields[key]!=fields[key] for key in fields.keys()]):
-                        data = stile_utils.FormatArray(file_io.ReadTable(dl[0]),dl[1])
+                        data = file_io.ReadTable(dl[0],fields=dl[1])
                         new_data_list.append(OSFile(data,fields=fields))
                     else:
                         new_data_list.append(dl[0])
