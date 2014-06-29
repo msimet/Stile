@@ -6,6 +6,7 @@ import numpy
 import os
 import file_io
 import tempfile
+import stile_utils
 
 # A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
 # so only one dict is here; later versions of Stile may need to implement if statements here for
@@ -539,44 +540,33 @@ class OSFile:
     {'field_name': field_number} pairs.  Caveats about the use of the "fields" kwarg may be found
     in the documentation for WriteTable.
     
-    @param dh        A DataHandler instance or an array of data. (default: None)
-    @param data_id   A data_id to be used via dh.getData(data_id) (default: None)
+    @param data      An array of data.
     @param fields    A description of the fields to be written out. See above or the documentation  
                      for WriteTable. (default: None)
-    @param is_array  Whether the object `dh` is an array (True) or not (False). (default: False)
     """
     
-    def __init__(self,dh=None,data_id=None,fields=None,is_array=False):
+    def __init__(self,data,fields=None):
         # Do these first to protect against annoying errors during cleanup if init fails
         self.handle = -1
         self.file_name = ''
-        if isinstance(data_id,OSFile) and (not fields or fields==data_id.fields):
+        if isinstance(data,OSFile) and (not fields or fields==data.fields):
             # Not sure how to do this better
-            self.data_id = data_id.data_id
-            self.dh = data_id.dh
-            self.fields = data_id.fields
-            self.data = data_id.data
-            self.file_name = data_id.file_name
-            self.handle = data_id.handle
+            self.data = data.data
+            self.fields = data.fields
+            self.file_name = data.file_name
+            self.handle = data.handle
         else:
-            self.data_id = data_id
-            self.dh = dh
-            self.fields = fields
-            if isinstance(self.data_id,OSFile):
-                self.data = self.data_id.data
-            elif is_array:
-                self.data = data_id
+            if isinstance(data,OSFile):
+                self.data = data.data
             else:
-                try:
-                    self.data = dh.getData(data_id,force=True)
-                except:
-                    raise ValueError('Cannot get data_id %s from given data handler'%data_id)
-            self.handle, self.file_name = tempfile.mkstemp(dir=dh.temp_dir)
+                self.data = data
+            self.fields = fields
             if not self.fields:
                 try:
-                    self.fields = self.data.dtype.names
+                    self.fields = data.dtype.names # So we can check against this later
                 except:
                     pass
+            self.handle, self.file_name = tempfile.mkstemp()
             file_io.WriteASCIITable(self.file_name,self.data,fields=self.fields)
     def __repr__(self):
         return self.file_name
@@ -589,8 +579,7 @@ class OSFile:
             os.remove(self.file_name)
     def __eq__(self,other):
         # Mostly necessary for testing purposes
-        return (numpy.all(self.data_id==other.data_id) and self.dh==other.dh and
-                self.fields==other.fields and numpy.all(self.data==other.data) and
+        return (numpy.all(self.data==other.data) and self.fields==other.fields and 
                 self.file_name==other.file_name and self.handle==other.handle)
 
 def _merge_fields(has_fields,old_fields,new_fields):
@@ -643,14 +632,13 @@ def _coerce_schema(schema):
     else:
         raise ValueError("Schema must be a list or dict")
     
-def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
+def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
     """
     Pick which files need to be written to a file for corr2, and which can be passed simply as a
     filename. This takes care of making temporary files, checking that the field schema is
     consistent in any existing files and rewriting the ones that do not match the dominant field 
     schema if necessary, and figuring out the corr2 column arguments (eg ra_col).
     
-    @param dh      A DataHandler instance
     @param data    The data that will be passed to the Stile tests. Can be a 
                    (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
                    other of those options.
@@ -777,7 +765,7 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                 if data_list[0] in to_write and any(
                                           [data_fields[key]!=fields[key] for key in fields.keys()]):
                     data = stile_utils.FormatArray(file_io.ReadTable(data_list[0]),data_list[1])
-                    new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
+                    new_data_list.append(OSFile(data,fields=fields))
                     to_write.remove(data_list[0])
                 else:
                     new_data_list.append(data_list[0])
@@ -789,28 +777,27 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                     data_fields = _coerce_schema(dl[1])
                     if dl[0] in to_write and any(
                                           [data_fields[key]!=fields[key] for key in fields.keys()]):
-                        data = file_io.ReadTable(dl[0])
-                        data.dtype.names = dl[1]
-                        new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
+                        data = stile_utils.FormatArray(file_io.ReadTable(dl[0]),dl[1])
+                        new_data_list.append(OSFile(data,fields=fields))
                     else:
                         new_data_list.append(dl[0])
             else:
                 if hasattr(data_list,'dtype') and data_list.dtype.names: 
-                    new_data_list.append(OSFile(dh,data_list,fields=fields,is_array=True))
+                    new_data_list.append(OSFile(data_list,fields=fields))
                 else: 
                     for dl in data_list:
                         if not hasattr(dl,'dtype') or not hasattr(dl.dtype,'names'):
                             raise RuntimeError("Cannot parse data: should be a tuple, "+
                                                "numpy array, or an unmixed list of one or the "+
                                                "other.  Given:"+str(data_list))
-                        new_data_list.append(OSFile(dh,dl,fields=fields,is_array=True))
+                        new_data_list.append(OSFile(dl,fields=fields))
         
     
     # Lists of files need to be written to a separate file; do that.
     file_args = []
     for file_list in [new_data, new_data2, new_random, new_random2]:
         if len(file_list)>1:
-            file_args.append(('list',OSFile(dh,file_list,is_array=True)))
+            file_args.append(('list',OSFile(file_list)))
         elif len(file_list)==1:
             file_args.append(('name',file_list[0]))
         else:

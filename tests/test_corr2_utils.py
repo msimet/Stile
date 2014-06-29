@@ -242,15 +242,14 @@ def test_OSFile():
     arr1 = numpy.array([[1,2,3],[4.,5.,6.]])
     arr2 = numpy.array([(1.5,2,3.5),(4,5,6)],dtype='d,l,d')
     arr2.dtype.names = ['one','two','three']
-    OSFile0 = stile.corr2_utils.OSFile(dh,arr0,is_array=True)
-    OSFile1 = stile.corr2_utils.OSFile(dh,arr1,is_array=True)
-    OSFile2 = stile.corr2_utils.OSFile(dh,arr2,is_array=True)
-    OSFile3 = stile.corr2_utils.OSFile(dh,[OSFile0,OSFile1,OSFile2],is_array=True)
-    OSFile4 = stile.corr2_utils.OSFile(dh,arr2,is_array=True,fields=['two','three','one'])
-    OSFile5 = stile.corr2_utils.OSFile(dh,arr2,is_array=True,fields={'two':0,'three':1,'one':2})
-    OSFile6 = stile.corr2_utils.OSFile(dh,OSFile2)
-    OSFile7 = stile.corr2_utils.OSFile(dh,OSFile2,is_array=True)
-    OSFile8 = stile.corr2_utils.OSFile(dh,OSFile2,fields=['two','three','one'])
+    OSFile0 = stile.corr2_utils.OSFile(arr0)
+    OSFile1 = stile.corr2_utils.OSFile(arr1)
+    OSFile2 = stile.corr2_utils.OSFile(arr2)
+    OSFile3 = stile.corr2_utils.OSFile([OSFile0,OSFile1,OSFile2])
+    OSFile4 = stile.corr2_utils.OSFile(arr2,fields=['two','three','one'])
+    OSFile5 = stile.corr2_utils.OSFile(arr2,fields={'two':0,'three':1,'one':2})
+    OSFile6 = stile.corr2_utils.OSFile(OSFile2)
+    OSFile7 = stile.corr2_utils.OSFile(OSFile2,fields=['two','three','one'])
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile0.file_name),
                                numpy.array([tuple(arr0)],dtype='l,l,l,l,l'))
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile1.file_name),
@@ -273,14 +272,8 @@ def test_OSFile():
     result.dtype.names=('two','three','one')
     numpy.testing.assert_equal(result,arr2[['two','three','one']])
     assert OSFile6==OSFile2 # Fun fact: numpy.testing.assert_equal of objects ignores __eq__
-    assert OSFile7==OSFile2
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile4.file_name),
-                               stile.ReadASCIITable(OSFile8.file_name))
-    try:
-        numpy.testing.assert_raises(ValueError,stile.corr2_utils.OSFile,dh,0) 
-    except ImportError:
-        pass
-    del OSFile8
+                               stile.ReadASCIITable(OSFile7.file_name))
     del OSFile7
     del OSFile6
     del OSFile5
@@ -303,7 +296,7 @@ def test_MakeCorr2FileKwargs():
     data = numpy.array(data,dtype=[('ra', float),('dec',float),('g1',float),('g2',float)])
     dh = temp_data_handler()
     #    data as file lists
-    result = stile.MakeCorr2FileKwargs(dh,data)
+    result = stile.MakeCorr2FileKwargs(data)
     assert len(result.keys())==5
     assert 'file_name' in result
     assert 'ra_col' in result
@@ -316,7 +309,7 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[1,2,3,4]) # corr2 cols start from 1!
 
-    result = stile.MakeCorr2FileKwargs(dh,('test_data/data_table.dat',['ra','dec','g1','g2']))
+    result = stile.MakeCorr2FileKwargs(('test_data/data_table.dat',['ra','dec','g1','g2']))
     assert len(result.keys())==5
     assert 'file_name' in result
     assert 'ra_col' in result
@@ -327,12 +320,12 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[1,2,3,4])
     
-    result2 = stile.MakeCorr2FileKwargs(dh,('test_data/data_table.dat',
-                                           {'ra': 0, 'dec': 1, 'g1': 2, 'g2': 3}))
+    result2 = stile.MakeCorr2FileKwargs(('test_data/data_table.dat',
+                                        {'ra': 0, 'dec': 1, 'g1': 2, 'g2': 3}))
     assert result==result2
 
-    result = stile.MakeCorr2FileKwargs(dh,('test_data/data_table.dat',['ra','dec','g1','g2']),
-                                          data2 = data)
+    result = stile.MakeCorr2FileKwargs(('test_data/data_table.dat',['ra','dec','g1','g2']),
+                                       data2 = data)
     assert len(result.keys())==6
     assert 'file_name' in result
     assert 'file_name2' in result
@@ -346,8 +339,8 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[1,2,3,4]) # corr2 cols start from 1!
     
-    result = stile.MakeCorr2FileKwargs(dh,('test_data/data_table.dat',['dec','ra','g1','g2']),
-                                          data2 = data)
+    result = stile.MakeCorr2FileKwargs(('test_data/data_table.dat',['dec','ra','g1','g2']),
+                                       data2 = data)
     assert len(result.keys())==6
     assert 'file_name' in result
     assert 'file_name2' in result
@@ -362,7 +355,7 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[2,1,3,4]) # corr2 cols start from 1!
     
-    result = stile.MakeCorr2FileKwargs(dh,data,data[['dec','ra','g1','g2']])
+    result = stile.MakeCorr2FileKwargs(data,data[['dec','ra','g1','g2']])
     assert len(result.keys())==6
     assert 'file_name' in result
     assert 'file_name2' in result
@@ -375,8 +368,8 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal(stile.ReadASCIITable(result['file_name'].file_name),
                                stile.ReadASCIITable(result['file_name2'].file_name))
     
-    result = stile.MakeCorr2FileKwargs(dh,('test_data/data_table.dat',['ra','dec','g1','g2']),
-                                          ('test_data/data_table.dat',['dec','ra','g1','g2']))
+    result = stile.MakeCorr2FileKwargs(('test_data/data_table.dat',['ra','dec','g1','g2']),
+                                       ('test_data/data_table.dat',['dec','ra','g1','g2']))
     assert len(result.keys())==6
     assert 'file_name' in result
     assert 'file_name2' in result
@@ -399,7 +392,7 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal(result2[result2.dtype.names[result['g2_col']-1]],
                                result3[result3.dtype.names[result['g2_col']-1]])
     
-    result = stile.MakeCorr2FileKwargs(dh,[data,data])
+    result = stile.MakeCorr2FileKwargs([data,data])
     assert len(result.keys())==5
     assert 'file_list' in result
     assert 'ra_col' in result
@@ -414,8 +407,8 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal(stile.ReadASCIITable(result_file_names['f0'][0]),
                                stile.ReadASCIITable('test_data/data_table.dat'))
     
-    result = stile.MakeCorr2FileKwargs(dh,[('test_data/data_table.dat',['ra','dec','g1','g2']),
-                                           ('test_data/data_table.dat',['ra','dec','g1','g2'])])
+    result = stile.MakeCorr2FileKwargs([('test_data/data_table.dat',['ra','dec','g1','g2']),
+                                        ('test_data/data_table.dat',['ra','dec','g1','g2'])])
     assert len(result.keys())==5
     assert 'file_list' in result
     assert 'ra_col' in result
@@ -428,8 +421,8 @@ def test_MakeCorr2FileKwargs():
     numpy.testing.assert_equal(result_file_names['f0'][0],'test_data/data_table.dat')
     numpy.testing.assert_equal(result_file_names['f1'][0],'test_data/data_table.dat')
     
-    result = stile.MakeCorr2FileKwargs(dh,[('test_data/data_table.dat',['ra','dec','g1','g2']),
-                                           ('test_data/data_table.dat',['dec','ra','g1','g2'])])
+    result = stile.MakeCorr2FileKwargs([('test_data/data_table.dat',['ra','dec','g1','g2']),
+                                        ('test_data/data_table.dat',['dec','ra','g1','g2'])])
     
     assert len(result.keys())==5
     assert 'file_list' in result
@@ -450,8 +443,8 @@ def test_MakeCorr2FileKwargs():
         numpy.testing.assert_equal(result2,result3)
     else:
         raise AssertionError('Both files rewritten (should have been one)')
-    osfile = stile.corr2_utils.OSFile(dh,data,is_array=True)
-    result = stile.MakeCorr2FileKwargs(dh,osfile)
+    osfile = stile.corr2_utils.OSFile(data)
+    result = stile.MakeCorr2FileKwargs(osfile)
     assert len(result.keys())==5
     assert 'file_name' in result
     assert 'ra_col' in result

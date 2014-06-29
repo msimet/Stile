@@ -65,7 +65,7 @@ class CorrelationFunctionSysTest(SysTest):
             stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
         corr2_kwargs.update(kwargs)
-        corr2_file_kwargs = stile.MakeCorr2FileKwargs(None,data,data2,random,random2)
+        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
         corr2_kwargs.update(corr2_file_kwargs)
 
         if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
