@@ -7,46 +7,6 @@ except ImportError:
     sys.path.append('..')
     import stile
 
-def test_ExpandBinList():
-    t0 = time.time()
-    # Needs a callable object
-    def return_objs(x,n):
-        def func():
-            return [str(nn)+x for nn in range(n)]
-        return func
-    results = stile.ExpandBinList([return_objs('a',3),return_objs('b',2),return_objs('c',4)])
-    numpy.testing.assert_equal(results,[('0a','0b','0c'),('0a','0b','1c'),('0a','0b','2c'),
-                                        ('0a','0b','3c'),('0a','1b','0c'),('0a','1b','1c'),
-                                        ('0a','1b','2c'),('0a','1b','3c'),('1a','0b','0c'),
-                                        ('1a','0b','1c'),('1a','0b','2c'),('1a','0b','3c'),
-                                        ('1a','1b','0c'),('1a','1b','1c'),('1a','1b','2c'),
-                                        ('1a','1b','3c'),('2a','0b','0c'),('2a','0b','1c'),
-                                        ('2a','0b','2c'),('2a','0b','3c'),('2a','1b','0c'),
-                                        ('2a','1b','1c'),('2a','1b','2c'),('2a','1b','3c')])
-    numpy.testing.assert_equal(stile.ExpandBinList(None),[])
-    numpy.testing.assert_equal(stile.ExpandBinList([]),[])
-    bin_obj0 = stile.BinStep('column_0',low=0,high=6,n_bins=2)
-    bin_obj1 = stile.BinList('column_1',[0,2,4])
-    results = stile.ExpandBinList([bin_obj0,bin_obj1])
-    expected_results = [(stile.binning.SingleBin('column_0',low=0,high=3,short_name='b'),
-                         stile.binning.SingleBin('column_1',low=0,high=2,short_name='b')),
-                        (stile.binning.SingleBin('column_0',low=0,high=3,short_name='b'),
-                         stile.binning.SingleBin('column_1',low=2,high=4,short_name='b')),
-                        (stile.binning.SingleBin('column_0',low=3,high=6,short_name='b'),
-                         stile.binning.SingleBin('column_1',low=0,high=2,short_name='b')),
-                        (stile.binning.SingleBin('column_0',low=3,high=6,short_name='b'),
-                         stile.binning.SingleBin('column_1',low=2,high=4,short_name='b'))]
-    numpy.testing.assert_equal(len(results),len(expected_results))
-    from test_binning import compare_single_bin
-    [(compare_single_bin(rpair[0],epair[0]), compare_single_bin(rpair[1],epair[1]))
-                                                  for rpair, epair in zip(results,expected_results)]
-    try: 
-        numpy.testing.assert_raises(TypeError,stile.ExpandBinList,bin_obj0,bin_obj1)
-    except ImportError:
-        print "nose is required for numpy.testing.assert_raises tests"
-    t1 = time.time()
-    print "Time to test ExpandBinList: ", 1000*(t1-t0), "ms"
-
 def test_FormatArray():
     t0 = time.time()
     data_raw = [(1,'hello',2.0),(3,'boo',5.0)]
