@@ -1,5 +1,5 @@
 """@file binning.py
-Contains definitions of Bin* classes that generate binning schemes and the SingleBins
+Contains definitions of Bin* classes that generate binning schemes and the SingleBin
 objects they create which can be applied to data to limit it to the bin in question.
 """
 #TODO: binning for images
@@ -7,13 +7,16 @@ import numpy
 
 class BinList:
     """
-    An object which returns bin definitions (a list of SingleBins) following the bin edge
-    definitions given as the input bin_list.  
+    An object which, when called, returns bin definitions (a list of SingleBins) following the bin 
+    edge definitions given as the input bin_list.  The bins are defined as an input iterable, which 
+    is taken to contain the bin edges in order.
     
     @param field     Which data field to apply the binning system to
     @param bin_list  A list of bin endpoints such that bin_list[0] <= (bin 0 data) < bin_list[1],
-                     bin_list[1] <= (bin 1 data) < bin_list[2], etc; each interval is assumed to be
-                     [low,high) and the list must be monotonic.
+                     bin_list[1] <= (bin 1 data) < bin_list[2] if the bin_list is monotonically
+                     increasing, or bin_list[0] > (bin 0 data) >= bin_list[1], 
+                     bin_list[1] > (bin 1 data) >= bin_list[2] if the bin_list is monotonically
+                     decreasing.  
     """
     def __init__(self,field,bin_list):
         if not isinstance(field,str):
@@ -32,20 +35,24 @@ class BinList:
                              'list: %s'%bin_list)
         self.bin_list = bin_list
     def __call__(self):
+        """ 
+        Returns a list of SingleBin objects following the definitions provided when the class was
+        created.
+        """
         return_list = [SingleBin(field=self.field,low=low,high=high,short_name=str(i)) 
-                        for i, (low, high) in  enumerate(zip(self.bin_list[:-1],self.bin_list[1:]))]
+                       for i, (low, high) in  enumerate(zip(self.bin_list[:-1],self.bin_list[1:]))]
         if self.reverse:
             return_list.reverse()
         return return_list
 
 class BinStep:
     """
-    An object which returns bin definitions (a list of SingleBins) following the simple 
-    constant-step bins described by the input arguments. Can handle linear-space and log-space 
-    binning (default is linear). AT LEAST THREE of the arguments (low,high,step,n_bins) must be 
-    passed; if all four are passed they will be checked for consistency.  If low, high, and step are
-    passed, high may be slightly increased to ensure an integer number of bins, so users who need
-    a hard cutoff at high are suggested to use n_bins instead.
+    An object which, when called, returns bin definitions (a list of SingleBins) following the 
+    simple constant-step bins described by the input arguments. Can handle linear-space and log-    
+    space binning (default is linear). AT LEAST THREE of the arguments (low,high,step,n_bins) must 
+    be passed; if all four are passed they will be checked for consistency.  If low, high, and step 
+    are passed, high may be slightly increased to ensure an integer number of bins, so users who 
+    need a hard cutoff at high are suggested to use n_bins instead.
     
     @param field     Which field of data to apply the binning system to
     @param low       The low edge of the lowest bin, inclusive; should be in linear space regardless
@@ -112,6 +119,8 @@ class BinStep:
             self.n_bins = n_bins
             self.low = high-n_bins*step
         if self.step<0:
+            # We want to store parameters such that bin_edge[0] < bin 0 < bin_edge[1], even if
+            # the step is negative, so we keep track of that here.
             self.low = self.low+self.n_bins*self.step
             self.step*=-1
             self.reverse = True
@@ -140,11 +149,11 @@ class SingleBin:
     of the class.  The endpoints are assumed to be [low,high), that is, low <= data < high, with
     defined relational operators.  
     
-    @param field    The index of the field containing the data to be binned (must be str)
-    @param low      The lower edge of the bin (inclusive)
-    @param high     The upper edge of the bin (exclusive)
-    @param shorname A string denoting this bin in filenames
-    @param long_name A string denoting this bin in program text outputs/plots (default: "low-high")  
+    @param field      The index of the field containing the data to be binned (must be a string)
+    @param low        The lower edge of the bin (inclusive)
+    @param high       The upper edge of the bin (exclusive)
+    @param short_name A string denoting this bin in filenames
+    @param long_name  A string denoting this bin in program text outputs/plots (default: "low-high")
     """
     def __init__(self,field,low,high,short_name,long_name=None):
         if not isinstance(field,str):
@@ -163,10 +172,11 @@ class SingleBin:
             self.long_name = str(low)+'-'+str(high)
     def __call__(self,data):
         """
-        Given data, returns an array of bools such that array[SingleBin()] gives only the data 
+        Given data, returns an array of bools such that array[SingleBin(array)] gives only the data 
         within the bounds [self.low,self.high).
-        @param data   An array of data which can be indexed by self.field
-        @returns      An array of bools indicating which of the data points are in the given range
+        @param data   A NumPy array of data which can be indexed by self.field
+        @returns      A NumPy array of bools indicating which of the data points are in the given 
+                      range
         """
         return (data[self.field]>=self.low) & (data[self.field]<self.high)
     
@@ -174,15 +184,15 @@ class BinFunction:
     """
     An object which returns bin definitions (a list of SingleFunctionBins) following the definitions
     given in initialization.  Note that unlike other SingleBins, the SingleFunctionBins created
-    by BinFunction do not have public field, low, or high attributes, since the function is assumed
-    to be too complex for such parameterization.
+    by BinFunction do not have public `field`, `low`, or `high` attributes, since the function is 
+    assumed to be too complex for such parameterization.
     
     @param function       The function to be applied to the data (an entire array, not just a 
                           field).  The function should return an array of ints corresponding to the
                           bin numbers of the data rows (unless return_bools is set, see below).  The
                           function should take a data array as its only argument, unless
                           return_bools is set to True, in which case it should take a bin number as
-                          the second argument.
+                          its second argument.
     @param n_bins         The maximum number of bins returned by the input function.  If None, the
                           function will be checked for an n_bins attribute; if it does not exist
                           an error will be raised.
@@ -207,16 +217,18 @@ class BinFunction:
 class SingleFunctionBin(SingleBin):
     """
     A class that contains the information for one particular bin generated from a function. The 
-    class can also be called with a data array to generate an array of bools such that 
-    array[SingleBin()] gives only the data within the bounds of the particular instance of the 
-    class.  Unlike SingleBins, there are no public field, low, or high attributes, as these are
-    assumed to be insufficient to describe the behavior of the binning scheme.    
+    class can be called with a data array to generate an array of bools such that 
+    array[SingleFunctionBin(array)] gives only the data within the bounds of the particular 
+    instance of the class.  Unlike SingleBins, there are no public `field`, `low`, or `high` 
+    attributes, as these are assumed to be insufficient to describe the behavior of the binning     
+    scheme.    
     
     @param function       The function that returns the bin information
     @param n              Which bin this SingleFunctionBin considers
-    @param returns_bools  True if the function returns bools, else False (default: False)
+    @param returns_bools  True if the function returns bools, False if it returns bin numbers
+                          (default: False)
     @param short_name     A string denoting this bin in filenames (default: str(n))
-    @param long_name       A string denoting this bin in program outputs/plots (default: short_name)  
+    @param long_name      A string denoting this bin in program outputs/plots (default: short_name)
     """
     def __init__(self,function,n,returns_bools=False, short_name=None, long_name=None):
         if (short_name and not isinstance(short_name,str)) or (
@@ -237,7 +249,21 @@ class SingleFunctionBin(SingleBin):
         else:
             self.__call__=self._call_int
     def _call_int(self,data):
+        """
+        Given data, returns an array of bools such that array[SingleFunctionBin(array)] gives only 
+        the data within the bin number specified when the class was created.
+        @param data   Data which can be interpreted by self.function
+        @returns      A NumPy array of bools indicating which of the data points are in the given 
+                      range
+        """
         return self.function(data)==self.n
     def _call_bool(self,data):
+        """
+        Given data, returns an array of bools such that array[SingleFunctionBin(array)] gives only 
+        the data within the bin number specified when the class was created.
+        @param data   Data which can be interpreted by self.function
+        @returns      A NumPy array of bools indicating which of the data points are in the given 
+                      range
+        """
         return self.function(data,self.n)    
         
