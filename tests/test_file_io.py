@@ -13,13 +13,6 @@ try:
 except ImportError:
     print 'The assert_raises tests require nose'
 
-def test_equal_formatted(arr1,arr2):
-    """
-    Test that two formatted arrays are equal.  Mostly useful for the FITS tests, where an otherwise
-    identical NumPy array and FITS_rec array will *not* appear equal.
-    """
-    pass
-
 # Test data tables.
 table1 = numpy.array(
     [(5.389e-02, 5.443e-02, 2.206e-02, -4.259e-02, 2.578e-02, 1.820e+02, 1.820e+02),
