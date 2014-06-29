@@ -3,8 +3,9 @@ Contains elements of Stile needed to interface with Mike Jarvis's corr2 program.
 """
 import copy
 import numpy
-import weakref
 import os
+import file_io
+import tempfile
 
 # A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
 # so only one dict is here; later versions of Stile may need to implement if statements here for
@@ -455,7 +456,6 @@ def ReadCorr2ResultsFile(file_name):
     @returns         A numpy array corresponding to the data in file_name.
     """    
     import stile_utils
-    import file_io
     # Currently there is a bug in corr2 that puts some text output into results files, necessitating
     # the "comments='R'" line, plus the "skiprows" argument to skip the first (real) comment line.
     output = file_io.ReadASCIITable(file_name,comments='R',skiprows=1)
@@ -559,8 +559,6 @@ class OSFile:
             self.file_name = data_id.file_name
             self.handle = data_id.handle
         else:
-            import file_io
-            import tempfile
             self.data_id = data_id
             self.dh = dh
             self.fields = fields
@@ -777,10 +775,8 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                 # this check and rewritten.  (You could picture doing this if you had a catalog with
                 # two different shape definitions and wanted to correlate them, for example.)
                 if data_list[0] in to_write and any(
-                                              [data_fields[key]!=i for i,key in enumerate(fields)]):
-                    import file_io
-                    data = file_io.ReadASCIITable(data_list[0])
-                    data.dtype.names = data_list[1]
+                                          [data_fields[key]!=fields[key] for key in fields.keys()]):
+                    data = stile_utils.FormatArray(file_io.ReadTable(data_list[0]),data_list[1])
                     new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
                     to_write.remove(data_list[0])
                 else:
@@ -792,9 +788,8 @@ def MakeCorr2FileKwargs(dh, data, data2=None, random=None, random2=None):
                 for dl in data_list:
                     data_fields = _coerce_schema(dl[1])
                     if dl[0] in to_write and any(
-                                              [data_fields[key]!=i for i,key in enumerate(fields)]):
-                        import file_io
-                        data = file_io.ReadASCIITable(dl[0])
+                                          [data_fields[key]!=fields[key] for key in fields.keys()]):
+                        data = file_io.ReadTable(dl[0])
                         data.dtype.names = dl[1]
                         new_data_list.append(OSFile(dh,data,fields=fields,is_array=True))
                     else:
