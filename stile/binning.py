@@ -178,7 +178,7 @@ class SingleBin:
         @returns      A NumPy array of bools indicating which of the data points are in the given 
                       range
         """
-        return (data[self.field]>=self.low) & (data[self.field]<self.high)
+        return numpy.logical_and(data[self.field]>=self.low,data[self.field]<self.high)
     
 class BinFunction:
     """
