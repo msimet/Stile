@@ -13,8 +13,8 @@ class DataHandler:
     The class needs to be able to do two things:
       - List some data given a set of requirements (DataHandler.listData()).  The requirements 
         generally follow the form:
-         -- object_types: a list of strings such as "star", "PSF star" or "galaxy" describing the
-              objects that are needed for the tests.
+         -- object_types: a list of strings such as "star", "PSF star", "galaxy" or "galaxy random" 
+              describing the objects that are needed for the tests.
          -- epoch: whether this is a single/summary catalog, or a multiepoch time series. (Coadded 
               catalogs with no per-epoch information count as a single/summary catalog!)
          -- extent: "CCD", "field", "patch" or "tract".  This can be ignored if you don't mind 
