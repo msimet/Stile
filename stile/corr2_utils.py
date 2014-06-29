@@ -510,10 +510,16 @@ def MakeCorr2Cols(cols,use_as_k=None):
     col_args = ['x','y','ra','dec','g1','g2','k','w']
     if isinstance(cols,dict):
         for col in col_args:
-            if col in cols and isinstance(cols[col],int):
-                corr2_kwargs[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
-        if use_as_k and use_as_k in cols and isinstance(cols[use_as_k],int):
-            corr2_kwargs['k_col'] = cols[use_as_k]+1
+            if col in cols:
+                if isinstance(cols[col],int):
+                    corr2_kwargs[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
+                elif isinstance(cols[col],str):
+                    corr2_kwargs[col+'_col'] = cols[col]
+        if use_as_k and use_as_k in cols:
+            if isinstance(cols[use_as_k],int):
+                corr2_kwargs['k_col'] = cols[use_as_k]+1
+            elif isinstance(cols[col],str):
+                corr2_kwargs['k_col'] = cols[use_as_k]
     elif hasattr(cols,'__getitem__'):
         for col in col_args:
             if col in cols:
@@ -537,8 +543,10 @@ class OSFile:
         - Directly as an array, in which case `is_array` should be set to True.
     In either case, "fields" may be set to control which fields of the data are printed to the
     temporary file.  "fields" should be either a list of fields in order, or a dict of 
-    {'field_name': field_number} pairs.  Caveats about the use of the "fields" kwarg may be found
-    in the documentation for WriteTable.
+    {'field_name': field_number/field_str} pairs, with "field_str" applying only if you have 
+    pyfits/astropy installed to handle FITS files (to map field names onto Stile/Corr2 expected 
+    field names). Further caveats about the use of the "fields" kwarg may be found in the 
+    documentation for WriteTable.
     
     @param data      An array of data.
     @param fields    A description of the fields to be written out. See above or the documentation  
@@ -567,7 +575,12 @@ class OSFile:
                 except:
                     pass
             self.handle, self.file_name = tempfile.mkstemp()
-            file_io.WriteASCIITable(self.file_name,self.data,fields=self.fields)
+            if self.fields: 
+                # This will be True if this is a NumPy array.  (WriteFITSTable doesn't deal well 
+                # with non-NumPy arrays, since it doesn't know what's a column and what's a row.)
+                file_io.WriteTable(self.file_name,self.data,fields=self.fields)
+            else: 
+                file_io.WriteASCIITable(self.file_name,self.data)
     def __repr__(self):
         return self.file_name
     def __del__(self):
