@@ -28,10 +28,10 @@ def main():
     data2 = dh.getData(data_ids[1],'pair','single','field','table')
     
     # convert all files to files on disk if they aren't already
-    corr2_kwargs = stile.MakeCorr2FileKwargs(dh,data,data2)
+    corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
     
     # run the test
-    results = sys_test(stile_args,dh,**corr2_kwargs)
+    results = sys_test(stile_args,**corr2_kwargs)
     # Plot the results
     P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
     P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
@@ -56,9 +56,9 @@ def main():
         stile_args['bins_name'] = '-'.join([bl.short_name for bl in bin_list])
         data2 = dh.getData(data_ids[1],'pair','single','field','table',bin_list=bin_list)
         
-        corr2_kwargs = stile.MakeCorr2FileKwargs(dh,data,data2)
+        corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
         
-        results = sys_test(stile_args,dh,**corr2_kwargs)
+        results = sys_test(stile_args,**corr2_kwargs)
         P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
         P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
         P.xlabel('<R> [deg]')
