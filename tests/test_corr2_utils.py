@@ -1,5 +1,6 @@
 import numpy
 import time
+import test_helper
 try:
     import stile
 except:
@@ -250,24 +251,25 @@ def test_OSFile():
     OSFile5 = stile.corr2_utils.OSFile(arr2,fields={'two':0,'three':1,'one':2})
     OSFile6 = stile.corr2_utils.OSFile(OSFile2)
     OSFile7 = stile.corr2_utils.OSFile(OSFile2,fields=['two','three','one'])
-    numpy.testing.assert_equal(stile.ReadASCIITable(OSFile0.file_name),
+    numpy.testing.assert_equal(stile.ReadTable(OSFile0.file_name),
                                numpy.array([tuple(arr0)],dtype='l,l,l,l,l'))
-    numpy.testing.assert_equal(stile.ReadASCIITable(OSFile1.file_name),
+    numpy.testing.assert_equal(stile.ReadTable(OSFile1.file_name),
                                numpy.array([tuple(a) for a in arr1],dtype='l,l,l'))
     # numpy.testing.assert_equal won't work on formatted arrays unless they have the same field
     # names, hence the "fields=" bit.
-    result = stile.ReadASCIITable(OSFile2.file_name,fields=arr2.dtype.names)
-    numpy.testing.assert_equal(result,arr2)
+    result = numpy.array(stile.ReadTable(OSFile2.file_name,fields=arr2.dtype.names))
+    import test_helper
+    numpy.testing.assert_equal(*test_helper.format_same(result,arr2))
     str_len = max([len(OSFile0.file_name),len(OSFile1.file_name),len(OSFile2.file_name)])
     str_dtype = ','.join(['S'+str(str_len)]*3)
-    numpy.testing.assert_equal(stile.ReadASCIITable(OSFile3.file_name),
+    numpy.testing.assert_equal(stile.ReadTable(OSFile3.file_name),
                                numpy.array(
                                     [(OSFile0.file_name,OSFile1.file_name,OSFile2.file_name)],
                                     dtype=str_dtype))
-    result = stile.ReadASCIITable(OSFile4.file_name,fields=['two','three','one'])
-    numpy.testing.assert_equal(result,arr2[['two','three','one']])
-    result = stile.ReadASCIITable(OSFile5.file_name,fields=['two','three','one'])
-    numpy.testing.assert_equal(result,arr2[['two','three','one']])
+    result = stile.ReadTable(OSFile4.file_name,fields=['two','three','one'])
+    numpy.testing.assert_equal(*test_helper.format_same(result,arr2[['two','three','one']]))
+    result = stile.ReadTable(OSFile5.file_name,fields=['two','three','one'])
+    numpy.testing.assert_equal(*test_helper.format_same(result,arr2[['two','three','one']]))
     assert OSFile6==OSFile2 # Fun fact: numpy.testing.assert_equal of objects ignores __eq__
     numpy.testing.assert_equal(stile.ReadASCIITable(OSFile4.file_name),
                                stile.ReadASCIITable(OSFile7.file_name))
@@ -301,8 +303,8 @@ def test_MakeCorr2FileKwargs():
     assert 'g1_col' in result
     assert 'g2_col' in result
     assert isinstance(result['file_name'],stile.corr2_utils.OSFile)
-    numpy.testing.assert_equal(stile.ReadASCIITable('test_data/data_table.dat'),
-                               stile.ReadASCIITable(result['file_name'].file_name))
+    numpy.testing.assert_equal(*test_helper.format_same(stile.ReadASCIITable('test_data/data_table.dat'),
+                               stile.ReadTable(result['file_name'].file_name)))
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[1,2,3,4]) # corr2 cols start from 1!
 
@@ -331,8 +333,8 @@ def test_MakeCorr2FileKwargs():
     assert 'g1_col' in result
     assert 'g2_col' in result
     assert isinstance(result['file_name2'],stile.corr2_utils.OSFile)
-    numpy.testing.assert_equal(stile.ReadASCIITable('test_data/data_table.dat'),
-                               stile.ReadASCIITable(result['file_name2'].file_name))
+    numpy.testing.assert_equal(*test_helper.format_same(stile.ReadASCIITable('test_data/data_table.dat'),
+                               stile.ReadTable(result['file_name2'].file_name)))
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[1,2,3,4]) # corr2 cols start from 1!
     
@@ -346,9 +348,11 @@ def test_MakeCorr2FileKwargs():
     assert 'g1_col' in result
     assert 'g2_col' in result
     assert isinstance(result['file_name2'],stile.corr2_utils.OSFile)
-    result2 = stile.ReadASCIITable(result['file_name2'].file_name)[['f1','f0','f2','f3']]
-    result2.dtype.names = ['f0','f1','f2','f3']
-    numpy.testing.assert_equal(result2,stile.ReadASCIITable('test_data/data_table.dat'))
+    result2 = numpy.array(stile.ReadTable(result['file_name2'].file_name))
+    names = result2.dtype.names
+    names = [names[1], names[0], names[2], names[3]]
+    result2 = result2[names]
+    numpy.testing.assert_equal(*test_helper.format_same(result2,stile.ReadASCIITable('test_data/data_table.dat')))
     numpy.testing.assert_equal([result['ra_col'],result['dec_col'],result['g1_col'],
                                 result['g2_col']],[2,1,3,4]) # corr2 cols start from 1!
     
@@ -362,8 +366,8 @@ def test_MakeCorr2FileKwargs():
     assert 'g2_col' in result
     assert isinstance(result['file_name'],stile.corr2_utils.OSFile)
     assert isinstance(result['file_name2'],stile.corr2_utils.OSFile)
-    numpy.testing.assert_equal(stile.ReadASCIITable(result['file_name'].file_name),
-                               stile.ReadASCIITable(result['file_name2'].file_name))
+    numpy.testing.assert_equal(stile.ReadTable(result['file_name'].file_name),
+                               stile.ReadTable(result['file_name2'].file_name))
     
     result = stile.MakeCorr2FileKwargs(('test_data/data_table.dat',['ra','dec','g1','g2']),
                                        ('test_data/data_table.dat',['dec','ra','g1','g2']))
@@ -378,8 +382,8 @@ def test_MakeCorr2FileKwargs():
             isinstance(result['file_name2'],stile.corr2_utils.OSFile))
     assert not (isinstance(result['file_name'],stile.corr2_utils.OSFile) and
                 isinstance(result['file_name2'],stile.corr2_utils.OSFile))
-    result2 = stile.ReadASCIITable(str(result['file_name']))
-    result3 = stile.ReadASCIITable(str(result['file_name2']))
+    result2 = stile.ReadTable(str(result['file_name']))
+    result3 = stile.ReadTable(str(result['file_name2']))
     numpy.testing.assert_equal(result2[result2.dtype.names[result['ra_col']-1]],
                                result3[result3.dtype.names[result['dec_col']-1]])
     numpy.testing.assert_equal(result2[result2.dtype.names[result['dec_col']-1]],
@@ -397,12 +401,12 @@ def test_MakeCorr2FileKwargs():
     assert 'g1_col' in result
     assert 'g2_col' in result
     assert isinstance(result['file_list'],stile.corr2_utils.OSFile)
-    result_file_names = stile.ReadASCIITable(str(result['file_list']))
+    result_file_names = stile.ReadTable(str(result['file_list']))
     assert len(result_file_names.dtype.names)==2
-    numpy.testing.assert_equal(stile.ReadASCIITable(result_file_names['f0'][0]),
-                               stile.ReadASCIITable(result_file_names['f1'][0]))
-    numpy.testing.assert_equal(stile.ReadASCIITable(result_file_names['f0'][0]),
-                               stile.ReadASCIITable('test_data/data_table.dat'))
+    numpy.testing.assert_equal(stile.ReadTable(result_file_names['f0'][0]),
+                               stile.ReadTable(result_file_names['f1'][0]))
+    numpy.testing.assert_equal(*test_helper.format_same(stile.ReadTable(result_file_names['f0'][0]),
+                               stile.ReadASCIITable('test_data/data_table.dat')))
     
     result = stile.MakeCorr2FileKwargs([('test_data/data_table.dat',['ra','dec','g1','g2']),
                                         ('test_data/data_table.dat',['ra','dec','g1','g2'])])
@@ -413,7 +417,7 @@ def test_MakeCorr2FileKwargs():
     assert 'g1_col' in result
     assert 'g2_col' in result
     assert isinstance(result['file_list'],stile.corr2_utils.OSFile)
-    result_file_names = stile.ReadASCIITable(str(result['file_list']))
+    result_file_names = stile.ReadTable(str(result['file_list']))
     assert len(result_file_names.dtype.names)==2
     numpy.testing.assert_equal(result_file_names['f0'][0],'test_data/data_table.dat')
     numpy.testing.assert_equal(result_file_names['f1'][0],'test_data/data_table.dat')
@@ -428,16 +432,16 @@ def test_MakeCorr2FileKwargs():
     assert 'g1_col' in result
     assert 'g2_col' in result
     assert isinstance(result['file_list'],stile.corr2_utils.OSFile)
-    result_file_names = stile.ReadASCIITable(str(result['file_list']))
+    result_file_names = stile.ReadTable(str(result['file_list']))
     assert len(result_file_names.dtype.names)==2
     if (result_file_names['f0'][0]=='test_data/data_table.dat' or 
         result_file_names['f1'][0]=='test_data/data_table.dat'):
         if result_file_names['f0'][0]==result_file_names['f1'][0]:
             raise AssertionError('Filenames should be different, but are the same')
-        result2 = stile.ReadASCIITable(result_file_names['f0'][0])
-        result3 = stile.ReadASCIITable(result_file_names['f1'][0])[['f1','f0','f2','f3']]
+        result2 = stile.ReadTable(result_file_names['f0'][0])
+        result3 = stile.ReadTable(result_file_names['f1'][0])[['f1','f0','f2','f3']]
         result3.dtype.names = ['f0','f1','f2','f3']
-        numpy.testing.assert_equal(result2,result3)
+        numpy.testing.assert_equal(*test_helper.format_same(result2,result3))
     else:
         raise AssertionError('Both files rewritten (should have been one)')
     osfile = stile.corr2_utils.OSFile(data)
