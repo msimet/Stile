@@ -21,23 +21,25 @@ def FormatArray(d,fields=None):
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
     description.
     
-    This function uses the dtype that the array d comes with.  This means that arrays of 
+    This function uses the dtype that the array `d` comes with.  This means that arrays of 
     heterogeneous objects may not return the dtype you expect (for example, ints will be converted
     to floats if there are floats in the array, or all numbers will be converted to strings if there
     are any strings in the array).  Predefining the format or using a function like 
-    numpy.genfromtxt() will prevent these issues.
+    numpy.genfromtxt() will prevent these issues, as will reading from a FITS file.
 
     @param d      A NumPy array
     @param fields A dictionary whose keys are the names of the fields you'd like for the output 
-                  array, and whose values are field numbers (starting with 0) whose names those keys should replace; alternately, a list with the same length as the rows of d. 
-                  (default: None)
+                  array, and whose values are field numbers (starting with 0) whose names those 
+                  keys should replace (or, if the array is already formatted, a list of the 
+                  existing field names the keys should replace); alternately, a list with the same 
+                  length as the rows of d. (default: None)
     @returns      A formatted numpy array with the same shape as d except that the innermost 
                   dimension has turned into a record field if it was not already one, optionally 
                   with field names appropriately replaced.
     """
     if not d.dtype.names:
         d_shape = d.shape
-        if len(d_shape)==1: # Assume this was a single field
+        if len(d_shape)==1: # Assume this was a single row
             d = numpy.array([d])
             d_shape = d.shape
         new_d = d.reshape(-1,d_shape[-1])
@@ -46,7 +48,7 @@ def FormatArray(d,fields=None):
         else:
             dtype_char = d.dtype.char
             if dtype_char=='S' or dtype_char=='O' or dtype_char=='V' or dtype_char=='U':
-                dtype = ','.join([d.dtype.str[1:]]*len(d[0])) # need the width as well as the char
+                dtype = ','.join([d.dtype.str]*len(d[0])) # need the width as well as the char
             else:
                 dtype = ','.join([dtype_char]*len(d[0]))
         d = numpy.array([tuple(nd) for nd in new_d],dtype=dtype)
@@ -61,6 +63,8 @@ def FormatArray(d,fields=None):
         elif len(fields)==len(d.dtype.names):
             d.dtype.names = fields
         else:
+            print len(fields), len(d.dtype.names)
+            print d.dtype.names, d
             raise RuntimeError('Cannot use given fields: '+str(fields))
     return d
 
@@ -114,3 +118,4 @@ class Stats:
                 ret_str += '\t%f %f\n'%(self.percentiles[index],self.values[index])
 
         return ret_str
+
