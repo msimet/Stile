@@ -37,6 +37,8 @@ def FormatArray(d,fields=None):
                   dimension has turned into a record field if it was not already one, optionally 
                   with field names appropriately replaced.
     """
+    if not hasattr(d,'dtype'):
+        d = numpy.array(d)
     if not d.dtype.names:
         d_shape = d.shape
         if len(d_shape)==1: # Assume this was a single row
