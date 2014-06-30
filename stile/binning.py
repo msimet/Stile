@@ -17,6 +17,7 @@ class BinList:
                      increasing, or bin_list[0] > (bin 0 data) >= bin_list[1], 
                      bin_list[1] > (bin 1 data) >= bin_list[2] if the bin_list is monotonically
                      decreasing.  
+    @returns         A list of SingleBin objects determined by the input criteria.
     """
     def __init__(self,field,bin_list):
         if not isinstance(field,str):
@@ -66,6 +67,7 @@ class BinStep:
     @param use_log   If True, bin in log space; else bin in linear space. Even when use_log=True,
                      all arguments except step should be given in linear space, and the returned
                      bin edges will also be in linear space. (default: False)
+    @returns         A list of SingleBin objects determined by the input criteria.
     """
     def __init__(self,field,low=None,high=None,step=None,n_bins=None,use_log=False):
         if not isinstance(field,str):
@@ -144,8 +146,8 @@ class SingleBin:
     """
     A class that contains the information for one particular bin generated from one of the Bin* 
     classes. The attributes can be accessed directly for DataHandlers that read in the data 
-    selectively. The class can also be called with a data array to generate an array of bools 
-    such that array[SingleBin()] gives only the data within the bounds of the particular instance
+    selectively. The class can also be called with a data array to bin it to the correct data 
+    range: SingleBin(array) will return only the data within the bounds of the particular instance
     of the class.  The endpoints are assumed to be [low,high), that is, low <= data < high, with
     defined relational operators.  
     
@@ -172,13 +174,14 @@ class SingleBin:
             self.long_name = str(low)+'-'+str(high)
     def __call__(self,data):
         """
-        Given data, returns an array of bools such that array[SingleBin(array)] gives only the data 
-        within the bounds [self.low,self.high).
+        Given data, returns only the data with data[self.field] within the bounds 
+        [self.low,self.high).
+
         @param data   A NumPy array of data which can be indexed by self.field
-        @returns      A NumPy array of bools indicating which of the data points are in the given 
-                      range
+        @returns      A NumPy array corresponding to the input data, restricted to the bin 
+                      described by this object
         """
-        return numpy.logical_and(data[self.field]>=self.low,data[self.field]<self.high)
+        return data[numpy.logical_and(data[self.field]>=self.low,data[self.field]<self.high)]
     
 class BinFunction:
     """
@@ -198,6 +201,7 @@ class BinFunction:
                           an error will be raised.
     @param returns_bools  True if the function will return an array of bools corresponding to a
                           mask to the bin number in question; false otherwise.  (default: False) 
+    @returns              A list of SingleFunctionBin objects determined by the input criteria.
     """
     def __init__(self, function, n_bins=None, returns_bools=False):
         self.function = function
@@ -217,11 +221,10 @@ class BinFunction:
 class SingleFunctionBin(SingleBin):
     """
     A class that contains the information for one particular bin generated from a function. The 
-    class can be called with a data array to generate an array of bools such that 
-    array[SingleFunctionBin(array)] gives only the data within the bounds of the particular 
-    instance of the class.  Unlike SingleBins, there are no public `field`, `low`, or `high` 
-    attributes, as these are assumed to be insufficient to describe the behavior of the binning     
-    scheme.    
+    class can be called with a data array to return only the data within the bounds of the 
+    particular instance of the class.  Unlike SingleBins, there are no public `field`, `low`, or 
+    `high` attributes, as these are assumed to be insufficient to describe the behavior of the 
+    binning scheme.    
     
     @param function       The function that returns the bin information
     @param n              Which bin this SingleFunctionBin considers
@@ -250,22 +253,24 @@ class SingleFunctionBin(SingleBin):
             self.__call__=self._call_int
     def _call_int(self,data):
         """
-        Given data, returns an array of bools such that array[SingleFunctionBin(array)] gives only 
-        the data within the bin number specified when the class was created.
+        Given data, returns only the data with self.bin_function==self.n, as defined when the class
+        was created.
+
         @param data   Data which can be interpreted by self.function
-        @returns      A NumPy array of bools indicating which of the data points are in the given 
-                      range
+        @returns      A NumPy array corresponding to the input data, restricted to the bin 
+                      described by this object
         """
-        return self.function(data)==self.n
+        return data[self.function(data)==self.n]
     def _call_bool(self,data):
         """
-        Given data, returns an array of bools such that array[SingleFunctionBin(array)] gives only 
-        the data within the bin number specified when the class was created.
+        Given data, returns only the data where self.bin_function(data,self.n)==True, as defined 
+        when the class was created.
+        
         @param data   Data which can be interpreted by self.function
-        @returns      A NumPy array of bools indicating which of the data points are in the given 
-                      range
+        @returns      A NumPy array corresponding to the input data, restricted to the bin 
+                      described by this object
         """
-        return self.function(data,self.n)    
+        return data[self.function(data,self.n)]
 
 def ExpandBinList(bin_list):
     """

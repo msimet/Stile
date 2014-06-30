@@ -34,14 +34,6 @@ class DataHandler:
     def __init__(self):
         raise NotImplementedError()
     
-    def bin(self,data,bin_list):
-        """
-        Apply a series of SingleBin objects in a bin_list to `data`, an image or array.
-        """
-        for bin in bin_list:
-            data = data[bin(data)]
-        return data
-
     def listData(self,object_types,epoch,extent,data_format,required_fields=None):
         raise NotImplementedError()
     
