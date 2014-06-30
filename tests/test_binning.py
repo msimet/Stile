@@ -35,6 +35,8 @@ def compare_single_bin(b1,b2):
 
 def test_BinStep_SingleBin_creation():
     t0 = time.time()
+    # All of these should return the same objects (the expected_obj_list), except the final one,
+    # which should return them in the reverse order.
     lhs = stile.BinStep('field_0',low=0,high=6,step=1)
     lhn = stile.BinStep('field_0',low=0,high=6,n_bins=6)
     lsn = stile.BinStep('field_0',low=0,step=1,n_bins=6)
@@ -54,7 +56,7 @@ def test_BinStep_SingleBin_creation():
              "passed high, step, and n_bins",
              "passed low, high, and step with low and high reversed"]
     objs = [lhs,lhn,lsn,hsn,reverse_lhs]
-    for obj in objs:
+    for obj,name in zip(objs,names):
         obj_list = obj()
         if obj==reverse_lhs:
             obj_list.reverse()
@@ -65,7 +67,7 @@ def test_BinStep_SingleBin_creation():
         except AssertionError:
             raise AssertionError('BinStep ('+name+') created incorrect SingleBins!')
 
-
+    # As above, but using logarithmic bins.
     lhs = stile.BinStep('field_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
     lhn = stile.BinStep('field_0',low=0.25,high=8,n_bins=5,use_log=True)
     lsn = stile.BinStep('field_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
@@ -124,7 +126,7 @@ def test_BinList_SingleBin_creation():
         [compare_single_bin(obj_list[i],expected_obj_list[i]) for i in range(len(obj_list))]
     except AssertionError:
         raise AssertionError('Reversed BinList created incorrect SingleBins!')
-    
+    numpy.testing.assert_raises(TypeError,stile.BinList,[0.5,1.5,1.0])
 
 def test_BinStep_linear():
     t0 = time.time()
@@ -143,7 +145,7 @@ def test_BinStep_linear():
 
     # Expected results; each item of the list is the result of the n-th SingleBin.
     # Formatted arrays don't compare properly to non-formatted arrays, so we use slices of the
-    # original array to ensure the formatting matches properly.
+    # original array to ensure the formatting matches properly even for empty (formatted) arrays.
     expected_bin_array_1 = [bin_array_1[0],bin_array_1[1],bin_array_1[2],bin_array_1[3],
                             bin_array_1[4],bin_array_1[:0]]
     expected_bin_array_2 = [bin_array_2[:0],bin_array_2[0],bin_array_2[1],bin_array_2[2],
@@ -358,7 +360,7 @@ def test_singlebin_input_errors():
 
 def test_ExpandBinList():
     t0 = time.time()
-    # Needs a callable object
+    # Needs something that returns callable object
     def return_objs(x,n):
         def func():
             return [str(nn)+x for nn in range(n)]
@@ -386,7 +388,6 @@ def test_ExpandBinList():
                         (stile.binning.SingleBin('column_0',low=3,high=6,short_name='b'),
                          stile.binning.SingleBin('column_1',low=2,high=4,short_name='b'))]
     numpy.testing.assert_equal(len(results),len(expected_results))
-    from test_binning import compare_single_bin
     [(compare_single_bin(rpair[0],epair[0]), compare_single_bin(rpair[1],epair[1]))
                                                   for rpair, epair in zip(results,expected_results)]
     try: 
