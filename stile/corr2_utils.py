@@ -573,12 +573,14 @@ class OSFile:
                     self.fields = data.dtype.names # So we can check against this later
                 except:
                     pass
-            self.handle, self.file_name = tempfile.mkstemp()
             if self.fields: 
-                # This will be True if this is a NumPy array.  (WriteFITSTable doesn't deal well 
-                # with non-NumPy arrays, since it doesn't know what's a column and what's a row.)
+                # This will be True if this is a formatted NumPy array.  (WriteFITSTable doesn't 
+                # deal well with non-NumPy arrays, since it doesn't know what's a column and what's 
+                # a row.)
+                self.handle, self.file_name = tempfile.mkstemp(suffix=file_io.GetExtension())
                 file_io.WriteTable(self.file_name,self.data,fields=self.fields)
             else: 
+                self.handle, self.file_name = tempfile.mkstemp()
                 file_io.WriteASCIITable(self.file_name,self.data)
     def __repr__(self):
         return self.file_name
@@ -661,8 +663,6 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
     @returns       A dict containing the file names and column descriptions for corr2.
     """
     #TODO: do this in a smarter way that only cares about the fields we'll be using
-    #TODO: check FITS/ASCII
-    #TODO: proper corr2 kwargs for FITS columns
     already_written_schema = []
     already_written_files = []
     to_write = []
@@ -684,6 +684,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
             if os.path.isfile(data_list.file_name):
                 already_written_schema.append(_coerce_schema(data_list.fields))
                 already_written_files.append(data_list.file_name)
+                already_written_files.append(file_io.FileType(data_list.file_name))
             else:
                 raise RuntimeError(("Data item appears to be an OSFile object, but does not point "+
                                    "to an existing object: %s")%data_list[0])

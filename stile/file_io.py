@@ -249,3 +249,13 @@ def ReadTable(file_name,**kwargs):
     else:
         return ReadASCIITable(file_name,**kwargs)
 
+def GetExtension():
+    """
+    Return ".fits" if there's a FITS handler available, else ".dat".  This is to make sure that 
+    corr2 properly interprets whatever files we write out.
+    """
+    if has_fits:
+        return '.fits'
+    else:
+        return '.dat'
+
