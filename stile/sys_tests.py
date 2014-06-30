@@ -8,13 +8,21 @@ class SysTest:
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following 
     attributes:
-    short_name = a string that can be used in filenames to denote this systematics test
-    long_name = a string to denote this systematics test within program text outputs
+        short_name = a string that can be used in filenames to denote this systematics test
+        long_name = a string to denote this systematics test within program text outputs
     
     It should define the following methods:
-    __call__(self, stile_args, data_handler, data, **kwargs) = run the SysTest.  **kwargs may 
-    include data2 (source data set for lens-source pairs), random and random2 (random data sets 
-    corresponding to data and data2), bin_list (list of SingleBins already applied to the data).
+        __call__(self, ...) = run the SysTest. There are two typical call signatures for SysTests:
+            __call__(self,data[,data2],**kwargs): run a test on a set of data, or a test involving 
+                two data sets data and data2.
+            __call__(self,stile_args_dict,data=None,data2=None,random=None,random2=None,**kwargs):
+                the call signature for the CorrelationFunctionSysTests, which leave the data as 
+                kwargs because the CorrelationFunctionSysTests() can also take filenames as kwargs 
+                from the function corr2_utils.MakeCorr2FileKwargs(), rather than ingesting the data 
+                directly, though they can also ingest the data directly as well.
+        
+        In both cases, the kwargs should be able to handle a "bin_list=" kwarg which will bin the 
+        data accordingly--see the classes defined in binning.py for more.
     """
     short_name = ''
     long_name = ''
@@ -27,30 +35,31 @@ class CorrelationFunctionSysTest(SysTest):
     short_name = 'corrfunc'
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-    class method get_correlation_function, which runs corr2 (via a call to the subprocess module) on
+    class method getCorrelationFunction, which runs corr2 (via a call to the subprocess module) on
     a given set of data.  Exact arguments to this method should be created by child classes of
     CorrelationFunctionSysTest; see the docstring for 
-    CorrelationFunctionSysTest.get_correlation_function for information on how to write further 
+    CorrelationFunctionSysTest.getCorrelationFunction for information on how to write further 
     tests using it.
     """
     def getCorrelationFunction(self, stile_args, correlation_function_type, data=None, data2=None,
-                                     random=None, random2=None, **kwargs):
+                                     random=None, random2=None, config_here=False, **kwargs):
         """
-        Sets up and calls corr2 on the given set of data.  The data files and random files should
-        be contained already in stile_args['corr2_kwargs'] or **kwargs.
+        Sets up and calls corr2 on the given set of data.  The data files and random files can
+        be contained already in stile_args['corr2_kwargs'] or **kwargs, in which case passing None
+        to the `data` and `random` kwargs is fine; otherwise they should be properly populated.
         
-        Note: by default, the corr2 configuration files are written to dh.temp_dir, which is 
-        probably your OS's default temp file directory.  If you are getting errors from corr2 here
-        that you don't understand, you can change this to a directory such as '.' that won't be 
-        automatically cleaned up; the configuration files will be written there and you can then
-        examine them.
+        Note: by default, the corr2 configuration files are written to the temp directory called by 
+        tempfile.mkstemp().  If you need to example the corr2 config files, you can pass 
+        `config_here=True` and they will be written (as temp files probably beginning with "tmp") 
+        to your working directory, which shouldn't be automatically cleaned up.  
         
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
                              'kg','m2','nm','norm') to request from corr2.
-        @param dh            A DataHandler object describing the data set given in the data lists
-                             below.
-        @param kwargs        Any other corr2 parameters to be written to the corr2 param file.
+        @param data, data2, random, random2: data sets in the format requested by 
+                             corr2_utils.MakeCorr2FileKwargs().
+        @param kwargs        Any other corr2 parameters to be written to the corr2 param file (will
+                             silently supercede anything in stile_args).
         @returns             a numpy array of the corr2 outputs.
         """
         #TODO: know what kinds of data this needs and make sure it has it
@@ -59,8 +68,8 @@ class CorrelationFunctionSysTest(SysTest):
         import os
         import copy
         handles = []
-        delete_files = []
         
+        # nab the corr2 params, and make the files if needed
         if not 'corr2_kwargs' in stile_args:
             stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
@@ -68,6 +77,7 @@ class CorrelationFunctionSysTest(SysTest):
         corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
         corr2_kwargs.update(corr2_file_kwargs)
 
+        # make sure the set of non-None data sets makes sense
         if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
             raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
         if ('rand_list' in corr2_kwargs or 'rand_name' in corr2_kwargs):
@@ -79,12 +89,13 @@ class CorrelationFunctionSysTest(SysTest):
         elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
             raise ValueError('Given random file for file 2, but not file 1')
             
-        handle, config_file = tempfile.mkstemp()
+        if config_here:
+            handle, config_file = tempfile.mkstemp(dir='.')
+        else:
+            handle, config_file = tempfile.mkstemp()
         handles.append(handle)
-        delete_files.append(config_file)
         handle, output_file = tempfile.mkstemp()
         handles.append(handle)
-        delete_files.append(output_file)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
         
@@ -96,12 +107,12 @@ class CorrelationFunctionSysTest(SysTest):
         return_value = stile.ReadCorr2ResultsFile(output_file)
         for handle in handles:  
             os.close(handle)
-        for file_name in delete_files:
-            if os.path.isfile(file_name):
-                os.remove(file_name)
         return return_value
         
 class RealShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the tangential and cross shear around a set of real objects.
+    """
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
 
