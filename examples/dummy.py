@@ -32,7 +32,6 @@ class DummyDataHandler(stile.DataHandler):
         if hasattr(id,'__iter__'):
             return [self.getData(iid,ot,epoch,extent,data_format,bin_list) 
                      for iid,ot in zip(id,object_types)]
-        #TODO: think about what happens if a file gets rewritten due to field schema...
         if not data_format=='table':
             raise ValueError('Only table data provided by DummyDataHandler')
         if not epoch=='single':
