@@ -684,7 +684,6 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
             if os.path.isfile(data_list.file_name):
                 already_written_schema.append(_coerce_schema(data_list.fields))
                 already_written_files.append(data_list.file_name)
-                already_written_files.append(file_io.FileType(data_list.file_name))
             else:
                 raise RuntimeError(("Data item appears to be an OSFile object, but does not point "+
                                    "to an existing object: %s")%data_list[0])
