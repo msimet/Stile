@@ -43,7 +43,7 @@ class DummyDataHandler(stile.DataHandler):
             else:
                 data = stile.FormatArray(self.read_method(id),fields=self.fields)
                 for bin in bin_list:
-                    data = data[bin(data)]
+                    data = bin(data)
                 return data
         else:
             raise ValueError('Unknown data ID')
