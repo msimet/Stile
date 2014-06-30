@@ -39,7 +39,6 @@ def test_FormatArray():
     print "Time to test FormatArray: ", 1000*(t1-t0), "ms"
     
 def main():
-    test_ExpandBinList()
     test_FormatArray()
 
 if __name__=='__main__':
