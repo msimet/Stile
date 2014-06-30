@@ -2,6 +2,7 @@ import numpy
 import time
 import tempfile
 import os
+import test_helper
 try:
     import stile
 except:
@@ -51,10 +52,10 @@ table2_withstring = numpy.array([
 
 table3_singleline = numpy.array([(1.0,2.0,3,'hello')], dtype='d,d,l,S5')
 
-# contents of test_data/[table.fits,image_and_table.fits,two_tables.fits]
+# contents of test_data/[table.fits,image_and_table.fits,two_tables.fits (hdu 2)]
 fits_table = numpy.array([(1.5,'hello',2),(3,'goodbye',5)],
                          dtype=[('q',float),('status','S7'),('final',int)])
-# contents of second extentions of test_data/two_tables.fits                         
+# contents of first extension of test_data/two_tables.fits                         
 fits_table_2 = numpy.array([(1.5,2),(3.7,4),(1050.2,5)],dtype=[('red',float),('blue',int)])
 # contents of test_data/[image_int.fits,image_and_table.fits]
 fits_int_image = numpy.array([[1,2],[3,4]])
@@ -63,9 +64,10 @@ fits_float_image = numpy.array([[1.0,2.1],[3.4,1.6]])
 
 def test_ReadFITSImage():
     if not stile.file_io.has_fits:
-        print "No FITS handler found; skipping test of read_FITS_image"
+        print "No FITS handler found; skipping test of ReadFITSImage"
     else:
         t0 = time.time()
+        # Test that it read in the contents correctly, basically
         numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_int.fits'),
                                          fits_int_image)
         numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_and_table.fits'),
@@ -81,23 +83,28 @@ def test_ReadFITSImage():
                                         
 def test_ReadFITSTable():
     if not stile.file_io.has_fits:
-        print "No FITS handler found; skipping test of read_FITS_table"
+        print "No FITS handler found; skipping test of ReadFITSTable"
     else:
-        #TODO: byteorder thing
         t0 = time.time()
+        # First, test that it's reading in the files correctly.  (The test_helper.format_same thing
+        # is to deal with the fact that assert_equal [and assert_array_equal] don't think that 
+        # numpy.ndarray and FITSrecs should be compared to each other, and also to deal with FITS
+        # vs Python byteorder things for machines where that matters.  In general I think it's good
+        # that numpy.testing keeps track of those things, but when I don't really care, it's
+        # annoying!
         result = stile.ReadFITSTable('test_data/table.fits')
-        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
         result = stile.ReadTable('test_data/table.fits')
-        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
         result = stile.ReadFITSTable('test_data/two_tables.fits')
-        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),
-                                   fits_table_2)
+        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table_2))
         result = stile.ReadFITSTable('test_data/image_and_table.fits')
-        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
         result = stile.ReadFITSTable('test_data/two_tables.fits',hdu=2)
-        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
+        # And make sure that ReadTable picks up that this is a FITS file
         result = stile.ReadTable('test_data/two_tables.fits',hdu=2)
-        numpy.testing.assert_equal(numpy.array(result,dtype=result.dtype.newbyteorder()),fits_table)
+        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
         try:
             numpy.testing.assert_raises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
         except ImportError:
@@ -126,16 +133,27 @@ def test_WriteASCIITable():
     handle, filename = tempfile.mkstemp()
     stile.file_io.WriteASCIITable(filename,table1)
     results = stile.ReadASCIITable(filename)
-    numpy.testing.assert_equal(table1.astype('f'),results.astype('f')) 
+    # genfromtxt will cleverly figure out the last two columns are ints, which we want it to, but
+    # that causes problems here.
+    try:
+        numpy.testing.assert_equal(results,table1)
+        raise AssertionError('Arrays are equal, but should not have the same format')
+    except:
+        pass
+    numpy.testing.assert_equal(results.astype('f'),table1.astype('f')) 
 
+    # check field reordering
     field_list = ['f3','f4','f6','f0','f2','f1','f5']
     stile.file_io.WriteASCIITable(filename,table1,fields=field_list)
     results = stile.ReadASCIITable(filename)
-    numpy.testing.assert_equal(table1[field_list].astype('f'),results.astype('f'))
+    numpy.testing.assert_equal(results.astype('f'),table1[field_list].astype('f'))
     os.close(handle)
     if os.path.isfile(filename):
         os.remove(filename)
-    if not stile.file_io.has_fits:
+    if not stile.file_io.has_fits:  
+        # If there is a FITS handler, this table would be written as a FITS table, so we shouldn't
+        # check it.  But otherwise these will be ASCII files, so test that WriteTable() is sending
+        # them through that function properly.
         handle, filename = tempfile.mkstemp()
         stile.file_io.WriteTable(filename,table1)
         results = stile.ReadASCIITable(filename)
@@ -152,29 +170,32 @@ def test_WriteASCIITable():
 
 def test_WriteFITSTable():
     if not stile.file_io.has_fits:
-        print "No FITS handler found; skipping test of read_FITS_image"
+        print "No FITS handler found; skipping test of WriteFITSTable"
     else:
         t0 = time.time()
-        stile.WriteFITSTable('temp.fits',fits_table)
+        # First check that WriteFITSTable writes a FITS table of the right sort...
+        handle, filename = tempfile.mkstemp()
+        stile.WriteFITSTable(filename,fits_table)
         try:
             assert stile.file_io.fits_handler.FITSDiff('test_data/table.fits','temp.fits')
         except AttributeError: # FITSDiff seems to not exist for one of my pyfits installations
             numpy.testing.assert_equal(stile.ReadFITSTable('test_data/table.fits'),
-                                       stile.ReadFITSTable('temp.fits'))
-            
-        if os.path.isfile('temp.fits'):
-            os.remove('temp.fits')
-        handle, filename = tempfile.mkstemp(dir='.')
+                                       stile.ReadFITSTable(filename))
+        os.close(handle)
+        
+        # Now see if WriteTable properly sends things through WriteFITSTable
+        handle, filename = tempfile.mkstemp()
         stile.WriteTable(filename,fits_table_2)
         numpy.testing.assert_equal(stile.ReadFITSTable('test_data/two_tables.fits'),
                                    stile.ReadFITSTable(filename))
+        
         os.close(handle)
-        if os.path.isfile(filename):
-            os.remove(filename)
+        handle, filename = tempfile.mkstemp()
         try:
-            numpy.testing.assert_raises(TypeError,stile.WriteFITSTable,'t',[])
+            numpy.testing.assert_raises(TypeError,stile.WriteFITSTable,filename,[])
         except ImportError:
             pass
+        os.close(handle)
         t1 = time.time()
         print "Time to test FITS table write: ", 1000*(t1-t0), "ms"
           
