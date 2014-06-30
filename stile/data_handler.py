@@ -61,11 +61,10 @@ class DataHandler:
         @returns A path to an output file meeting the input specifications.
         """ 
         #TODO: no-clobbering case
-        sys_test = '_'.join(args)
-        base_path = os.path.join(self.output_path,sys_test)
+        sys_test_string = '_'.join(args)
         if multi_file:
-            nfiles = glob.glob(base_path+'*'+extension)
-            return os.path.join(self.output_path,base_path+'_'+str(nfiles)+extension)
+            nfiles = glob.glob(os.path.join(self.output_path,sys_test_string)+'*'+extension)
+            return os.path.join(self.output_path,sys_test_string+'_'+str(nfiles)+extension)
         else:
-            return os.path.join(self.output_path,base_path+extension)
+            return os.path.join(self.output_path,sys_test_string+extension)
 
