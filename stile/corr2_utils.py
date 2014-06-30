@@ -3,6 +3,9 @@ Contains elements of Stile needed to interface with Mike Jarvis's corr2 program.
 """
 import copy
 import numpy
+import os
+import file_io
+import tempfile
 
 # A dictionary containing all corr2 command line arguments.  (At the moment we only support v 2.5+,
 # so only one dict is here; later versions of Stile may need to implement if statements here for
@@ -287,8 +290,8 @@ def Parser():
                         "by certain DataHandlers",
                    dest='y_units')
     p.add_argument('--ra_units',
-                   help="RA-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
-                        "by certain DataHandlers",
+                   help="RA-column units (radians, hours, degrees, arcmin, arcsec) -- only "+
+                        "allowed by certain DataHandlers",
                    dest='ra_units')
     p.add_argument('--dec_units',
                    help="dec-column units (radians, hours, degrees, arcmin, arcsec) -- only "+
@@ -384,24 +387,23 @@ def CheckArguments(input_dict, check_status=True):
     #TODO: add check_required to make sure it has all necessary keys
     for key in input_dict:
         if key not in corr2_kwargs:
-            raise ValueError('Argument %s not understood by Stile and not a recognized corr2 '
-                               'argument.  Please check syntax and try again.'%key)                         
+            raise ValueError('Argument %s not a recognized corr2 argument.  Please check syntax '                              'and try again.'%key)
         else:
             c2k = corr2_kwargs[key]
             if check_status:
                 if c2k['status']=='disallowed_file':
-                    raise ValueError('Argument %s for corr2 is forbidden by Stile, which may need '+
-                                     'to write multiple output files of this type.  Please remove '+
-                                     'this argument from your syntax, and check the documentation '+
+                    raise ValueError('Argument %s for corr2 is forbidden by Stile, which may need '
+                                     'to write multiple output files of this type.  Please remove '
+                                     'this argument from your syntax, and check the documentation '
                                      'for where the relevant output files will be located.'%key)
                 elif c2k['status']=='disallowed_computation':
-                    raise ValueError('Argument %s for corr2 is forbidden by Stile, which controls '+
-                                     'the necessary correlation functions.  Depending on your '+
-                                     'needs, please either remove this argument from your syntax '+
+                    raise ValueError('Argument %s for corr2 is forbidden by Stile, which controls '
+                                     'the necessary correlation functions.  Depending on your '
+                                     'needs, please either remove this argument from your syntax '
                                      'or consider running corr2 as a standalone program.'%key)
             if type(input_dict[key]) not in c2k['type']:
-                # The unknown arguments are passed as strings.  Since the string may not be the
-                # desired argument, try casting the value into the correct type or types and see if
+                # The arguments may be passed as strings. Since a string may not be the desired
+                # argument type, try casting the value into the correct type or types and see if
                 # it works or raises an error; if at least one works, pass, else raise an error.
                 type_ok = False
                 for arg_type in c2k['type']:
@@ -411,8 +413,8 @@ def CheckArguments(input_dict, check_status=True):
                     except:
                         pass
                 if not type_ok:
-                    raise ValueError(("Argument %s is a corr2 argument, but the type of the given "+
-                                     "value %s does not match corr2's requirements.  Please "+
+                    raise ValueError(("Argument %s is a corr2 argument, but the type of the given "
+                                     "value %s does not match corr2's requirements.  Please "
                                      "check syntax and try again.")%(key,input_dict[key]))
             if c2k['val']:
                 if input_dict[key] not in c2k['val']:
@@ -439,11 +441,9 @@ def WriteCorr2ConfigurationFile(config_file_name,corr2_dict,**kwargs):
         close_file=True
     if kwargs:
         corr2_dict.update(kwargs)
+    CheckArguments(corr2_dict,check_status=False)
     for key in corr2_dict:
-        if key in corr2_kwargs:
-            f.write(key+' = ' + str(corr2_dict[key])+'\n')
-        else:
-            raise ValueError("Unknown corr2 key %s."%key)
+        f.write(key+' = ' + str(corr2_dict[key])+'\n')
     if close_file:
         f.close()
         
@@ -456,23 +456,27 @@ def ReadCorr2ResultsFile(file_name):
     @returns         A numpy array corresponding to the data in file_name.
     """    
     import stile_utils
-    import file_io
-    #output = numpy.loadtxt(file_name)
-    # Currently there is a bug in corr2 that puts some text output into results files...
-    output = file_io.ReadAsciiTable(file_name,comment='R',start_line=2)
+    # Currently there is a bug in corr2 that puts some text output into results files, necessitating
+    # the "comments='R'" line, plus the "skiprows" argument to skip the first (real) comment line.
+    output = file_io.ReadASCIITable(file_name,comments='R',skiprows=1)
     
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
+    # Now, the first line of the corr2 output file is of the form:
+    # "# col1 . col2 . col3 [...]"
+    # so we can get the proper field names by reading the first line of the file and processing it.
     with open(file_name) as f:
         fields = f.readline().split()
     fields = fields[1:]
     fields = [field for field in fields if field!='.']
-    return stile_utils.FormatArray(output,fields=fields,only_floats=True)
+    return stile_utils.FormatArray(output,fields=fields)
 
 def AddCorr2Dict(input_dict):
     """
     Take an input_dict, harvest the kwargs you'll need for corr2, and create a new 'corr2_args'
-    key in the input_dict containing these values (or update the existing 'corr2_args' key).
+    key in the input_dict containing these values (or update the existing 'corr2_args' key).  This
+    is useful if you have a parameters dict that contains some things corr2 might want, but some
+    other keys that shouldn't be written to the corr2 parameter file.
     
     @param input_dict A dict containing some (key,value) pairs that apply to corr2
     @returns          The input_dict with an added or updated key 'corr2_kwargs' whose value is a
@@ -505,15 +509,321 @@ def MakeCorr2Cols(cols,use_as_k=None):
     col_args = ['x','y','ra','dec','g1','g2','k','w']
     if isinstance(cols,dict):
         for col in col_args:
-            if col in cols and isinstance(cols[col],int):
-                corr2_kwargs[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
-        if use_as_k and use_as_k in cols and isinstance(cols[use_as_k],int):
-            corr2_kwargs['k_col'] = cols[use_as_k]+1
-    elif hasattr(cols,'__getitem__'):
-        for cp in col_args:
-            if cp in cols:
-                corr2_kwargs[cp+'_col'] = cols.index(cp)+1
+            if col in cols:
+                if isinstance(cols[col],int):
+                    corr2_kwargs[col+'_col'] = cols[col]+1 # corr2 ordering starts at 1, Stile at 0
+                elif isinstance(cols[col],str):
+                    corr2_kwargs[col+'_col'] = cols[col]
+        if use_as_k and use_as_k in cols:
+            if isinstance(cols[use_as_k],int):
+                corr2_kwargs['k_col'] = cols[use_as_k]+1
+            elif isinstance(cols[col],str):
+                corr2_kwargs['k_col'] = cols[use_as_k]
+    elif hasattr(cols,'index'):
+        for col in col_args:
+            if col in cols:
+                corr2_kwargs[col+'_col'] = cols.index(col)+1
         if use_as_k and use_as_k in cols:
             corr2_kwargs['k_col'] = cols.index(use_as_k)+1
     return corr2_kwargs
+    
 
+class OSFile:
+    """
+    A class that contains information about an array of data and writes it to a file on disk.  The
+    class takes care of closing OS file handles and deleting the temporary file if necessary.  The
+    string representation of this class is simply the name of the file it is keeping track of, so
+    OSFiles may be used interchangeably with filenames in places where only the string 
+    representation matters, such as writing corr2 parameter files.
+    
+    The data can be passed in two ways:
+        - As a (data_handler `dh`, `data_id` pair, in which case dh.getData(data_id,force=True)
+          is called
+        - Directly as an array, in which case `is_array` should be set to True.
+    In either case, "fields" may be set to control which fields of the data are printed to the
+    temporary file.  "fields" should be either a list of fields in order, or a dict of 
+    {'field_name': field_number/field_str} pairs, with "field_str" applying only if you have 
+    pyfits/astropy installed to handle FITS files (to map field names onto Stile/Corr2 expected 
+    field names). Further caveats about the use of the "fields" kwarg may be found in the 
+    documentation for WriteTable.
+    
+    @param data      An array of data.
+    @param fields    A description of the fields to be written out. See above or the documentation  
+                     for WriteTable. (default: None)
+    """
+    
+    def __init__(self,data,fields=None):
+        # Do these first to protect against annoying errors during cleanup if init fails
+        self.handle = -1
+        self.file_name = ''
+        if isinstance(data,OSFile) and (not fields or fields==data.fields):
+            # Not sure how to do this better
+            self.data = data.data
+            self.fields = data.fields
+            self.file_name = data.file_name
+            self.handle = data.handle
+        else:
+            if isinstance(data,OSFile):
+                self.data = data.data
+            else:
+                self.data = data
+            self.fields = fields
+            if not self.fields:
+                try:
+                    self.fields = data.dtype.names # So we can check against this later
+                except:
+                    pass
+            if self.fields: 
+                # This will be True if this is a formatted NumPy array.  (WriteFITSTable doesn't 
+                # deal well with non-NumPy arrays, since it doesn't know what's a column and what's 
+                # a row.)
+                self.handle, self.file_name = tempfile.mkstemp(suffix=file_io.GetExtension())
+                file_io.WriteTable(self.file_name,self.data,fields=self.fields)
+            else: 
+                self.handle, self.file_name = tempfile.mkstemp()
+                file_io.WriteASCIITable(self.file_name,self.data)
+    def __repr__(self):
+        return self.file_name
+    def __del__(self):
+        try:
+            os.close(self.handle)
+        except OSError: # in case already closed 
+            pass
+        if os.path.isfile(self.file_name):
+            os.remove(self.file_name)
+    def __eq__(self,other):
+        # Mostly necessary for testing purposes
+        return (numpy.all(self.data==other.data) and self.fields==other.fields and 
+                self.file_name==other.file_name and self.handle==other.handle)
+
+def _merge_fields(has_fields,old_fields,new_fields):
+    """ Get the intersection (not union!) of two field schemas. "has_fields" means the old_fields
+    dict ever contained fields, even if the intersection is empty. """
+    if not new_fields:
+        return has_fields, old_fields
+    if not has_fields:
+        return True, _coerce_schema(new_fields)
+    else:
+        keys = old_fields.keys()
+        for key in keys:
+            if key not in new_fields:
+                del old_fields[key]
+        return True, old_fields
+        
+def _check_fields(has_fields,already_written_files,fields,data_list):
+    """
+    Run _merge_fields for all the various ways data could have been passed to MakeCorr2FileKwargs.
+    """
+    if isinstance(data_list,tuple):
+        if data_list[0] in already_written_files:
+            return has_fields, fields
+        else:
+            has_fields, fields = _merge_fields(has_fields,fields,data_list[1])
+    elif isinstance(data_list,OSFile):
+        if data_list.file_name in already_written_files:
+            return has_fields, fields
+        else:
+            has_fields, fields = _merge_fields(has_fields,fields,data_list.fields)
+    elif hasattr(data_list,'dtype') and data_list.dtype.names:
+        has_fields, fields = _merge_fields(has_fields,fields,data_list.dtype.names)
+    elif hasattr(data_list,'__iter__'):
+        for dl in data_list:
+            has_fields, fields = _check_fields(has_fields,already_written_files,fields,dl)
+    elif data_list:
+        raise ValueError("Cannot understand data type (should be a NumPy formatted array or a "+
+                         "tuple (file_name, field_description): "+str(data_list))
+    return has_fields, fields
+
+def _coerce_schema(schema):
+    """
+    Turn the list-type field description into the dict-type field description, since it's easier
+    to handle here.
+    """
+    if isinstance(schema,(list,tuple)):
+        return dict([(schema[i],i) for i in range(len(schema))])
+    elif isinstance(schema,dict):
+        return schema
+    else:
+        raise ValueError("Schema must be a list or dict")
+    
+def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
+    """
+    Pick which files need to be written to a file for corr2, and which can be passed simply as a
+    filename. This takes care of making temporary files, checking that the field schema is
+    consistent in any existing files and rewriting the ones that do not match the dominant field 
+    schema if necessary, and figuring out the corr2 column arguments (eg ra_col).
+    
+    @param data    The data that will be passed to the Stile tests. Can be a 
+                   (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
+                   other of those options.
+    @param data2   The second set of data that will be passed for cross-correlations, with the same
+                   format options as data.
+    @param random  The random data set corresponding to data (ditto)
+    @param random2 The random data set corresponding to data2 (ditto)
+    @returns       A dict containing the file names and column descriptions for corr2.
+    """
+    #TODO: do this in a smarter way that only cares about the fields we'll be using
+    already_written_schema = []
+    already_written_files = []
+    to_write = []
+
+    # First check for already-written files, and grab their field schema
+    for data_list in [data, data2, random, random2]:
+        # len(None) fails, and so does "not numpy.ndarray", so check for existence separately
+        if (not isinstance(data_list,numpy.ndarray) and not data_list) or (
+            isinstance(data_list,numpy.ndarray) and len(data_list)==0):
+            continue
+        elif isinstance(data_list,tuple):
+            if os.path.isfile(data_list[0]):
+                already_written_schema.append(_coerce_schema(data_list[1]))
+                already_written_files.append(data_list[0])
+            else:
+                raise RuntimeError(("Data tuple appears to point to an existing file %s, but that "+
+                                   "file is not found according to os.path.isfile()")%data_list[0])
+        elif isinstance(data_list,OSFile):
+            if os.path.isfile(data_list.file_name):
+                already_written_schema.append(_coerce_schema(data_list.fields))
+                already_written_files.append(data_list.file_name)
+            else:
+                raise RuntimeError(("Data item appears to be an OSFile object, but does not point "+
+                                   "to an existing object: %s")%data_list[0])
+        elif hasattr(data_list,'__getitem__') and not hasattr(data_list,'dtype'):
+            for dl in data_list:
+                if isinstance(dl, tuple):
+                    if os.path.isfile(dl[0]):
+                        already_written_schema.append(_coerce_schema(dl[1]))
+                        already_written_files.append(dl[0])
+                    else:
+                        raise RuntimeError(("Data tuple appears to point to an existing file %s, "+
+                                            "but that file is not found according to "+
+                                            "os.path.isfile()")%data_list[0])
+                elif isinstance(dl,OSFile):
+                    if os.path.isfile(dl.file_name):
+                        already_written_schema.append(_coerce_schema(dl.fields))
+                        already_written_files.append(dl.file_name)
+                    else:
+                        raise RuntimeError("Data item appears to be an OSFile object, but does "+
+                                           "not point to an existing object: %s"%data_list[0])
+                elif not hasattr(dl,'dtype'):
+                    raise ValueError("Cannot understand data: "+str(data_list))
+        elif not hasattr(data_list,'dtype'):
+            raise ValueError("Cannot understand data: "+str(data_list))
+    # Check existing field schema for consistency.  (Corr2 only allows one schema specification.)
+    if already_written_schema:
+        while True:
+            all_same = True
+            # First: straight-up equality
+            for i in range(len(already_written_schema)-1):
+                for j in range(i,len(already_written_schema)):
+                    if not already_written_schema[i]==already_written_schema[j]:
+                        all_same=False
+            if all_same:
+                break
+            # Next: check the intersection of the schemas
+            aw_keys = already_written_schema[0].keys()
+            for aws in already_written_schema[1:]:
+                for key in aw_keys:
+                    if key not in aws and key in aw_keys:
+                        del aw_keys[key]
+            all_same = True
+            for key in aw_keys:
+                # Do they all point to the same column?
+                n = set([aw[key] for aw in already_written_schema])
+                if len(n)>1:
+                    all_same = False
+                    break
+            if all_same:
+                break
+            else:
+                # If they're inconsistent, remove the smallest file and repeat this loop
+                sizes = [os.path.getsize(awf) for awf in already_written_files]
+                remove = sizes.index(min(sizes))
+                to_write.append(already_written_files[remove])
+                del already_written_files[remove]
+                del already_written_schema[remove]
+        # Keep only the intersection of the already-written schemas!
+        fields = already_written_schema[0]
+        for aw in already_written_schema[1:]:
+            keys = fields.keys()
+            for key in keys:
+                if key not in aw:
+                    del fields[key]
+    else:
+        fields = []
+
+    # Now make sure we have all the fields we need.
+    has_fields = True if fields else False
+    for data_list in [data, data2, random, random2]:
+        has_fields, fields = _check_fields(has_fields,already_written_files,fields,data_list)
+    if has_fields and not fields:
+        raise RuntimeError('Intersection of field description for data files to write is empty.')
+    new_data = []
+    new_data2 = []
+    new_random = []
+    new_random2 = []
+    # Now loop through again and write to a file any data arrays we need to.
+    for data_list, new_data_list in [(data,new_data), (data2,new_data2), 
+                                     (random,new_random), (random2, new_random2)]:
+        if (not isinstance(data_list,numpy.ndarray) and not data_list) or (
+                isinstance(data_list,numpy.ndarray) and len(data_list)==0):
+            continue
+        elif isinstance(data_list,tuple):
+            if os.path.isfile(data_list[0]):
+                data_fields = _coerce_schema(data_list[1])
+                # The "any(...)" bit here is to protect against the case where you use two identical
+                # filenames but different field descriptions, which would otherwise be caught by
+                # this check and rewritten.  (You could picture doing this if you had a catalog with
+                # two different shape definitions and wanted to correlate them, for example.)
+                if data_list[0] in to_write and any(
+                                          [data_fields[key]!=fields[key] for key in fields.keys()]):
+                    data = file_io.ReadTable(data_list[0],fields=data_list[1])
+                    new_data_list.append(OSFile(data,fields=fields))
+                    to_write.remove(data_list[0])
+                else:
+                    new_data_list.append(data_list[0])
+        elif isinstance(data_list,OSFile):
+            new_data_list.append(data_list)
+        elif hasattr(data_list,'__getitem__'):
+            if isinstance(data_list[0],tuple):
+                for dl in data_list:
+                    data_fields = _coerce_schema(dl[1])
+                    if dl[0] in to_write and any(
+                                          [data_fields[key]!=fields[key] for key in fields.keys()]):
+                        data = file_io.ReadTable(dl[0],fields=dl[1])
+                        new_data_list.append(OSFile(data,fields=fields))
+                    else:
+                        new_data_list.append(dl[0])
+            else:
+                if hasattr(data_list,'dtype') and data_list.dtype.names: 
+                    new_data_list.append(OSFile(data_list,fields=fields))
+                else: 
+                    for dl in data_list:
+                        if not hasattr(dl,'dtype') or not hasattr(dl.dtype,'names'):
+                            raise RuntimeError("Cannot parse data: should be a tuple, "+
+                                               "numpy array, or an unmixed list of one or the "+
+                                               "other.  Given:"+str(data_list))
+                        new_data_list.append(OSFile(dl,fields=fields))
+        
+    
+    # Lists of files need to be written to a separate file; do that.
+    file_args = []
+    for file_list in [new_data, new_data2, new_random, new_random2]:
+        if len(file_list)>1:
+            file_args.append(('list',OSFile(file_list)))
+        elif len(file_list)==1:
+            file_args.append(('name',file_list[0]))
+        else:
+            file_args.append(None)
+    
+    corr2_kwargs = MakeCorr2Cols(fields)
+    if file_args[0]:
+        corr2_kwargs['file_'+file_args[0][0]] = file_args[0][1]
+    if file_args[1]:
+        corr2_kwargs['file_'+file_args[1][0]+'2'] = file_args[1][1]
+    if file_args[2]:
+        corr2_kwargs['random_'+file_args[2][0]] = file_args[2][1]
+    if file_args[3]:
+        corr2_kwargs['random_'+file_args[3][0]+'2'] = file_args[3][1]
+    return corr2_kwargs
+
+    
