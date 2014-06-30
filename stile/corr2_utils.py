@@ -519,7 +519,7 @@ def MakeCorr2Cols(cols,use_as_k=None):
                 corr2_kwargs['k_col'] = cols[use_as_k]+1
             elif isinstance(cols[col],str):
                 corr2_kwargs['k_col'] = cols[use_as_k]
-    elif hasattr(cols,'__getitem__'):
+    elif hasattr(cols,'index'):
         for col in col_args:
             if col in cols:
                 corr2_kwargs[col+'_col'] = cols.index(col)+1
