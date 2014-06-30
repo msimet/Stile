@@ -60,7 +60,7 @@ def test_CorrelationFunctionSysTest():
                                         file_name2='../examples/example_source_catalog.dat',
                                         **col_kwargs)
     assert expected_result.dtype.names == results.dtype.names
-    numpy.testing.assert_array_equal(*test_helper.format_same(results,expected_result))
+    numpy.testing.assert_array_equal(*test_helper.FormatSame(results,expected_result))
     kwargs = stile_args['corr2_kwargs']
     stile_args['corr2_kwargs'] = {}
     kwargs.update(col_kwargs)

@@ -1,6 +1,6 @@
 import numpy
 
-def format_same(arr1,arr2):
+def FormatSame(arr1,arr2):
     """
     Do some NumPy data type tricks to make sure that two formatted arrays can be compared to each
     other.

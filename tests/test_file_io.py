@@ -86,25 +86,25 @@ def test_ReadFITSTable():
         print "No FITS handler found; skipping test of ReadFITSTable"
     else:
         t0 = time.time()
-        # First, test that it's reading in the files correctly.  (The test_helper.format_same thing
+        # First, test that it's reading in the files correctly.  (The test_helper.FormatSame thing
         # is to deal with the fact that assert_equal [and assert_array_equal] don't think that 
         # numpy.ndarray and FITSrecs should be compared to each other, and also to deal with FITS
         # vs Python byteorder things for machines where that matters.  In general I think it's good
         # that numpy.testing keeps track of those things, but when I don't really care, it's
         # annoying!
         result = stile.ReadFITSTable('test_data/table.fits')
-        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
+        numpy.testing.assert_equal(*test_helper.FormatSame(result,fits_table))
         result = stile.ReadTable('test_data/table.fits')
-        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
+        numpy.testing.assert_equal(*test_helper.FormatSame(result,fits_table))
         result = stile.ReadFITSTable('test_data/two_tables.fits')
-        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table_2))
+        numpy.testing.assert_equal(*test_helper.FormatSame(result,fits_table_2))
         result = stile.ReadFITSTable('test_data/image_and_table.fits')
-        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
+        numpy.testing.assert_equal(*test_helper.FormatSame(result,fits_table))
         result = stile.ReadFITSTable('test_data/two_tables.fits',hdu=2)
-        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
+        numpy.testing.assert_equal(*test_helper.FormatSame(result,fits_table))
         # And make sure that ReadTable picks up that this is a FITS file
         result = stile.ReadTable('test_data/two_tables.fits',hdu=2)
-        numpy.testing.assert_equal(*test_helper.format_same(result,fits_table))
+        numpy.testing.assert_equal(*test_helper.FormatSame(result,fits_table))
         try:
             numpy.testing.assert_raises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
         except ImportError:
