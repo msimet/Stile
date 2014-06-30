@@ -39,10 +39,15 @@ def ReadFITSImage(file_name,hdu=0):
 def ReadFITSTable(file_name,hdu=1,fields=None):
     """
     This function exists so you can read_fits_table(file_name) rather than remembering that
-    table data is usually in extension 1.
+    table data is usually in extension 1, and also to automatically rewrite the fields if you want
+    that.
     
     @param file_name A path leading to a valid FITS file
     @param hdu       The HDU in which the requested data is located (default: 1)
+    @param fields    A valid dict or list description of the fields in the file.  The list must have
+                     the same number of items as there are fields; the dict takes the form 
+                     {'new_name': 'old_name'} or {'new_name': old_column_number} and can skip some
+                     fields.
     @returns         The contents of the requested HDU
     """
     return stile_utils.FormatArray(ReadFITSImage(file_name,hdu),fields=fields)
@@ -51,6 +56,13 @@ def ReadASCIITable(file_name, **kwargs):
     """
     Read an ASCII table from disk.  This is a small wrapper for numpy.genfromtxt() that returns the
     kind of array we expect.  **kwargs should be suitable kwargs from numpy.genfromtxt().
+    
+    @param file_name A path leading to a valid FITS file
+    @param fields    A valid dict or list description of the fields in the file.  The list must have
+                     the same number of items as there are fields; the dict takes the form 
+                     {'new_name': old_column_number} and can skip some fields.
+    @param kwargs    Other kwargs to be used by numpy.genfromtxt()
+    @returns         The contents of the requested file
     """
     if 'fields' in kwargs:
         fields = kwargs.pop('fields')
@@ -79,8 +91,8 @@ def _format_str(dtype):
         elif char=='O':
             # Objects tend to have width-1 even if their string representations don't.
             return '%-60s'
-        elif char=='B' or char=='G' or char=='F':
-            return '%18g %18g'
+        elif char=='B' or char=='G' or char=='F': # complex
+            return '%18g+%18gi'
         else:
             return '%18'+_fmt_dict[char]
 
@@ -101,12 +113,15 @@ def _handleFields(data_array,fields):
         data = data[fields]
     elif isinstance(fields,dict):
         # Make a list that's only as long as it needs to be to cover the fields dict; populate it 
-        # with the keys of fields, and then fill in any blank spaces with the unused fields from
+        # with the keys of `fields`, and then fill in any blank spaces with the unused fields from
         # the original column descriptors.
         old_fields = [name for name in data.dtype.names if name not in fields]
         new_fields = ['']*(max(fields.values())+1)
         for key in fields:
-            new_fields[fields[key]] = key
+            if isinstance(fields[key],str):
+                new_fields[data.dtype.names.index(fields[key])] = key
+            else:
+                new_fields[fields[key]] = key
         for i in range(len(new_fields)):
             if not new_fields[i]:
                 new_fields[i] = old_fields.pop(0)
@@ -120,41 +135,53 @@ def WriteASCIITable(file_name,data_array,fields=None):
     Given a file_name and a data_array, write the data_array to the file_name as an ASCII file.
     If fields is not None, this will rearrange a NumPy formatted array to the field 
     specification (must be either a list of field names, or a dict of the form 
-    'field_name': field_position.  Note that in the second case, columns not indicated by the dict
-    are moved around to fill in any gaps, so if you specify, say, columns 0, 1, and 3, you may be
-    surprised by what is in column 2!
+    'field_name': field_position or 'field_name': original_order_field_name.  Note that if `fields` 
+    is a dict which does not completely describe all the fields less than its maximum field number,
+    columns not indicated by the dict will be moved around to fill in any gaps.  If you specify, 
+    say, columns 0, 1, and 3, you may be surprised by what is in column 2!
     
     At the moment, if your maximum column number in the fields dict is greater than the number of
-    fields in the data_array, an error will occur.  Also, if you send an object in the array whose 
-    string representation is >60 characters, it will be truncated to 60.  If you have strings which
-    contain spaces, the column descriptions won't hold properly, and you should probably use a 
-    FITS file writer.
+    fields in the data_array, an error will occur.  Also, if you send an object in the array (that 
+    is, something with numpy.dtype=object) whose string representation is >60 characters, it will 
+    be truncated to 60.  If you have strings which contain spaces, the column descriptions won't 
+    hold properly, and you should probably use a FITS file writer or replace the space with 
+    underscores or another character.
     """
     data = _handleFields(data_array,fields)
     numpy.savetxt(file_name,data,fmt=_format_str(data.dtype))
 
-_fits_dict = {'f': 'D', 'i': 'K'}
+# And, of course, PyFITS *also* uses a different format specification character set.
+_fits_dict = {'b': 'L',  # boolean
+              'i': 'K',  # int
+              'u': 'K',  # unsigned int (FITS doesn't care about the unsigned part)
+              'f': 'D',  # floating-point
+              'c': 'M',  # complex-floating point,
+             }
 def _coerceFitsFormat(fmt):
-    if 'S' in fmt.str:
+    if 'S' in fmt.str or 'a' in fmt.str or 'U' in fmt.str:
         return 'A'+fmt.str.split('S')[1]
-    for key in _fits_dict:
-        if key in fmt.str:
-            return _fits_dict[key]
-    return fmt
+    elif fmt.str[1] in _fits_dict: # first character is probably a byte-order flag
+        return _fits_dict[fmt.str[1]]
+    elif fmt.str[0] in _fits_dict: # or just in case it wasn't
+        return _fits_dict[fmt.str[0]]
+    raise ValueError("Format cannot be used for a FITS file: %s"%fmt.str)
 
 def WriteFITSTable(file_name,data_array,fields=None):
     """
     Given a file_name and a data_array, write the data_array to the file_name as a FITS file if
     there is an available module to do so (pyfits or astropy.io.fits).  Otherwise, raise an error.
+    
     If fields is not None, this will rearrange a NumPy formatted array to the field specification 
-    (must be either a list of field names, or a dict of the form 'field_name': field_position.  
-    Note that in the second case, columns not indicated by the dict are moved around to fill in 
-    any gaps, so if you specify, say, columns 0, 1, and 3, you may be surprised by what is in 
-    column 2!
+    (must be either a list of field names, or a dict of the form 'field_name': field_position/
+    original_order_field_name.  Note that if `fields` is a dict which does not completely describe 
+    all the fields less than its maximum field number, columns not indicated by the dict will be 
+    moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3, you may be 
+    surprised by what is in column 2!
     
     At the moment, if your maximum column number in the fields dict is greater than the number of
     fields in the data_array, an error will occur.
     """
+    import time
     if not has_fits:
         raise ImportError('FITS-type table requested, but no FITS handler found')
     data = _handleFields(data_array,fields)
@@ -165,7 +192,8 @@ def WriteFITSTable(file_name,data_array,fields=None):
     # Next line is a kludge for some versions of PyFITS which will yell if you replace table data
     # without doing this (fix from https://github.com/spacetelescope/PyFITS/issues/31)
     table.data = numpy.array(table.data).view(table._data_type)
-    hdulist = fits_handler.HDUList([fits_handler.PrimaryHDU(),table])
+    hdulist = fits_handler.HDUList(fits_handler.PrimaryHDU(),table)
+    hdulist.append(table)
     hdulist.verify()
     hdulist.writeto(file_name)
     
@@ -177,14 +205,16 @@ def WriteTable(file_name,data_array,fields=None):
     file.  If you know which kind of file you want to write, you should use WriteFITSTable or
     WriteASCIITable directly.
     
-    If fields is not None, these functions will rearrange a NumPy formatted array to the field 
-    specification (must be either a list of field names, or a dict of the form 'field_name': 
-    field_position.  Note that in the second case, columns not indicated by the dict are moved 
-    around to fill in any gaps, so if you specify, say, columns 0, 1, and 3, you may be surprised 
-    by what is in column 2!
+    If fields is not None, this will rearrange a NumPy formatted array to the field specification 
+    (must be either a list of field names, or a dict of the form 'field_name': field_position/
+    original_order_field_name.  Note that if `fields` is a dict which does not completely describe 
+    all the fields less than its maximum field number, columns not indicated by the dict will be 
+    moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3, you may be 
+    surprised by what is in column 2!
     
     At the moment, if your maximum column number in the fields dict is greater than the number of
-    fields in the data_array, an error will occur.
+    fields in the data_array, an error will occur.  Also see the docstring for WriteASCIITable for
+    further caveats on its behavior.
     """
     ext = os.path.splitext(file_name)[1]
     if not ext:
@@ -192,11 +222,12 @@ def WriteTable(file_name,data_array,fields=None):
             WriteFITSTable(file_name,data_array,fields)
         else:
             WriteASCIITable(file_name,data_array,fields)
-    ext = ext.lower()
-    if ext=='.fit' or ext=='.fits':
-        WriteFITSTable(file_name,data_array,fields)
     else:
-        WriteASCIITable(file_name,data_array,fields)
+        ext = ext.lower()
+        if ext=='.fit' or ext=='.fits':
+            WriteFITSTable(file_name,data_array,fields)
+        else:
+            WriteASCIITable(file_name,data_array,fields)
 
 def ReadTable(file_name,**kwargs):
     """
@@ -217,3 +248,4 @@ def ReadTable(file_name,**kwargs):
         return ReadFITSTable(file_name,**kwargs)
     else:
         return ReadASCIITable(file_name,**kwargs)
+

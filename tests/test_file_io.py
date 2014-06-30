@@ -156,18 +156,23 @@ def test_WriteFITSTable():
     else:
         t0 = time.time()
         stile.WriteFITSTable('temp.fits',fits_table)
-        assert stile.file_io.fits_handler.FITSDiff('test_data/table.fits','temp.fits')
+        try:
+            assert stile.file_io.fits_handler.FITSDiff('test_data/table.fits','temp.fits')
+        except AttributeError: # FITSDiff seems to not exist for one of my pyfits installations
+            numpy.testing.assert_equal(stile.ReadFITSTable('test_data/table.fits'),
+                                       stile.ReadFITSTable('temp.fits'))
+            
         if os.path.isfile('temp.fits'):
             os.remove('temp.fits')
-        handle, filename = tempfile.mkstemp()
+        handle, filename = tempfile.mkstemp(dir='.')
         stile.WriteTable(filename,fits_table_2)
-        numpy.testing.assert_equal(stile.ReadFITSTable('test_data/two_tables.fits',hdu=2),
+        numpy.testing.assert_equal(stile.ReadFITSTable('test_data/two_tables.fits'),
                                    stile.ReadFITSTable(filename))
         os.close(handle)
         if os.path.isfile(filename):
             os.remove(filename)
         try:
-            numpy.testing.assert_raises(MemoryError,stile.WriteFITSTable,'t',[])
+            numpy.testing.assert_raises(TypeError,stile.WriteFITSTable,'t',[])
         except ImportError:
             pass
         t1 = time.time()
@@ -178,4 +183,5 @@ if __name__=='__main__':
     test_ReadFITSTable()
     test_ReadASCIITable()
     test_WriteASCIITable()
+    test_WriteFITSTable()
 
