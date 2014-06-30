@@ -1,7 +1,7 @@
 import numpy
 import tempfile
 import os
-import test_helper
+import helper
 import unittest
 try:
     import stile
@@ -72,23 +72,23 @@ class TestFileIO(unittest.TestCase):
                                             
     def test_ReadFITSTable(self):
         if stile.file_io.has_fits:
-            # First, test that it's reading in the files correctly.  (The test_helper.FormatSame 
+            # First, test that it's reading in the files correctly.  (The helper.FormatSame 
             # thing is to deal with the fact that assert_equal [and assert_array_equal] don't think 
             # that numpy.ndarray and FITSrecs should be compared to each other, and also to deal 
             # with FITS vs Python byteorder things for machines where that matters.  
             result = stile.ReadFITSTable('test_data/table.fits')
-            numpy.testing.assert_equal(*test_helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
             result = stile.ReadTable('test_data/table.fits')
-            numpy.testing.assert_equal(*test_helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
             result = stile.ReadFITSTable('test_data/two_tables.fits')
-            numpy.testing.assert_equal(*test_helper.FormatSame(result,self.fits_table_2))
+            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table_2))
             result = stile.ReadFITSTable('test_data/image_and_table.fits')
-            numpy.testing.assert_equal(*test_helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
             result = stile.ReadFITSTable('test_data/two_tables.fits',hdu=2)
-            numpy.testing.assert_equal(*test_helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
             # And make sure that ReadTable picks up that this is a FITS file
             result = stile.ReadTable('test_data/two_tables.fits',hdu=2)
-            numpy.testing.assert_equal(*test_helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
             self.assertRaises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
 
     def test_ReadASCIITable(self):
