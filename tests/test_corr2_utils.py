@@ -29,6 +29,7 @@ dict2 = {'file_name': 'f1.dat', 'do_auto_corr': True, 'do_cross_corr': False,
          'nm_file_name': 'o8.dat', 'norm_file_name': 'o9.dat', 'verbose': 3, 'num_threads': 16,
          'split_method': 'median'} 
 # OK if check_status=False, fails if check_status = True; this one also checks the type-checking
+# by passing some things as strings
 dict3 = {'file_name': 'f1.dat', 'do_auto_corr': 'True', 'do_cross_corr': 'False', 
          'file_name2': 'f2.dat', 'rand_file_name': 'r1.dat', 'rand_file_name2': 'r2.dat',
          'file_list': 'fl1.dat', 'file_list2': 'fl2.dat', 'rand_file_list': 'rl1.dat',
@@ -111,10 +112,6 @@ corr2_output = numpy.array(
      dtype=[("R_nominal",float),("<R>",float),("<gamT>",float),("<gamX>",float),
             ("sig",float),("weight",float),("npairs",float)])
 
-class temp_data_handler():
-    def __init__(self):
-        self.temp_dir = '.'
-
 def compare_text_files(f1,f2, reorder=True):
     """
     Compare the contents of two text files. Any whitespace on a line is converted to a single space,
@@ -136,8 +133,8 @@ def compare_text_files(f1,f2, reorder=True):
     f2_data = [ff2.split() for ff2 in f2_data]
     f1_data = [ff1 for ff1 in f1_data if ff1]
     f2_data = [ff2 for ff2 in f2_data if ff2]
-    f1_data = [''.join(ff1) for ff1 in f1_data]
-    f2_data = [''.join(ff2) for ff2 in f2_data]
+    f1_data = [' '.join(ff1) for ff1 in f1_data]
+    f2_data = [' '.join(ff2) for ff2 in f2_data]
     if reorder:
         f1_data.sort()
         f2_data.sort()
@@ -177,9 +174,8 @@ def test_WriteCorr2ConfigurationFile():
     stile.WriteCorr2ConfigurationFile(f2,dict2)
     if not compare_text_files(f2,'test_data/corr2_dict2_config_file.dat'):
         os.close(handle)
-        #os.remove(f2)
         raise AssertionError('WriteCorr2ConfigurationFile() produced incorrect output for test '+
-                             'args dict dict2')
+                             'args dict dict2; check file %s for problems'%f2)
     else:
         os.close(handle)
         os.remove(f2)
@@ -200,7 +196,7 @@ def test_ReadCorr2ResultsFile():
 
 def test_AddCorr2Dict():
     t0 = time.time()
-    new_dict = stile.corr2_utils.AddCorr2Dict(dict1)
+    new_dict = stile.corr2_utils.AddCorr2Dict(dict1) # nonsense dict
     if new_dict['corr2_kwargs']:
         raise TypeError('The "corr2_kwargs" key of the new dict should have no entries')
     new_dict = stile.corr2_utils.AddCorr2Dict(dict2)
@@ -221,24 +217,28 @@ def test_MakeCorr2Cols():
     list2 = ['ra','dec','id']
     listdict1 = {'y': 1, 'x': 0, 'k': 2, 'w': 3}
     listdict2 = {'ra': 0, 'dec': 1, 'id': 2}
+    listdict3 = {'ra': 'RA_J2000', 'dec': 'DEC_J2000'}
     
     list1_results = {'x_col': 1, 'y_col': 2, 'k_col': 3, 'w_col': 4}
     list2_results = {'ra_col': 1, 'dec_col': 2}
+    list2_withk_results = {'ra_col': 1, 'dec_col': 2, 'k_col': 3} 
+    list3_results = {'ra_col': 'RA_J2000', 'dec_col': 'DEC_J2000'}
     
     numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(list1),list1_results)
     numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(list2),list2_results)
+    numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(list2,use_as_k='id'),
+                               list2_withk_results)
     numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict1),list1_results)
     numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict2),list2_results)
+    numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict2,use_as_k='id'),
+                               list2_withk_results)
+    numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict3),list3_results)
     
     t1 = time.time()
     print "Time to test MakeCorr2Cols: ", 1000*(t1-t0), "ms"
 
 def test_OSFile():
     t0 = time.time()
-    dh = temp_data_handler()
-    # count files since we want to check they're deleted properly
-    import os
-    nfiles = len(os.listdir('.'))
     arr0 = [1,2,3,4,5]
     arr1 = numpy.array([[1,2,3],[4.,5.,6.]])
     arr2 = numpy.array([(1.5,2,3.5),(4,5,6)],dtype='d,l,d')
@@ -255,10 +255,7 @@ def test_OSFile():
                                numpy.array([tuple(arr0)],dtype='l,l,l,l,l'))
     numpy.testing.assert_equal(stile.ReadTable(OSFile1.file_name),
                                numpy.array([tuple(a) for a in arr1],dtype='l,l,l'))
-    # numpy.testing.assert_equal won't work on formatted arrays unless they have the same field
-    # names, hence the "fields=" bit.
-    result = numpy.array(stile.ReadTable(OSFile2.file_name,fields=arr2.dtype.names))
-    import test_helper
+    result = numpy.array(stile.ReadTable(OSFile2.file_name))
     numpy.testing.assert_equal(*test_helper.format_same(result,arr2))
     str_len = max([len(OSFile0.file_name),len(OSFile1.file_name),len(OSFile2.file_name)])
     str_dtype = ','.join(['S'+str(str_len)]*3)
@@ -281,10 +278,6 @@ def test_OSFile():
     del OSFile2
     del OSFile1
     del OSFile0
-    nfiles2 = len(os.listdir('.'))
-    if not nfiles==nfiles2:
-        print "Different number of files in this directory post-OSFile testing. Unless another",
-        print "process has been writing files to this directory, there is a bug with OSFile."
     t1 = time.time()
     print "Time to test OSFile: ", 1000*(t1-t0), "ms"
     
@@ -293,7 +286,6 @@ def test_MakeCorr2FileKwargs():
     data = [(1.0, 2.54, 0.25, -0.16),
             (3.1, 2.36, 0.0, 0.8)]
     data = numpy.array(data,dtype=[('ra', float),('dec',float),('g1',float),('g2',float)])
-    dh = temp_data_handler()
     #    data as file lists
     result = stile.MakeCorr2FileKwargs(data)
     assert len(result.keys())==5
