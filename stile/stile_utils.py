@@ -121,7 +121,6 @@ class Stats:
 
         return ret_str
 
-<<<<<<< HEAD
 def standardTests():
     return [stile.StatSysTest(field='e1'), stile.StatSysTest(field='e2'), 
             stile.RealShearSysTest()]
@@ -169,5 +168,3 @@ def getEmptyFormatDict(use_dict=False):
                 for pair in paired:
                     format_dict = {Format(self,extent,epoch,pair=pair): []}
     return format_dict
-=======
->>>>>>> #8
