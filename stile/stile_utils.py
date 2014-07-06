@@ -125,46 +125,81 @@ def standardTests():
     return [stile.StatSysTest(field='e1'), stile.StatSysTest(field='e2'), 
             stile.RealShearSysTest()]
 
-formats = ['catalog','image']
-extents = ['CCD','field','catalog']
-epochs  = ['single','multiepoch']
-paired  = ['pair','single']            
+data_formats = ['catalog', # Catalog or table of data
+                'image' # Image
+               ]
+extents = ['CCD', # Single CCD
+           'field', # Single field-of-view or pointing (multiple CCDs)
+           'patch', # Larger than a field, but still a small area on the sky
+           'tract' # A large area (about as large as would have a single WCS/background solution)
+          ]
+epochs  = ['single',     # One data measurement per object
+           'multiepoch'  # Multiple measurements of same object at different times
+          ]
+object_types = ['star',          # stars
+                'star bright',   # a "bright" star sample, whatever "bright" is for your survey
+                'star PSF',      # stars used for PSF
+                'star not PSF',  # stars not used for PSF
+                'star random',   # random positions distributed like stars
+                'galaxy',        # galaxies
+                'galaxy lens',   # galaxies which can be used as lenses
+                'galaxy random', # random positions distributed like galaxies
+                'galaxy lens random', # random positions distributed like galaxy lenses
+               ]
+
+field_names = ['ra', 'dec', # Position (most tests requiring ra/dec will also accept x/y instead)
+               'g1', 'g2',  # Shears (note: no support for e1/e2--you can call them g1/g2 but
+                            # know that results should be duly interpreted!)
+               'mag',       # Magnitude (eg model magnitude)
+               'psf_mag',   # PSF magnitude
+               'color',     # Color (magnitude difference of two bands)
+               'w',         # Weight
+               'size',      # Size
+               'moment_ij', # Second moment, with {i,j} element of {0,1} or {x,y} (no mixing).
+                            # Weighted, unweighted, adaptive: your choice!
+               'z'          # Redshift
+              ]
 
 class Format:
-    def __init__(self,epoch,extent,format,pair=False):
-        if epoch in epochs:
-            self.epoch = epoch
-        else:
-            raise ValueError('epoch must be one of '+str(epochs))
-        if extent in extents:
-            self.extent = extent
-        else:
-            raise ValueError('extent must be one of '+str(extents))
-        if format in formats:
-            self.format = format
-        else:
-            raise ValueError('format must be one of '+str(formats))
-        if pair:
-            if isinstance(pair,str):
-                if pair in paired:
-                    self.pair = pair
-                else:
-                    raise ValueError('pair must be a bool, or one of '+str(paired))
-            else:
-                self.pair = 'pair'
-        else:
-            self.pair = 'single'
+    def __init__(self,epoch,extent,data_format):
+        self.epoch = epoch
+        self.extent = extent
+        self.data_format = data_format
     def asKwargs(self):
-        return {'epoch': self.epoch, 'extent': self.extent, 
-                'format': self.format, 'pair': self.pair}
-    def __hash__(self):
-        return '-'.join(self.epoch, self.extent, self.format, self.pair)
+        return {'epoch': self.epoch, 'extent': self.extent, 'data_format': self.data_format}
+    @property
+    def str(self):
+        return '-'.join([self.epoch, self.extent, self.data_format])
     
-def getEmptyFormatDict(use_dict=False):
+def EmptyFormatDict(type=list):
     format_dict = {}
-    for format in formats:
+    for epoch in epochs:
         for extent in extents:
-            for epoch in epochs:
-                for pair in paired:
-                    format_dict = {Format(self,extent,epoch,pair=pair): []}
+            for data_format in data_formats:
+                format_dict[Format(epoch,extent,data_format).str] = type()
     return format_dict
+
+def flatten(obj):
+    if hasattr(obj,'__iter__') and not isinstance(obj,dict):
+        return_list = []
+        for o in obj:
+            return_list+=flatten(o)
+        return return_list
+    else:
+        return [obj]
+
+def PopAndCheckFormat(dict,key,type,default=None):
+    """
+    A quick shorthand function to a) pop a key from a dict (with given default) and b) check that
+    it's the right format, and raise a sensible error if it isn't.
+    @param dict     A dict
+    @param key      A key which may or may not be in the dict
+    @param type     What type you expect the result to be
+    @param default  What default value to return if the key isn't in the dict (default: None)
+    @returns        The value of the key if it was in the dict, else default
+    """
+    val = dict.pop(key,default)
+    if not isinstance(val,type):
+        raise ValueError("Key %s should be type %s (got %s)"%(key,str(type),str(val)))
+    return val
+        
