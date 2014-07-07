@@ -169,6 +169,11 @@ class TestBinning(unittest.TestCase):
         results, groups = self.testConfigDataHandler.parseFiles({'file': copy.deepcopy(self.dict0)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
+        # Also check: does file querying work?
+        # This test may need to be made more flexible later--it relies in the internal order of the dict, which may be different between
+        # different Python installations.
+        results = self.testConfigDataHandler.queryFile('s1.dat')
+        self.assertEqual(results,'1 - format: single-CCD-catalog, object type: star, fields: [], group: _stile_group_0, file_reader: None')
         # Dummy check: are these functions removing duplicates properly?  ('group' was turned into a list here...)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
                                 'galaxy': [{'name': 'g1.dat', 'file_reader': None, 'group': ['_stile_group_0'], 'fields': []},
@@ -249,6 +254,10 @@ class TestBinning(unittest.TestCase):
         results, groups = self.testConfigDataHandler.parseFiles({'file99':copy.deepcopy(self.dict3)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
+        # try queryFile with multiple files
+        results = self.testConfigDataHandler.queryFile('s1.dat')
+        self.assertEqual(results,'1 - format: single-CCD-image, object type: star, fields: [], group: _stile_group_0, file_reader: None\n2 - format: single-CCD-catalog, object type: star, fields: [], group: _stile_group_3, file_reader: None\n3 - format: single-field-catalog, object type: star, fields: [], group: _stile_group_6, file_reader: None')
+
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict4))
         self.assertEqual(results,expected_results) # same expected results as dict3
         results, groups = self.testConfigDataHandler.parseFiles({'file':copy.deepcopy(self.dict4)})
@@ -411,6 +420,9 @@ class TestBinning(unittest.TestCase):
                 'single-CCD-catalog': { 'star': 2, 'galaxy': 2}}}
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
+        # Finally, check that queryFile still works with multiple same file names in the same format & object type
+        results = self.testConfigDataHandler.queryFile('g1.dat')
+        self.assertEqual(results,'1 - format: single-CCD-catalog, object type: galaxy, fields: [], group: _stile_group_0, file_reader: None\n2 - format: single-CCD-catalog, object type: galaxy, fields: [], file_reader: ASCII')
         # And check that it handles extra keys correctly as well
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6),'file_reader':'ASCII'})
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {

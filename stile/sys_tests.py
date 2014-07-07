@@ -115,6 +115,8 @@ class RealShearSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
+    objects_list = ['galaxy lens','galaxy']
+    required_quantities = [('ra','dec'),('ra','dec','g1','g2')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)

@@ -70,32 +70,6 @@ class DataHandler:
         else:
             return os.path.join(self.output_path,sys_test_string+extension)
 
-class FileInfo(object):
-    def __init__(self,file_name,reader,reader_kwargs=None,fields=None,flag_cols=None):
-        self.file_name = file_name
-        self.reader = reader
-        self.reader_kwargs = reader_kwargs
-        self.fields = fields
-        if isinstance(self.flag_cols,str):
-            self.flag_cols = [flag_cols]
-        else:
-            self.flag_cols = flag_cols
-    def __eq__(self,other):
-        return (self.file_name==other.file_name and self.reader==other.reader and 
-                self.reader_kwargs==other.reader_kwargs and self.flags==other.flags and
-                self.fields==other.fields)
-    def getData(self,force=False):
-        if not force and not self.flag_cols:
-            return self.file_name
-        else:
-            return_data = stile.FormatArray(
-                            self.reader(self.file_name,**reader_kwargs),fields=self.fields)
-            if self.flag_cols:
-                for flag_col in flag_cols:
-                    return_data = return_data[return_data[flag_col]]
-            return return_data
-        
-        
 class ConfigDataHandler(DataHandler):        
     def __init__(self,stile_args):
         if 'config_file' in stile_args:
@@ -150,7 +124,7 @@ class ConfigDataHandler(DataHandler):
         flag_field = stile_utils.PopAndCheckFormat(stile_args,'flag_field',(str,list,dict),
                                                    default=[])
         if flag_field:
-            file_list = self.addKwarg('flag_field',flag_field,file_list,append=True)
+            file_list = self.addKwarg('flag_field',flag_field,file_list)
         file_reader = stile_utils.PopAndCheckFormat(stile_args,'file_reader',(str,dict),default='')
         if file_reader:
             file_list = self.addKwarg('file_reader',file_reader,file_list)
@@ -196,7 +170,10 @@ class ConfigDataHandler(DataHandler):
                                 # Make a new dict in the list for each item.
                                 new_dict = copy.deepcopy(base_dict)
                                 if isinstance(name,dict):
-                                    new_dict.update(name)
+                                    if 'name' in dict:
+                                        new_dict.update(name)
+                                    else:
+                                        raise ValueError('Dict must contain a "name" item: %s'%item)
                                 else:
                                     new_dict['name'] = name
                                 return_list.append(new_dict)
@@ -231,15 +208,11 @@ class ConfigDataHandler(DataHandler):
             group = stile_utils.PopAndCheckFormat(files,'group',bool,default=group)
             wildcard = stile_utils.PopAndCheckFormat(files,'wildcard',bool,default=wildcard)
             fields = stile_utils.PopAndCheckFormat(files,'fields',(dict,list),default=fields)
+            flag_field = stile_utils.PopAndCheckFormat(files,'flag_field',(str,list),
+                                                           default=[])
             file_reader = files.get('file_reader',file_reader)
             if file_reader and not isinstance(file_reader,str) and not hasattr(file_reader,'__call__'):
                 raise ValueError("Do not understand file reader: %s"%file_reader)
-            if flag_field:
-                flag_field += stile_utils.flatten(stile_utils.PopAndCheckFormat(
-                                      files,'flag_field',(str,list),default=[]))
-            else:
-                flag_field = stile_utils.PopAndCheckFormat(files,'flag_field',(str,list),
-                                                           default=[])
             return_list = []
             keys = files.keys()
             pass_kwargs = {'epoch': epoch, 'extent': extent, 'data_format': data_format, 
@@ -458,7 +431,7 @@ class ConfigDataHandler(DataHandler):
                             if file['group']==group:
                                 file['group'] = True
         
-    def addKwarg(self,key,value,file_dicts,format_keys=[],object_type_key=None,append=False):
+    def addKwarg(self,key,value,file_dicts,format_keys=[],object_type_key=None):
         if not isinstance(value,dict) or value.keys()==['name']:
             if isinstance(value,dict):
                 value = value.pop('name')
@@ -466,13 +439,8 @@ class ConfigDataHandler(DataHandler):
                 for format in file_dict:
                     for object_type in file_dict[format]:
                         for file in file_dict[format][object_type]:
-                            if not append and (not key in file or not file[key]):
+                            if not key in file or not file[key]:
                                 if (not format_keys or (format_keys and all([format_key in format for format_key in format_keys]))) and (not object_type_key or object_type==object_type_key):
-                                    file[key] = value
-                            elif append:
-                                if key in file:
-                                    file[key] = stile_utils.flatten([file[key],value])
-                                else:
                                     file[key] = value
         else:
             object_types = [object_type for file_dict in file_dicts for format in file_dict for object_type in file_dict[format]]
@@ -481,27 +449,33 @@ class ConfigDataHandler(DataHandler):
                 if value_key in value: # in case it was popped in a call earlier in this loop
                     new_value = value.pop(value_key)
                     if value_key=='extent' or value_key=='data_format' or value_key=='epoch':
-                        self.addKwarg(key,value,file_dicts,format_keys=stile_utils.flatten([format_keys,new_value]),object_type_key=object_type_key,append=append)
+                        self.addKwarg(key,value,file_dicts,format_keys=stile_utils.flatten([format_keys,new_value]),object_type_key=object_type_key)
                     elif value_key=='object_type':
-                        self.addKwarg(key,value,file_dicts,format_keys=format_keys,object_type_key=new_value,append=append)
+                        self.addKwarg(key,value,file_dicts,format_keys=format_keys,object_type_key=new_value)
                     elif value_key in object_types:
-                        self.addKwarg(key,new_value,file_dicts,format_keys=format_keys,object_type_key=value_key,append=append)
+                        self.addKwarg(key,new_value,file_dicts,format_keys=format_keys,object_type_key=value_key)
                     elif value_key=='name':
-                        self.addKwarg(key,new_value,file_dicts,format_keys=format_keys,object_type_key=object_type_key,append=append)
+                        self.addKwarg(key,new_value,file_dicts,format_keys=format_keys,object_type_key=object_type_key)
                     else:
                         new_format_keys = stile_utils.flatten([format_keys,value_key])
-                        self.addKwarg(key,new_value,file_dicts,format_keys=new_format_keys,object_type_key=object_type_key,append=append)
+                        self.addKwarg(key,new_value,file_dicts,format_keys=new_format_keys,object_type_key=object_type_key)
         return file_dicts
-                
+
+
+        
     def queryFile(self,file_name):
         return_list = []
-        for item in self.file_list:
-            if item['name']==file_name:
-                return_list_item = []
-                for key in item:
-                    if not key=='name':
-                        return_list_item.append(key+': '+str(item[key]))
-                return_list.append(str(len(return_list)+1)+' - '+', '.join(return_list_item))
+        for format in self.files:
+            for object_type in self.files[format]:
+                for item in self.files[format][object_type]:
+                    if item['name']==file_name:
+                        return_list_item = []
+                        return_list_item.append("format: "+format)
+                        return_list_item.append("object type: "+object_type)
+                        for key in item:
+                            if not key=='name':
+                                return_list_item.append(key+': '+str(item[key]))
+                        return_list.append(str(len(return_list)+1)+' - '+', '.join(return_list_item))
         return '\n'.join(return_list)
                 
     def listFileTypes(self):

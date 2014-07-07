@@ -55,7 +55,6 @@ class TestCorrelationFunctions(unittest.TestCase):
                                         } }
         col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
         cf = stile.sys_tests.CorrelationFunctionSysTest()
-        dh = temp_data_handler()
         results = cf.getCorrelationFunction(stile_args,'ng',None,None,
                                             file_name='../examples/example_lens_catalog.dat',
                                             file_name2='../examples/example_source_catalog.dat',
