@@ -167,7 +167,7 @@ class CorrelationFunctionSysTest(SysTest):
              ('<gamX>',r'$\langle \gamma_X \rangle$'),None,None,
              ('gamT_','$\gamma_{T'),('gamX_','$\gamma_{X'),'sig',"$\gamma$"), # ng
             (('xi+',r'$\xi_+$'),('xi-',r'$\xi_-$'),
-             ('xi+_im','$xi_{+,im}$'),('xi-_im','$xi_{-,im}$'),None,None,'sig_xi',r"$\xi$"), #g2
+             ('xi+_im','$\xi_{+,im}$'),('xi-_im','$\xi_{-,im}$'),None,None,'sig_xi',r"$\xi$"), #g2
             (('<kappa>',r'$\langle \kappa \rangle$'),None,None,None,
              ('kappa_','$kappa_{'),None,'sig',"$\kappa$"), # nk 
             (('xi',r'$\xi$'),None,None,None,None,None,'sig_xi',r"$\xi$"), # k2 
@@ -275,7 +275,7 @@ class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'real_shear'
     long_name = 'Shear of galaxies around real objects'
     objects_list = ['galaxy lens','galaxy']
-    required_quantities = [('ra','dec'),('ra','dec','g1','g2')]
+    required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
@@ -287,7 +287,7 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     short_name = 'star_shear'
     long_name = 'Shear of galaxies around bright stars'
     objects_list = ['star bright','galaxy']
-    required_quantities = [('ra','dec'),('ra','dec','g1','g2')]
+    required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
@@ -311,7 +311,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     short_name = 'star_x_galaxy_shear'
     long_name = 'Cross-correlation of galaxy and star shapes'
     objects_list = ['star','galaxy']
-    required_quantities = [('ra','dec','g1','g2'),('ra','dec','g1','g2')]
+    required_quantities = [('ra','dec','g1','g2','w'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
@@ -323,7 +323,7 @@ class StarAutoShearSysTest(CorrelationFunctionSysTest):
     short_name = 'star_auto_shear'
     long_name = 'Auto-correlation of star shapes'
     objects_list = ['star']
-    required_quantities = [('ra','dec','g1','g2')]
+    required_quantities = [('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
@@ -335,7 +335,7 @@ class RoweISysTest(CorrelationFunctionSysTest):
     short_name = 'psf_residual_auto_shear'
     long_name = 'Auto-correlation of (star-PSF model) shapes'
     objects_list = ['star']
-    required_quantities = [('ra','dec','g1_residual','g2_residual')]
+    required_quantities = [('ra','dec','g1_residual','g2_residual','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
@@ -347,7 +347,7 @@ class RoweIISysTest(CorrelationFunctionSysTest):
     short_name = 'psf_residual_x_star_shear'
     long_name = 'Cross-correlation of (star-PSF model) residuals with star shapes'
     objects_list = ['star','star']
-    required_quantities = [('ra','dec','g1_residual','g2_residual'),('ra','dec','g1','g2')]
+    required_quantities = [('ra','dec','g1_residual','g2_residual','w'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         raise NotImplementedError("Need to figure out how to tell corr2 to use the residuals!")

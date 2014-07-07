@@ -4,6 +4,14 @@ import numpy
 
 adapter_registry = lsst.pex.config.makeRegistry("Stile test outputs")
 
+default_corr2_args = { 'ra_units': 'degrees', 
+                                   'dec_units': 'degrees',
+                                   'min_sep': 0.05,
+                                   'max_sep': 1,
+                                   'sep_units': 'degrees',
+                                   'nbins': 20
+                     }
+
 def MaskGalaxy(data):
     try:
         return data['classification.extendedness']==1
@@ -44,19 +52,19 @@ mask_dict = {'galaxy': MaskGalaxy,
              'galaxy lens': MaskGalaxyLens,
              'star PSF': MaskPSFStar}
 
-class StarGalaxyCrossCorrelationAdapterConfig(lsst.pex.config.Config):
+class StarXGalaxyDensityConfig(lsst.pex.config.Config):
     pass
     
-class StarGalaxyCrossCorrelationAdapter(object):
-    ConfigClass = StarGalaxyCrossCorrelationAdapterConfig
+class StarXGalaxyDensityAdapter(object):
+    ConfigClass = StarXGalaxyDensityConfig
     def __init__(self,config):
         self.config = config
-        self.test = sys_tests.StarGalaxyCrossCorrelationSysTest()
+        self.test = sys_tests.StarXGalaxyDensitySysTest()
         self.name = self.test.short_name
         self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
      
     def __call__(self,*data):
-        self.test(*data)
+        return self.test(default_corr2_args,*data)
     
     def getMasks(self,data):
         return [mask_func(data) for mask_func in self.mask_funcs]
@@ -64,6 +72,27 @@ class StarGalaxyCrossCorrelationAdapter(object):
     def getRequiredColumns(self):
         return self.test.required_quantities
     
+class StarXGalaxyShearConfig(lsst.pex.config.Config):
+    pass
+    
+class StarXGalaxyShearAdapter(object):
+    ConfigClass = StarXGalaxyShearConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.StarXGalaxyShearSysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+     
+    def __call__(self,*data):
+        return self.test(default_corr2_args,*data)
+    
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+        
+    def getRequiredColumns(self):
+        return self.test.required_quantities
+
+
 class StatsPSFFluxAdapterConfig(lsst.pex.config.Config):
     pass
     
@@ -75,7 +104,7 @@ class StatsPSFFluxAdapter(object):
         self.name = self.test.short_name+'flux.psf'
 
     def __call__(self,*data):
-        self.test(*data,verbose=True)
+        return self.test(*data,verbose=True)
     
     def getMasks(self,catalog):
     	return MaskGalaxy(catalog)
@@ -87,3 +116,5 @@ class StatsPSFFluxAdapter(object):
         return (('flux.psf',),)
         
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
+#adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
+adapter_registry.register("StarXGalaxyShear",StarXGalaxyShearAdapter)

@@ -8,7 +8,7 @@ import numpy
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run",multi=True,
-                    default = ["StatsPSFFlux"])
+                    default = ["StatsPSFFlux","StarXGalaxyShear"])
     
 class SysTestData(object):
     def __init__(self):
@@ -46,12 +46,11 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             sys_test_data.cols_list = sys_test.getRequiredColumns()
             for (mask,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
                 for col in cols:
-                #print col, col in catalog.schema, catalog.schema, "check"
                     if not col in catalog.schema:
                         if not col in extra_col_dict:
                             extra_col_dict[col] = numpy.zeros(len(catalog))
                             extra_col_dict[col].fill('nan')
-                        nan_mask = extra_col_dict[col]=='nan'
+                        nan_mask = numpy.isnan(extra_col_dict[col])
                         nan_and_col_mask = numpy.logical_and(nan_mask,mask)
                         extra_col_dict[col][nan_and_col_mask] = self.computeExtraColumn(
                             col,catalog[nan_and_col_mask],calib_data,calib_type)
@@ -63,14 +62,17 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 new_catalog = {}
                 for column in cols:
                     if column in extra_col_dict:
-                        new_catalog[column] = cols[column]
+                        new_catalog[column] = extra_col_dict[column]
                     elif column in catalog.schema:
-		    	try:
+                        try:
                             new_catalog[column] = catalog[column]
-			except:
-			    new_catalog[column] = numpy.array([src[column] for src in catalog])
+                        except:
+                            new_catalog[column] = numpy.array([src[column] for src in catalog])
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(*new_catalogs)
+            if hasattr(sys_test.test,'plot'):
+                fig = sys_test.test.plot(results)
+                fig.savefig(sys_test_data.test_name+'.png')
             
     
     def removeFlags(self,catalog):
@@ -79,10 +81,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                  'flux.aperture.flags','flux.gaussian.flags','flux.kron.flags','flux.naive.flags',
                  'flux.psf.flags']
         masks = [catalog[flag]==False for flag in flags]
-	mask = masks[0]
-	for new_mask in masks[1:]:
-	    mask = numpy.logical_and(mask,new_mask)
-        #mask = numpy.logical_and(*masks)
+        mask = masks[0]
+        for new_mask in masks[1:]:
+            mask = numpy.logical_and(mask,new_mask)
         return catalog[mask]
             
     def makeArray(self,catalog_dict):
@@ -96,9 +97,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
     def computeExtraColumn(self,col,data,calib_data,calib_type):
         if col=="ra":
-            return data.getRa().asDegrees()
+            return [src.getRa().asDegrees() for src in data]
         elif col=="dec":
-                return data.getDec().asDegrees()
+            return [src.getDec().asDegrees() for src in data]
         elif col=="mag_err":
             return 2.5/numpy.log(10)*(sources.getPsfFluxErr()/sources.getPsfFlux())
         elif col=="mag":
@@ -110,8 +111,29 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
             return zeropoint - 2.5*numpy.log10(data.getPsfFlux())
+        elif col=="g1":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+            return (ixx-iyy)/(ixx+iyy)
+        elif col=="g2":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                ixy = moments.getIxy()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+            return 2.*ixy/(ixx+iyy)
         elif col=="w":
-            raise NotImplementedError("Need to figure out something clever for weights")
+            print "Need to figure out something clever for weights"
+            return numpy.array([1.]*len(data))
         raise NotImplementedError("Cannot compute col %s"%col)
         
     @classmethod
