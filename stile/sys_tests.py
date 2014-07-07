@@ -272,11 +272,111 @@ class RealShearSysTest(CorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of real objects.
     """
-    short_name = 'realshear'
+    short_name = 'real_shear'
     long_name = 'Shear of galaxies around real objects'
+    objects_list = ['galaxy lens','galaxy']
+    required_quantities = [('ra','dec'),('ra','dec','g1','g2')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
+
+class BrightStarShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the tangential and cross shear around a set of bright stars.
+    """
+    short_name = 'star_shear'
+    long_name = 'Shear of galaxies around bright stars'
+    objects_list = ['star bright','galaxy']
+    required_quantities = [('ra','dec'),('ra','dec','g1','g2')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
+
+class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
+    """
+    Compute the number density of galaxies around stars.
+    """
+    short_name = 'star_x_galaxy_density'
+    long_name = 'Density of galaxies around stars'
+    objects_list = ['star','galaxy']
+    required_quantities = [('ra','dec'),('ra','dec')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'n2',data,data2,random,random2,**kwargs)
+
+class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the cross-correlation of galaxy and star shapes.
+    """
+    short_name = 'star_x_galaxy_shear'
+    long_name = 'Cross-correlation of galaxy and star shapes'
+    objects_list = ['star','galaxy']
+    required_quantities = [('ra','dec','g1','g2'),('ra','dec','g1','g2')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+
+class StarAutoShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto-correlation of star shapes.
+    """
+    short_name = 'star_auto_shear'
+    long_name = 'Auto-correlation of star shapes'
+    objects_list = ['star']
+    required_quantities = [('ra','dec','g1','g2')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+
+class RoweISysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto-correlation of (star-PSF model) shapes.
+    """
+    short_name = 'psf_residual_auto_shear'
+    long_name = 'Auto-correlation of (star-PSF model) shapes'
+    objects_list = ['star']
+    required_quantities = [('ra','dec','g1_residual','g2_residual')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+
+class RoweIISysTest(CorrelationFunctionSysTest):
+    """
+    Compute the cross-correlation of (star-PSF model) residuals with star shapes.
+    """
+    short_name = 'psf_residual_x_star_shear'
+    long_name = 'Cross-correlation of (star-PSF model) residuals with star shapes'
+    objects_list = ['star','star']
+    required_quantities = [('ra','dec','g1_residual','g2_residual'),('ra','dec','g1','g2')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        raise NotImplementedError("Need to figure out how to tell corr2 to use the residuals!")
+        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+
+class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the galaxy position autocorrelations.
+    """
+    short_name = 'galaxy_density'
+    long_name = 'Galaxy position autocorrelation'
+    objects_list = ['galaxy']
+    required_quantities = [('ra','dec')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'n2',data,data2,random,random2,**kwargs)
+
+class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the star position autocorrelations.
+    """
+    short_name = 'star_density'
+    long_name = 'Star position autocorrelation'
+    objects_list = ['star']
+    required_quantities = [('ra','dec')]
+
+    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+        return self.getCorrelationFunction(stile_args,'n2',data,data2,random,random2,**kwargs)
+
 
 class StatSysTest(SysTest):
     """
