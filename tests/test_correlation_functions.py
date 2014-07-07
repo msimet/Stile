@@ -2,7 +2,7 @@ import sys
 import os
 import numpy
 import subprocess
-import test_helper
+import helper
 import unittest
 try:
     import stile
@@ -61,7 +61,7 @@ class TestCorrelationFunctions(unittest.TestCase):
                                             file_name2='../examples/example_source_catalog.dat',
                                             **col_kwargs)
         self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
-        numpy.testing.assert_array_equal(*test_helper.FormatSame(results,self.expected_result))
+        numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
         kwargs = stile_args['corr2_kwargs']
         stile_args['corr2_kwargs'] = {}
         kwargs.update(col_kwargs)
