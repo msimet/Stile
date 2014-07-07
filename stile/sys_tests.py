@@ -3,6 +3,15 @@ Contains the class definitions of the Stile systematics tests.
 """
 import numpy
 import stile
+try:
+    import matplotlib
+    # We should decide which backend to use (this line allows running matplotlib even on sessions 
+    # without properly defined displays, eg through PBS)
+    matplotlib.use('Agg') 
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
 
 class SysTest:
     """
@@ -108,48 +117,85 @@ class CorrelationFunctionSysTest(SysTest):
         for handle in handles:  
             os.close(handle)
         return return_value
-        
+    
     def plot(self,data,colors=['r','b'],log_yscale=False,
                   plot_bmode=True,plot_data_only=True,plot_random_only=True):
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
+        """
+        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some 
+        sensible defaults, but much of its behavior can be changed.
+        
+        @param data       The data returned from a CorrelationFunctionSysTest, as-is.
+        @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
+        @param log_yscale Whether to use a logarithmic y-scale (default: False)
+        @param plot_bmode Whether to plot the b-mode signal, if there is one (default: True)
+        @param plot_data_only   Whether to plot the data-only correlation functions, if present
+                                (default: True)
+        @param plot_random_only Whether to plot the random-only correlation functions, if present
+                                (default: True)
+        @returns          A matplotlib Figure which may be written to a file with .savefig(), if
+                          matplotlib can be imported; else None.
+        """
+        
+        if not has_matplotlib:
             return None
         fields = data.dtype.names
-        w = None
-        for poss_r in ['<R>','R_nominal','R']:
-            if poss_r in fields:
-                r = poss_r
+        # Pick which radius measurement to use
+        for t_r in ['<R>','R_nominal','R']:
+            if t_r in fields:
+                r = t_r
                 break
         else:
             raise ValueError('No radius parameter found in data')
-        # Could have: a T-mode Y and a B-mode Y; a real xi+ and xi-, then imaginary;
-        # and possibly some separate t-mode Y and b-mode Y for the data and randoms alone rather
-        # than together, in which case it's the keys poss_dr_y + 'd' or 'r' for data and randoms, 
-        # respectively; plus an error bar.
-        for poss_y, poss_yb, poss_y_im, poss_yb_im, poss_dr_y, poss_dr_yb, poss_w in [
-            ('omega',None,None,None,None,None,'sig_omega'), # n2 style
-            ('<gamT>','<gamX>',None,None,'gamT_','gamX_','sig'), # ng style
-            ('xi+','xi-','xi+_im','xi-_im',None,None,'sig_xi'), # g2 style
-            ('<kappa>',None,None,None,'kappa_',None,'sig'), # nk style
-            ('xi',None,None,None,None,None,'sig_xi'), # k2 style
-            ('<kgamT>','<kgamX>',None,None,'kgamT_','kgamX_','sig'), # kg style
-            ('<Map^2>','<Mx^2>','<MMx>(a)','<Mmx>(b)',None,None,'sig_map'), # m2 style
-            ('<NMap>','<NMx>',None,None,None,None,'sig_nmap') # nm style or norm style
+        
+        # Logarithmic x-axes have stupid default ranges: fix this.
+        rstep = data[r][1]/data[r][0]
+        xlim = [min(data[r])/rstep,max(data[r])*rstep]    
+        # Check what kind of data is in the array that .plot() received.  This annoyingly large list
+        # contains all the possible sets of data, in tuples with the array field name and the
+        # corresponding legend labels, plus error bars (w) and y-axis titles.  In order, the
+        # elements of each tuple are:
+        # a T-mode Y and a B-mode Y [or xi+ and xi-];
+        # an imaginary xi+ and xi-;
+        # a  separate t-mode Y and b-mode Y for the data and randoms alone rather
+        # than together, in which case it's the keys t_dr_y + 'd' or 'r' for data and randoms, 
+        # respectively, or + 'd}$' or 'r}$' for the legend labels;
+        # error bar and y-axis title.
+        # Each type of data may have only some of those elements--if not the item is None.
+        for t_y, t_yb, t_y_im, t_yb_im, t_dr_y, t_dr_yb, t_w, t_ytitle in [
+            (('omega','$\omega$'),None,None,None,None,None,'sig_omega',"$\omega$"), # n2
+            (('<gamT>',r'$\langle \gamma_T \rangle$'),
+             ('<gamX>',r'$\langle \gamma_X \rangle$'),None,None,
+             ('gamT_','$\gamma_{T'),('gamX_','$\gamma_{X'),'sig',"$\gamma$"), # ng
+            (('xi+',r'$\xi_+$'),('xi-',r'$\xi_-$'),
+             ('xi+_im','$xi_{+,im}$'),('xi-_im','$xi_{-,im}$'),None,None,'sig_xi',r"$\xi$"), #g2
+            (('<kappa>',r'$\langle \kappa \rangle$'),None,None,None,
+             ('kappa_','$kappa_{'),None,'sig',"$\kappa$"), # nk 
+            (('xi',r'$\xi$'),None,None,None,None,None,'sig_xi',r"$\xi$"), # k2 
+            (('<kgamT>',r'$\langle \kappa \gamma_T\rangle$'),
+             ('<kgamX>',r'$\langle \kappa \gamma_X\rangle$'),None,None,
+             ('kgamT_',r'$\kappa \gamma_{T'),('kgamX_',r'$\kappa \gamma_{X'),
+             'sig',"$\kappa\gamma$"), # kg 
+            (('<Map^2>',r'$\langle M_{ap}^2 \rangle$'),('<Mx^2>',r'$\langle M_x^2\rangle$'),
+             ('<MMx>(a)',r'$\langle MM_x \rangle(a)$'),('<Mmx>(b)',r'$\langle MM_x \rangle(b)$'),
+             None,None,'sig_map', "$M_{ap}^2$"), # m2 
+            (('<NMap>',r'$\langle NM_{ap} \rangle$'),('<NMx>',r'$\langle NM_{x} \rangle$'),
+             None,None,None,None,'sig_nmap',"$NM_{ap}$") # nm or norm
             ]:
-            if poss_y in fields:
-                y = poss_y
-                y_im = poss_y_im
-                w = poss_w
+            # Pick the one the data contains and use it; break before trying the others.
+            if t_y[0] in fields:
+                y = t_y
+                y_im = t_y_im if t_y_im and t_y_im[0] in fields else None
+                w = t_w
+                ytitle = t_ytitle
                 if plot_bmode:
-                    yb = poss_yb
-                    yb_im = poss_yb_im
+                    yb = t_yb if t_yb and t_yb[0] in fields else None
+                    yb_im = t_yb_im if t_yb_im and t_yb_im[0] in fields else None
                 else:
                     yb = None
                     yb_im = None
                 if plot_data_only or plot_random_only:
-                    dr_y = poss_dr_y
-                    dr_yb = poss_dr_yb
+                    dr_y = t_dr_y if t_dr_y and t_dr_y[0] in fields else None
+                    dr_yb = t_dr_yb if t_dr_yb and t_dr_yb[0] in fields else None
                 else:
                     dr_y = None
                     dr_yb = None
@@ -161,44 +207,65 @@ class CorrelationFunctionSysTest(SysTest):
         else:
             yscale = 'linear'
         fig = plt.figure()
-        if (y_im and y_b):  
+        # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
+        if (y_im and yb):  
             nrows = 2
         elif dr_y:
             nrows = 1 + plot_data_only + plot_random_only
-        
-        ax = fig.add_suplot(nrows,1,1)
-        ax.plot(data[r],data[y],data[w],color=colors[0],title=y)
+        else:
+            nrows = 1
+
+        # Plot the first thing
+        ax = fig.add_subplot(nrows,1,1)
+        ax.errorbar(data[r],data[y[0]],yerr=data[w],color=colors[0],label=y[1])
         if yb:
-            ax.plot(data[r],data[yb],data[w],color=colors[1],title=yb)
-        elif y_im:
-            ax.plot(data[r],data[y_im],data[w],color=colors[1],title=y_im)
+            ax.errorbar(data[r],data[yb[0]],yerr=data[w],color=colors[1],label=yb[1])
+        elif y_im: # Plot y and y_im if you're not plotting yb (else it goes on a separate plot)
+            ax.errorbar(data[r],data[y_im[0]],yerr=data[w],color=colors[1],label=y_im[1])
         ax.set_xscale('log')
         ax.set_yscale(yscale)
+        ax.set_xlim(xlim)
+        ax.set_xlabel(r)
+        ax.set_ylabel(ytitle)
         ax.legend()
-        if y_b and y_im:
+        if yb and y_im: # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
             ax = fig.add_subplot(nrows,1,2)
-            ax.plot(data[r],data[y_im],data[w],color=colors[0],title=y_im)
-            ax.plot(data[r],data[yb_im],data[w],color=colors[1],title=yb_im)
-        curr_plot = 1
-        if plot_data_only and dr_y:
-            curr_plot+=1
-            ax = fig.add_subplot(nrows,1,curr_plot)
-            ax.plot(data[r],data[dr_y+'d'],data[w],color=colors[0],title=y_im)
-            if dr_yb:
-                ax.plot(data[r],data[dr_yb+'d'],data[w],color=colors[1],title=yb_im)
+            ax.errorbar(data[r],data[y_im[0]],yerr=data[w],color=colors[0],label=y_im[1])
+            ax.errorbar(data[r],data[yb_im[0]],yerr=data[w],color=colors[1],label=yb_im[1])
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.set_xlim(xlim)
+            ax.set_xlabel(r)
+            ax.set_ylabel(ytitle)
             ax.legend()
-        if plot_random_only and dr_y:
+        if plot_data_only and dr_y: # Plot the data-only measurements if requested
             curr_plot+=1
-            ax = fig.add_subplot(nrows,1,curr_plot)
-            ax.plot(data[r],data[dr_y+'r'],data[w],color=colors[0],title=y_im)
+            ax = fig.add_subplot(nrows,1,2)
+            ax.errorbar(data[r],data[dr_y[0]+'d'],yerr=data[w],color=colors[0],
+                        label=dr_y[1]+'d}$')
             if dr_yb:
-                ax.plot(data[r],data[dr_yb+'r'],data[w],color=colors[1],title=yb_im)
+                ax.errorbar(data[r],data[dr_yb[0]+'d'],yerr=data[w],color=colors[1],
+                        label=dr_yb[1]+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.set_xlim(xlim)
+            ax.set_xlabel(r)
+            ax.set_ylabel(ytitle)
             ax.legend()
-        return fig
+        if plot_random_only and dr_y: # Plot the randoms-only measurements if requested
+            ax = fig.add_subplot(nrows,1,nrows)
+            ax.errorbar(data[r],data[dr_y[0]+'r'],yerr=data[w],color=colors[0],
+                        label=dr_y[1]+'r}$')
+            if dr_yb:
+                ax.errorbar(data[r],data[dr_yb[0]+'r'],yerr=data[w],color=colors[1],
+                        label=dr_yb[1]+'r}$')
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.set_xlim(xlim)
+            ax.set_xlabel(r)
+            ax.set_ylabel(ytitle)
+            ax.legend()
+        return fig 
         
         
 class RealShearSysTest(CorrelationFunctionSysTest):
