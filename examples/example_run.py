@@ -21,17 +21,19 @@ def main():
                                     'sep_units': 'degrees',
                                     'nbins': 20
                                     } }
-    data_ids = dh.listData('pair','single','field','table')
+    data_ids = dh.listData(object_types = ['galaxy lens','galaxy'], epoch='single',
+                           extent='field',data_format='table')
     
     # do a test without binning
-    data = dh.getData(data_ids[0],'pair','single','field','table')
-    data2 = dh.getData(data_ids[1],'pair','single','field','table')
+    data = dh.getData(data_ids[0],'galaxy lens','single','field','table')
+    data2 = dh.getData(data_ids[1],'galaxy','single','field','table')
     
     # convert all files to files on disk if they aren't already
-    corr2_kwargs = stile.MakeCorr2FileKwargs(dh,data,data2)
+    corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
     
     # run the test
-    results = sys_test(stile_args,dh,**corr2_kwargs)
+    results = sys_test(stile_args,**corr2_kwargs)
+    stile.WriteASCIITable('realshear.dat',results)
     # Plot the results
     P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
     P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
@@ -46,30 +48,31 @@ def main():
     print "Done with unbinned systematics test"
     
     # do with binning
-    data = dh.getData(data_ids[0],'pair','single','field','table')
+    data = dh.getData(data_ids[0],'galaxy lens','single','field','table')
     # turns a list of binning schemes into a pseudo-nested list of single bins
     expanded_bin_list = stile.ExpandBinList(bin_list)
     handles_list = []
     deletes_list = []
     # for each set of bins, do the systematics test as above
     for bin_list in expanded_bin_list:
-        stile_args['bins_name'] = '-'.join([bl.short_name for bl in bin_list])
-        data2 = dh.getData(data_ids[1],'pair','single','field','table',bin_list=bin_list)
+        bins_name = '-'.join([bl.short_name for bl in bin_list])
+        data2 = dh.getData(data_ids[1],'galaxy','single','field','table',bin_list=bin_list)
         
-        corr2_kwargs = stile.MakeCorr2FileKwargs(dh,data,data2)
+        corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
         
-        results = sys_test(stile_args,dh,**corr2_kwargs)
+        results = sys_test(stile_args,**corr2_kwargs)
+        stile.WriteASCIITable('realshear-'+bins_name+'.dat',results)
         P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
         P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
         P.xlabel('<R> [deg]')
         P.ylabel('<gam>')
         P.xscale('log')
         P.xlim([0.05,0.7])
-        P.title('Bins'+stile_args['bins_name'])
+        P.title('Bins'+bins_name)
         P.legend()
-        P.savefig(sys_test.short_name+stile_args['bins_name']+'.png')
+        P.savefig(sys_test.short_name+bins_name+'.png')
         P.clf()
-        print "Done with binned systematics test", stile_args['bins_name']
+        print "Done with binned systematics test", bins_name
 
 if __name__=='__main__':
     main()

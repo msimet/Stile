@@ -1,8 +1,9 @@
 import sys
 import os
 import numpy
-import time
 import subprocess
+import test_helper
+import unittest
 try:
     import stile
 except ImportError:
@@ -15,8 +16,10 @@ class temp_data_handler():
     def getOutputPath(self,p):
         return p
 
-# The output of our known data set from the example directory
-expected_result = numpy.array(
+class TestCorrelationFunctions(unittest.TestCase):
+    def setUp(self):
+        # The output of our known data set from the example directory
+        self.expected_result = numpy.array(
                    [(5.389e-02, 5.443e-02, 2.206e-02,-4.259e-02, 2.578e-02, 1.820e+02, 1.820e+02),
                     (6.260e-02, 6.205e-02, 3.738e-03, 2.995e-02, 2.079e-02, 2.800e+02, 2.800e+02),
                     (7.271e-02, 7.241e-02, 1.857e-02,-4.192e-02, 1.755e-02, 3.930e+02, 3.930e+02),
@@ -40,54 +43,64 @@ expected_result = numpy.array(
                     dtype=[("R_nominal",float),("<R>",float),("<gamT>",float),("<gamX>",float),
                            ("sig",float),("weight",float),("npairs",float)])
             
-def test_CorrelationFunctionSysTest():
-    t0 = time.time()
-    stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
-                                    'dec_units': 'degrees',
-                                    'min_sep': 0.05,
-                                    'max_sep': 1,
-                                    'sep_units': 'degrees',
-                                    'nbins': 20
-                                    } }
-    col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
-    cf = stile.sys_tests.CorrelationFunctionSysTest()
-    dh = temp_data_handler()
-    results = cf.getCorrelationFunction(stile_args,dh,'ng',
-                                        file_name='../examples/example_lens_catalog.dat',
+    def test_getCorrelationFunctionSysTest(self):
+        # First, test .getCorrelationFunction() directly with both a dict and some kwargs passed in,
+        # and also test the two different kinds of file specification.
+        stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
+                                        'dec_units': 'degrees',
+                                        'min_sep': 0.05,
+                                        'max_sep': 1,
+                                        'sep_units': 'degrees',
+                                        'nbins': 20
+                                        } }
+        col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
+        cf = stile.sys_tests.CorrelationFunctionSysTest()
+        dh = temp_data_handler()
+        results = cf.getCorrelationFunction(stile_args,'ng',None,None,
+                                            file_name='../examples/example_lens_catalog.dat',
+                                            file_name2='../examples/example_source_catalog.dat',
+                                            **col_kwargs)
+        self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
+        numpy.testing.assert_array_equal(*test_helper.FormatSame(results,self.expected_result))
+        kwargs = stile_args['corr2_kwargs']
+        stile_args['corr2_kwargs'] = {}
+        kwargs.update(col_kwargs)
+        results2 = cf.getCorrelationFunction(stile_args,'ng',
+                                            file_name='../examples/example_lens_catalog.dat',
+                                            file_name2='../examples/example_source_catalog.dat',
+                                             **kwargs)
+        numpy.testing.assert_equal(results,results2)
+        results2 = cf.getCorrelationFunction(stile_args,'ng',
+                                             data=('../examples/example_lens_catalog.dat',
+                                                   {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                             data2=('../examples/example_source_catalog.dat',
+                                                   {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                             **kwargs)
+        numpy.testing.assert_equal(results,results2)
+
+        # Then, test the tests that use .getCorrelationFunction().
+        realshear = stile.RealShearSysTest()
+        results3 = realshear(stile_args,file_name='../examples/example_lens_catalog.dat',
                                         file_name2='../examples/example_source_catalog.dat',
-                                        **col_kwargs)
-    assert expected_result.dtype.names == results.dtype.names
-    for col in expected_result.dtype.names:
-        numpy.testing.assert_almost_equal(results[col],expected_result[col])
-    kwargs = stile_args['corr2_kwargs']
-    stile_args['corr2_kwargs'] = {}
-    kwargs.update(col_kwargs)
-    results2 = cf.getCorrelationFunction(stile_args,dh,'ng',
-                                        file_name='../examples/example_lens_catalog.dat',
-                                        file_name2='../examples/example_source_catalog.dat',
-                                         **kwargs)
-    numpy.testing.assert_equal(results,results2)
-    numpy.testing.assert_raises(TypeError,cf.getCorrelationFunction)
-    numpy.testing.assert_raises(subprocess.CalledProcessError,
-                                cf.getCorrelationFunction,stile_args,dh,'ng',
-                                file_name='../examples/example_lens_catalog.dat', **col_kwargs)
-    numpy.testing.assert_raises(ValueError,cf.getCorrelationFunction,stile_args,dh,'hello',
-                                file_name='../examples/example_lens_catalog.dat',
-                                file_name2='../examples/example_source_catalog.dat',**col_kwargs)
-    realshear = stile.RealShearSysTest()
-    results3 = realshear(stile_args,dh,file_name='../examples/example_lens_catalog.dat',
-                                       file_name2='../examples/example_source_catalog.dat',
-                                       **kwargs)
-    numpy.testing.assert_equal(results,results3)
-    t1 = time.time()
-    if os.path.isfile('realshear'):
-        os.remove('realshear')
-    if os.path.isfile('corrfunc'):
-        os.remove('corrfunc')
-    print "Time to test correlation functions: ", 1000*(t1-t0), "ms"
+                                        **kwargs)
+        numpy.testing.assert_equal(results,results3)
+        results3 = realshear(stile_args,data=('../examples/example_lens_catalog.dat',
+                                              {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                        data2=('../examples/example_source_catalog.dat',
+                                              {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
+                                           **kwargs)
+        numpy.testing.assert_equal(results,results3)
+        self.assertRaises(TypeError,cf.getCorrelationFunction)
+        self.assertRaises(subprocess.CalledProcessError,
+                          cf.getCorrelationFunction,stile_args,'ng',
+                          file_name='../examples/example_lens_catalog.dat', **col_kwargs)
+        self.assertRaises(ValueError,cf.getCorrelationFunction,stile_args,'hello',
+                          file_name='../examples/example_lens_catalog.dat',
+                          file_name2='../examples/example_source_catalog.dat',
+                          **col_kwargs)
     
 if __name__=='__main__':
     print "Note: You may see some errors printed as we deliberately send wrong arguments to corr2.",
     print "You do not need to worry about these as long as the Python script completes correctly."
-    test_CorrelationFunctionSysTest()
+    unittest.main()
 
