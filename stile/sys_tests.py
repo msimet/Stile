@@ -101,6 +101,98 @@ class CorrelationFunctionSysTest(SysTest):
                 os.remove(config_file)
         return return_value
         
+    def plot(self,data,colors=['r','b'],log_yscale=False,
+                  plot_bmode=True,plot_data_only=True,plot_random_only=True):
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            return None
+        fields = data.dtype.names
+        w = None
+        for poss_r in ['<R>','R_nominal','R']:
+            if poss_r in fields:
+                r = poss_r
+                break
+        else:
+            raise ValueError('No radius parameter found in data')
+        # Could have: a T-mode Y and a B-mode Y; a real xi+ and xi-, then imaginary;
+        # and possibly some separate t-mode Y and b-mode Y for the data and randoms alone rather
+        # than together, in which case it's the keys poss_dr_y + 'd' or 'r' for data and randoms, 
+        # respectively; plus an error bar.
+        for poss_y, poss_yb, poss_y_im, poss_yb_im, poss_dr_y, poss_dr_yb, poss_w in [
+            ('omega',None,None,None,None,None,'sig_omega'), # n2 style
+            ('<gamT>','<gamX>',None,None,'gamT_','gamX_','sig'), # ng style
+            ('xi+','xi-','xi+_im','xi-_im',None,None,'sig_xi'), # g2 style
+            ('<kappa>',None,None,None,'kappa_',None,'sig'), # nk style
+            ('xi',None,None,None,None,None,'sig_xi'), # k2 style
+            ('<kgamT>','<kgamX>',None,None,'kgamT_','kgamX_','sig'), # kg style
+            ('<Map^2>','<Mx^2>','<MMx>(a)','<Mmx>(b)',None,None,'sig_map'), # m2 style
+            ('<NMap>','<NMx>',None,None,None,None,'sig_nmap') # nm style or norm style
+            ]:
+            if poss_y in fields:
+                y = poss_y
+                y_im = poss_y_im
+                w = poss_w
+                if plot_bmode:
+                    yb = poss_yb
+                    yb_im = poss_yb_im
+                else:
+                    yb = None
+                    yb_im = None
+                if plot_data_only or plot_random_only:
+                    dr_y = poss_dr_y
+                    dr_yb = poss_dr_yb
+                else:
+                    dr_y = None
+                    dr_yb = None
+                break
+        else:
+            raise ValueError("No valid y-values found in data")
+        if log_yscale:
+            yscale = 'log'
+        else:
+            yscale = 'linear'
+        fig = plt.figure()
+        if (y_im and y_b):  
+            nrows = 2
+        elif dr_y:
+            nrows = 1 + plot_data_only + plot_random_only
+        
+        ax = fig.add_suplot(nrows,1,1)
+        ax.plot(data[r],data[y],data[w],color=colors[0],title=y)
+        if yb:
+            ax.plot(data[r],data[yb],data[w],color=colors[1],title=yb)
+        elif y_im:
+            ax.plot(data[r],data[y_im],data[w],color=colors[1],title=y_im)
+        ax.set_xscale('log')
+        ax.set_yscale(yscale)
+        ax.legend()
+        if y_b and y_im:
+            ax = fig.add_subplot(nrows,1,2)
+            ax.plot(data[r],data[y_im],data[w],color=colors[0],title=y_im)
+            ax.plot(data[r],data[yb_im],data[w],color=colors[1],title=yb_im)
+        curr_plot = 1
+        if plot_data_only and dr_y:
+            curr_plot+=1
+            ax = fig.add_subplot(nrows,1,curr_plot)
+            ax.plot(data[r],data[dr_y+'d'],data[w],color=colors[0],title=y_im)
+            if dr_yb:
+                ax.plot(data[r],data[dr_yb+'d'],data[w],color=colors[1],title=yb_im)
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.legend()
+        if plot_random_only and dr_y:
+            curr_plot+=1
+            ax = fig.add_subplot(nrows,1,curr_plot)
+            ax.plot(data[r],data[dr_y+'r'],data[w],color=colors[0],title=y_im)
+            if dr_yb:
+                ax.plot(data[r],data[dr_yb+'r'],data[w],color=colors[1],title=yb_im)
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.legend()
+        return fig
+        
+        
 class RealShearSysTest(CorrelationFunctionSysTest):
     short_name = 'realshear'
     long_name = 'Shear of galaxies around real objects'
