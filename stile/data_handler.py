@@ -6,9 +6,6 @@ import os
 import glob
 
 class DataHandler:
-<<<<<<< HEAD
-    temp_dir = None # Can (should?) be overwritten by other DataHandlers
-=======
     """
     A class which contains information about the data set Stile is to be run on.  This is used for
     the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).  
@@ -34,7 +31,6 @@ class DataHandler:
       Additionally, the class can define a .getOutputPath() function to place the data in a more
       complex system than the default (all in one directory with long output path names).
       """
->>>>>>> #8
     def __init__(self):
         raise NotImplementedError()
     
@@ -70,8 +66,7 @@ class DataHandler:
             nfiles = glob.glob(os.path.join(self.output_path,sys_test_string)+'*'+extension)
             return os.path.join(self.output_path,sys_test_string+'_'+str(nfiles)+extension)
         else:
-<<<<<<< HEAD
-            return os.path.join(self.output_path,base_path+extension)
+            return os.path.join(self.output_path,sys_test_string+extension)
 
 class HSCDataHandler():
     def __init__(self, hsc_args):
@@ -198,7 +193,4 @@ class HSCDataHandler():
             return self._getImageData(ident,bin_list,format,epoch,extent,force,required_fields)
         else:
             return self._getTableData(ident,bin_list,format,epoch,extent,force,required_fields)
-=======
-            return os.path.join(self.output_path,sys_test_string+extension)
 
->>>>>>> #8
