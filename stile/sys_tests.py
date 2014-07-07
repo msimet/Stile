@@ -167,7 +167,7 @@ class CorrelationFunctionSysTest(SysTest):
              ('<gamX>',r'$\langle \gamma_X \rangle$'),None,None,
              ('gamT_','$\gamma_{T'),('gamX_','$\gamma_{X'),'sig',"$\gamma$"), # ng
             (('xi+',r'$\xi_+$'),('xi-',r'$\xi_-$'),
-             ('xi+_im','$\xi_{+,im}$'),('xi-_im','$\xi_{-,im}$'),None,None,'sig_xi',r"$\xi$"), #g2
+             ('xi+_im',r'$\xi_{+,im}$'),('xi-_im',r'$\xi_{-,im}$'),None,None,'sig_xi',r"$\xi$"), #g2
             (('<kappa>',r'$\langle \kappa \rangle$'),None,None,None,
              ('kappa_','$kappa_{'),None,'sig',"$\kappa$"), # nk 
             (('xi',r'$\xi$'),None,None,None,None,None,'sig_xi',r"$\xi$"), # k2 
