@@ -65,7 +65,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     if column in extra_col_dict:
                         new_catalog[column] = cols[column]
                     elif column in catalog.schema:
-                        new_catalog[column] = catalog[column]
+		    	try:
+                            new_catalog[column] = catalog[column]
+			except:
+			    new_catalog[column] = numpy.array([src[column] for src in catalog])
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(*new_catalogs)
             
@@ -75,7 +78,11 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                  'deblend.skipped','flags.badcentroid','flags.pixel.edge','flags.pixel.bad',
                  'flux.aperture.flags','flux.gaussian.flags','flux.kron.flags','flux.naive.flags',
                  'flux.psf.flags']
-        mask = numpy.logical_and([catalog[flag]==False for flag in flags])
+        masks = [catalog[flag]==False for flag in flags]
+	mask = masks[0]
+	for new_mask in masks[1:]:
+	    mask = numpy.logical_and(mask,new_mask)
+        #mask = numpy.logical_and(*masks)
         return catalog[mask]
             
     def makeArray(self,catalog_dict):
@@ -98,7 +105,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if calib_type=="fcr":
                 ffp = lsst.meas.mosaic.FluxFitParams(calib_data)
                 x, y = data.getX(), data.getY()
-                correction = numpy.array(ffp.eval(x[i],y[i]) for i in range(n)])
+                correction = numpy.array([ffp.eval(x[i],y[i]) for i in range(n)])
                 zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))

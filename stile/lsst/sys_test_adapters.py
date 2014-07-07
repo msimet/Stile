@@ -5,24 +5,38 @@ import numpy
 adapter_registry = lsst.pex.config.makeRegistry("Stile test outputs")
 
 def MaskGalaxy(data):
-    return data['classification_extendedness']==1
+    try:
+        return data['classification.extendedness']==1
+    except:
+	return numpy.array([src['classification.extendedness']==1 for src in data])
 
 def MaskStar(data):
-    return data['classification_extendedness']==0
+    try:
+        return data['classification.extendedness']==0
+    except:
+        return numpy.array([src['classification.extendedness']==1 for src in data])
 
 def MaskBrightStar(data):
     # We could hard-code a level, or do this:
-    star_mask = mask_star(data)
-    top_tenth = numpy.percentile(data['flux.psf'][star_mask],0.9)
-    top_tenth_mask = data['flux.psf']>top_tenth
+    star_mask = MaskStar(data)
+    try:
+        top_tenth = numpy.percentile(data['flux.psf'][star_mask],0.9)
+        top_tenth_mask = data['flux.psf']>top_tenth
+    except:
+        flux = numpy.array([src['flux.psf'] for src in data])
+	top_tenth = numpy.percentile(flux[star_mask],0.9)
+	top_tenth_mask = flux>top_tenth
     return numpy.logical_and(star_mask,top_tenth_mask)
 
 def MaskGalaxyLens(data):
     # Should probably...pick the nearest/biggest/brightest ones? Randomly select?
-    return mask_galaxy(data)
+    return MaskGalaxy(data)
 
 def MaskPSFStar(data):
-    return data['calib.psf.used']==True
+    try:
+        return data['calib.psf.used']==True
+    except:
+        return numpy.array([src['calib.psf.used']==True for src in data])
 
 mask_dict = {'galaxy': MaskGalaxy,
              'star': MaskStar,
@@ -61,9 +75,10 @@ class StatsPSFFluxAdapter(object):
         self.name = self.test.short_name+'flux.psf'
 
     def __call__(self,*data):
-        self.test(*data)
+        self.test(*data,verbose=True)
     
     def getMasks(self,catalog):
+    	return MaskGalaxy(catalog)
         return_cat = numpy.zeros(len(catalog),dtype=bool)
         return_cat.fill(True)
         return [return_cat]
