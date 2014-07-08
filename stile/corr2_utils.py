@@ -502,7 +502,12 @@ def MakeCorr2Cols(cols,use_as_k=None):
     @param cols     A list of strings denoting the columns of a file (first column is first element
                     of list, etc), or a dict with the key-value pairs "string column name": column 
                     number
-    @param use_as_k Which column to use as the "kappa" (scalar) column, if given (default: None)
+    @param use_as_k Which column to use as the "kappa" (scalar) column, if given (default: None).
+                    Corr2 allows a correlation function between a scalar value such as the 
+                    convergence and other quantities such as the shear; we might want to use another
+                    parameter (such as star brightness) here, so setting use_as_k to that column
+                    will tell corr2 to do a convergence-type correlation function with that column
+                    as the "convergence" value.
     @returns        A dict containing the column key-value pairs for corr2
     """
     corr2_kwargs = {}
@@ -646,21 +651,31 @@ def _coerce_schema(schema):
     else:
         raise ValueError("Schema must be a list or dict")
     
-def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
+def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=None):
     """
     Pick which files need to be written to a file for corr2, and which can be passed simply as a
     filename. This takes care of making temporary files, checking that the field schema is
     consistent in any existing files and rewriting the ones that do not match the dominant field 
     schema if necessary, and figuring out the corr2 column arguments (eg ra_col).
     
-    @param data    The data that will be passed to the Stile tests. Can be a 
-                   (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
-                   other of those options.
-    @param data2   The second set of data that will be passed for cross-correlations, with the same
-                   format options as data.
-    @param random  The random data set corresponding to data (ditto)
-    @param random2 The random data set corresponding to data2 (ditto)
-    @returns       A dict containing the file names and column descriptions for corr2.
+    @param data     The data that will be passed to the Stile tests. Can be a 
+                    (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
+                    other of those options.  The field_schema is the same kind of description used
+                    in stile_utils.FormatArray and the table read functions in file_io.py: a 
+                    dictionary whose keys are the names of the fields you'd like for the output 
+                    array, and whose values are column numbers in the file (starting with 0) whose 
+                    names those keys should replace (or, if it's a FITS file, the existing field 
+                    names the keys should replace); alternately, a list with the same length as the 
+                    rows of the file.  In the dict form, you don't need to specify every column, 
+                    only the ones Stile will use.
+    @param data2    The second set of data that will be passed for cross-correlations, with the same
+                    format options as data.
+    @param random   The random data set corresponding to data (ditto)
+    @param random2  The random data set corresponding to data2 (ditto)
+    @param use_as_k This is passed through to MakeCorr2Cols to designate a scalar field as the
+                    "convergence" for a correlation function; see the documentation for 
+                    MakeCorr2Cols for more information.
+    @returns        A dict containing the file names and column descriptions for corr2.
     """
     #TODO: do this in a smarter way that only cares about the fields we'll be using
     already_written_schema = []
@@ -815,7 +830,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None):
         else:
             file_args.append(None)
     
-    corr2_kwargs = MakeCorr2Cols(fields)
+    corr2_kwargs = MakeCorr2Cols(fields,use_as_k=use_as_k)
     if file_args[0]:
         corr2_kwargs['file_'+file_args[0][0]] = file_args[0][1]
     if file_args[1]:
