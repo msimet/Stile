@@ -30,9 +30,9 @@ def FormatArray(d,fields=None):
     @param d      A NumPy array
     @param fields A dictionary whose keys are the names of the fields you'd like for the output 
                   array, and whose values are field numbers (starting with 0) whose names those 
-                  keys should replace (or, if the array is already formatted, a list of the 
-                  existing field names the keys should replace); alternately, a list with the same 
-                  length as the rows of d. (default: None)
+                  keys should replace (or, if the array is already formatted, the existing field
+                  names the keys should replace); alternately, a list with the same length as the
+                  rows of d. (default: None)
     @returns      A formatted numpy array with the same shape as d except that the innermost 
                   dimension has turned into a record field if it was not already one, optionally 
                   with field names appropriately replaced.
@@ -66,9 +66,9 @@ def FormatArray(d,fields=None):
         else:
             dtype_char = d.dtype.char
             if dtype_char=='S' or dtype_char=='O' or dtype_char=='V' or dtype_char=='U':
-                dtype = ','.join([d.dtype.str]*len(d[0])) # need the width as well as the char
+                dtype = ','.join([d.dtype.str]*len(new_d[0])) # need the width as well as the char
             else:
-                dtype = ','.join([dtype_char]*len(d[0]))
+                dtype = ','.join([dtype_char]*len(new_d[0]))
         # Make a new array with each row turned into a tuple and the correct dtype
         d = numpy.array([tuple(nd) for nd in new_d],dtype=dtype)
         if len(d_shape)>1:
