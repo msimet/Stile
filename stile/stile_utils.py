@@ -37,14 +37,30 @@ def FormatArray(d,fields=None):
                   dimension has turned into a record field if it was not already one, optionally 
                   with field names appropriately replaced.
     """
-    if not hasattr(d,'dtype'):
+    # We want arrays to be numpy.arrays with field access (so we can say d['ra'] or something like
+    # that).  In order for these to be created correctly, two conditions have to be met:
+    # - The array needs to be initialized with the innermost dimension as a tuple rather than
+    #   a list or other array, so NumPy knows that it's a record field;
+    # - The array has to be created with a dtype that indicates there are multiple fields.  For 
+    #   convenience I'm going to do this as a single string of the form '?,?,?[...]' where each
+    #   question mark is a single character (plus optional width for strings/voids) denoting what
+    #   kind of data to expect. (This is the "array-protocol type string", see
+    #   http://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html)
+    if not hasattr(d,'dtype'): 
+        # If it's not an array, make it one.
         d = numpy.array(d)
-    if not d.dtype.names:
+    if not d.dtype.names: 
+        # If it is an array, but doesn't have a "names" attribute, that means it doesn't have
+        # records/fields.  So we need to reformat the array.  Given the difficulty of generating
+        # an individual dtype for each field, we'll just use the dtype of the overall array for
+        # every entry, which involves no casting of types.
         d_shape = d.shape
-        if len(d_shape)==1: # Assume this was a single row
+        if len(d_shape)==1: # Assume this was a single row (not a set of 1-column rows)
             d = numpy.array([d])
             d_shape = d.shape
+        # Cast this into a 2-d array
         new_d = d.reshape(-1,d_shape[-1])
+        # Generate the dtype string
         if isinstance(d.dtype,str):
             dtype = ','.join([d.dtype]*len(d[0]))
         else:
@@ -53,10 +69,15 @@ def FormatArray(d,fields=None):
                 dtype = ','.join([d.dtype.str]*len(d[0])) # need the width as well as the char
             else:
                 dtype = ','.join([dtype_char]*len(d[0]))
+        # Make a new array with each row turned into a tuple and the correct dtype
         d = numpy.array([tuple(nd) for nd in new_d],dtype=dtype)
         if len(d_shape)>1:
+            # If this was a more-than-2d array, reshape it back to that original form, minus the
+            # dimension we turned into a record (which will no longer appear in the shape).
             d = d.reshape(d_shape[:-1])
     if fields:
+        # If the "fields" parameter was set, rewrite the numpy.dtype.names attribute to be the
+        # field specification we want.
         if isinstance(fields,dict):
             names = list(d.dtype.names)
             for key in fields:
