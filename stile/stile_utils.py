@@ -86,8 +86,6 @@ def FormatArray(d,fields=None):
         elif len(fields)==len(d.dtype.names):
             d.dtype.names = fields
         else:
-            print len(fields), len(d.dtype.names)
-            print d.dtype.names, d
             raise RuntimeError('Cannot use given fields: '+str(fields))
     return d
 
