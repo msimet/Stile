@@ -44,7 +44,7 @@ def MaskPSFStar(data):
     try:
         return data['calib.psf.used']==True
     except:
-        return numpy.array([src['calib.psf.used']==True for src in data])
+        return numpy.array([src.get('calib.psf.used')==True for src in data])
 
 mask_dict = {'galaxy': MaskGalaxy,
              'star': MaskStar,
