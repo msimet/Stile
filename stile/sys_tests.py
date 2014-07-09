@@ -551,3 +551,30 @@ class StatSysTest(SysTest):
 
         # Return.
         return result
+
+
+class ScatterPlotSysTest(SysTest):
+    short_name = 'scatterplot'
+    long_name = 'Make a scatter plot of two given quantities'
+
+    def __init__(self, field1, field2, field2_err = None):
+        self.field1 = field1
+        self.field2 = field2
+        self.field2_err = field2_err
+
+    def __call__(self, array, field1 = None, field2 = None, field2_err = None, verbose = False):
+        use_field1 = field1 if field1 is not None else self.field1
+        use_field2 = field2 if field2 is not None else self.field2
+        use_field2_err = field2 if field2_err is not None else self.field2_err
+
+        use_array1 = array[use_field1]
+        use_array2 = array[use_field2]
+        use_array2_err = array[use_field2_err] if use_field2_err is not None else None
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        if not use_array2_err:
+            plt.plot(use_array1, use_array2, ",")
+        else:
+            plt.errorbar(use_array1, use_array2, use_array2_err, fmt=",")
+        return fig

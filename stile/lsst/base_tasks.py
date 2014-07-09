@@ -8,7 +8,7 @@ import numpy
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run",multi=True,
-                    default = ["StatsPSFFlux","StarXGalaxyShear"])
+                    default = ["StatsPSFFlux","StarXGalaxyShear","ScatterPlotStarVsPsf"])
     
 class SysTestData(object):
     def __init__(self):
@@ -131,6 +131,44 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
             return 2.*ixy/(ixx+iyy)
+        elif col=="sigma":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+            return 0.5*(ixx+iyy)
+        elif col=="psf_g1":
+            try:
+                moments = data.get('shape.sdss.psf')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
+            return (ixx-iyy)/(ixx+iyy)
+        elif col=="psf_g2":
+            try:
+                moments = data.get('shape.sdss.psf')
+                ixx = moments.getIxx()
+                ixy = moments.getIxy()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
+                ixy = numpy.array([src.get('shape.sdss.psf').getIxy() for src in data])
+                iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
+            return 2.*ixy/(ixx+iyy)
+        elif col=="psf_sigma":
+            try:
+                moments = data.get('shape.sdss.psf')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
+            return 0.5*(ixx+iyy)
         elif col=="w":
             print "Need to figure out something clever for weights"
             return numpy.array([1.]*len(data))
