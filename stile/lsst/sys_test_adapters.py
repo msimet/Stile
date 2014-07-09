@@ -44,8 +44,7 @@ def MaskPSFStar(data):
     try:
         return data['calib.psf.used']==True
     except:
-        import pdb; pdb.set_trace()
-        return numpy.array([src['calib.psf.used']==True for src in data])
+        return numpy.array([src.get('calib.psf.used')==True for src in data])
 
 mask_dict = {'galaxy': MaskGalaxy,
              'star': MaskStar,
@@ -123,17 +122,17 @@ class ScatterPlotStarVsPsfAdapter(object):
     ConfigClass = StatsPSFFluxAdapterConfig
     def __init__(self,config):
         self.config = config
-        self.test = sys_tests.ScatterPlotSysTest(field1='psf_g1', field2='g1')
+        self.test = sys_tests.ScatterPlotSysTest(field1='psf_g1', field2='g1', field2_err='g1_err')
         self.name = self.test.short_name+'psf_g1_vs_star_g1'
 
     def __call__(self,*data):
         return self.test(*data,verbose=True)
     
     def getMasks(self,catalog):
-    	return MaskPSFStar(catalog)
+    	return [MaskPSFStar(catalog), MaskPSFStar(catalog), MaskPSFStar(catalog)]
         
     def getRequiredColumns(self):
-        return (('psf_g1',),)
+        return (('psf_g1','g1','g1_err'),)
         
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
 #adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)

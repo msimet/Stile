@@ -573,8 +573,11 @@ class ScatterPlotSysTest(SysTest):
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        if not use_array2_err:
-            plt.plot(use_array1, use_array2, ",")
+        if use_field2_err is None:
+            ax.plot(use_array1, use_array2, ".")
         else:
-            plt.errorbar(use_array1, use_array2, use_array2_err, fmt=",")
+            ax.errorbar(use_array1, use_array2, use_array2_err, fmt=".")
+        ax.axis("equal")
+        ax.set_xlabel(use_field1)
+        ax.set_ylabel(use_field2)
         return fig
