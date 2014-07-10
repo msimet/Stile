@@ -281,8 +281,22 @@ class SingleFunctionBin(SingleBin):
 
 def ExpandBinList(bin_list):
     """
-    Take a list of Bin* objects, and expand them to return a list of SingleBins to step through.  
-    E.g., if the user passes a list :
+    If the user has indicated more than one Bin* object, we assume that they want to do the 
+    intersection of each of those bins for the data set (for example, if they pass a magnitude bin
+    scheme and a color bin scheme, we want to do magnitude bin 0 with color bin 0, then magnitude
+    bin 0 with color bin 1, etc).  This function takes the Bin* objects, generates their lists of
+    SingleBins, and then nests them in a way that makes sure the final list of lists of 
+    SingleBins contains every possible set of (SingleBin from Bin* object 0, SingleBin from Bin*
+    object 1, ...).  In particular, we make sure that the first SingleBin corresponds to the first
+    Bin* object, the second to the second, etc, and that the first SingleBin changes most
+    slowly, then the second, etc.
+    
+    This function also works to expand a single Bin* object, so it's fine for different modules to
+    call this function with whatever they receive as a binning specification without typechecking
+    first.
+    
+    Or in short, take a list of Bin* objects, and expand them to return a list of SingleBins to 
+    step through.  E.g., if the user passes a list :
         >>> bin_list = [BinList0, BinStep1]
     where BinList0.n_bins = 2 and BinStep1.n_bins = 3, then calling this function will return
         >>> [[SingleBinObject_0_0, SingleBinObject_1_0],
@@ -291,16 +305,17 @@ def ExpandBinList(bin_list):
              [SingleBinObject_0_1, SingleBinObject_1_0],
              [SingleBinObject_0_1, SingleBinObject_1_1],
              [SingleBinObject_0_1, SingleBinObject_1_2]].
-    The first item in the list changes most slowly, then the second item, etc.
              
     @param bin_list  A list of Bin-type objects, such as the ones in binning.py, which when called
                      return a list of items which behave like SingleBins.  (No checks are made in
-                     this function that these are valid items.)
+                     this function that these are valid SingleBins.)
     @returns         A list of lists of SingleBins (or other items returned by calling the input
                      items in bin_list), properly nested.
     """
     if not bin_list:
         return []
+    if not isinstance(bin_list,(list,tuple)):
+        bin_list = [bin_list]
     # A copy of bin_list that we can alter without altering the parent list, but which doesn't 
     # duplicate the objects in bin_list. (I think.)
     bl = bin_list[:]
