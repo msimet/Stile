@@ -557,15 +557,23 @@ class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     long_name = 'Make a scatter plot of two given quantities'
 
-    def __init__(self, field1, field2, field2_err = None):
+    def __init__(self, field1, field2, field2_err = None, xlabel = None, ylabel = None, lim = None, equal_axis = False):
         self.field1 = field1
         self.field2 = field2
         self.field2_err = field2_err
+        self.xlabel = xlabel if xlabel is not None else field1
+        self.ylabel = ylabel if ylabel is not None else field2
+        self.lim = lim
+        self.equal_axis = equal_axis
 
-    def __call__(self, array, field1 = None, field2 = None, field2_err = None, verbose = False):
+    def __call__(self, array, field1 = None, field2 = None, field2_err = None, xlabel = None, ylabel = None, lim = None, equal_axis = None):
         use_field1 = field1 if field1 is not None else self.field1
         use_field2 = field2 if field2 is not None else self.field2
-        use_field2_err = field2 if field2_err is not None else self.field2_err
+        use_field2_err = field2_err if field2_err is not None else self.field2_err
+        use_xlabel = xlabel if xlabel is not None else self.xlabel
+        use_ylabel = ylabel if ylabel is not None else self.ylabel
+        use_lim = lim if lim is not None else self.lim
+        use_equal_axis = equal_axis if equal_axis is not None else self.equal_axis
 
         use_array1 = array[use_field1]
         use_array2 = array[use_field2]
@@ -577,7 +585,24 @@ class ScatterPlotSysTest(SysTest):
             ax.plot(use_array1, use_array2, ".")
         else:
             ax.errorbar(use_array1, use_array2, use_array2_err, fmt=".")
-        ax.axis("equal")
-        ax.set_xlabel(use_field1)
-        ax.set_ylabel(use_field2)
+        if use_equal_axis:
+            ax.axis("equal")
+        ax.set_xlabel(use_xlabel)
+        ax.set_ylabel(use_ylabel)
+        if isinstance(use_lim, tuple):
+            ax.set_xlim(*use_lim[0])
+            ax.set_ylim(*use_lim[1])
+        elif isinstance(use_lim, int):
+            nsigma = use_lim
+            stat = StatSysTest()
+            results = stat(use_array1, ignore_bad = True)
+            ax.set_xlim(results.mean - nsigma*results.stddev, results.mean + nsigma*results.stddev)
+            print "x stat:", results.mean, results.stddev
+            stat = StatSysTest()
+            results = stat(use_array2, ignore_bad = True)
+            ax.set_ylim(results.mean - nsigma*results.stddev, results.mean + nsigma*results.stddev)
+            print "y stat:", results.mean, results.stddev
+        elif use_lim is not None:
+            import warnings
+            warnings.warn('Argument lim is not understandable. Continue without setting any axis limits.')
         return fig

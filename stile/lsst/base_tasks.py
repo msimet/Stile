@@ -15,9 +15,13 @@ except ImportError:
     has_matplotlib = False
 
 
+#class CCDSingleEpochStileConfig(lsst.pex.config.Config):
+#    sys_tests = adapter_registry.makeField("tests to run",multi=True,
+#                    default = ["StatsPSFFlux","StarXGalaxyShear","ScatterPlotStarVsPsf"])
+
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run",multi=True,
-                    default = ["StatsPSFFlux","StarXGalaxyShear","ScatterPlotStarVsPsf"])
+                    default = ["ScatterPlotStarVsPsf"])
     
 class SysTestData(object):
     def __init__(self):

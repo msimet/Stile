@@ -122,14 +122,14 @@ class ScatterPlotStarVsPsfAdapter(object):
     ConfigClass = StatsPSFFluxAdapterConfig
     def __init__(self,config):
         self.config = config
-        self.test = sys_tests.ScatterPlotSysTest(field1='psf_g1', field2='g1', field2_err='g1_err')
-        self.name = self.test.short_name+'psf_g1_vs_star_g1'
+        self.test = sys_tests.ScatterPlotSysTest(field1='psf_g1', field2='g1', field2_err='g1_err', xlabel = r"$g^{\rm PSF}_1$", ylabel = r"$g^{\rm star}_1$", lim = 3, equal_axis = True)
+        self.name = self.test.short_name+'_psf_g1_vs_star_g1'
 
     def __call__(self,*data):
-        return self.test(*data,verbose=True)
+        return self.test(*data)
     
     def getMasks(self,catalog):
-    	return [MaskPSFStar(catalog), MaskPSFStar(catalog), MaskPSFStar(catalog)]
+    	return [MaskPSFStar(catalog)]
         
     def getRequiredColumns(self):
         return (('psf_g1','g1','g1_err'),)
