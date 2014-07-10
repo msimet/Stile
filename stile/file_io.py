@@ -38,8 +38,8 @@ def ReadFITSImage(file_name,hdu=0):
     
 def ReadFITSTable(file_name,hdu=1,fields=None):
     """
-    This function exists so you can read_fits_table(file_name) rather than remembering that
-    table data is usually in extension 1, and also to automatically rewrite the fields if you want
+    This function exists so you can ReadFITSTable(file_name) rather than remembering that table
+    data is usually in extension 1, and also to automatically rewrite the fields if you want
     that.
     
     @param file_name A path leading to a valid FITS file
@@ -189,9 +189,12 @@ def WriteFITSTable(file_name,data_array,fields=None):
                for i in range(len(data.dtype))]
     table = fits_handler.new_table(cols)
     table.data = data
-    # Next line is a kludge for some versions of PyFITS which will yell if you replace table data
-    # without doing this (fix from https://github.com/spacetelescope/PyFITS/issues/31)
-    table.data = numpy.array(table.data).view(table._data_type)
+    # Next lines are a kludge for my version of PyFITS which yells if you replace table data
+    # without doing this (fix from https://github.com/spacetelescope/PyFITS/issues/31).  We may have
+    # to add other PyFITS versions to this, but apparently the bug wasn't around for long, so
+    # hopefully not?
+    if fits_handler.__version__=='3.0.8':
+        table.data = numpy.array(table.data).view(table._data_type)
     hdulist = fits_handler.HDUList(fits_handler.PrimaryHDU(),table)
     hdulist.append(table)
     hdulist.verify()
