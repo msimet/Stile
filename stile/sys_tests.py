@@ -557,19 +557,23 @@ class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     long_name = 'Make a scatter plot of two given quantities'
 
-    def __init__(self, field1, field2, field2_err = None, xlabel = None, ylabel = None, lim = None, equal_axis = False):
+    def __init__(self, field1, field2, field2_err = None, linear_regression = False, color = "b", xlabel = None, ylabel = None, lim = None, equal_axis = False):
         self.field1 = field1
         self.field2 = field2
         self.field2_err = field2_err
+        self.linear_regression = linear_regression
+        self.color = color
         self.xlabel = xlabel if xlabel is not None else field1
         self.ylabel = ylabel if ylabel is not None else field2
         self.lim = lim
         self.equal_axis = equal_axis
 
-    def __call__(self, array, field1 = None, field2 = None, field2_err = None, xlabel = None, ylabel = None, lim = None, equal_axis = None):
+    def __call__(self, array, field1 = None, field2 = None, field2_err = None, linear_regression = None, color = None, xlabel = None, ylabel = None, lim = None, equal_axis = None):
         use_field1 = field1 if field1 is not None else self.field1
         use_field2 = field2 if field2 is not None else self.field2
         use_field2_err = field2_err if field2_err is not None else self.field2_err
+        use_linear_regression = linear_regression if linear_regression is not None else self.linear_regression
+        use_color = color if color is not None else self.color
         use_xlabel = xlabel if xlabel is not None else self.xlabel
         use_ylabel = ylabel if ylabel is not None else self.ylabel
         use_lim = lim if lim is not None else self.lim
@@ -578,31 +582,73 @@ class ScatterPlotSysTest(SysTest):
         use_array1 = array[use_field1]
         use_array2 = array[use_field2]
         use_array2_err = array[use_field2_err] if use_field2_err is not None else None
+        # mask data with nan
+        sel = numpy.logical_and(numpy.invert(numpy.isnan(use_array1)), numpy.invert(numpy.isnan(use_array2)))
+        sel = numpy.logical_and(sel, numpy.invert(numpy.isnan(use_array2_err))) if use_field2_err is not None else sel
+        use_array1 = use_array1[sel]
+        use_array2 = use_array2[sel]
+        use_array2_err = use_array2_err[sel] if use_field2_err is not None else None
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
+        # plot
         if use_field2_err is None:
-            ax.plot(use_array1, use_array2, ".")
+            ax.plot(use_array1, use_array2, ".%s" % use_color)
         else:
-            ax.errorbar(use_array1, use_array2, use_array2_err, fmt=".")
-        if use_equal_axis:
-            ax.axis("equal")
-        ax.set_xlabel(use_xlabel)
-        ax.set_ylabel(use_ylabel)
+            ax.errorbar(use_array1, use_array2, use_array2_err, fmt=".%s" % use_color)
+        # calculate axis limits if specified
         if isinstance(use_lim, tuple):
             ax.set_xlim(*use_lim[0])
             ax.set_ylim(*use_lim[1])
         elif isinstance(use_lim, int):
             nsigma = use_lim
-            stat = StatSysTest()
-            results = stat(use_array1, ignore_bad = True)
-            ax.set_xlim(results.mean - nsigma*results.stddev, results.mean + nsigma*results.stddev)
-            print "x stat:", results.mean, results.stddev
-            stat = StatSysTest()
-            results = stat(use_array2, ignore_bad = True)
-            ax.set_ylim(results.mean - nsigma*results.stddev, results.mean + nsigma*results.stddev)
-            print "y stat:", results.mean, results.stddev
+            mean = numpy.average(use_array1)
+            stddev = numpy.std(use_array1)
+            xlim = (mean - nsigma*stddev, mean + nsigma*stddev)
+            mean = numpy.average(use_array2)
+            stddev = numpy.std(use_array2)
+            ylim = (mean - nsigma*stddev, mean + nsigma*stddev)
         elif use_lim is not None:
             import warnings
             warnings.warn('Argument lim is not understandable. Continue without setting any axis limits.')
+        # perform linear regression if specified
+        if use_linear_regression:
+            x = numpy.linspace(-10.*numpy.max(numpy.abs(xlim)), 10.*numpy.max(numpy.abs(xlim)))
+            if use_field2_err is None:
+                m, c = self.linearRegression(use_array1, use_array2)
+                ax.plot(x, m*x+c, "-%s" % use_color)
+            else:
+                m, c, cov_m, cov_c, cov_mc = self.linearRegression(use_array1, use_array2, err = use_array2_err)
+                y = m*x+c
+                yerr = numpy.sqrt(x**2*cov_m + 2.*x*cov_mc + cov_c)
+                ax.fill_between(x, y-yerr, y+yerr, facecolor = color, edgecolor = color, alpha = 0.5)
+        # make axes equal to each other if specified
+        if use_equal_axis:
+            ax.axis("equal")
+        # set axis limits if specified
+        if use_lim is not None:
+            ax.set_xlim(*xlim)
+            ax.set_ylim(*ylim)
+        # set axis labels
+        ax.set_xlabel(use_xlabel)
+        ax.set_ylabel(use_ylabel)
+
         return fig
+
+    def linearRegression(self, x, y, err = None):
+        e = numpy.ones(x.shape) if err is None else err
+        S = numpy.sum(1./e**2)
+        Sx = numpy.sum(x/e**2)
+        Sy = numpy.sum(y/e**2)
+        Sxx = numpy.sum(x**2/e**2)
+        Sxy = numpy.sum(x*y/e**2)
+        Delta = S*Sxx - Sx**2
+        m = (S*Sxy-Sx*Sy)/Delta
+        c = (Sxx*Sy-Sx*Sxy)/Delta
+        if err is None:
+            return m, c
+        else:
+            cov_m = S/Delta
+            cov_c = Sxx/Delta
+            cov_mc = -Sx/Delta
+            return m, c, cov_m, cov_c, cov_mc
