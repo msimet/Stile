@@ -21,7 +21,8 @@ class BinList:
     """
     def __init__(self, field, bin_list):
         if not isinstance(field, str):
-            raise TypeError('Field description must be a string. Passed value: '+str(field))
+            raise TypeError('Field description must be a string. Passed value: '+str(field)+
+                              'of type'+type(field))
         if not bin_list:
             raise TypeError('Must pass a non-empty bin_list')
         self.field = field
@@ -50,10 +51,10 @@ class BinStep:
     """
     An object which, when called, returns bin definitions (a list of SingleBins) following the 
     simple constant-step bins described by the input arguments. Can handle linear-space and log-    
-    space binning (default is linear). AT LEAST THREE of the arguments (low, high, step, n_bins) must 
-    be passed; if all four are passed they will be checked for consistency.  If `low`, `high`, and `step` 
-    are passed, `high` may be slightly increased to ensure an integer number of bins, so users who 
-    need a hard cutoff at `high` should use `n_bins` instead.
+    space binning (default is linear). AT LEAST THREE of the arguments (low, high, step, n_bins) 
+    must be passed; if all four are passed they will be checked for consistency.  If `low`, `high`,
+    and `step` are passed, `high` may be slightly increased to ensure an integer number of bins, so 
+    users who need a hard cutoff at `high` should use `n_bins` instead.
     
     @param field     Data field to which the binning system should be applied.
     @param low       The low edge of the lowest bin, inclusive; should be in linear space regardless
@@ -71,7 +72,8 @@ class BinStep:
     """
     def __init__(self, field, low=None, high=None, step=None, n_bins=None, use_log=False):
         if not isinstance(field,str):
-            raise TypeError('Field description must be a string. Passed value: '+str(field))
+            raise TypeError('Field description must be a string. Passed value: '+str(field)+
+                              'of type'+type(field))
         self.field = field
         n_none = (low is None) + (high is None) + (step is None) + (n_bins is None)
         if n_none>1:
@@ -121,7 +123,7 @@ class BinStep:
             self.n_bins = n_bins
             self.low = high-n_bins*step
         if self.step<0:
-            # We want to store parameters such that bin_edge[0] < bin 0 < bin_edge[1], even if
+            # We want to store parameters such that bin_edge[0] <= bin 0 < bin_edge[1], even if
             # the step is negative, so we keep track of that here.
             self.low = self.low+self.n_bins*self.step
             self.step*=-1
@@ -160,7 +162,8 @@ class SingleBin:
     """
     def __init__(self, field, low, high, short_name, long_name=None):
         if not isinstance(field, str):
-            raise TypeError('Field description must be a string. Passed value: '+str(field))
+            raise TypeError('Field description must be a string. Passed value: '+str(field)+
+                              'of type'+type(field))
         if high < low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
         if not isinstance(short_name, str) or (long_name and not isinstance(long_name,str)):
