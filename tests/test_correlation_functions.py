@@ -44,8 +44,7 @@ class TestCorrelationFunctions(unittest.TestCase):
                            ("sig",float),("weight",float),("npairs",float)])
             
     def test_getCorrelationFunctionSysTest(self):
-        # First, test .getCorrelationFunction() directly with both a dict and some kwargs passed in,
-        # and also test the two different kinds of file specification.
+        """Test getCorrelationFunction() directly, and the two kinds of file specification."""
         stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
                                         'dec_units': 'degrees',
                                         'min_sep': 0.05,
