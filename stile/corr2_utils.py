@@ -559,16 +559,20 @@ class OSFile:
     """
     
     def __init__(self, data, fields=None):
-        # Do these first to protect against annoying errors during cleanup if init fails
+        # Initialize these variables to protect against annoying errors during cleanup if init fails
         self.handle = -1
         self.file_name = ''
         if isinstance(data,OSFile) and (not fields or fields==data.fields):
-            # Not sure how to do this better
+            # If it's already an OSFile and the fields are the same, we don't need to redo anything;
+            # simply copy over all the relevant variables from the original object.
+            # (We could probably do this in a more clever way, but this works for now)
             self.data = data.data
             self.fields = data.fields
             self.file_name = data.file_name
             self.handle = data.handle
         else:
+            # We need to make a new file.  If it's an OSFile, get the data from it; otherwise the 
+            # data is the `data` argument directly.
             if isinstance(data,OSFile):
                 self.data = data.data
             else:
@@ -576,7 +580,9 @@ class OSFile:
             self.fields = fields
             if not self.fields:
                 try:
-                    self.fields = data.dtype.names # So we can check against this later
+                    # We sometimes check that the fields are the same--so make sure this variable is
+                    # set if the array was a formatted one.
+                    self.fields = data.dtype.names 
                 except:
                     pass
             if self.fields: 
@@ -586,21 +592,30 @@ class OSFile:
                 self.handle, self.file_name = tempfile.mkstemp(suffix=file_io.GetExtension())
                 file_io.WriteTable(self.file_name,self.data,fields=self.fields)
             else: 
+                # No formatting = write to an ASCII table
                 self.handle, self.file_name = tempfile.mkstemp()
                 file_io.WriteASCIITable(self.file_name,self.data)
     def __repr__(self):
+        # For convenience, the string representation of this class is the file name it's keeping
+        # track of.
         return self.file_name
     def __del__(self):
+        # This class holds the OS handles open as long as the file's being used, to make sure it's
+        # not deleted during OS cleanup of /tmp.  So when we're done with this object, we should
+        # close the handle to free up connections to the hard disk.
         try:
             os.close(self.handle)
         except OSError: # in case already closed 
             pass
-        if os.path.isfile(self.file_name):
+        if os.path.isfile(self.file_name): # We could let the OS handle this, actually...
             os.remove(self.file_name)
     def __eq__(self,other):
-        # Mostly necessary for testing purposes
-        return (numpy.all(self.data==other.data) and self.fields==other.fields and 
+        # Need to define equality for for testing purposes
+        if isinstance(other,OSFile):
+            return (numpy.all(self.data==other.data) and self.fields==other.fields and 
                 self.file_name==other.file_name and self.handle==other.handle)
+        else:
+            return False
 
 def _merge_fields(has_fields, old_fields, new_fields):
     """Get the intersection (not union!) of two field schemas. "has_fields" means the old_fields
