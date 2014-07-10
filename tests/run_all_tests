@@ -1,0 +1,6 @@
+#!/bin/bash
+for test in `ls test*.py`
+do
+    echo $test
+    nosetests -v $test
+done
