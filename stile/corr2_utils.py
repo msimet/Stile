@@ -450,8 +450,8 @@ def WriteCorr2ConfigurationFile(config_file_name, corr2_dict, **kwargs):
         
 def ReadCorr2ResultsFile(file_name):
     """
-    Read in the given `file_name` of type file_type.  Cast it into a formatted numpy array with the
-    appropriate fields and return it.
+    Read in the given `file_name`.  Cast it into a formatted numpy array with the appropriate 
+    fields and return it.
     
     @param file_name The location of an output file from corr2.
     @returns         A numpy array corresponding to the data in `file_name`.
