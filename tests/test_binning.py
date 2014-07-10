@@ -341,8 +341,9 @@ class TestBinning(unittest.TestCase):
         self.assertRaises(TypeError,sb,3)
 
     def test_ExpandBinList(self):
-        """Insert description here."""
-        # Needs something that returns callable object
+        """Test the function that takes a set of objects which each generate a list and returns all
+        possible sets of one object from each list, in the order we expect it to do that."""
+        # ExpandBinList needs something that returns callable object
         def return_objs(x,n):
             def func():
                 return [str(nn)+x for nn in range(n)]

@@ -195,7 +195,8 @@ class TestCorr2Utils(unittest.TestCase):
                              '"corr2_options" key of the new dict')
 
     def test_MakeCorr2Cols(self):
-        """Insert description here."""
+        """Test the routine that extracts the 'ra_col', 'dec_col' etc parameters from an array 
+        schema to pass as config arguments to corr2."""
         self.assertEqual(len(stile.corr2_utils.MakeCorr2Cols(self.dict1)),0,
                           msg='Returned dict should have no entries')
         self.assertEqual(len(stile.corr2_utils.MakeCorr2Cols(self.dict2)),0,
@@ -223,7 +224,7 @@ class TestCorr2Utils(unittest.TestCase):
         numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict3),list3_results)
         
     def test_OSFile(self):
-        """Insert description here"""
+        """Test the creation of objects that hold temporary files and some metadata about them."""
         arr0 = [1,2,3,4,5]
         arr1 = numpy.array([[1,2,3],[4.,5.,6.]])
         arr2 = numpy.array([(1.5,2,3.5),(4,5,6)],dtype='d,l,d')
@@ -265,7 +266,8 @@ class TestCorr2Utils(unittest.TestCase):
         del OSFile0
         
     def test_MakeCorr2FileKwargs(self):
-        """Insert description here."""
+        """Test the function that generates the "file_name"/"file_list" config parameters for corr2 
+        from a list of files."""
         data = [(1.0, 2.54, 0.25, -0.16),
                 (3.1, 2.36, 0.0, 0.8)]
         data = numpy.array(data,dtype=[('ra', float),('dec',float),('g1',float),('g2',float)])
