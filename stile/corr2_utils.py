@@ -372,14 +372,14 @@ def Parser():
 
 def CheckArguments(input_dict, check_status=True):
     """
-    A function that checks the (key,value) pairs of the dict passed to it against the corr2 
+    A function that checks the (key, value) pairs of the dict passed to it against the corr2 
     arguments dict.  If the key is not understood, or if check_status is True and the key is not 
     allowed, an error is raised.  If the key is allowed, the type and/or values are checked 
     against the corr2 requirements.
     
-    @param input_dict   A dict which will be used to write a corr2 configuration file
+    @param input_dict   A dict which will be used to write a corr2 configuration file.
     @param check_status A flag indicating whether to check the status of the keys in the dict.  This
-                        should be done when eg reading in arguments from the command line; later 
+                        should be done when e.g. reading in arguments from the command line; later 
                         checks for type safety, after Stile has added its own kwargs, shouldn't
                         do it.  (default: True)
     @returns            The input dict, unchanged.            
@@ -387,7 +387,8 @@ def CheckArguments(input_dict, check_status=True):
     #TODO: add check_required to make sure it has all necessary keys
     for key in input_dict:
         if key not in corr2_kwargs:
-            raise ValueError('Argument %s not a recognized corr2 argument.  Please check syntax '                              'and try again.'%key)
+            raise ValueError('Argument %s not a recognized corr2 argument.  Please check syntax '
+                             'and try again.'%key)
         else:
             c2k = corr2_kwargs[key]
             if check_status:
@@ -422,26 +423,26 @@ def CheckArguments(input_dict, check_status=True):
                                      'check syntax and try again.'%(key,', '.join(c2k['val'])))
     return input_dict
     
-def WriteCorr2ConfigurationFile(config_file_name,corr2_dict,**kwargs):
+def WriteCorr2ConfigurationFile(config_file_name, corr2_dict, **kwargs):
     """
     Write the given corr2 kwargs to a corr2 configuration file if they are in the arguments dict 
     above. 
     
     @param config_file_name May be a file name or any object with a .write(...) attribute.
     @param corr2_dict       A dict containing corr2 kwargs.
-    @param kwargs           Any extra keys to be added to the given corr2_dict.  If they conflict,
+    @param kwargs           Any extra keys to be added to the given `corr2_dict`.  If they conflict,
                             the keys given in the kwargs will silently supercede the values in the
-                            corr2_dict.
+                            `corr2_dict`.
     """
-    if hasattr(config_file_name,'write'):
+    if hasattr(config_file_name, 'write'):
         f=config_file_name
         close_file=False
     else:
-        f=open(config_file_name,'w')
+        f=open(config_file_name, 'w')
         close_file=True
     if kwargs:
         corr2_dict.update(kwargs)
-    CheckArguments(corr2_dict,check_status=False)
+    CheckArguments(corr2_dict, check_status=False)
     for key in corr2_dict:
         f.write(key+' = ' + str(corr2_dict[key])+'\n')
     if close_file:
@@ -449,16 +450,16 @@ def WriteCorr2ConfigurationFile(config_file_name,corr2_dict,**kwargs):
         
 def ReadCorr2ResultsFile(file_name):
     """
-    Read in the given file_name of type file_type.  Cast it into a formatted numpy array with the
+    Read in the given `file_name` of type file_type.  Cast it into a formatted numpy array with the
     appropriate fields and return it.
     
     @param file_name The location of an output file from corr2.
-    @returns         A numpy array corresponding to the data in file_name.
+    @returns         A numpy array corresponding to the data in `file_name`.
     """    
     import stile_utils
     # Currently there is a bug in corr2 that puts some text output into results files, necessitating
     # the "comments='R'" line, plus the "skiprows" argument to skip the first (real) comment line.
-    output = file_io.ReadASCIITable(file_name,comments='R',skiprows=1)
+    output = file_io.ReadASCIITable(file_name, comments='R', skiprows=1)
     
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
@@ -473,14 +474,14 @@ def ReadCorr2ResultsFile(file_name):
 
 def AddCorr2Dict(input_dict):
     """
-    Take an input_dict, harvest the kwargs you'll need for corr2, and create a new 'corr2_args'
+    Take an `input_dict`, harvest the kwargs you'll need for corr2, and create a new 'corr2_args'
     key in the input_dict containing these values (or update the existing 'corr2_args' key).  This
     is useful if you have a parameters dict that contains some things corr2 might want, but some
     other keys that shouldn't be written to the corr2 parameter file.
     
-    @param input_dict A dict containing some (key,value) pairs that apply to corr2
+    @param input_dict A dict containing some (key,value) pairs that apply to corr2.
     @returns          The input_dict with an added or updated key 'corr2_kwargs' whose value is a
-                      dict containing the (key,value) pairs from input_dict that apply to corr2
+                      dict containing the (key,value) pairs from input_dict that apply to corr2.
     """    
     corr2_dict = {}
     new_dict = copy.deepcopy(input_dict)
@@ -493,7 +494,7 @@ def AddCorr2Dict(input_dict):
         new_dict['corr2_kwargs'] = corr2_dict
     return new_dict
     
-def MakeCorr2Cols(cols,use_as_k=None):
+def MakeCorr2Cols(cols, use_as_k=None):
     """
     Takes an input dict or list of columns and extracts the right variables for the column keys in a
     corr2 configuration file.  Note that we generally call these "fields" in Stile, but for 
@@ -501,14 +502,14 @@ def MakeCorr2Cols(cols,use_as_k=None):
     
     @param cols     A list of strings denoting the columns of a file (first column is first element
                     of list, etc), or a dict with the key-value pairs "string column name": column 
-                    number
+                    number.
     @param use_as_k Which column to use as the "kappa" (scalar) column, if given (default: None).
                     Corr2 allows a correlation function between a scalar value such as the 
                     convergence and other quantities such as the shear; we might want to use another
-                    parameter (such as star brightness) here, so setting use_as_k to that column
+                    parameter (such as star brightness) here, so setting `use_as_k` to that column
                     will tell corr2 to do a convergence-type correlation function with that column
                     as the "convergence" value.
-    @returns        A dict containing the column key-value pairs for corr2
+    @returns        A dict containing the column key-value pairs for corr2.
     """
     corr2_kwargs = {}
     col_args = ['x','y','ra','dec','g1','g2','k','w']
@@ -542,7 +543,7 @@ class OSFile:
     representation matters, such as writing corr2 parameter files.
     
     The data can be passed in two ways:
-        - As a (data_handler `dh`, `data_id` pair, in which case dh.getData(data_id,force=True)
+        - As a (data_handler `dh`, `data_id`) pair, in which case dh.getData(data_id, force=True)
           is called
         - Directly as an array, in which case `is_array` should be set to True.
     In either case, "fields" may be set to control which fields of the data are printed to the
@@ -557,7 +558,7 @@ class OSFile:
                      for WriteTable. (default: None)
     """
     
-    def __init__(self,data,fields=None):
+    def __init__(self, data, fields=None):
         # Do these first to protect against annoying errors during cleanup if init fails
         self.handle = -1
         self.file_name = ''
@@ -601,9 +602,9 @@ class OSFile:
         return (numpy.all(self.data==other.data) and self.fields==other.fields and 
                 self.file_name==other.file_name and self.handle==other.handle)
 
-def _merge_fields(has_fields,old_fields,new_fields):
-    """ Get the intersection (not union!) of two field schemas. "has_fields" means the old_fields
-    dict ever contained fields, even if the intersection is empty. """
+def _merge_fields(has_fields, old_fields, new_fields):
+    """Get the intersection (not union!) of two field schemas. "has_fields" means the old_fields
+    dict ever contained fields, even if the intersection is empty."""
     if not new_fields:
         return has_fields, old_fields
     if not has_fields:
@@ -656,7 +657,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
     Pick which files need to be written to a file for corr2, and which can be passed simply as a
     filename. This takes care of making temporary files, checking that the field schema is
     consistent in any existing files and rewriting the ones that do not match the dominant field 
-    schema if necessary, and figuring out the corr2 column arguments (eg ra_col).
+    schema if necessary, and figuring out the corr2 column arguments (e.g. ra_col).
     
     @param data     The data that will be passed to the Stile tests. Can be a 
                     (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
@@ -670,8 +671,8 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                     only the ones Stile will use.
     @param data2    The second set of data that will be passed for cross-correlations, with the same
                     format options as data.
-    @param random   The random data set corresponding to data (ditto)
-    @param random2  The random data set corresponding to data2 (ditto)
+    @param random   The random data set corresponding to data (ditto).
+    @param random2  The random data set corresponding to data2 (ditto).
     @param use_as_k This is passed through to MakeCorr2Cols to designate a scalar field as the
                     "convergence" for a correlation function; see the documentation for 
                     MakeCorr2Cols for more information.
