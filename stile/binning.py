@@ -42,7 +42,7 @@ class BinList:
         created.
         """
         return_list = [SingleBin(field=self.field, low=low, high=high, short_name=str(i)) 
-                       for i, (low, high) in  enumerate(zip(self.bin_list[:-1] ,self.bin_list[1:]))]
+                       for i, (low, high) in  enumerate(zip(self.bin_list[:-1], self.bin_list[1:]))]
         if self.reverse:
             return_list.reverse()
         return return_list
@@ -166,7 +166,7 @@ class SingleBin:
                               'of type'+type(field))
         if high <= low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
-        if not isinstance(short_name, str) or (long_name and not isinstance(long_name,str)):
+        if not isinstance(short_name, str) or (long_name and not isinstance(long_name, str)):
             raise TypeError("Short_name and long_name must be strings")
         self.field = field
         self.low = low
