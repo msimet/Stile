@@ -164,7 +164,7 @@ class SingleBin:
         if not isinstance(field, str):
             raise TypeError('Field description must be a string. Passed value: '+str(field)+
                               'of type'+type(field))
-        if high < low:
+        if high <= low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
         if not isinstance(short_name, str) or (long_name and not isinstance(long_name,str)):
             raise TypeError("Short_name and long_name must be strings")
