@@ -35,6 +35,7 @@ class TestBinning(unittest.TestCase):
         self.bin_array_6 = numpy.array([tuple(b) for b in bin_array_6],dtype=[('field_0',float)])
 
     def test_BinStep_SingleBin_creation(self):
+        """Test that the constructor for SingleBin and BinStep objects behaves appropriately given various inputs."""
         # All of these should return the same objects (the expected_obj_list), except the final one,
         # which should return them in the reverse order.
         lhs = stile.BinStep('field_0',low=0,high=6,step=1)
@@ -97,6 +98,7 @@ class TestBinning(unittest.TestCase):
                              msg='BinStep ('+name+') created incorrect SingleBins!') 
 
     def test_BinList_SingleBin_creation(self):
+        """Test that the creation of a SingleBin exhibits appropriate behavior."""
         obj = stile.BinList('field_0',[0,1.1,1.9,3.0,4.0,5.0,6.5])
         
         expected_obj_list = [stile.binning.SingleBin('field_0',low=0,high=1.1,short_name='b'),
@@ -125,6 +127,7 @@ class TestBinning(unittest.TestCase):
         self.assertRaises(TypeError,stile.BinList,[0.5,1.5,1.0])
 
     def test_BinStep_linear(self):
+        """Test that BinStep objects with linear spacing behave appropriately."""
         lhs = stile.BinStep('field_0',low=0,high=6,step=1)
         lhn = stile.BinStep('field_0',low=0,high=6,n_bins=6)
         lsn = stile.BinStep('field_0',low=0,step=1,n_bins=6)
@@ -186,6 +189,7 @@ class TestBinning(unittest.TestCase):
                                            err_msg=err_msg%(self.bin_array_6,i))
 
     def test_BinStep_log(self):
+        """Test that BinStep objects with logarithmic spacing behave appropriately."""
         lhs = stile.BinStep('field_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
         lhn = stile.BinStep('field_0',low=0.25,high=8,n_bins=5,use_log=True)
         lsn = stile.BinStep('field_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
@@ -243,6 +247,7 @@ class TestBinning(unittest.TestCase):
                                            err_msg=err_msg%(self.bin_array_6,i))
 
     def test_BinList(self):
+        """Test that BinList objects behave appropriately with respect to SingleBin behavior."""
         obj_forward = stile.BinList('field_0',[0,1.,1.9,3.0,4.0,5.0,6.5])
         obj_reverse = stile.BinList('field_0',[6.5,5.0,4.0,3.0,1.9,1.,0])
         
@@ -292,6 +297,7 @@ class TestBinning(unittest.TestCase):
                                            err_msg=err_msg%(self.bin_array_6,i))
 
     def test_bin_creation_errors(self):
+        """Test for initialization errors and proper treatment of weird arguments."""
         # Invalid bounds in logarithmic BinStep
         self.assertRaises(ValueError,stile.BinStep,'c',low=0,high=10,step=1,use_log=True)
         self.assertRaises(ValueError,stile.BinStep,'c',low=10,high=-1,step=-1,use_log=True)
@@ -325,6 +331,7 @@ class TestBinning(unittest.TestCase):
         self.assertRaises(TypeError,stile.BinList,'c')
 
     def test_singlebin_input_errors(self):
+        """Test that SingleBin objects appropriately object to strange input."""
         sb = stile.binning.SingleBin('field_0',low=0,high=10,short_name='boo')
         sfb = stile.binning.SingleFunctionBin(binfunction,1)
         self.assertIsNotNone(sb.long_name) # check that this was made properly
@@ -334,6 +341,7 @@ class TestBinning(unittest.TestCase):
         self.assertRaises(TypeError,sb,3)
 
     def test_ExpandBinList(self):
+        """Insert description here."""
         # Needs something that returns callable object
         def return_objs(x,n):
             def func():
