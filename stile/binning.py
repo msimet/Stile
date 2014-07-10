@@ -61,8 +61,8 @@ class BinStep:
                      of `use_log` (default: None).
     @param high      The high edge of the highest bin, exclusive; should be in linear space
                      regardless of `use_log` (default: None).
-    @param step      The width of each bin (in linear space if `use_log=False`, in log space if 
-                     `use_log=True`) (default: None).
+    @param step      The width of each bin (in linear space if `use_log=False`, in base-e log space
+                     if `use_log=True`) (default: None).
     @param n_bins    The total number of bins requested; if float, will be converted to the next
                      largest integer (default: None).
     @param use_log   If True, bin in log space; else bin in linear space. Even when `use_log=True`,
