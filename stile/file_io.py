@@ -185,16 +185,9 @@ def WriteFITSTable(file_name,data_array,fields=None):
     if not has_fits:
         raise ImportError('FITS-type table requested, but no FITS handler found')
     data = _handleFields(data_array,fields)
-    cols = [fits_handler.Column(name=data.dtype.names[i],format=_coerceFitsFormat(data.dtype[i]))
-               for i in range(len(data.dtype))]
+    cols = [fits_handler.Column(name=data.dtype.names[i],format=_coerceFitsFormat(data.dtype[i]),
+                                array=data[data.dtype.names[i]]) for i in range(len(data.dtype))]
     table = fits_handler.new_table(cols)
-    table.data = data
-    # Next lines are a kludge for my version of PyFITS which yells if you replace table data
-    # without doing this (fix from https://github.com/spacetelescope/PyFITS/issues/31).  We may have
-    # to add other PyFITS versions to this, but apparently the bug wasn't around for long, so
-    # hopefully not?
-    if fits_handler.__version__=='3.0.8':
-        table.data = numpy.array(table.data).view(table._data_type)
     hdulist = fits_handler.HDUList(fits_handler.PrimaryHDU(),table)
     hdulist.append(table)
     hdulist.verify()
