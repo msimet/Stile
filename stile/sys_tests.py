@@ -557,37 +557,6 @@ class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     long_name = 'Make a scatter plot of two given quantities'
 
-    def __init__(self, field1, field2, field2_err = None, color = "b", xlabel = None, ylabel = None, lim = None, equal_axis = False, linear_regression = False):
-        self.field1 = field1
-        self.field2 = field2
-        self.field2_err = field2_err
-        self.color = color
-        self.xlabel = xlabel if xlabel is not None else field1
-        self.ylabel = ylabel if ylabel is not None else field2
-        self.lim = lim
-        self.equal_axis = equal_axis
-        self.linear_regression = linear_regression
-
-    def __call__(self, array, field1 = None, field2 = None, field2_err = None, color = None, xlabel = None, ylabel = None, lim = None, equal_axis = None, linear_regression = None):
-        use_field1 = field1 if field1 is not None else self.field1
-        use_field2 = field2 if field2 is not None else self.field2
-        use_field2_err = field2_err if field2_err is not None else self.field2_err
-        use_color = color if color is not None else self.color
-        use_xlabel = xlabel if xlabel is not None else self.xlabel
-        use_ylabel = ylabel if ylabel is not None else self.ylabel
-        use_lim = lim if lim is not None else self.lim
-        use_equal_axis = equal_axis if equal_axis is not None else self.equal_axis
-        use_linear_regression = linear_regression if linear_regression is not None else self.linear_regression
-
-        use_array1 = array[use_field1]
-        use_array2 = array[use_field2]
-        use_array2_err = array[use_field2_err] if use_field2_err is not None else None
-
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1)
-        self.scatterPlot(ax, use_array1, use_array2, yerr = use_array2_err, color = use_color, xlabel = use_xlabel, ylabel = use_ylabel, lim = use_lim, equal_axis = use_equal_axis, linear_regression = use_linear_regression)
-        return fig
-
     def scatterPlot(self, ax, x, y, yerr=None, color = "", xlabel=None, ylabel=None, lim=None, equal_axis=False, linear_regression=False):
         # mask data with nan
         sel = numpy.logical_and(numpy.invert(numpy.isnan(x)), numpy.invert(numpy.isnan(y)))
