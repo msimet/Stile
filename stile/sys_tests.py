@@ -49,9 +49,14 @@ class CorrelationFunctionSysTest(SysTest):
         to the `data` and `random` kwargs is fine; otherwise they should be properly populated.
         
         Note: by default, the corr2 configuration files are written to the temp directory called by 
-        tempfile.mkstemp().  If you need to example the corr2 config files, you can pass 
+        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass 
         `config_here=True` and they will be written (as temp files probably beginning with "tmp") 
         to your working directory, which shouldn't be automatically cleaned up.  
+        
+        This function accepts all (self-consistent) sets of data, data2, random, and random2.  
+        Including "data2" and possibly "random2" will return a cross-correlation; otherwise the 
+        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the 
+        correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
         
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
