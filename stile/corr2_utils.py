@@ -542,18 +542,20 @@ class OSFile:
     OSFiles may be used interchangeably with filenames in places where only the string 
     representation matters, such as writing corr2 parameter files.
     
-    The data can be passed in two ways:
-        - As a (data_handler `dh`, `data_id`) pair, in which case dh.getData(data_id, force=True)
-          is called
-        - Directly as an array, in which case `is_array` should be set to True.
-    In either case, "fields" may be set to control which fields of the data are printed to the
+    The data passed should be an iterable of some kind.  Lists or unformatted NumPy arrays will be
+    written as ASCII files; formatted NumPy arrays will be written as FITS tables if you have a FITS
+    module installed.  The OSFile object will take care of choosing an appropriate way to write the 
+    data to disk, in addition to keeping track of the original data and the path to the file where 
+    it was written.
+    
+    The keyword argument "fields" may be set to control which fields of the data are printed to the
     temporary file.  "fields" should be either a list of fields in order, or a dict of 
     {'field_name': field_number/field_str} pairs, with "field_str" applying only if you have 
     pyfits/astropy installed to handle FITS files (to map field names onto Stile/Corr2 expected 
     field names). Further caveats about the use of the "fields" kwarg may be found in the 
     documentation for WriteTable.
     
-    @param data      An array of data.
+    @param data      An iterable of data.
     @param fields    A description of the fields to be written out. See above or the documentation  
                      for WriteTable. (default: None)
     """
@@ -686,7 +688,9 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                     only the ones Stile will use.
     @param data2    The second set of data that will be passed for cross-correlations, with the same
                     format options as data.
-    @param random   The random data set corresponding to data (ditto).
+    @param random   The random data set corresponding to data (ditto).  Randoms must be supplied for
+                    'n2'-style (2-point) correlation functions and may be supplied for 'ng' 
+                    (point-shear) and 'g2') (shear-shear) types.
     @param random2  The random data set corresponding to data2 (ditto).
     @param use_as_k This is passed through to MakeCorr2Cols to designate a scalar field as the
                     "convergence" for a correlation function; see the documentation for 
