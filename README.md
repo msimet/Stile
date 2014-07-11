@@ -28,7 +28,7 @@ More dependencies may be added in the future.
 
 Right now, Stile can:
 
- - Generate an average shear signal around a set of lensing points (if you've installed corr2), given two catalogs that you specify in a particular way, and plot the results (if you have matplotlib).
+ - Generate an average shear signal around a set of points (if you've installed corr2), given two catalogs that you specify in a particular way, and plot the results (if you have matplotlib).
  - Perform a number of basic statistics measurements and print the results.
  - Perform any of the above tests for data with different binning schemes applied, using a simple method of specifying the bins.
  
