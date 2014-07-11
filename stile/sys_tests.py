@@ -557,83 +557,101 @@ class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     long_name = 'Make a scatter plot of two given quantities'
 
-    def __init__(self, field1, field2, field2_err = None, linear_regression = False, color = "b", xlabel = None, ylabel = None, lim = None, equal_axis = False):
+    def __init__(self, field1, field2, field2_err = None, color = "b", xlabel = None, ylabel = None, lim = None, equal_axis = False, linear_regression = False):
         self.field1 = field1
         self.field2 = field2
         self.field2_err = field2_err
-        self.linear_regression = linear_regression
         self.color = color
         self.xlabel = xlabel if xlabel is not None else field1
         self.ylabel = ylabel if ylabel is not None else field2
         self.lim = lim
         self.equal_axis = equal_axis
+        self.linear_regression = linear_regression
 
-    def __call__(self, array, field1 = None, field2 = None, field2_err = None, linear_regression = None, color = None, xlabel = None, ylabel = None, lim = None, equal_axis = None):
+    def __call__(self, array, field1 = None, field2 = None, field2_err = None, color = None, xlabel = None, ylabel = None, lim = None, equal_axis = None, linear_regression = None):
         use_field1 = field1 if field1 is not None else self.field1
         use_field2 = field2 if field2 is not None else self.field2
         use_field2_err = field2_err if field2_err is not None else self.field2_err
-        use_linear_regression = linear_regression if linear_regression is not None else self.linear_regression
         use_color = color if color is not None else self.color
         use_xlabel = xlabel if xlabel is not None else self.xlabel
         use_ylabel = ylabel if ylabel is not None else self.ylabel
         use_lim = lim if lim is not None else self.lim
         use_equal_axis = equal_axis if equal_axis is not None else self.equal_axis
+        use_linear_regression = linear_regression if linear_regression is not None else self.linear_regression
 
         use_array1 = array[use_field1]
         use_array2 = array[use_field2]
         use_array2_err = array[use_field2_err] if use_field2_err is not None else None
-        # mask data with nan
-        sel = numpy.logical_and(numpy.invert(numpy.isnan(use_array1)), numpy.invert(numpy.isnan(use_array2)))
-        sel = numpy.logical_and(sel, numpy.invert(numpy.isnan(use_array2_err))) if use_field2_err is not None else sel
-        use_array1 = use_array1[sel]
-        use_array2 = use_array2[sel]
-        use_array2_err = use_array2_err[sel] if use_field2_err is not None else None
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, use_array1, use_array2, yerr = use_array2_err, color = use_color, xlabel = use_xlabel, ylabel = use_ylabel, lim = use_lim, equal_axis = use_equal_axis, linear_regression = use_linear_regression)
+        return fig
+
+    def scatterPlot(self, ax, x, y, yerr=None, color = "", xlabel=None, ylabel=None, lim=None, equal_axis=False, linear_regression=False):
+        # mask data with nan
+        sel = numpy.logical_and(numpy.invert(numpy.isnan(x)), numpy.invert(numpy.isnan(y)))
+        sel = numpy.logical_and(sel, numpy.invert(numpy.isnan(yerr))) if yerr is not None else sel
+        x = x[sel]
+        y = y[sel]
+        yerr = yerr[sel] if yerr is not None else None
+
         # plot
-        if use_field2_err is None:
-            ax.plot(use_array1, use_array2, ".%s" % use_color)
+        if yerr is None:
+            p = ax.plot(x, y, ".%s" % color)
         else:
-            ax.errorbar(use_array1, use_array2, use_array2_err, fmt=".%s" % use_color)
+            p = ax.errorbar(x, y, yerr, fmt=".%s" % color)
+        used_color = p[0].get_color()
+
+        # make axes equal to each other if specified
+        if equal_axis:
+            ax.axis("equal")
+
         # calculate axis limits if specified
-        if isinstance(use_lim, tuple):
-            ax.set_xlim(*use_lim[0])
-            ax.set_ylim(*use_lim[1])
-        elif isinstance(use_lim, int):
-            nsigma = use_lim
-            mean = numpy.average(use_array1)
-            stddev = numpy.std(use_array1)
+        if isinstance(lim, tuple):
+            ax.set_xlim(*lim[0])
+            ax.set_ylim(*lim[1])
+        elif isinstance(lim, int):
+            nsigma = lim
+            mean = numpy.average(x)
+            stddev = numpy.std(x)
             xlim = (mean - nsigma*stddev, mean + nsigma*stddev)
-            mean = numpy.average(use_array2)
-            stddev = numpy.std(use_array2)
+            mean = numpy.average(y)
+            stddev = numpy.std(y)
             ylim = (mean - nsigma*stddev, mean + nsigma*stddev)
-        elif use_lim is not None:
+        elif lim is not None:
             import warnings
             warnings.warn('Argument lim is not understandable. Continue without setting any axis limits.')
-        # perform linear regression if specified
-        if use_linear_regression:
-            x = numpy.linspace(-10.*numpy.max(numpy.abs(xlim)), 10.*numpy.max(numpy.abs(xlim)))
-            if use_field2_err is None:
-                m, c = self.linearRegression(use_array1, use_array2)
-                ax.plot(x, m*x+c, "-%s" % use_color)
-            else:
-                m, c, cov_m, cov_c, cov_mc = self.linearRegression(use_array1, use_array2, err = use_array2_err)
-                y = m*x+c
-                yerr = numpy.sqrt(x**2*cov_m + 2.*x*cov_mc + cov_c)
-                ax.fill_between(x, y-yerr, y+yerr, facecolor = color, edgecolor = color, alpha = 0.5)
-        # make axes equal to each other if specified
-        if use_equal_axis:
-            ax.axis("equal")
+
         # set axis limits if specified
-        if use_lim is not None:
+        if lim is not None:
             ax.set_xlim(*xlim)
             ax.set_ylim(*ylim)
-        # set axis labels
-        ax.set_xlabel(use_xlabel)
-        ax.set_ylabel(use_ylabel)
 
-        return fig
+        # perform linear regression if specified
+        if linear_regression:
+            if not equal_axis:
+                xlimtmp = ax.get_xlim()
+            else:
+                xlimtmp = [numpy.min([ax.get_xlim()[0], ax.get_ylim()[0]]), numpy.max([ax.get_xlim()[1], ax.get_ylim()[1]])]
+            xtmp = numpy.linspace(*xlimtmp)
+            if yerr is None:
+                m, c = self.linearRegression(x, y)
+                ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
+            else:
+                m, c, cov_m, cov_c, cov_mc = self.linearRegression(x, y, err = yerr)
+                ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
+                y = m*xtmp+c
+                yerr = numpy.sqrt(xtmp**2*cov_m + 2.*xtmp*cov_mc + cov_c)
+                ax.fill_between(xtmp, y-yerr, y+yerr, facecolor = used_color, edgecolor = used_color, alpha =0.5)
+
+        # set axis labels if specified
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        return ax
 
     def linearRegression(self, x, y, err = None):
         e = numpy.ones(x.shape) if err is None else err
@@ -652,3 +670,62 @@ class ScatterPlotSysTest(SysTest):
             cov_c = Sxx/Delta
             cov_mc = -Sx/Delta
             return m, c, cov_m, cov_c, cov_mc
+
+class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_star_vs_psf_g1'
+    long_name = 'Make a scatter plot of star g1 vs psf g1'
+    objects_list = ['star PSF']
+    required_quantities = [('g1', 'g1_err', 'psf_g1')]
+
+    def __init__(self, color = "b", lim = None):
+        self.color = color
+        self.lim = lim
+
+    def __call__(self, array, color = None, lim=None):
+        use_color = color if color is not None else self.color
+        use_lim = lim if lim is not None else self.lim
+
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, array['psf_g1'], array['g1'], yerr=array['g1_err'], color = use_color, xlabel=r"$g^{\rm PSF}_1$", ylabel=r"$g^{\rm star}_1$", lim=use_lim, equal_axis=True, linear_regression=True)
+        return fig
+
+class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_star_vs_psf_g2'
+    long_name = 'Make a scatter plot of star g2 vs psf g2'
+    objects_list = ['star PSF']
+    required_quantities = [('g2', 'g2_err', 'psf_g2')]
+
+    def __init__(self, color = "b", lim = None):
+        self.color = color
+        self.lim = lim
+
+    def __call__(self, array, color = None, lim=None):
+        use_color = color if color is not None else self.color
+        use_lim = lim if lim is not None else self.lim
+
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, array['psf_g2'], array['g2'], yerr=array['g2_err'], color = use_color, xlabel=r"$g^{\rm PSF}_2$", ylabel=r"$g^{\rm star}_2$", lim=use_lim, equal_axis=True, linear_regression=True)
+        fig.tight_layout()
+        return fig
+
+class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_star_vs_psf_sigma'
+    long_name = 'Make a scatter plot of star sigma vs psf sigma'
+    objects_list = ['star PSF']
+    required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
+
+    def __init__(self, color = "b", lim = None):
+        self.color = color
+        self.lim = lim
+
+    def __call__(self, array, color = None, lim=None):
+        use_color = color if color is not None else self.color
+        use_lim = lim if lim is not None else self.lim
+
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, array['psf_sigma'], array['sigma'], yerr=array['sigma_err'], color = use_color, xlabel=r"$\sigma^{\rm PSF}$", ylabel=r"$\sigma^{\rm star}$", lim=use_lim, equal_axis=True, linear_regression=True)
+        fig.tight_layout()
+        return fig

@@ -115,26 +115,66 @@ class StatsPSFFluxAdapter(object):
     def getRequiredColumns(self):
         return (('flux.psf',),)
 
-class ScatterPlotStarVsPsfAdapterConfig(lsst.pex.config.Config):
+class ScatterPlotStarVsPsfG1AdapterConfig(lsst.pex.config.Config):
     pass
     
-class ScatterPlotStarVsPsfAdapter(object):
+class ScatterPlotStarVsPsfG1Adapter(object):
     ConfigClass = StatsPSFFluxAdapterConfig
     def __init__(self,config):
         self.config = config
-        self.test = sys_tests.ScatterPlotSysTest(field1='psf_g1', field2='g1', field2_err='g1_err', linear_regression = True, xlabel = r"$g^{\rm PSF}_1$", ylabel = r"$g^{\rm star}_1$", lim = 5, equal_axis = True)
-        self.name = self.test.short_name+'_psf_g1_vs_star_g1'
+        self.test = sys_tests.ScatterPlotStarVsPsfG1SysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
 
     def __call__(self,*data):
         return self.test(*data)
-    
-    def getMasks(self,catalog):
-    	return [MaskPSFStar(catalog)]
+
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
         
     def getRequiredColumns(self):
-        return (('psf_g1','g1','g1_err'),)
+        return self.test.required_quantities
+
+class ScatterPlotStarVsPsfG2AdapterConfig(lsst.pex.config.Config):
+    pass
+    
+class ScatterPlotStarVsPsfG2Adapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.ScatterPlotStarVsPsfG2SysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+
+    def __call__(self,*data):
+        return self.test(*data, lim=5)
+
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+        
+    def getRequiredColumns(self):
+        return self.test.required_quantities
+
+class ScatterPlotStarVsPsfSigmaAdapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.ScatterPlotStarVsPsfSigmaSysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+
+    def __call__(self,*data):
+        return self.test(*data, lim=5)
+
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+        
+    def getRequiredColumns(self):
+        return self.test.required_quantities
         
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
 #adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
 adapter_registry.register("StarXGalaxyShear",StarXGalaxyShearAdapter)
-adapter_registry.register("ScatterPlotStarVsPsf", ScatterPlotStarVsPsfAdapter)
+adapter_registry.register("ScatterPlotStarVsPsfG1", ScatterPlotStarVsPsfG1Adapter)
+adapter_registry.register("ScatterPlotStarVsPsfG2", ScatterPlotStarVsPsfG2Adapter)
+adapter_registry.register("ScatterPlotStarVsPsfSigma", ScatterPlotStarVsPsfSigmaAdapter)
