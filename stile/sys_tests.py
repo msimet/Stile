@@ -688,6 +688,7 @@ class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_subplot(1,1,1)
         self.scatterPlot(ax, array['psf_g1'], array['g1'], yerr=array['g1_err'], color = use_color, xlabel=r"$g^{\rm PSF}_1$", ylabel=r"$g^{\rm star}_1$", lim=use_lim, equal_axis=True, linear_regression=True)
+        fig.tight_layout()
         return fig
 
 class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
