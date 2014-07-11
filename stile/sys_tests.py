@@ -646,17 +646,10 @@ class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __init__(self, color = "b", lim = None):
-        self.color = color
-        self.lim = lim
-
-    def __call__(self, array, color = None, lim=None):
-        use_color = color if color is not None else self.color
-        use_lim = lim if lim is not None else self.lim
-
+    def __call__(self, array, color = '', lim=None):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_subplot(1,1,1)
-        self.scatterPlot(ax, array['psf_g1'], array['g1'], yerr=array['g1_err'], color = use_color, xlabel=r"$g^{\rm PSF}_1$", ylabel=r"$g^{\rm star}_1$", lim=use_lim, equal_axis=True, linear_regression=True)
+        self.scatterPlot(ax, array['psf_g1'], array['g1'], yerr=array['g1_err'], color=color, xlabel=r"$g^{\rm PSF}_1$", ylabel=r"$g^{\rm star}_1$", lim=lim, equal_axis=True, linear_regression=True)
         fig.tight_layout()
         return fig
 
@@ -666,17 +659,10 @@ class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __init__(self, color = "b", lim = None):
-        self.color = color
-        self.lim = lim
-
-    def __call__(self, array, color = None, lim=None):
-        use_color = color if color is not None else self.color
-        use_lim = lim if lim is not None else self.lim
-
+    def __call__(self, array, color = '', lim=None):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_subplot(1,1,1)
-        self.scatterPlot(ax, array['psf_g2'], array['g2'], yerr=array['g2_err'], color = use_color, xlabel=r"$g^{\rm PSF}_2$", ylabel=r"$g^{\rm star}_2$", lim=use_lim, equal_axis=True, linear_regression=True)
+        self.scatterPlot(ax, array['psf_g2'], array['g2'], yerr=array['g2_err'], color=color, xlabel=r"$g^{\rm PSF}_2$", ylabel=r"$g^{\rm star}_2$", lim=lim, equal_axis=True, linear_regression=True)
         fig.tight_layout()
         return fig
 
@@ -686,16 +672,9 @@ class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __init__(self, color = "b", lim = None):
-        self.color = color
-        self.lim = lim
-
-    def __call__(self, array, color = None, lim=None):
-        use_color = color if color is not None else self.color
-        use_lim = lim if lim is not None else self.lim
-
+    def __call__(self, array, color = '', lim=None):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_subplot(1,1,1)
-        self.scatterPlot(ax, array['psf_sigma'], array['sigma'], yerr=array['sigma_err'], color = use_color, xlabel=r"$\sigma^{\rm PSF}$", ylabel=r"$\sigma^{\rm star}$", lim=use_lim, equal_axis=True, linear_regression=True)
+        self.scatterPlot(ax, array['psf_sigma'], array['sigma'], yerr=array['sigma_err'], color=color, xlabel=r"$\sigma^{\rm PSF}$", ylabel=r"$\sigma^{\rm star}$", lim=lim, equal_axis=True, linear_regression=True)
         fig.tight_layout()
         return fig
