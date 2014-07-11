@@ -602,7 +602,8 @@ class ScatterPlotSysTest(SysTest):
             if not equal_axis:
                 xlimtmp = ax.get_xlim()
             else:
-                xlimtmp = [numpy.min([ax.get_xlim()[0], ax.get_ylim()[0]]), numpy.max([ax.get_xlim()[1], ax.get_ylim()[1]])]
+                d = numpy.max([ax.get_xlim()[1] - ax.get_xlim()[0], ax.get_ylim()[1] - ax.get_ylim()[0]])
+                xlimtmp = [numpy.average(x)-0.5*d, numpy.average(x)+0.5*d]
             xtmp = numpy.linspace(*xlimtmp)
             if yerr is None:
                 m, c = self.linearRegression(x, y)
@@ -676,5 +677,44 @@ class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
         fig = plt.figure(figsize = (6,6))
         ax = fig.add_subplot(1,1,1)
         self.scatterPlot(ax, array['psf_sigma'], array['sigma'], yerr=array['sigma_err'], color=color, xlabel=r"$\sigma^{\rm PSF}$", ylabel=r"$\sigma^{\rm star}$", lim=lim, equal_axis=True, linear_regression=True)
+        fig.tight_layout()
+        return fig
+
+class ScatterPlotResidualVsPsfG1SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_vs_psf_g1'
+    long_name = 'Make a scatter plot of residual g1 vs psf g1'
+    objects_list = ['star PSF']
+    required_quantities = [('g1', 'g1_err', 'psf_g1')]
+
+    def __call__(self, array, color = '', lim=None):
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, array['psf_g1'], array['g1']-array['psf_g1'], yerr=array['g1_err'], color=color, xlabel=r"$g^{\rm PSF}_1$", ylabel=r"$g^{\rm star}_1 - g^{\rm PSF}_1$", lim=lim, equal_axis=True, linear_regression=True)
+        fig.tight_layout()
+        return fig
+
+class ScatterPlotResidualVsPsfG2SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_vs_psf_g2'
+    long_name = 'Make a scatter plot of residual g2 vs psf g2'
+    objects_list = ['star PSF']
+    required_quantities = [('g2', 'g2_err', 'psf_g2')]
+
+    def __call__(self, array, color = '', lim=None):
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, array['psf_g2'], array['g2']-array['psf_g2'], yerr=array['g2_err'], color=color, xlabel=r"$g^{\rm PSF}_2$", ylabel=r"$g^{\rm star}_2 - g^{\rm PSF}_2$", lim=lim, equal_axis=True, linear_regression=True)
+        fig.tight_layout()
+        return fig
+
+class ScatterPlotResidualVsPsfSigmaSysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_vs_psf_sigma'
+    long_name = 'Make a scatter plot of residual sigma vs psf sigma'
+    objects_list = ['star PSF']
+    required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
+
+    def __call__(self, array, color = '', lim=None):
+        fig = plt.figure(figsize = (6,6))
+        ax = fig.add_subplot(1,1,1)
+        self.scatterPlot(ax, array['psf_sigma'], array['sigma']-array['psf_sigma'], yerr=array['sigma_err'], color=color, xlabel=r"$\sigma^{\rm PSF}$", ylabel=r"$\sigma^{\rm star} - \sigma^{\rm PSF}$", lim=lim, equal_axis=True, linear_regression=True)
         fig.tight_layout()
         return fig

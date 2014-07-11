@@ -21,7 +21,7 @@ except ImportError:
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run",multi=True,
-                    default = ["ScatterPlotStarVsPsfG1", "ScatterPlotStarVsPsfG2", "ScatterPlotStarVsPsfSigma"])
+                    default = ["ScatterPlotStarVsPsfG1", "ScatterPlotStarVsPsfG2", "ScatterPlotStarVsPsfSigma", "ScatterPlotResidualVsPsfG1", "ScatterPlotResidualVsPsfG2", "ScatterPlotResidualVsPsfSigma"])
     
 class SysTestData(object):
     def __init__(self):

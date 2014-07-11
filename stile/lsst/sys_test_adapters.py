@@ -171,6 +171,66 @@ class ScatterPlotStarVsPsfSigmaAdapter(object):
         
     def getRequiredColumns(self):
         return self.test.required_quantities
+
+class ScatterPlotResidualVsPsfG1AdapterConfig(lsst.pex.config.Config):
+    pass
+    
+class ScatterPlotResidualVsPsfG1Adapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.ScatterPlotResidualVsPsfG1SysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+
+    def __call__(self,*data):
+        return self.test(*data)
+
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+        
+    def getRequiredColumns(self):
+        return self.test.required_quantities
+
+class ScatterPlotResidualVsPsfG2AdapterConfig(lsst.pex.config.Config):
+    pass
+    
+class ScatterPlotResidualVsPsfG2Adapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.ScatterPlotResidualVsPsfG2SysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+
+    def __call__(self,*data):
+        return self.test(*data)
+
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+        
+    def getRequiredColumns(self):
+        return self.test.required_quantities
+
+class ScatterPlotResidualVsPsfSigmaAdapterConfig(lsst.pex.config.Config):
+    pass
+    
+class ScatterPlotResidualVsPsfSigmaAdapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.ScatterPlotResidualVsPsfSigmaSysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+
+    def __call__(self,*data):
+        return self.test(*data)
+
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+        
+    def getRequiredColumns(self):
+        return self.test.required_quantities
         
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
 #adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
@@ -178,3 +238,6 @@ adapter_registry.register("StarXGalaxyShear",StarXGalaxyShearAdapter)
 adapter_registry.register("ScatterPlotStarVsPsfG1", ScatterPlotStarVsPsfG1Adapter)
 adapter_registry.register("ScatterPlotStarVsPsfG2", ScatterPlotStarVsPsfG2Adapter)
 adapter_registry.register("ScatterPlotStarVsPsfSigma", ScatterPlotStarVsPsfSigmaAdapter)
+adapter_registry.register("ScatterPlotResidualVsPsfG1", ScatterPlotResidualVsPsfG1Adapter)
+adapter_registry.register("ScatterPlotResidualVsPsfG2", ScatterPlotResidualVsPsfG2Adapter)
+adapter_registry.register("ScatterPlotResidualVsPsfSigma", ScatterPlotResidualVsPsfSigmaAdapter)
