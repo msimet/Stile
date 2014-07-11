@@ -16,7 +16,7 @@ def Parser():
     #TODO: add, obviously, EVERYTHING ELSE
     return p
 
-def FormatArray(d,fields=None):
+def FormatArray(d, fields=None):
     """
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
     description.
@@ -27,12 +27,12 @@ def FormatArray(d,fields=None):
     are any strings in the array).  Predefining the format or using a function like 
     numpy.genfromtxt() will prevent these issues, as will reading from a FITS file.
 
-    @param d      A NumPy array
+    @param d      A NumPy array.
     @param fields A dictionary whose keys are the names of the fields you'd like for the output 
                   array, and whose values are field numbers (starting with 0) whose names those 
                   keys should replace (or, if the array is already formatted, the existing field
                   names the keys should replace); alternately, a list with the same length as the
-                  rows of d. (default: None)
+                  rows of `d`. (default: None)
     @returns      A formatted numpy array with the same shape as d except that the innermost 
                   dimension has turned into a record field if it was not already one, optionally 
                   with field names appropriately replaced.
