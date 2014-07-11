@@ -671,10 +671,40 @@ def _coerce_schema(schema):
     
 def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=None):
     """
-    Pick which files need to be written to a file for corr2, and which can be passed simply as a
-    filename. This takes care of making temporary files, checking that the field schema is
-    consistent in any existing files and rewriting the ones that do not match the dominant field 
-    schema if necessary, and figuring out the corr2 column arguments (e.g. ra_col).
+    Corr2 needs to access files on disk.  What we work with in Stile is either a formatted data 
+    array or a file with field schema (or both), so we need to make sure that we write the data
+    arrays to disk before calling corr2.  Also, corr2 doesn't allow a different field schema for
+    each file: ra, dec, g1, etc must be in the same column in all files.  So as we're writing files
+    to disk, we need to check A) that all the files *already* on disk have the same field schema,
+    and B) that any files we write out have the same field schema as the files already on disk.
+    
+    A further complication is that corr2 can handle multiple input files, but if it does, it 
+    requires you to give it a separate file with a filename on each line, rather than the list of
+    files themselves.  So if we have multiple files for any of the corr2 config parameters, we have
+    to write *those* to a file too, and then only pass the name of that summary file back to the
+    main Stile program components!
+    
+    So, in brief, this function:
+     - Collects the field schemas of the files that are already on disk (if any);
+     - Checks that those schemas are consistent, or reads the data from the inconsistent ones 
+       until the files that remain are all consistent;
+     - Figures out which fields appear in all the data sets given;
+     - Writes any data to disk that isn't already there, with proper column order;
+     - Writes filenames to a summary file, if necessary;
+     - Generates the corr2 config parameters like ra_col, g1_col, etc for the field schema of the 
+       files now on disk;
+     - Generates the right corr2 config parameters to describe where the files are (since these 
+       need to be "file_list" if it's pointing to a file containing a list of filenames, or 
+       "file_name" if it's the file straight up);
+     - Returns these parameters as a dict so you can pass them to the functions that interface with 
+       corr2.
+    
+    Right now, when we check for consistent field schemas for the files on disk, we don't check
+    that all of the columns will actually be used by corr2.  If the files contain an unused field
+    (say "comment") that appears in all files, but not in the same column, this function will 
+    rewrite some of the files so they're all consistent.  This won't affect the functioning of the
+    program--it still has all the data it needs--but it may cause some extra I/O from your hard 
+    disk.
     
     @param data     The data that will be passed to the Stile tests. Can be a 
                     (file_name,field_schema) tuple, a NumPy array, or a list of one or the 
