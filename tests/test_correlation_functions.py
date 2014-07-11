@@ -4,6 +4,7 @@ import numpy
 import subprocess
 import helper
 import unittest
+
 try:
     import stile
 except ImportError:
