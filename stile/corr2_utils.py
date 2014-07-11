@@ -824,9 +824,11 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                     new_data_list.append(data_list[0])
         elif isinstance(data_list,OSFile):
             new_data_list.append(data_list)
+        elif hasattr(data_list,'dtype') and data_list.dtype.names:
+            new_data_list.append(OSFile(data_list,fields=fields))
         elif hasattr(data_list,'__getitem__'):
-            if isinstance(data_list[0],tuple):
-                for dl in data_list:
+            for dl in data_list:
+                if isinstance(data_list[0],tuple):
                     data_fields = _coerce_schema(dl[1])
                     if dl[0] in to_write and any(
                                           [data_fields[key]!=fields[key] for key in fields.keys()]):
@@ -834,16 +836,14 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                         new_data_list.append(OSFile(data,fields=fields))
                     else:
                         new_data_list.append(dl[0])
-            else:
-                if hasattr(data_list,'dtype') and data_list.dtype.names: 
-                    new_data_list.append(OSFile(data_list,fields=fields))
+                elif isinstance(dl,OSFile):
+                    new_data_list.append(dl)
+                elif hasattr(dl,'dtype') and dl.dtype.names: 
+                    new_data_list.append(OSFile(dl,fields=fields))
                 else: 
-                    for dl in data_list:
-                        if not hasattr(dl,'dtype') or not hasattr(dl.dtype,'names'):
-                            raise RuntimeError("Cannot parse data: should be a tuple, "+
-                                               "numpy array, or an unmixed list of one or the "+
-                                               "other.  Given:"+str(data_list))
-                        new_data_list.append(OSFile(dl,fields=fields))
+                    raise RuntimeError("Cannot parse data: should be a tuple, numpy array, or a"+
+                                       "list of one or the other.  Given: "+str(dl)+
+                                       " of type "+type(dl))
         
     
     # Lists of files need to be written (as a list of filenames) to a separate file; do that.
