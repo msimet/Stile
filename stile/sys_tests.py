@@ -557,9 +557,9 @@ class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     """
     A base class for Stile systematics tests that generate scatter plots. This implements the class 
-    method scatterPlot. Every child class of ScatterPlotSysTest should use through __call__.
-    See the docstring for ScatterPlotSysTest.scatterPlot for information on how to write further
-    tests using it.
+    method scatterPlot. Every child class of ScatterPlotSysTest should use
+    ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
+    ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
     """
     def scatterPlot(self, x, y, yerr=None, xlabel=None, ylabel=None, color = "", lim=None,
                     equal_axis=False, linear_regression=False):
