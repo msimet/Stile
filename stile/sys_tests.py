@@ -560,9 +560,43 @@ class WhiskerPlotSysTest(SysTest):
     WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
     WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
     """
-    def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01,
+    def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, keylength = 0.05,
                     figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
+        """
+        Draw a whisker plot plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling appearance of a plot, which is
+        explained below. To implement a child class of WhiskerPlotSysTest, call whiskerPlot within
+        __call__ of the child class and return `matplotlib.figure.Figure` that whiskerPlot returns.
+        @param x               The tuple, list, or NumPy array for x-position of objects.
+        @param y               The tuple, list, or NumPy array for y-position of objects.
+        @param g1              The tuple, list, or Numpy array for 1st ellipticity component
+                               of objects.
+        @param g2              The tuple, list, or Numpy array for 2nd ellipticity component
+                               of objects.
+        @param size            The tuple, list, or Numpy array for size of objects. The size
+                               information is shown as color gradation.
+                               [default: None, meaning do not show the size information]
+        @param linewidth       Width of whiskers in units of inches.
+                               [default: 0.01]
+        @param keylength       Length of a key.
+                               [default: 0.05]
+        @param figsize         Size of a figure (x, y) in units of inches.
+                               [default: None, meaning use the default value of matplotlib]
+        @param xlabel          The label of x-axis.
+                               [default: None, meaning do not show a label of x-axis]
+        @param ylabel          The label of y-axis.
+                               [default: None, meaning do not show a label of y-axis]
+        @param size_label      The label of size whihc is shown at the right of color bar.
+                               [default: None, meaning do not show a label of size]
+        @param xlim            Limit of x-axis (min, max). 
+                               [default: None, meaning do not set any limits for x]
+        @param ylim            Limit of y-axis (min, max). 
+                               [default: None, meaning do not set any limits for y]
+        @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
+                               [default: False]
+        @ returns a matplotlib.figure.Figure object
+        """
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
 
@@ -589,13 +623,12 @@ class WhiskerPlotSysTest(SysTest):
         else:
             q = ax.quiver(x, y, gx, gy, size, units = 'inches',
                           headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = linewidth) # line width in units of inches; same as figsize
+                          pivot = 'middle', width = linewidth)
             cb = fig.colorbar(q)
             if size_label is not None:
                 cb.set_label(size_label)
 
-        ruler = 0.05
-        qk = plt.quiverkey(q, 0.5, 0.92, ruler, r'$g= %s$' % str(ruler), labelpos='W')
+        qk = plt.quiverkey(q, 0.5, 0.92, keylength, r'$g= %s$' % str(keylength), labelpos='W')
         if xlabel is not None:
             ax.set_xlabel(xlabel)
         if ylabel is not None:
