@@ -147,6 +147,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
             return 2.*ixy/(ixx+iyy)
+        elif col=="sigma":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+            return numpy.sqrt(0.5*(ixx+iyy))
         elif col=="w":
             print "Need to figure out something clever for weights"
             return numpy.array([1.]*len(data))

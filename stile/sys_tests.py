@@ -555,7 +555,7 @@ class StatSysTest(SysTest):
 class WhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
 
-    def WhiskerPlot(self, x, y, g1, g2):
+    def WhiskerPlot(self, x, y, g1, g2, size = None):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
 
@@ -563,18 +563,27 @@ class WhiskerPlotSysTest(SysTest):
         sel = numpy.logical_and.reduce(
             [numpy.isnan(x) == False, numpy.isnan(y) == False,
              numpy.isnan(g1) == False, numpy.isnan(g2) == False])
+        sel = numpy.logical_and(sel, numpy.isnan(size) == False) if size is not None else sel
         x = x[sel]
         y = y[sel]
         g1 = g1[sel]
         g2 = g2[sel]
+        size = size[sel] if size is not None else size
 
         # plot
         g = numpy.sqrt(g1*g1+g2*g2)
         theta = numpy.arctan2(g2,g1)/2
         gx = g * numpy.cos(theta)
         gy = g * numpy.sin(theta)
-        q = ax.quiver(x, y, gx, gy, headwidth = 0., headlength = 0., headaxislength = 0.,
-                      pivot = 'middle', width = 0.0005, scale = 1.)
+        if size is None:
+            q = ax.quiver(x, y, gx, gy, headwidth = 0., headlength = 0., headaxislength = 0.,
+                          pivot = 'middle', width = 0.001)
+        else:
+            q = ax.quiver(x, y, gx, gy, size, headwidth = 0., headlength = 0., headaxislength = 0.,
+                          pivot = 'middle', width = 0.001)
+            cb = fig.colorbar(q)
+            #cb.set_label()
+
         ruler = 0.05
         qk = plt.quiverkey(q, 0.5, 0.92, ruler, 'ellipticity: %s' % str(ruler), labelpos='W')
         plt.xlabel("x")
@@ -586,8 +595,8 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
     objects_list = ['star PSF']
-    required_quantities = [('x','y','g1','g2')]
+    required_quantities = [('x','y','g1','g2','sigma')]
 
     def __call__(self, array):
-        return self.WhiskerPlot(array['x'], array['y'], array['g1'], array['g2'])
+        return self.WhiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'])
     
