@@ -564,8 +564,8 @@ class ScatterPlotSysTest(SysTest):
     def scatterPlot(self, x, y, yerr=None, xlabel=None, ylabel=None, color = "", lim=None,
                     equal_axis=False, linear_regression=False):
         """
-        Draw a scatter plot on `matplotlib.axes.AxesSubplot` that is passed through an argument
-        `ax`. This method has a bunch of options for controlling appearance of a plot, which is
+        Draw a scatter plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling appearance of a plot, which is
         explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
         __call__ of the child class with passing `matplotlib.axes.AxesSubplot` and return
         `matplotlib.figure.Figure` that scatterPlot returns.
