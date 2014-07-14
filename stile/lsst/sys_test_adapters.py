@@ -127,7 +127,8 @@ class WhiskerPlotStarAdapter(object):
         self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
 
     def __call__(self,*data):
-        return self.test(*data)
+        return self.test(*data, linewidth = 0.01, figsize = (7,10),
+                          xlim = [-100., 2100.], ylim = [-100, 4200.])
     
     def getMasks(self,data):
         return [mask_func(data) for mask_func in self.mask_funcs]

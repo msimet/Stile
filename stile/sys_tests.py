@@ -555,8 +555,10 @@ class StatSysTest(SysTest):
 class WhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
 
-    def WhiskerPlot(self, x, y, g1, g2, size = None):
-        fig = plt.figure()
+    def WhiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01,
+                    figsize = None, xlabel = None, ylabel = None ,
+                    size_label = None, xlim = None, ylim = None, equal_axis = False):
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
 
         # mask data with nan
@@ -576,18 +578,29 @@ class WhiskerPlotSysTest(SysTest):
         gx = g * numpy.cos(theta)
         gy = g * numpy.sin(theta)
         if size is None:
-            q = ax.quiver(x, y, gx, gy, headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = 0.001)
+            q = ax.quiver(x, y, gx, gy, units = 'inches',
+                          headwidth = 0., headlength = 0., headaxislength = 0.,
+                          pivot = 'middle', width = linewidth)
         else:
-            q = ax.quiver(x, y, gx, gy, size, headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = 0.001)
+            q = ax.quiver(x, y, gx, gy, size, units = 'inches',
+                          headwidth = 0., headlength = 0., headaxislength = 0.,
+                          pivot = 'middle', width = linewidth) # line width in units of inches; same as figsize
             cb = fig.colorbar(q)
-            #cb.set_label()
+            if size_label is not None:
+                cb.set_label(size_label)
 
         ruler = 0.05
-        qk = plt.quiverkey(q, 0.5, 0.92, ruler, 'ellipticity: %s' % str(ruler), labelpos='W')
-        plt.xlabel("x")
-        plt.ylabel("y")
+        qk = plt.quiverkey(q, 0.5, 0.92, ruler, r'$g= %s$' % str(ruler), labelpos='W')
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+        if equal_axis:
+            ax.axis('equal')
+        if xlim is not None:
+            ax.set_xlim(*xlim)
+        if ylim is not None:
+            ax.set_ylim(*ylim)
 
         return fig
 
@@ -597,6 +610,10 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('x','y','g1','g2','sigma')]
 
-    def __call__(self, array):
-        return self.WhiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'])
+    def __call__(self, array, linewidth = 0.01, figsize = None, xlim = None, ylim = None):
+        return self.WhiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
+                                linewidth = linewidth, figsize = figsize,
+                                xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
+                                size_label = r'$\sigma$ [pixel]',
+                                xlim = xlim, ylim = ylim, equal_axis = True)
     
