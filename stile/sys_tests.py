@@ -580,7 +580,7 @@ class ScatterPlotSysTest(SysTest):
         @param color           The color of scatter plots. This color is applied to
                                linear regression if argument `linear_regression` is True.
                                [default: None, meaning follow a matplotlib's default color]
-        @param lim             The limit of axis. This can be spacified explicitly by
+        @param lim             The limit of axis. This can be specified explicitly by
                                using tuples such as ((xmin, xmax), (ymin, ymax)),
                                or if one passes int n, it calculate n-sigma limit around mean
                                for each of x-axis and y-axis.
@@ -589,7 +589,7 @@ class ScatterPlotSysTest(SysTest):
                                [default: False]
         @linear_regression     If True, perform linear regression for x and y and plot a regression
                                line. If yerr is not None, perform the linear regression with
-                               incorporaing the error into the standard chi^2 and plot
+                               incorporating the error into the standard chi^2 and plot
                                a regression line with a 1-sigma allowed region.
                                [default: False]
         @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y is
@@ -654,7 +654,7 @@ class ScatterPlotSysTest(SysTest):
             # If equal_axis is True, x limits may not reflect an actual limit of a plot,e.g., if 
             # y limits are wider than x limits, an actual limit along the x-axis becomes wider
             # than what we specified although a value tied to a matplotlib.axes object remains
-            # the same, which can result in a regression line trancated in smaller range along
+            # the same, which can result in a regression line truncated in smaller range along
             # x-axis if we simply use ax.get_xlim() to the regression line. To avoid this,
             # take a wider range between x limits and y limits, and set this range to 
             # the x limit of a regression line.
