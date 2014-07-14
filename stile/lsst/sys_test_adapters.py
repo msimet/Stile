@@ -127,7 +127,7 @@ class ScatterPlotStarVsPsfG1Adapter(object):
         self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
 
     def __call__(self,*data):
-        return self.test(*data)
+        return self.test(*data, lim=5)
 
     def getMasks(self,data):
         return [mask_func(data) for mask_func in self.mask_funcs]
@@ -184,7 +184,7 @@ class ScatterPlotResidualVsPsfG1Adapter(object):
         self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
 
     def __call__(self,*data):
-        return self.test(*data)
+        return self.test(*data, lim=5)
 
     def getMasks(self,data):
         return [mask_func(data) for mask_func in self.mask_funcs]
@@ -204,7 +204,7 @@ class ScatterPlotResidualVsPsfG2Adapter(object):
         self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
 
     def __call__(self,*data):
-        return self.test(*data)
+        return self.test(*data, lim=5)
 
     def getMasks(self,data):
         return [mask_func(data) for mask_func in self.mask_funcs]
@@ -224,7 +224,7 @@ class ScatterPlotResidualVsPsfSigmaAdapter(object):
         self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
 
     def __call__(self,*data):
-        return self.test(*data)
+        return self.test(*data, lim=5)
 
     def getMasks(self,data):
         return [mask_func(data) for mask_func in self.mask_funcs]

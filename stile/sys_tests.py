@@ -562,7 +562,7 @@ class ScatterPlotSysTest(SysTest):
     ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
     """
     def scatterPlot(self, x, y, yerr=None, xlabel=None, ylabel=None, color = "", lim=None,
-                    equal_axis=False, linear_regression=False):
+                    equal_axis=False, linear_regression=False, reference_line = None):
         """
         Draw a scatter plot and return a `matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
@@ -583,8 +583,7 @@ class ScatterPlotSysTest(SysTest):
         @param lim             The limit of axis. This can be spacified explicitly by
                                using tuples such as ((xmin, xmax), (ymin, ymax)),
                                or if one passes int n, it calculate n-sigma limit around mean
-                               for each of x-axis and y-axis. If lim is not in these types, 
-                               keep going without setting any limits.
+                               for each of x-axis and y-axis.
                                [default: None, meaning do not set any limits]
         @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
                                [default: False]
@@ -593,6 +592,10 @@ class ScatterPlotSysTest(SysTest):
                                incorporaing the error into the standard chi^2 and plot
                                a regression line with a 1-sigma allowed region.
                                [default: False]
+        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y is
+                               drawn. If reference_line == 'zero', y=0 id drawn. A user-specific
+                               function can be used by passing an object which has an attribute
+                               '__call__' and returns a 1-d Numpy array.
         @ returns a matplotlib.figure.Figure object
         """
         fig = plt.figure()
@@ -633,17 +636,17 @@ class ScatterPlotSysTest(SysTest):
         # in other cases (except for the default value None), 
         # just raise a warning and silently keep going
         elif lim is not None:
-            import warnings
-            warnings.warn('Argument lim is not understandable.'
-                          'Continue without setting any axis limits.')
+            raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
+                            '`int` to indicate n-sigma around mean.')
+
 
         # set axis limits if specified
         if lim is not None:
             ax.set_xlim(*xlim)
             ax.set_ylim(*ylim)
 
-        # perform linear regression if specified
-        if linear_regression:
+        # set up x value for linear regression or a reference line
+        if linear_regression or reference_line is not None:
             # set x limits of a regression line.
             # If equal_axis is False, just use x limits set to axis.
             if not equal_axis:
@@ -660,6 +663,9 @@ class ScatterPlotSysTest(SysTest):
                                ax.get_ylim()[1] - ax.get_ylim()[0]])
                 xlimtmp = [numpy.average(x)-0.5*d, numpy.average(x)+0.5*d]
             xtmp = numpy.linspace(*xlimtmp)
+
+        # perform linear regression if specified
+        if linear_regression:
             if yerr is None:
                 m, c = self.linearRegression(x, y)
                 ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
@@ -671,6 +677,22 @@ class ScatterPlotSysTest(SysTest):
                 yerr = numpy.sqrt(xtmp**2*cov_m + 2.*xtmp*cov_mc + cov_c)
                 ax.fill_between(xtmp, y-yerr, y+yerr, facecolor = used_color,
                                 edgecolor = used_color, alpha =0.5)
+
+        # draw a reference line
+        if reference_line is not None:
+            if isinstance(reference_line, str):
+                if reference_line == "one-to-one":
+                    ax.plot(xtmp, xtmp, "--k")
+                elif reference_line == "zero":
+                    ax.plot(xtmp, numpy.zeros(xtmp.shape), "--k")
+            elif hasattr(reference_line, '__call__'):
+                y = reference_line(xtmp)
+                if len(numpy.array(y).shape) != 1:
+                    raise TypeError('an object for reference_line should return a 1-d array')
+                ax.plot(xtmp, y, "--k")
+            else:
+                raise TypeError("reference_line should be str 'one-to-one' or 'zero',"
+                                "or an object which has atttibute '__call__'.")
 
         # set axis labels if specified
         if xlabel is not None:
@@ -708,8 +730,9 @@ class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
 
     def __call__(self, array, color = '', lim=None):
         return self.scatterPlot(array['psf_g1'], array['g1'], yerr=array['g1_err'],
-                                xlabel=r"$g^{\rm PSF}_1$", ylabel=r"$g^{\rm star}_1$",
-                                color=color, lim=lim, equal_axis=True, linear_regression=True)
+                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
 
 class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
@@ -719,8 +742,9 @@ class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
 
     def __call__(self, array, color = '', lim=None):
         return self.scatterPlot(array['psf_g2'], array['g2'], yerr=array['g2_err'],
-                                xlabel=r"$g^{\rm PSF}_2$", ylabel=r"$g^{\rm star}_2$",
-                                color=color, lim=lim, equal_axis=True, linear_regression=True)
+                                xlabel=r'$g^{\rm PSF}_2$', ylabel=r'$g^{\rm star}_2$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
 
 class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_sigma'
@@ -730,8 +754,9 @@ class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
 
     def __call__(self, array, color = '', lim=None):
         return self.scatterPlot(array['psf_sigma'], array['sigma'], yerr=array['sigma_err'],
-                                xlabel=r"$\sigma^{\rm PSF}$", ylabel=r"$\sigma^{\rm star}$",
-                                color=color, lim=lim, equal_axis=True, linear_regression=True)
+                                xlabel=r'$\sigma^{\rm PSF}$', ylabel=r'$\sigma^{\rm star}$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
 
 class ScatterPlotResidualVsPsfG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g1'
@@ -741,9 +766,10 @@ class ScatterPlotResidualVsPsfG1SysTest(ScatterPlotSysTest):
 
     def __call__(self, array, color = '', lim=None):
         return self.scatterPlot(array['psf_g1'], array['g1']-array['psf_g1'], yerr=array['g1_err'],
-                                xlabel=r"$g^{\rm PSF}_1$",
-                                ylabel=r"$g^{\rm star}_1 - g^{\rm PSF}_1$",
-                                color=color, lim=lim, equal_axis=True, linear_regression=True)
+                                xlabel=r'$g^{\rm PSF}_1$',
+                                ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='zero')
 
 class ScatterPlotResidualVsPsfG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g2'
@@ -753,9 +779,10 @@ class ScatterPlotResidualVsPsfG2SysTest(ScatterPlotSysTest):
 
     def __call__(self, array, color = '', lim=None):
         return self.scatterPlot(array['psf_g2'], array['g2']-array['psf_g2'], yerr=array['g2_err'],
-                                xlabel=r"$g^{\rm PSF}_2$",
-                                ylabel=r"$g^{\rm star}_2 - g^{\rm PSF}_2$",
-                                color=color, lim=lim, equal_axis=True, linear_regression=True)
+                                xlabel=r'$g^{\rm PSF}_2$',
+                                ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='zero')
 
 class ScatterPlotResidualVsPsfSigmaSysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_sigma'
@@ -765,6 +792,7 @@ class ScatterPlotResidualVsPsfSigmaSysTest(ScatterPlotSysTest):
 
     def __call__(self, array, color = '', lim=None):
         return self.scatterPlot(array['psf_sigma'], array['sigma']-array['psf_sigma'],
-                                yerr=array['sigma_err'], xlabel=r"$\sigma^{\rm PSF}$",
-                                ylabel=r"$\sigma^{\rm star} - \sigma^{\rm PSF}$", color=color,
-                                lim=lim, equal_axis=True, linear_regression=True)
+                                yerr=array['sigma_err'], xlabel=r'$\sigma^{\rm PSF}$',
+                                ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$', color=color,
+                                lim=lim, equal_axis=False, 
+                                linear_regression=True, reference_line='zero')
