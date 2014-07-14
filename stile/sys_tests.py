@@ -554,9 +554,15 @@ class StatSysTest(SysTest):
 
 class WhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
-
+    """
+    A base class for Stile systematics tests that generate whisker plots. This implements the class
+    method whiskerPlot. Every child class of WhiskerPlotSysTest should use WhiskerPlotSysTest.WhiskerPlot
+    through __call__.
+    See the docstring for ScatterPlotSysTest.scatterPlot for information on how to write further
+    tests using it.
+    """
     def WhiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01,
-                    figsize = None, xlabel = None, ylabel = None ,
+                    figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
