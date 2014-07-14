@@ -4,11 +4,22 @@ import lsst.meas.mosaic
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from .sys_test_adapters import adapter_registry
 import numpy
-
+try:
+    import matplotlib
+    # We should decide which backend to use (this line allows running matplotlib even on sessions 
+    # without properly defined displays, eg through PBS)
+    matplotlib.use('Agg') 
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
+#    sys_tests = adapter_registry.makeField("tests to run",multi=True,
+#                    default = ["StatsPSFFlux","StarXGalaxyShear", "WhiskerPlot"])
+
     sys_tests = adapter_registry.makeField("tests to run",multi=True,
-                    default = ["StatsPSFFlux","StarXGalaxyShear"])
+                    default = ["WhiskerPlotStar"])
     
 class SysTestData(object):
     def __init__(self):
@@ -73,7 +84,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if hasattr(sys_test.test,'plot'):
                 fig = sys_test.test.plot(results)
                 fig.savefig(sys_test_data.test_name+'.png')
-            
+            if isinstance(results, matplotlib.figure.Figure):
+                results.savefig(sys_test_data.test_name+'.png')            
     
     def removeFlags(self,catalog):
         flags = ['deblend.too-many-peaks','deblend.parent-too-big','deblend.failed',
@@ -100,6 +112,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             return [src.getRa().asDegrees() for src in data]
         elif col=="dec":
             return [src.getDec().asDegrees() for src in data]
+        if col=="x":
+            return [src.getX() for src in data]
+        elif col=="y":
+            return [src.getY() for src in data]
         elif col=="mag_err":
             return 2.5/numpy.log(10)*(sources.getPsfFluxErr()/sources.getPsfFlux())
         elif col=="mag":

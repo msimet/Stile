@@ -114,7 +114,28 @@ class StatsPSFFluxAdapter(object):
         
     def getRequiredColumns(self):
         return (('flux.psf',),)
+
+class WhiskerPlotStarAdapterConfig(lsst.pex.config.Config):
+    pass
+    
+class WhiskerPlotStarAdapter(object):
+    ConfigClass = StatsPSFFluxAdapterConfig
+    def __init__(self,config):
+        self.config = config
+        self.test = sys_tests.WhiskerPlotStarSysTest()
+        self.name = self.test.short_name
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.test.objects_list]
+
+    def __call__(self,*data):
+        return self.test(*data)
+    
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
+
+    def getRequiredColumns(self):
+        return self.test.required_quantities
         
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
 #adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
 adapter_registry.register("StarXGalaxyShear",StarXGalaxyShearAdapter)
+adapter_registry.register("WhiskerPlotStar",WhiskerPlotStarAdapter)
