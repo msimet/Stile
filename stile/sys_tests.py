@@ -567,8 +567,7 @@ class ScatterPlotSysTest(SysTest):
         Draw a scatter plot and return a `matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
         explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
-        __call__ of the child class with passing `matplotlib.axes.AxesSubplot` and return
-        `matplotlib.figure.Figure` that scatterPlot returns.
+        __call__ of the child class and return `matplotlib.figure.Figure` that scatterPlot returns.
         @param x               The tuple, list, or NumPy array for x-axis.
         @param y               The tuple, list, or NumPy array for y-axis.
         @param yerr            The tuple, list, or Numpy array for error of the y values.
