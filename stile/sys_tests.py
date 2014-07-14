@@ -556,12 +556,11 @@ class WhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     """
     A base class for Stile systematics tests that generate whisker plots. This implements the class
-    method whiskerPlot. Every child class of WhiskerPlotSysTest should use WhiskerPlotSysTest.WhiskerPlot
-    through __call__.
-    See the docstring for ScatterPlotSysTest.scatterPlot for information on how to write further
-    tests using it.
+    method whiskerPlot. Every child class of WhiskerPlotSysTest should use
+    WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
+    WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
     """
-    def WhiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01,
+    def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01,
                     figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
         fig = plt.figure(figsize=figsize)
@@ -617,7 +616,7 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
     required_quantities = [('x','y','g1','g2','sigma')]
 
     def __call__(self, array, linewidth = 0.01, figsize = None, xlim = None, ylim = None):
-        return self.WhiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
+        return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
                                 linewidth = linewidth, figsize = figsize,
                                 xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]',
