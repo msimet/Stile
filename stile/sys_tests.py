@@ -73,7 +73,7 @@ class CorrelationFunctionSysTest(SysTest):
         
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
-                             'kg','m2','nm','norm') to request from corr2.
+                             'kg','m2','nm','norm') to request from corr2--see above.
         @param data, data2, random, random2: data sets in the format requested by 
                              corr2_utils.MakeCorr2FileKwargs().
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file (will
