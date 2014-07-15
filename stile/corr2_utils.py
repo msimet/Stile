@@ -735,8 +735,8 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
         # First check whether the option was even specified, since data2, random, and random2 could
         # just be None.
         # len(None) fails, and so does "not numpy.ndarray", so check for existence separately
-        if (not isinstance(data_list, numpy.ndarray) and not data_list) or \
-                (isinstance(data_list, numpy.ndarray) and len(data_list)==0):
+        if ((not isinstance(data_list, numpy.ndarray) and not data_list) or 
+                (isinstance(data_list, numpy.ndarray) and len(data_list)==0)):
             continue
         elif isinstance(data_list, tuple):
             # Data looks like a (file_name, field_schema) tuple: already written
@@ -852,8 +852,8 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                 # filenames but different field descriptions, which would otherwise be caught by
                 # this check and rewritten.  (You could picture doing this if you had a catalog with
                 # two different shape definitions and wanted to correlate them, for example.)
-                if data_list[0] in to_write and \
-                        any([data_fields[key]!=fields[key] for key in fields.keys()]):
+                if (data_list[0] in to_write and 
+                        any([data_fields[key]!=fields[key] for key in fields.keys()])):
                     data = file_io.ReadTable(data_list[0],fields=data_list[1])
                     new_data_list.append(OSFile(data,fields=fields))
                     to_write.remove(data_list[0]) 
