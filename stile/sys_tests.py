@@ -35,13 +35,12 @@ class CorrelationFunctionSysTest(SysTest):
     short_name = 'corrfunc'
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-    class method getCorrelationFunction(), which runs corr2 (via a call to the subprocess module) on
-    a given set of data.  Exact arguments to this method should be created by child classes of
-    CorrelationFunctionSysTest; see the docstring for 
-    CorrelationFunctionSysTest.getCorrelationFunction() for information on how to write further 
-    tests using it.
+    class method getCF(), which runs corr2 (via a call to the subprocess module) on a given set of 
+    data.  Exact arguments to this method should be created by child classes of
+    CorrelationFunctionSysTest; see the docstring for CorrelationFunctionSysTest.getCF() for 
+    information on how to write further tests using it.
     """
-    def getCorrelationFunction(self, stile_args, correlation_function_type, data=None, data2=None,
+    def getCF(self, stile_args, correlation_function_type, data=None, data2=None,
                                      random=None, random2=None, config_here=False, **kwargs):
         """
         Sets up and calls corr2 on the given set of data.  The data files and random files can
@@ -122,7 +121,7 @@ class RealShearSysTest(CorrelationFunctionSysTest):
     long_name = 'Shear of galaxies around real objects'
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'ng',data,data2,random,random2,**kwargs)
 
 class StatSysTest(SysTest):
     """
