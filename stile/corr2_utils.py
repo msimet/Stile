@@ -627,11 +627,9 @@ def _merge_fields(has_fields, old_fields, new_fields):
     if not has_fields:
         return True, _coerce_schema(new_fields)
     else:
-        keys = old_fields.keys()
-        for key in keys:
-            if key not in new_fields:
-                del old_fields[key]
-        return True, old_fields
+        # Get the intersection of the field names, return a dict containing only those keys
+        keys = old_fields.viewkeys() & set(new_fields) # new_fields may be a list or a dict
+        return True, {k: old_fields[k] for k in keys}
         
 def _check_fields(has_fields,already_written_files,fields,data_list):
     """
@@ -795,11 +793,9 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                 break
 
             # Next: check the intersection of the schemas
-            aw_keys = already_written_schema[0].keys()
+            aw_keys = already_written_schema[0].viewkeys()
             for aws in already_written_schema[1:]:
-                for key in aw_keys:
-                    if key not in aws and key in aw_keys:
-                        del aw_keys[key]
+                aw_keys &= aws.viewkeys()
             all_same = True
             for key in aw_keys:
                 # Does the set of fields in the intersection point to the same column in every
