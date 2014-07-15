@@ -41,7 +41,7 @@ class CorrelationFunctionSysTest(SysTest):
     information on how to write further tests using it.
     """
     def getCF(self, stile_args, correlation_function_type, data=None, data2=None,
-                                     random=None, random2=None, config_here=False, **kwargs):
+                                     random=None, random2=None, save_config=False, **kwargs):
         """
         Sets up and calls corr2 on the given set of data.  The data files and random files can
         be contained already in stile_args['corr2_kwargs'] or **kwargs, in which case passing None
@@ -49,7 +49,7 @@ class CorrelationFunctionSysTest(SysTest):
         
         Note: by default, the corr2 configuration files are written to the temp directory called by 
         tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass 
-        `config_here=True` and they will be written (as temp files probably beginning with "tmp") 
+        `save_config=True` and they will be written (as temp files probably beginning with "tmp") 
         to your working directory, which shouldn't be automatically cleaned up.  
         
         This function accepts all (self-consistent) sets of data, data2, random, and random2.  
@@ -93,7 +93,7 @@ class CorrelationFunctionSysTest(SysTest):
         elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
             raise ValueError('Given random file for file 2, but not file 1')
             
-        if config_here:
+        if save_config:
             handle, config_file = tempfile.mkstemp(dir='.')
         else:
             handle, config_file = tempfile.mkstemp()
