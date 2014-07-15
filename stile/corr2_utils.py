@@ -838,10 +838,14 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
     # Now loop through again and write to a file any data arrays we need to.
     for data_list, new_data_list in [(data,new_data), (data2,new_data2), 
                                      (random,new_random), (random2, new_random2)]:
-        if (not isinstance(data_list,numpy.ndarray) and not data_list) or \
-                (isinstance(data_list,numpy.ndarray) and len(data_list)==0):
+        if ((not isinstance(data_list,numpy.ndarray) and not data_list) or 
+                (isinstance(data_list,numpy.ndarray) and len(data_list)==0)):
             continue
-        elif isinstance(data_list, tuple):
+        elif isinstance(data_list, tuple): 
+            # This is a filename, field_schema tuple.  First check it against the list of files that
+            # need to be rewritten (because their field schema doesn't align with other already-
+            # written files), and if it's there and the field schema is wrong, rewrite it; otherwise
+            # append the filename to the list of files we're eventually passing to corr2.
             if os.path.isfile(data_list[0]):
                 data_fields = _coerce_schema(data_list[1])
                 # The "any(...)" bit here is to protect against the case where you use two identical
@@ -852,14 +856,24 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                         any([data_fields[key]!=fields[key] for key in fields.keys()]):
                     data = file_io.ReadTable(data_list[0],fields=data_list[1])
                     new_data_list.append(OSFile(data,fields=fields))
-                    to_write.remove(data_list[0])
+                    to_write.remove(data_list[0]) 
                 else:
                     new_data_list.append(data_list[0])
+            else:
+                raise RuntimeError('Input data type (tuple) indicates a file on disk, but no such '
+                                   ' file found: %s'%data_list[0])
         elif isinstance(data_list, OSFile):
+            # An OSFile object is only made after we made the field schemas the same--we can just
+            # add it to the list of files we're eventually passing to corr2.
             new_data_list.append(data_list)
         elif hasattr(data_list, 'dtype') and data_list.dtype.names:
+            # Write this NumPy array to disk with the proper field schemas, and append the OSFile
+            # object to the list of files we're eventually passing to corr2.
             new_data_list.append(OSFile(data_list, fields=fields))
         elif hasattr(data_list, '__getitem__'):
+            # Okay, this is a list of objects.  They should all be one of the types that we just
+            # did above, so loop through all the items and repeat the code block above on a per-item
+            # basis.
             for dl in data_list:
                 if isinstance(data_list[0], tuple):
                     data_fields = _coerce_schema(dl[1])
@@ -874,9 +888,15 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                 elif hasattr(dl, 'dtype') and dl.dtype.names: 
                     new_data_list.append(OSFile(dl,fields=fields))
                 else: 
-                    raise RuntimeError("Cannot parse data: should be a tuple, numpy array, or a"+
+                    # If it's NOT one of those things, then there's an error of some sort...
+                    raise RuntimeError("Cannot parse data: should be a tuple, numpy array, or a "+
                                        "list of one or the other.  Given: "+str(dl)+
-                                       " of type "+type(dl))
+                                       " of type "+str(type(dl)))
+        else: 
+            # If it's NOT one of those things, then there's an error of some sort...
+            raise RuntimeError("Cannot parse data: should be a tuple, numpy array, or a "+
+                               "list of one or the other.  Given: "+str(data_list)+
+                               " of type "+str(type(data_list)))
         
     
     # Lists of files need to be written (as a list of filenames) to a separate file; do that.
