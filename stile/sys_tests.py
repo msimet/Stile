@@ -87,11 +87,22 @@ class CorrelationFunctionSysTest(SysTest):
         import copy
         handles = []
         
-        # nab the corr2 params, and make the files if needed
+        # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
+        # passed as a kwarg to that dict.
         if not 'corr2_kwargs' in stile_args:
             stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
         corr2_kwargs.update(kwargs)
+        # Now, pass the data and random arguments to MakeCorr2FileKwargs.  This will write to disk
+        # any data that's currently contained in memory for Stile, as well as making sure that all
+        # the files are in the same format--corr2 expects ra (etc) to be in the same column in 
+        # every file. Then it returns a bunch of (key,value) pairs that we can use to write a corr2 
+        # config file: the file names plus the format parameters (such as `ra_col`, `dec_col`, 
+        # etc).  Empty data sets return nothing, and if all data sets are empty, the return value 
+        # is an empty dict.  It's possible the user already ran MakeCorr2FileKwargs and the results 
+        # have been passed as kwargs to this function.  We don't explicitly check for that, but as 
+        # long as the user doesn't pass anything to `data`, `data2`, `random`, or `random2`, no 
+        # conflicts will arise.
         corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
         corr2_kwargs.update(corr2_file_kwargs)
 
