@@ -136,7 +136,7 @@ def WriteASCIITable(file_name, data_array, fields=None):
     Given a `file_name` and a `data_array`, write the `data_array` to the `file_name` as an ASCII
     file.  If fields is not None, this will rearrange a NumPy formatted array to the field
     specification (must be either a list of field names, or a dict of the form 'field_name':
-    field_position or 'field_name': original_order_field_name.  Note that if `fields` is a dict
+    field_position or 'field_name': original_order_field_name).  Note that if `fields` is a dict
     which does not completely describe all the fields less than its maximum field number, columns
     not indicated by the dict will be moved around to fill in any gaps.  If you specify, say,
     columns 0, 1, and 3, you may be surprised by what is in column 2!
