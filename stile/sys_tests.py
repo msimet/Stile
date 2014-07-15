@@ -47,15 +47,29 @@ class CorrelationFunctionSysTest(SysTest):
         be contained already in stile_args['corr2_kwargs'] or **kwargs, in which case passing None
         to the `data` and `random` kwargs is fine; otherwise they should be properly populated.
         
-        Note: by default, the corr2 configuration files are written to the temp directory called by 
-        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass 
-        `save_config=True` and they will be written (as temp files probably beginning with "tmp") 
-        to your working directory, which shouldn't be automatically cleaned up.  
+        The user needs to specify the type of correlation function requested.  The available types
+        are:
+            'n2': a 2-point correlation function
+            'ng': a point-shear correlation function (eg galaxy-galaxy lensing)
+            'g2': a shear-shear correlation function (eg cosmic shear)
+            'nk': a point-scalar [such as convergence, hence k meaning "kappa"] correlation function
+            'k2': a scalar-scalar correlation function
+            'kg': a scalar-shear correlation function
+            'm2': an aperture mass measurement
+            'nm': an <N aperture mass> measurement
+            'norm': 'nm' properly normalized by the average values of n and aperture mass to return
+                    something like a correlation coefficient. 
+        More details can be found in the Read.me for corr2.
         
         This function accepts all (self-consistent) sets of data, data2, random, and random2.  
         Including "data2" and possibly "random2" will return a cross-correlation; otherwise the 
         program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the 
         correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
+        
+        Note: by default, the corr2 configuration files are written to the temp directory called by 
+        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass 
+        `save_config=True` and they will be written (as temp files probably beginning with "tmp") 
+        to your working directory, which shouldn't be automatically cleaned up.  
         
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
