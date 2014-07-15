@@ -718,9 +718,9 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                     only the ones Stile will use.
     @param data2    The second set of data that will be passed for cross-correlations, with the same
                     format options as data.
-    @param random   The random data set corresponding to data (ditto).  Which types of correlation
-                    functions need data2, random, and/or random2 are described in the documentation
-                    for CorrelationFunctionSysTest.getCorrelationFunction().
+    @param random   The random data set corresponding to data (ditto).  The documentation for
+                    CorrelationFunctionSysTest.getCorrelationFunction() describes which types of
+                    correlation functions need data2, random, and/or random2.
     @param random2  The random data set corresponding to data2 (ditto).
     @param use_as_k This is passed through to MakeCorr2Cols to designate a scalar field as the
                     "convergence" for a correlation function; see the documentation for 
@@ -734,19 +734,21 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
 
     # First check for already-written files, and grab their field schema
     for data_list in [data, data2, random, random2]:
+        # First check whether the option was even specified, since data2, random, and random2 could
+        # just be None.
         # len(None) fails, and so does "not numpy.ndarray", so check for existence separately
-        if (not isinstance(data_list,numpy.ndarray) and not data_list) or (
-            isinstance(data_list,numpy.ndarray) and len(data_list)==0):
+        if (not isinstance(data_list, numpy.ndarray) and not data_list) or \
+                (isinstance(data_list, numpy.ndarray) and len(data_list)==0):
             continue
-        elif isinstance(data_list,tuple):
+        elif isinstance(data_list, tuple):
             # Data looks like a (file_name, field_schema) tuple: already written
             if os.path.isfile(data_list[0]):
                 already_written_schema.append(_coerce_schema(data_list[1]))
                 already_written_files.append(data_list[0])
             else:
                 raise RuntimeError(("Data tuple appears to point to an existing file %s, but that "+
-                                   "file is not found according to os.path.isfile()")%data_list[0])
-        elif isinstance(data_list,OSFile):
+                                    "file is not found according to os.path.isfile()")%data_list[0])
+        elif isinstance(data_list, OSFile):
             # Data is an OSFile: already written
             if os.path.isfile(data_list.file_name):
                 already_written_schema.append(_coerce_schema(data_list.fields))
@@ -754,7 +756,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
             else:
                 raise RuntimeError(("Data item appears to be an OSFile object, but does not point "+
                                    "to an existing object: %s")%data_list[0])
-        elif hasattr(data_list,'__getitem__') and not hasattr(data_list,'dtype'):
+        elif hasattr(data_list, '__getitem__') and not hasattr(data_list, 'dtype'):
             # This is a list of something, but not a NumPy array.  Iterate through, doing what we
             # did above.
             for dl in data_list:
@@ -766,22 +768,24 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                         raise RuntimeError(("Data tuple appears to point to an existing file %s, "+
                                             "but that file is not found according to "+
                                             "os.path.isfile()")%data_list[0])
-                elif isinstance(dl,OSFile):
+                elif isinstance(dl, OSFile):
                     if os.path.isfile(dl.file_name):
                         already_written_schema.append(_coerce_schema(dl.fields))
                         already_written_files.append(dl.file_name)
                     else:
                         raise RuntimeError("Data item appears to be an OSFile object, but does "+
                                            "not point to an existing object: %s"%data_list[0])
-                elif not hasattr(dl,'dtype'):
+                elif not hasattr(dl, 'dtype'):
                     raise ValueError("Cannot understand data: "+str(data_list))
             # NumPy arrays can be safely ignored here--they're not on disk already
-        elif not hasattr(data_list,'dtype'):
+        elif not hasattr(data_list, 'dtype'):
             raise ValueError("Cannot understand data: "+str(data_list))
+
     # Check existing field schema for consistency.  (Corr2 only allows one schema specification.)
     if already_written_schema:
         while True:
             all_same = True
+
             # First: check for straight-up equality
             for i in range(len(already_written_schema)-1):
                 for j in range(i,len(already_written_schema)):
@@ -789,6 +793,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                         all_same=False
             if all_same:
                 break
+
             # Next: check the intersection of the schemas
             aw_keys = already_written_schema[0].keys()
             for aws in already_written_schema[1:]:
@@ -812,6 +817,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
                 to_write.append(already_written_files[remove])
                 del already_written_files[remove]
                 del already_written_schema[remove]
+
         # Keep only the intersection of the already-written schemas!  That's all we care about.
         fields = already_written_schema[0]
         for aw in already_written_schema[1:]:
@@ -832,43 +838,44 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
     new_data2 = []
     new_random = []
     new_random2 = []
+
     # Now loop through again and write to a file any data arrays we need to.
     for data_list, new_data_list in [(data,new_data), (data2,new_data2), 
                                      (random,new_random), (random2, new_random2)]:
-        if (not isinstance(data_list,numpy.ndarray) and not data_list) or (
-                isinstance(data_list,numpy.ndarray) and len(data_list)==0):
+        if (not isinstance(data_list,numpy.ndarray) and not data_list) or \
+                (isinstance(data_list,numpy.ndarray) and len(data_list)==0):
             continue
-        elif isinstance(data_list,tuple):
+        elif isinstance(data_list, tuple):
             if os.path.isfile(data_list[0]):
                 data_fields = _coerce_schema(data_list[1])
                 # The "any(...)" bit here is to protect against the case where you use two identical
                 # filenames but different field descriptions, which would otherwise be caught by
                 # this check and rewritten.  (You could picture doing this if you had a catalog with
                 # two different shape definitions and wanted to correlate them, for example.)
-                if data_list[0] in to_write and any(
-                                          [data_fields[key]!=fields[key] for key in fields.keys()]):
+                if data_list[0] in to_write and \
+                        any([data_fields[key]!=fields[key] for key in fields.keys()]):
                     data = file_io.ReadTable(data_list[0],fields=data_list[1])
                     new_data_list.append(OSFile(data,fields=fields))
                     to_write.remove(data_list[0])
                 else:
                     new_data_list.append(data_list[0])
-        elif isinstance(data_list,OSFile):
+        elif isinstance(data_list, OSFile):
             new_data_list.append(data_list)
-        elif hasattr(data_list,'dtype') and data_list.dtype.names:
-            new_data_list.append(OSFile(data_list,fields=fields))
-        elif hasattr(data_list,'__getitem__'):
+        elif hasattr(data_list, 'dtype') and data_list.dtype.names:
+            new_data_list.append(OSFile(data_list, fields=fields))
+        elif hasattr(data_list, '__getitem__'):
             for dl in data_list:
-                if isinstance(data_list[0],tuple):
+                if isinstance(data_list[0], tuple):
                     data_fields = _coerce_schema(dl[1])
                     if dl[0] in to_write and any(
                                           [data_fields[key]!=fields[key] for key in fields.keys()]):
-                        data = file_io.ReadTable(dl[0],fields=dl[1])
-                        new_data_list.append(OSFile(data,fields=fields))
+                        data = file_io.ReadTable(dl[0], fields=dl[1])
+                        new_data_list.append(OSFile(data, fields=fields))
                     else:
                         new_data_list.append(dl[0])
-                elif isinstance(dl,OSFile):
+                elif isinstance(dl, OSFile):
                     new_data_list.append(dl)
-                elif hasattr(dl,'dtype') and dl.dtype.names: 
+                elif hasattr(dl, 'dtype') and dl.dtype.names: 
                     new_data_list.append(OSFile(dl,fields=fields))
                 else: 
                     raise RuntimeError("Cannot parse data: should be a tuple, numpy array, or a"+
@@ -888,7 +895,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
     
     # Generate the corr2 config parameters to tell it where the columns it wants are: ra_col, 
     # dec_col, etc
-    corr2_kwargs = MakeCorr2Cols(fields,use_as_k=use_as_k)
+    corr2_kwargs = MakeCorr2Cols(fields, use_as_k=use_as_k)
     # Then add the config parameters that direct corr2 to the right files or right lists of file
     # names.
     if file_args[0]:
@@ -899,6 +906,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
         corr2_kwargs['random_'+file_args[2][0]] = file_args[2][1]
     if file_args[3]:
         corr2_kwargs['random_'+file_args[3][0]+'2'] = file_args[3][1]
+
     # Return everything as a dict.
     return corr2_kwargs
 
