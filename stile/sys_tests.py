@@ -98,14 +98,9 @@ class CorrelationFunctionSysTest(SysTest):
         # make sure the set of non-None data sets makes sense
         if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
             raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
-        if ('rand_list' in corr2_kwargs or 'rand_name' in corr2_kwargs):
-            if ('file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs) :
-                if not ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
-                    raise ValueError('Given random file for file 1 but not file 2')
-            elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
-                raise ValueError('Given random file for file 2, but there is no file 2')
-        elif ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs):
-            raise ValueError('Given random file for file 2, but not file 1')
+        if ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs) and not (
+            'file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs):
+            raise ValueError('Given random file for file 2, but there is no file 2')
             
         if save_config:
             handle, config_file = tempfile.mkstemp(dir='.')
