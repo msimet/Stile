@@ -717,7 +717,7 @@ def MakeCorr2FileKwargs(data, data2=None, random=None, random2=None, use_as_k=No
     @param data2    The second set of data that will be passed for cross-correlations, with the same
                     format options as data.
     @param random   The random data set corresponding to data (ditto).  The documentation for
-                    CorrelationFunctionSysTest.getCorrelationFunction() describes which types of
+                    CorrelationFunctionSysTest.getCF() describes which types of
                     correlation functions need data2, random, and/or random2.
     @param random2  The random data set corresponding to data2 (ditto).
     @param use_as_k This is passed through to MakeCorr2Cols to designate a scalar field as the
