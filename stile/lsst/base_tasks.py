@@ -61,8 +61,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                             extra_col_dict[col].fill('nan')
                         nan_mask = numpy.isnan(extra_col_dict[col])
                         nan_and_col_mask = numpy.logical_and(nan_mask,mask)
-                        extra_col_dict[col][nan_and_col_mask] = self.computeExtraColumn(
+                        extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
                             col,catalog[nan_and_col_mask],calib_data,calib_type)
+                        if extra_mask:
+                            mask &= extra_mask
             sys_data_list.append(sys_test_data)
         
         for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
@@ -86,10 +88,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 results.savefig(sys_test_data.test_name+'.png')    
 
     def removeFlags(self,catalog):
-        flags = ['deblend.too-many-peaks','deblend.parent-too-big','deblend.failed',
-                 'deblend.skipped','flags.badcentroid','flags.pixel.edge','flags.pixel.bad',
-                 'flux.aperture.flags','flux.gaussian.flags','flux.kron.flags','flux.naive.flags',
-                 'flux.psf.flags']
+        flags = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                 'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped', 
+                 'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags', 
+                 'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                 'flags.pixel.interpolated.center', 'flags.pixel.saturated.any', 
+                 'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center', 
+                 'flags.pixel.bad','flags.pixel.suspect.any','flags.pixel.suspect.center']
         masks = [catalog[flag]==False for flag in flags]
         mask = masks[0]
         for new_mask in masks[1:]:
@@ -104,14 +109,24 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         for key in catalog_dict:
             data[key] = catalog_dict[key]
         return data
-
+        
+    def _computeShapeMask(self,data):
+        return numpy.array([src.get('shape.sdss.flags')==0 & 
+                            src.get('shape.sdss.centroid.flags')==0 & 
+                            src.get('shape.sdss.flags.unweightedbad')==0 &
+                            src.get('shape.sdss.flags.unweighted')==0 &
+                            src.get('shape.sdss.flags.shift')==0 &
+                            src.get('shape.sdss.flags.maxiter')==0])
+                           
     def computeExtraColumn(self,col,data,calib_data,calib_type):
         if col=="ra":
-            return [src.getRa().asDegrees() for src in data]
+            return None, [src.getRa().asDegrees() for src in data]
         elif col=="dec":
-            return [src.getDec().asDegrees() for src in data]
+            return None, [src.getDec().asDegrees() for src in data]
         elif col=="mag_err":
-            return 2.5/numpy.log(10)*(sources.getPsfFluxErr()/sources.getPsfFlux())
+            return (numpy.array([src.get('flux.psf.flags')==0 & 
+                                 src.get('flux.psf.flags.psffactor')==0 for src in data]),
+                    2.5/numpy.log(10)*(sources.getPsfFluxErr()/sources.getPsfFlux()))
         elif col=="mag":
             if calib_type=="fcr":
                 ffp = lsst.meas.mosaic.FluxFitParams(calib_data)
@@ -120,7 +135,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
-            return zeropoint - 2.5*numpy.log10(data.getPsfFlux())
+            return (numpy.array([src.get('flux.psf.flags')==0 & 
+                                 src.get('flux.psf.flags.psffactor')==0 for src in data]),
+                    zeropoint - 2.5*numpy.log10(data.getPsfFlux()))
         elif col=="g1":
             try:
                 moments = data.get('shape.sdss')
@@ -129,7 +146,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return (ixx-iyy)/(ixx+iyy)
+            return (self._computeShapeMask(data), (ixx-iyy)/(ixx+iyy))
         elif col=="g2":
             try:
                 moments = data.get('shape.sdss')
@@ -140,7 +157,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
                 ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return 2.*ixy/(ixx+iyy)
+            return (self._computeShapeMask(data), 2.*ixy/(ixx+iyy))
         elif col=="sigma":
             try:
                 moments = data.get('shape.sdss')
@@ -149,7 +166,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return numpy.sqrt(0.5*(ixx+iyy))
+            return (self._computeShapeMask(data), numpy.sqrt(0.5*(ixx+iyy)))
         elif col=="g1_err":
             try:
                 moments = data.get('shape.sdss')
@@ -167,7 +184,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
             dg1_dixx = 2.*iyy/(ixx+iyy)**2
             dg1_diyy = -2.*ixx/(ixx+iyy)**2
-            return numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy)
+            return (self._computeShapeMask(data), 
+                    numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy))
         elif col=="g2_err":
             try:
                 moments = data.get('shape.sdss')
@@ -190,7 +208,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dg2_dixx = -2.*ixy/(ixx+iyy)**2
             dg2_diyy = -2.*ixy/(ixx+iyy)**2
             dg2_dixy = 2./(ixx+iyy)
-            return numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + 2. * dg2_dixy**2 * cov_ixy)
+            return (self._computeShapeMask(data), 
+                    numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + 
+                               2. * dg2_dixy**2 * cov_ixy))
         elif col=="sigma_err":
             try:
                 moments = data.get('shape.sdss')
@@ -209,7 +229,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             sigma = numpy.sqrt(0.5*(ixx+iyy))
             dsigma_dixx = 0.25/sigma
             dsigma_diyy = 0.25/sigma
-            return numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
+            return (self._computeShapeMask(data), 
+                    numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy))
         elif col=="psf_g1":
             try:
                 moments = data.get('shape.sdss.psf')
@@ -218,7 +239,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return (ixx-iyy)/(ixx+iyy)
+            return (numpy.array([src.get('shape.sdss.flags.psf')==0 for src in data]),
+                   (ixx-iyy)/(ixx+iyy))
         elif col=="psf_g2":
             try:
                 moments = data.get('shape.sdss.psf')
@@ -229,7 +251,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
                 ixy = numpy.array([src.get('shape.sdss.psf').getIxy() for src in data])
                 iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return 2.*ixy/(ixx+iyy)
+            return return (numpy.array([src.get('shape.sdss.flags.psf')==0 for src in data]),
+                   2.*ixy/(ixx+iyy))
         elif col=="psf_sigma":
             try:
                 moments = data.get('shape.sdss.psf')
@@ -238,10 +261,11 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return numpy.sqrt(0.5*(ixx+iyy))
+            return return (numpy.array([src.get('shape.sdss.flags.psf')==0 for src in data]),
+                   numpy.sqrt(0.5*(ixx+iyy)))
         elif col=="w":
             print "Need to figure out something clever for weights"
-            return numpy.array([1.]*len(data))
+            return None, numpy.array([1.]*len(data))
         raise NotImplementedError("Cannot compute col %s"%col)
         
     @classmethod
