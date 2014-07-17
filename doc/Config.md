@@ -72,7 +72,7 @@ If most of your data is in a group, or if you just want to type less, you can pa
             'star': star3.fits
             'galaxy': galaxy3.fits
 ```
-In this format, if all the object types with the same extent, epoch and data format have a list of the same length, Stile will assume that each POSITION in that list is a group.  So in this previous example, 'star0.fits' and 'galaxy0.fits' would be assumed to go together, as would 'galaxy1.fits' and 'star1.fits', and as would 'star3.fits' and 'galaxy3.fits'.
+Each file in the list is assumed to be a separate data set.  In this format, if all the object types with the same extent, epoch and data format have a list of the same length, Stile will assume that each POSITION in that list is a group.  So in this previous example, 'star0.fits' and 'galaxy0.fits' would be assumed to go together, as would 'galaxy1.fits' and 'star1.fits', and as would 'star3.fits' and 'galaxy3.fits'.
 
 The order of the nesting isn't important: the following is just fine.
 ```
@@ -155,7 +155,7 @@ Since multiepoch data sets contain multiple files, the processing works a little
    'CCD':
      'multiepoch':
        'star': star0.fits, star1.fits
-``
+```
 would only give you one data set: a multiepoch-CCD-catalog format with a "star" object type that would cycle through [star0.fits, star1.fits] .  If you instead want to specify multiple sets, you should specify a list of lists:
 ```
  'catalog':
