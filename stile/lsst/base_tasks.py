@@ -190,7 +190,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dg2_dixx = -2.*ixy/(ixx+iyy)**2
             dg2_diyy = -2.*ixy/(ixx+iyy)**2
             dg2_dixy = 2./(ixx+iyy)
-            return numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + dg2_dixy**2 * cov_Ixy)
+            return numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + 2. * dg2_dixy**2 * cov_ixy)
         elif col=="sigma_err":
             try:
                 moments = data.get('shape.sdss')
