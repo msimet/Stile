@@ -23,14 +23,14 @@ We expect a list of files in a configuration file with appropriate descriptions 
 There are two main ways you can specify your file information:
 
 AS LIST OF DICTS:
- - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'star', name: 'star0.fits'
- - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'galaxy', name: 'galaxy0.fits'
- - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'star', name: 'star1.fits'
- - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'galaxy', name: 'galaxy1.fits'
- - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'star', name: 'star2.fits'
- - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'galaxy', name: 'galaxy2.fits'
- - epoch: 'single', extent: 'field', data_format: 'catalog', object_type: 'star', name: 'star3.fits'
- - epoch: 'single', extent: 'field', data_format: 'catalog', object_type: 'galaxy', 
+    - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'star', name: 'star0.fits'
+    - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'galaxy', name: 'galaxy0.fits'
+    - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'star', name: 'star1.fits'
+    - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'galaxy', name: 'galaxy1.fits'
+    - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'star', name: 'star2.fits'
+    - epoch: 'single', extent: 'CCD', data_format: 'catalog', object_type: 'galaxy', name: 'galaxy2.fits'
+    - epoch: 'single', extent: 'field', data_format: 'catalog', object_type: 'star', name: 'star3.fits'
+    - epoch: 'single', extent: 'field', data_format: 'catalog', object_type: 'galaxy', 
    name: 'galaxy3.fits'
 A little verbose, but clear.  
 
