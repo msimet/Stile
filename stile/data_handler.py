@@ -111,12 +111,7 @@ class ConfigDataHandler(DataHandler):
         for key in keys:
             if key[:4]=='file' and key!='file_reader':
                 file_obj = stile_args.pop(key)
-                if isinstance(file_obj,list):
-                    new_file_list, n = self._parseFileHelper(file_obj,group=False,wildcard=wildcard,
-                                                         start_n=n)
-                else:
-                    new_file_list, n = self._parseFileHelper(file_obj,group=group,wildcard=wildcard,
-                                                         start_n=n)
+                new_file_list, n = self._parseFileHelper(file_obj,start_n=n)
                 file_list.append(new_file_list)
         fields = stile_utils.PopAndCheckFormat(stile_args,'fields',(list,dict),default=[])
         if fields:
@@ -131,144 +126,139 @@ class ConfigDataHandler(DataHandler):
         self.files, self.groups = self._fixGroupings(file_list)
         return self.files, self.groups # Return for checking purposes, mainly
         
-    def _parseFileHelper(self,files,epoch=None,extent=None,data_format=None,object_type=None,
-                              group=True,wildcard=False,flag_field=None,file_reader=None,
-                              fields=[],start_n=0,recursed=False,**kwargs):
-        if isinstance(files,list):
-            # Okay, this is a list.  That means it's either the innermost bit of a nested dict, or
-            # a list of self-contained dicts.  So loop through them and make sure the kwargs are
-            # satisfied either by the keys in the item itself (if it's a dict), or by the kwargs
-            # passed to this function.
-            return_list = []
-            for item in files:
-                required_keys = []
-                for keyval,keyname in [(epoch,'epoch'),(extent,'extent'),(data_format,'data_format'),
-                                       (object_type,'object_type')]:
-                    if not keyval:
-                        required_keys.append(keyname)
-                if isinstance(item,(list,str)):
-                    # This is the innermost bit of a loop by definition, so: all the info must be
-                    # in the kwargs or the data definition itself..  Make a dict, add a "name" 
-                    # field, and add it to the list of dicts to be returned.
-                    if required_keys:
-                        raise ValueError('Received a list at a dict level missing %s: %s'%(
-                                          required_keys,item))
-                    else:
-                        base_dict = {'epoch': epoch, 'extent': extent, 'data_format': data_format,
-                                     'object_type': object_type, 'group': group, 
-                                     'file_reader': file_reader, 'fields': fields}
-                        base_dict.update(kwargs)
-                        if base_dict['epoch']=='multiepoch':
-                            if isinstance(item,list) and any([isinstance(i,dict) for i in item]):
-                                raise ValueError("Cannot use dicts at this level for multiepoch to ensure proper processing: %s"%item)
-                            names = self._expandWildcard(item,wildcard,True)
-                            base_dict['name'] = names
-                            return_list.append(base_dict)
-                        else:
-                            names = self._expandWildcard(item,wildcard,False)
-                            for name in names:
-                                # Make a new dict in the list for each item.
-                                new_dict = copy.deepcopy(base_dict)
-                                if isinstance(name,dict):
-                                    if 'name' in dict:
-                                        new_dict.update(name)
-                                    else:
-                                        raise ValueError('Dict must contain a "name" item: %s'%item)
-                                else:
-                                    new_dict['name'] = name
-                                return_list.append(new_dict)
-                elif isinstance(item,dict):
-                    # Okay, this is a dict; either it's a list member and the format will come from 
-                    # the kwargs, or it's a standalone dict.  Technically it can be somewhere in 
-                    # between--it doesn't really matter for this processing, so I'm not going to
-                    # *advertise* that you can switch in the middle, but it doesn't really matter.
-                    # Apart from some trickery of updating dicts instead of just adding 'name', this
-                    # code is doing the same thing as the same as the previous code block.
-                    if item.get('epoch',epoch)=='multiepoch':
-                        names = self._expandWildcard(item,item.get('wildcard',wildcard),True)
-                        base_dict = {'epoch': epoch, 'extent': extent, 'data_format': data_format,
-                                     'object_type': object_type, 'group': group, 
-                                     'file_reader': file_reader, 'fields': fields}
-                        base_dict.update(kwargs)
-                        base_dict.update(item)
-                        base_dict['name'] = names
-                        return_list.append(base_dict)
-                    else:
-                        names = self._expandWildcard(item,item.get('wildcard',wildcard),False)
-                        for name in names:
-                            item_dict = copy.deepcopy(item)
-                            base_dict = {'epoch': epoch, 'extent': extent, 'data_format': data_format,
-                                         'object_type': object_type, 'group': group, 
-                                         'file_reader': file_reader, 'fields': fields}
-                            base_dict.update(kwargs)
-                            base_dict.update(item_dict)
-                            base_dict['name'] = name
-                            return_list.append(base_dict)
-        elif isinstance(files,dict):
-            group = stile_utils.PopAndCheckFormat(files,'group',bool,default=group)
-            wildcard = stile_utils.PopAndCheckFormat(files,'wildcard',bool,default=wildcard)
-            fields = stile_utils.PopAndCheckFormat(files,'fields',(dict,list),default=fields)
-            flag_field = stile_utils.PopAndCheckFormat(files,'flag_field',(str,list),
-                                                           default=[])
-            file_reader = files.get('file_reader',file_reader)
-            if file_reader and not isinstance(file_reader,str) and not hasattr(file_reader,'__call__'):
-                raise ValueError("Do not understand file reader: %s"%file_reader)
-            return_list = []
-            keys = files.keys()
-            pass_kwargs = {'epoch': epoch, 'extent': extent, 'data_format': data_format, 
-                           'object_type': object_type, 'group': group, 'wildcard': wildcard, 
-                           'flag_field': flag_field, 'recursed': True}
-            pass_kwargs.update(kwargs)
-            for name, default, current_val in zip(['epoch','extent','data_format','object_type'],
-                                              [stile_utils.epochs,stile_utils.extents,
-                                               stile_utils.data_formats,stile_utils.object_types],
-                                              [epoch,extent,data_format,object_type]):
-                if any([key in default for key in keys]):
-                    if current_val:
-                        raise ValueError("Duplicate definition of %s: already have %s, "
-                                         "requesting %s"%(name,current_val,keys))
-                    for key in keys:
-                        new_files = files.pop(key)
-                        pass_kwargs[name] = key
-                        new_return, new_n = self._parseFileHelper(new_files,**pass_kwargs)
-                        return_list += new_return
-            if files:
-                if 'epoch' in files or 'extent' in files or 'data_format' in files or 'object_type' in files:
-                    if (epoch or 'epoch' in files) and (extent or 'extent' in files) and (data_format or 'data_format' in files) and (object_type or 'object_type' in files) and 'name' in files:
-                        return_list = [files]
-                    else:
-                        raise ValueError('File description does not include all format keywords: %s'%files)
-                else:
-                    raise ValueError("Unprocessed keys found: %s"%files.keys())
+    def _parseFileHelper(self,files,start_n=0):
+        if isinstance(files,dict):
+            files = self._recurseDict(files)
         else:
-            raise ValueError("Do not understand file input: %s"%files)
-        if not recursed:
-            if group:
-                return_list, start_n = self._group(return_list,start_n)
-            return_val = self._formatFileList(return_list)
-        else:
-            return_val = return_list
-        return return_val, start_n
+            if not hasattr(files,'__iter__'):
+                raise ValueError('file config keyword must be a list or dict: got %s of type %s'%(
+                                    files,type(files)))
+            for file in files:
+                if not isinstance(file,dict):
+                    raise ValueError('If file parameter is a list, each element must be a dict.  '+
+                        'Got %s of type %s instead.'%(file,type(file)))
+                file['group'] = file.get('group',False)
+        for item in files:
+            if not isinstance(item,dict):
+                raise ValueError('Expected a list of dicts. Either the config file was in error, '
+                                 'or the Stile processing failed.  Current state of "files" '
+                                 'argument: %s, this item type: %s'%(files,type(item)))
+            format_keys = ['epoch','extent','data_format','object_type']
+            if not all([format_key in item for format_key in format_keys]):
+                raise ValueError('Got file item %s missing one of the required format keywords %s'%
+                                    (item,format_keys))
+            # Okay, this is a dict; either it's a list member and the format will come from 
+            # the kwargs, or it's a standalone dict.  Technically it can be somewhere in 
+            # between--it doesn't really matter for this processing, so I'm not going to
+            # *advertise* that you can switch in the middle, but it doesn't really matter.
+            # Apart from some trickery of updating dicts instead of just adding 'name', this
+            # code is doing the same thing as the same as the previous code block.
+            item['name'] = self._expandWildcard(item)
+        return_list, n = self._group(files,start_n)
+        return_val = self._formatFileList(return_list)
+        return return_val, n
 
-    def _expandWildcard(self,item,wildcard,multiepoch):
+    def _recurseDict(self,files,**kwargs):
+        format_keys = ['epoch','extent','data_format','object_type']
+
+        if isinstance(files,list):
+            if all([format_key in kwargs for format_key in format_keys]):
+                if not kwargs: # This means it's a top-level list of dicts and shouldn't be grouped
+                    pass_kwargs = {'group': False}
+                elif kwargs.get('epoch')=='multiepoch':
+                    if isinstance(files,dict):
+                        pass_kwargs = copy.deepcopy(kwargs)
+                        pass_kwargs.update(files)
+                    elif isinstance(files,(list,tuple)):
+                        iterable = [hasattr(item,'__iter__') for item in files]
+                        if all(iterable):
+                            return_list = []
+                            for item in files:  
+                                pass_kwargs = copy.deepcopy(kwargs)
+                                if isinstance(item,dict):
+                                    pass_kwargs.update(item)
+                                else:
+                                    pass_kwargs['name'] = item
+                                return_list.append(pass_kwargs)
+                            return return_list
+                        elif any(iterable):
+                            raise ValueError('Cannot interpret list of items for multiepoch: '+
+                                             files+'. Should be an iterable, or an iterable of '+
+                                             'iterables.')
+                        else:
+                            pass_kwargs.update({'name': files})
+                            return [pass_kwargs]
+                    else:
+                        raise ValueError('Cannot interpret list of items for multiepoch: '+
+                                          files+'. Should be an iterable, or an iterable of '+
+                                         'iterables.')
+                else:
+                    return_list = []
+                    for file in files:
+                        pass_kwargs = copy.deepcopy(kwargs)
+                        if isinstance(file,dict):
+                            pass_kwargs.update(file)
+                        else:
+                            pass_kwargs['name'] = file
+                        return_list += [pass_kwargs]
+                    return return_list
+            else:
+                raise ValueError('File description does not include all format keywords: %s, %s'%(files,kwargs))
+            
+        return_list = []
+        
+        pass_kwargs = copy.deepcopy(kwargs)
+        if 'group' in files:
+            pass_kwargs['group'] = stile_utils.PopAndCheckFormat(files,'group',bool)
+        if 'wildcard' in files:
+            pass_kwargs['wildcard'] = stile_utils.PopAndCheckFormat(files,'wildcard',bool)
+        if 'fields' in files:
+            pass_kwargs['fields'] = stile_utils.PopAndCheckFormat(files,'fields',(dict,list))
+        if 'flag_field' in files:
+            pass_kwargs['flag_field'] = stile_utils.PopAndCheckFormat(files,'flag_field',(str,list))
+        if 'file_reader' in files:
+            pass_kwargs['file_reader'] = files.get('file_reader')
+        
+        keys = files.keys()
+        for name, default in zip(format_keys,
+                                 [stile_utils.epochs,stile_utils.extents,
+                                  stile_utils.data_formats,stile_utils.object_types]):
+            if any([key in default for key in keys]):
+                if key in kwargs:
+                    raise ValueError("Duplicate definition of %s: already have %s, "
+                                     "requesting %s"%(name,current_val,keys))
+                for key in keys:
+                    new_files = files.pop(key)
+                    pass_kwargs[name] = key
+                    return_list += self._recurseDict(new_files,**pass_kwargs)
+        if files:
+            if any([format_key in files for format_key in format_keys]) and 'name' in files:
+                if all([format_key in files or format_key in kwargs for format_key in format_keys]):
+                    pass_kwargs.update(files)
+                    return_list+=[files]
+                else:
+                    raise ValueError('File description does not include all format keywords: %s'%files)
+            else:
+                raise ValueError("Unprocessed keys found: %s"%files.keys())
+        return return_list
+        
+    def _expandWildcard(self,item):
         if isinstance(item,list):
-            return_list = []
-            for i in item:
-                return_list += self._expandWildcardHelper(i,wildcard,multiepoch)
+            return_list = [self._expandWildcardHelper(i) for i in item]
         else:
-            return_list = self._expandWildcardHelper(item,wildcard,multiepoch)
+            return_list = self._expandWildcardHelper(item)
         return [r for r in return_list if r] # filter empty entries
     
-    def _expandWildcardHelper(self,item,wildcard,multiepoch):
+    def _expandWildcardHelper(self,item,wildcard=False,is_multiepoch=False):
         if isinstance(item,dict):
             names = item['name']
-            wildcard = item.get('wildcard',wildcard)
+            wildcard = item.pop('wildcard',wildcard)
             if 'epoch' in item:
-                multiepoch = item['epoch']=='multiepoch'
+                is_multiepoch = item['epoch']=='multiepoch'
         else:
             names = item
         if not wildcard:
-            if multiepoch:
+            if is_multiepoch:
                 if isinstance(names,list):
                     return names
                 else:
@@ -276,15 +266,15 @@ class ConfigDataHandler(DataHandler):
             else:
                 return stile_utils.flatten(names)
         else:
-            if multiepoch:
+            if is_multiepoch:
                 if not hasattr(names,'__iter__'):
                     return sorted(glob.glob(names))
                 elif any([hasattr(n,'__iter__') for n in names]):
-                    return [self._expandWildcard(n,wildcard,multiepoch) for n in names]
+                    return [self._expandWildcardHelper(n,wildcard,is_multiepoch) for n in names]
                 else:
                     return [sorted(glob.glob(n)) for n in names]
             elif hasattr(names,'__iter__'):
-                return stile_utils.flatten([self._expandWildcard(n,wildcard,multiepoch) for n in names])
+                return stile_utils.flatten([self._expandWildcardHelper(n,wildcard,is_multiepoch) for n in names])
             else:
                 return glob.glob(names)
                     
@@ -359,7 +349,7 @@ class ConfigDataHandler(DataHandler):
         for key in files:
             for obj_type in files[key]:
                 del_list = []
-                for i,item1 in enumerate(files[key][obj_type][:-1]):
+                for i,item1 in enumerate(files[key][obj_type]):
                     if 'group' in item1 and isinstance(item1['group'],bool):
                         del item1['group']
                     for j,item2 in enumerate(files[key][obj_type][i+1:]):
