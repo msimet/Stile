@@ -37,10 +37,14 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def run(self,dataRef):
         catalog = dataRef.get("src",immediate=True)
         catalog = self.removeFlags(catalog)
-        if dataRef.datasetExists("fcr_md"):
-            calib_data = dataRef.get("fcr_md")
-            calib_type="fcr"
-        else:
+        try:
+            if dataRef.datasetExists("fcr_md"):
+                calib_data = dataRef.get("fcr_md")
+                calib_type="fcr"
+            else:
+                calib_data = dataRef.get("calexp_md")
+                calib_type = "calexp"
+        except:
             calib_data = dataRef.get("calexp_md")
             calib_type = "calexp"
         sys_data_list = []
@@ -286,3 +290,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         pass
     def writeMetadata(self, dataRef):
         pass
+
+class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
+    _DefaultName = "CCDNoTractSingleEpochStile"
+    
+    @classmethod
+    def _makeArgumentParser(cls):
+        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
+        return parser
