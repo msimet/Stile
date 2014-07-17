@@ -134,6 +134,7 @@ extents = ['CCD', # Single CCD
            'tract' # A large area (about as large as would have a single WCS/background solution)
           ]
 epochs  = ['single',     # One data measurement per object
+           'coadd',      # One data measurement per object, based on several different observations
            'multiepoch'  # Multiple measurements of same object at different times
           ]
 object_types = ['star',          # stars
