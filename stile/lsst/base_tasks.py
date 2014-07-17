@@ -4,6 +4,15 @@ import lsst.meas.mosaic
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from .sys_test_adapters import adapter_registry
 import numpy
+try:
+    import matplotlib
+    # We should decide which backend to use (this line allows running matplotlib even on sessions 
+    # without properly defined displays, eg through PBS)
+    matplotlib.use('Agg') 
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
 
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
@@ -72,9 +81,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             results = sys_test(*new_catalogs)
             if hasattr(sys_test.test,'plot'):
                 fig = sys_test.test.plot(results)
-                fig.savefig(sys_test_data.test_name+'.png')
-            
-    
+                fig.savefig(sys_test_data.test_name+'.png')            
+            if isinstance(results, matplotlib.figure.Figure):
+                results.savefig(sys_test_data.test_name+'.png')    
+
     def removeFlags(self,catalog):
         flags = ['deblend.too-many-peaks','deblend.parent-too-big','deblend.failed',
                  'deblend.skipped','flags.badcentroid','flags.pixel.edge','flags.pixel.bad',
@@ -139,7 +149,67 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return 0.5*(ixx+iyy)
+            return numpy.sqrt(0.5*(ixx+iyy))
+        elif col=="g1_err":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+            try:
+                moments_err = data.get('shape.sdss.err')
+                cov_ixx = moments_err[0,0]
+                cov_iyy = moments_err[1,1]
+            except:
+                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
+                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
+            dg1_dixx = 2.*iyy/(ixx+iyy)**2
+            dg1_diyy = -2.*ixx/(ixx+iyy)**2
+            return numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy)
+        elif col=="g2_err":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+                ixy = moments.getIxy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+                ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
+            try:
+                moments_err = data.get('shape.sdss.err')
+                cov_ixx = moments_err[0,0]
+                cov_iyy = moments_err[1,1]
+                cov_ixy = moments_err[2,2]
+            except:
+                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
+                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
+                cov_ixy = numpy.array([src.get('shape.sdss.err')[2,2] for src in data])
+            dg2_dixx = -2.*ixy/(ixx+iyy)**2
+            dg2_diyy = -2.*ixy/(ixx+iyy)**2
+            dg2_dixy = 2./(ixx+iyy)
+            return numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + dg2_dixy**2 * cov_Ixy)
+        elif col=="sigma_err":
+            try:
+                moments = data.get('shape.sdss')
+                ixx = moments.getIxx()
+                iyy = moments.getIyy()
+            except:
+                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
+                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
+            try:
+                moments_err = data.get('shape.sdss.err')
+                cov_ixx = moments_err[0,0]
+                cov_iyy = moments_err[1,1]
+            except:
+                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
+                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
+            sigma = numpy.sqrt(0.5*(ixx+iyy))
+            dsigma_dixx = 0.25/sigma
+            dsigma_diyy = 0.25/sigma
+            return numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
         elif col=="psf_g1":
             try:
                 moments = data.get('shape.sdss.psf')
@@ -168,7 +238,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return 0.5*(ixx+iyy)
+            return numpy.sqrt(0.5*(ixx+iyy))
         elif col=="w":
             print "Need to figure out something clever for weights"
             return numpy.array([1.]*len(data))
