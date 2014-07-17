@@ -102,18 +102,16 @@ class StatsPSFFluxAdapter(object):
         self.config = config
         self.test = sys_tests.StatSysTest(field='flux.psf')
         self.name = self.test.short_name+'flux.psf'
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in ['galaxy']]
 
     def __call__(self,*data):
         return self.test(*data,verbose=True)
-    
-    def getMasks(self,catalog):
-    	return MaskGalaxy(catalog)
-        return_cat = numpy.zeros(len(catalog),dtype=bool)
-        return_cat.fill(True)
-        return [return_cat]
+    def getMasks(self,data):
+        return [mask_func(data) for mask_func in self.mask_funcs]
         
     def getRequiredColumns(self):
         return (('flux.psf',),)
+    
         
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
 #adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
