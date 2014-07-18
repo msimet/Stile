@@ -1,7 +1,7 @@
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
-from lsst.meas.mosaic import MosaicTask
+from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from .sys_test_adapters import adapter_registry
 import numpy
@@ -58,8 +58,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
+	    shape_masks = []
+	    for cols_list in sys_test_data.cols_list:
+	        if any([key in cols_list for key in ['g1','g1_err','g2','g2_err','sigma','sigma_err']]):
+	            shape_masks.append(self._computeShapeMask(catalog))
+		else:
+		    shape_masks.append(True)
+	    sys_test_data.mask_list = [numpy.logical_and(mask,shape_mask) for mask,shape_mask in zip(sys_test_data.mask_list,shape_masks)]
             for (mask,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
-                generateColumns(self,mask,cols,catalog,calib_data,calib_type,extra_col_dict)
+                self.generateColumns(self,mask,cols,catalog,calib_data,calib_type,extra_col_dict)
             sys_data_list.append(sys_test_data)
         
         for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
@@ -130,7 +137,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                  'flags.pixel.interpolated.center', 'flags.pixel.saturated.any', 
                  'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center', 
                  'flags.pixel.bad','flags.pixel.suspect.any','flags.pixel.suspect.center']
-        masks = [[src.get(flag)==False for src in data] for flag in flags]
+        masks = [data[flag]==False for flag in flags]
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask,new_mask)    
@@ -157,25 +164,16 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 	            numpy.array([src.get('flux.psf.flags')==0 & 
                                  src.get('flux.psf.flags.psffactor')==0 for src in data]))
         elif col=="g1":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return ((ixx-iyy)/(ixx+iyy), self._computeShapeMask(data))
+            moments = [src.get('shape.sdss') for src in data]
+	    ixx = numpy.array([mom.getIxx() for mom in moments])
+	    iyy = numpy.array([mom.getIxy() for mom in moments])
+            return ((ixx-iyy)/(ixx+iyy), None)
         elif col=="g2":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                ixy = moments.getIxy()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
-                ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
-                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return (2.*ixy/(ixx+iyy), self._computeShapeMask(data))
+            moments = [src.get('shape.sdss') for src in data]
+	    ixx = numpy.array([mom.getIxx() for mom in moments])
+	    ixy = numpy.array([mom.getIxy() for mom in moments])
+	    iyy = numpy.array([mom.getIxy() for mom in moments])
+            return (2.*ixy/(ixx+iyy), None)
         elif col=="sigma":
             try:
                 moments = data.get('shape.sdss')
@@ -184,7 +182,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             except:
                 ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
                 iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return (numpy.sqrt(0.5*(ixx+iyy)), self._computeShapeMask(data))
+            return (numpy.sqrt(0.5*(ixx+iyy)), None)
         elif col=="g1_err":
             try:
                 moments = data.get('shape.sdss')
@@ -203,7 +201,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dg1_dixx = 2.*iyy/(ixx+iyy)**2
             dg1_diyy = -2.*ixx/(ixx+iyy)**2
             return (numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy), 
-	            self._computeShapeMask(data))
+	            None)
         elif col=="g2_err":
             try:
                 moments = data.get('shape.sdss')
@@ -227,7 +225,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dg2_diyy = -2.*ixy/(ixx+iyy)**2
             dg2_dixy = 2./(ixx+iyy)
             return (numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + 
-                               2. * dg2_dixy**2 * cov_ixy), self._computeShapeMask(data))
+                               2. * dg2_dixy**2 * cov_ixy), None)
         elif col=="sigma_err":
             try:
                 moments = data.get('shape.sdss')
@@ -247,7 +245,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dsigma_dixx = 0.25/sigma
             dsigma_diyy = 0.25/sigma
             return (numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy), 
-	            self._computeShapeMask(data))
+	            None)
         elif col=="psf_g1":
             try:
                 moments = data.get('shape.sdss.psf')
@@ -308,7 +306,7 @@ class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
         return parser
 
 
-class StileFieldRunner(pipeBase.TaskRunner):
+class StileFieldRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile field tasks.  Most of this code (incl this docstring) 
     pulled from measMosaic.
 
@@ -328,10 +326,8 @@ class StileFieldRunner(pipeBase.TaskRunner):
         for ref in parsedCmd.id.refList:
             refListDict.setdefault(ref.dataId["field"], []).append(ref)
         # we call run() once with each tract
-        return [(parsedCmd.butler,
-                 field,
-                 refListDict[field],
-                 parsedCmd.debug
+        return [(field,
+                 refListDict[field]
                  ) for field in sorted(refListDict.keys())]
 
     def __call__(self, args):
@@ -348,42 +344,45 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
     ConfigClass = FieldSingleEpochStileConfig
     _DefaultName = "FieldSingleEpochStile"
 
-    def run(self, butler, field, dataRefList, debug, verbose=False):
-        skyMap = butler.get("deepCoadd_skyMap", immediate=True)
-        fieldInfo = skyMap[field]
-        dataRefListOverlapWithField, dataRefListToUse = self.checkOverlapWithTract(fieldInfo, dataRefList)
-        
-        catalogs = [dataRef.get("src",immediate=True) for dataRef in dataRefListOverlapWithField]
+    def run(self, field, dataRefList):
+        catalogs = [dataRef.get("src",immediate=True) for dataRef in dataRefList]
         catalogs = [self.removeFlags(catalog) for catalog in catalogs]
-        calib_data_list = []
+	calib_data_list = []
         calib_types = []
-        for dataRef in dataRefListOverlapWithField:
+        for dataRef in dataRefList:
             try:
                 if dataRef.datasetExists("fcr_md"):
                     calib_data_list.append(dataRef.get("fcr_md"))
-                    calib_type.append("fcr")
+                    calib_types.append("fcr")
                 else:
                     calib_data_list.append(dataRef.get("calexp_md"))
-                    calib_type.append("calexp")
+                    calib_types.append("calexp")
             except:
                 calib_data_list.append(dataRef.get("calexp_md"))
-                calib_type.append("calexp")
-                
-        sys_data_lists = []
+                calib_types.append("calexp")
+        sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs] 
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            sys_test_data.mask_list = [sys_test.getMasks(catalog) for catalog in catalogs]
+            temp_mask_list = [sys_test.getMasks(catalog) for catalog in catalogs]
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
+	    shape_masks = []
+	    for cols_list in sys_test_data.cols_list:
+                if any([key in sys_test_data.cols_list for key in ['g1','g1_err','g2','g2_err','sigma','sigma_err']]):
+	            shape_masks.append([self._computeShapeMask(catalog) for catalog in catalogs])
+		else:
+		    shape_masks.append([True]*len(catalogs))
+	    print "bwaha", len(temp_mask_list), len(shape_masks)
+	    sys_test_data.mask_list = [[numpy.logical_and(mask[i],shape_mask) for mask,shape_mask in zip(temp_mask_list,shape_masks[i])] for i in range(len(temp_mask_list[0]))]
+	    print len(sys_test_data.mask_list), len(sys_test_data.mask_list[0]), "quay"
             for (mask_list,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
                 for mask, catalog, calib_data, calib_type, extra_col_dict in zip(mask_list, catalogs, calib_data_list, calib_types, extra_col_dicts):
-                    self.GenerateColumns(mask,cols,catalog,calib_data,calib_type,extra_col_dict)
+                    self.generateColumns(mask,cols,catalog,calib_data,calib_type,extra_col_dict)
             sys_data_list.append(sys_test_data)
-        
         for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
             new_catalogs = []
             for mask_list,cols in zip(sys_test_data.mask_list,sys_test_data.cols_list):
@@ -391,12 +390,16 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
                 for catalog, extra_col_dict, mask in zip(catalogs, extra_col_dicts, mask_list):
                     for column in cols:
                         if column in extra_col_dict:
-                            new_catalog[column] = new_catalog.get(column,[]).append(extra_col_dict[column][mask])
+			    newcol = extra_col_dict[column][mask]
                         elif column in catalog.schema:
                             try:
-                                new_catalog[column] = new_catalog.get(column,[]).append(catalog[column][mask])
+                                newcol = catalog[column][mask]
                             except:
-                                new_catalog[column] = new_catalog.get(column,[]).append(numpy.array([src[column] for src in catalog])[mask])
+			        newcol = numpy.array([src[column] for src in catalog])[mask]
+		        if column in new_catalog:
+			    new_catalog[column].append(newcol)
+			else:
+			    new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(*new_catalogs)
             if hasattr(sys_test.test,'plot'):
@@ -412,7 +415,8 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
             dtype_list.sort()
             dtypes.append((key,dtype_list[-1]))
         len_list = [sum([len(cat) for cat in catalog_dict[key]]) for key in catalog_dict]
-        if not set(len_list)==0:
+	print "len list", len_list, [len(cat) for cat in catalog_dict[key]]
+        if not len(set(len_list))==1:
             raise RuntimeError('Different catalog lengths for different columns!')
         data = numpy.zeros(len_list[0],dtype=dtypes)
         for key in catalog_dict:
