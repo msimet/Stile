@@ -220,13 +220,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
-        flags = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
-                 'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped', 
-                 'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags', 
-                 'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
-                 'flags.pixel.interpolated.center', 'flags.pixel.saturated.any', 
-                 'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center', 
-                 'flags.pixel.bad','flags.pixel.suspect.any','flags.pixel.suspect.center']
+        flags = ['shape.sdss.flags','shape.sdss.centroid.flags','shape.sdss.flags.unweightedbad',
+                 'shape.sdss.flags.unweighted','shape.sdss.flags.shift','shape.sdss.flags.maxiter']
         masks = [data[flag]==False for flag in flags]
         mask = masks[0]
         for new_mask in masks[1:]:
