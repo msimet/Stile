@@ -146,12 +146,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             shape_masks = []
             for cols_list in sys_test_data.cols_list:
                 if any([key in cols_list for key in 
-                            ['g1','g1_err','g2','g2_err','sigma','sigma_err']]):
+                                ['g1','g1_err','g2','g2_err','sigma','sigma_err']]):
                     shape_masks.append(self._computeShapeMask(catalog))
                 else:
                     shape_masks.append(True)
-            sys_test_data.mask_list = [numpy.logical_and(mask,shape_mask) 
-                for mask,shape_mask in zip(sys_test_data.mask_list,shape_masks)]
+                sys_test_data.mask_list = [numpy.logical_and(mask,shape_mask) 
+                    for mask,shape_mask in zip(sys_test_data.mask_list,shape_masks)]
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.    
             for (mask,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
@@ -222,7 +222,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         flags = ['shape.sdss.flags','shape.sdss.centroid.flags','shape.sdss.flags.unweightedbad',
                  'shape.sdss.flags.unweighted','shape.sdss.flags.shift','shape.sdss.flags.maxiter']
-        masks = [data[flag]==False for flag in flags]
+        tmp = []
+        masks = [numpy.array([src.get(flag)==False for src in data]) for flag in flags]
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask,new_mask)    
@@ -249,7 +250,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             return [src.getDec().asDegrees() for src in data], None
         elif col=="mag_err":
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
-                                                    for src in data])),
+                                                    for src in data]),
                     numpy.array([src.get('flux.psf.flags')==0 & 
                                  src.get('flux.psf.flags.psffactor')==0 for src in data]))
         elif col=="mag":
@@ -501,8 +502,8 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
             if not len(set(names))==1:
                 raise RuntimeError('Sys test name is not consistent for all the CCDs in the '
                                    'field!')
-            if not len(set(cols))==1:
-                raise RuntimeError('Sys test column description is not consistent for all the
+            if not all([col==cols[0] for col in cols[1:]]):
+                raise RuntimeError('Sys test column description is not consistent for all the '
                                    'CCDs in the field!')
             if not len(set(len_masks))==1:
                 raise RuntimeError('Number of masks for this sys test is not consistent for all '
@@ -513,11 +514,11 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
         sys_data_list = []
         for sdl in sys_data_lists:
             sys_data_list.append(SysTestData())
-            sys_data_list.sys_test_name = sdl[0].sys_test_name
-            sys_data_list.cols_list = sdl[0].cols_list
-            sys_data_list.mask_list = [ [s.mask_list[i] for s in sdl] 
-                                           for i in range(len(sdl.mask_list[0])]
-                                       
+            sys_data_list[-1].sys_test_name = sdl[0].sys_test_name
+            sys_data_list[-1].cols_list = sdl[0].cols_list
+            sys_data_list[-1].mask_list = [ [s.mask_list[i] for s in sdl] 
+                                               for i in range(len(sdl.mask_list[0]))]
+                                   
         for sys_test,sys_data in zip(self.sys_tests,sys_data_list):
             new_catalogs = []
             for mask_list,cols in zip(sys_data.mask_list,sys_data.cols_list):
@@ -550,7 +551,6 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
             dtype_list.sort()
             dtypes.append((key,dtype_list[-1]))
         len_list = [sum([len(cat) for cat in catalog_dict[key]]) for key in catalog_dict]
-        print "len list", len_list, [len(cat) for cat in catalog_dict[key]]
         if not len(set(len_list))==1:
             raise RuntimeError('Different catalog lengths for different columns!')
         data = numpy.zeros(len_list[0],dtype=dtypes)

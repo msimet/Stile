@@ -53,7 +53,7 @@ def MaskBrightStar(data):
     except:
         flux = numpy.array([src['flux.psf'] for src in data])
     	top_tenth = numpy.percentile(flux[star_mask],0.9)
-	    top_tenth_mask = flux>top_tenth
+	top_tenth_mask = flux>top_tenth
     return numpy.logical_and(star_mask,top_tenth_mask)
 
 def MaskGalaxyLens(data):
@@ -102,11 +102,11 @@ class BaseSysTestAdapter(object):
      - a function setupMasks() that can take a list of strings corresponding to object types and 
        generate an attribute, self.mask_funcs, that describes the mask functions which getMasks()
        can then apply to the data to generate masks. Called with no arguments, it will attempt to
-       read `self.test.objects_list` for the list of objects (and will raise an error if that does
+       read `self.sys_test.objects_list` for the list of objects (and will raise an error if that does
        not exist).
      - a function getMasks() that will apply the masks in self.mask_funcs to the data.
      - a function getRequiredColumns() that will return the list of required columns from 
-       self.test.required_quantities if it exists, and raise an error otherwise.
+       self.sys_test.required_quantities if it exists, and raise an error otherwise.
     Of course, any of these can be overridden if desired.
     """
     # As long as we're not actually doing anything with the config object, we can just use the
@@ -122,7 +122,7 @@ class BaseSysTestAdapter(object):
         found.
         """
         if objects_list==None:
-            if hasattr(self.test, 'objects_list'):
+            if hasattr(self.sys_test, 'objects_list'):
                 objects_list = self.sys_test.objects_list
             else:
                 raise ValueError('No objects_list given, and self.sys_test does not have an '
@@ -159,7 +159,7 @@ class BaseSysTestAdapter(object):
                   of the tuples are strings corresponding to known quantities from the LSST
                   pipeline.
         """
-        return self.test.required_quantities
+        return self.sys_test.required_quantities
         
     def __call__(self, *data, **kwargs):
         """
@@ -177,7 +177,7 @@ class StarXGalaxyDensityAdapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
         self.sys_test = sys_tests.StarXGalaxyDensitySysTest()
-        self.name = self.test.short_name
+        self.name = self.sys_test.short_name
         self.setupMasks()
         
     def __call__(self):
@@ -202,11 +202,14 @@ class StatsPSFFluxAdapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
         self.sys_test = sys_tests.StatSysTest(field='flux.psf')
-        self.name = self.test.short_name+'flux.psf'
+        self.name = self.sys_test.short_name+'flux.psf'
         self.mask_funcs = [mask_dict[obj_type] for obj_type in ['galaxy']]
 
+    def getRequiredColumns(self):
+        return (('flux.psf',),)
+
     def __call__(self,*data,**kwargs):
-        return self.test(*data,verbose=True,**kwargs)
+        return self.sys_test(*data,verbose=True,**kwargs)
 
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
 #adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
