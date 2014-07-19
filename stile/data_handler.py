@@ -34,10 +34,11 @@ class DataHandler:
     def __init__(self):
         raise NotImplementedError()
     
-    def listData(self,object_types,epoch,extent,data_format,required_fields=None):
+    def listData(self, object_types, epoch, extent, data_format, required_fields=None):
         raise NotImplementedError()
     
-    def getData(self,ident,object_types=None,epoch=None,extent=None,data_format=None,bin_list=None):
+    def getData(self, ident, object_types=None, epoch=None, extent=None, data_format=None,
+                bin_list=None):
         """
         Return some data matching the `ident` for the given kwargs.  This can be a numpy array, a 
         tuple (file_name, field_schema) for a file already existing on the filesystem, or a list of 
@@ -48,7 +49,7 @@ class DataHandler:
         """ 
         raise NotImplementedError()
 
-    def getOutputPath(self,extension='.dat',multi_file=False,*args):
+    def getOutputPath(self, extension='.dat', multi_file=False, *args):
         """
         Return a path to an output file given a list of strings that should appear in the output
         filename, taking care not to clobber other files (unless requested).
@@ -64,9 +65,9 @@ class DataHandler:
         sys_test_string = '_'.join(args)
         if multi_file:
             nfiles = glob.glob(os.path.join(self.output_path,sys_test_string)+'*'+extension)
-            return os.path.join(self.output_path,sys_test_string+'_'+str(nfiles)+extension)
+            return os.path.join(self.output_path, sys_test_string+'_'+str(nfiles)+extension)
         else:
-            return os.path.join(self.output_path,sys_test_string+extension)
+            return os.path.join(self.output_path, sys_test_string+extension)
 
 class HSCDataHandler():
     def __init__(self, hsc_args):

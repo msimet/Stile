@@ -10,6 +10,7 @@ except ImportError:
 class TestStileUtils(unittest.TestCase):
     
     def test_FormatArray(self):
+        """Test formatted array routines and behavior."""
         data_raw = [(1,'hello',2.0),(3,'boo',5.0)]
         data0 = numpy.array(data_raw)
         data1 = numpy.array(data_raw,dtype='l,S5,d')
