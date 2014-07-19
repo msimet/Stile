@@ -134,7 +134,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 new_catalogs.append(self.makeArray(new_catalog))
             # run the test!
             if hasattr(sys_test.sys_test,'getCF'):
-                results = sys_test(corr2_kwargs,*new_catalogs)
+                results = sys_test(self.corr2_kwargs,*new_catalogs)
             else:
                 results = sys_test(*new_catalogs)
             # If there's anything fancy to do with plotting the results, do that.
@@ -493,6 +493,11 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
                    }
 
     def run(self, field, dataRefList):
+    	# It seems like it would make more sense to put all of this in a separate function and run
+        # it once per catalog, then collate the results at the end (just before running the test).  
+        # Turns out that, compared to the current implementation, that takes 2-3 times as long to 
+        # run (!) even before you get to the collation step.  So, we duplicate some code here in
+        # the name of runtime.
         catalogs = [dataRef.get("src",immediate=True) for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         calib_data_list = []
@@ -525,7 +530,6 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
                 else:
                     shape_masks.append([True]*len(catalogs))
             sys_test_data.mask_list = [[numpy.logical_and(mask[i],shape_mask) for mask,shape_mask in zip(temp_mask_list,shape_masks[i])] for i in range(len(temp_mask_list[0]))]
-            print len(sys_test_data.mask_list), len(sys_test_data.mask_list[0]), "quay"
             for (mask_list,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
                 for mask, catalog, calib_data, calib_type, extra_col_dict in zip(mask_list, catalogs, calib_data_list, calib_types, extra_col_dicts):
                     self.generateColumns(catalog,mask,cols,calib_data,calib_type,extra_col_dict)
@@ -549,10 +553,8 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             if hasattr(sys_test.sys_test,'getCF'):
-                print "corr2kwargs"
-                results = sys_test(corr2_kwargs,*new_catalogs)
+                results = sys_test(self.corr2_kwargs,*new_catalogs)
             else:
-                print "nocorr2kwargs", sys_test.sys_test.__dict__
                 results = sys_test(*new_catalogs)
             if hasattr(sys_test.sys_test,'plot'):
                 fig = sys_test.sys_test.plot(results)
@@ -567,6 +569,7 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
             dtype_list.sort()
             dtypes.append((key,dtype_list[-1]))
         len_list = [sum([len(cat) for cat in catalog_dict[key]]) for key in catalog_dict]
+        print len(len_list), len_list
         if not len(set(len_list))==1:
             raise RuntimeError('Different catalog lengths for different columns!')
         data = numpy.zeros(len_list[0],dtype=dtypes)

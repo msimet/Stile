@@ -314,7 +314,7 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'ng',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'ng',data,data2,random,random2,**kwargs)
 
 class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     """
@@ -326,7 +326,7 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec'),('ra','dec')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'n2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
 
 class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
@@ -338,7 +338,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec','g1','g2','w'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
 
 class StarAutoShearSysTest(CorrelationFunctionSysTest):
     """
@@ -350,7 +350,7 @@ class StarAutoShearSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
 
 class RoweISysTest(CorrelationFunctionSysTest):
     """
@@ -362,7 +362,7 @@ class RoweISysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec','g1_residual','g2_residual','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
 
 class RoweIISysTest(CorrelationFunctionSysTest):
     """
@@ -375,7 +375,7 @@ class RoweIISysTest(CorrelationFunctionSysTest):
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         raise NotImplementedError("Need to figure out how to tell corr2 to use the residuals!")
-        return self.getCorrelationFunction(stile_args,'g2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -387,7 +387,7 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'n2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
 
 class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -399,7 +399,7 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCorrelationFunction(stile_args,'n2',data,data2,random,random2,**kwargs)
+        return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
 
 
 class StatSysTest(SysTest):
