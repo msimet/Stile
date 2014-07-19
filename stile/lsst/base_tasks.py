@@ -50,60 +50,18 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     ConfigClass = CCDSingleEpochStileConfig
     _DefaultName = "CCDSingleEpochStile"
     
+    corr2_kwargs = { 'ra_units': 'degrees', 
+                                   'dec_units': 'degrees',
+                                   'min_sep': 0.005,
+                                   'max_sep': 0.2,
+                                   'sep_units': 'degrees',
+                                   'nbins': 20
+                   }
     def __init__(self,**kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self,**kwargs)
         self.sys_tests = self.config.sys_tests.apply()
         
     def run(self,dataRef):
-        # Get the data ("catalog"), information on the systematics tests ("sys_data_list"), and
-        # the extra computed columns to make sure we have all the required quantities 
-        # ("extra_cols_dict").
-        catalog, sys_data_list, extra_cols_dict = self.generateColumns(dataRef)
-        # Now we have a source catalog, plus a dict of other computed quantities.  Step
-        # through the masks and required quantities and generate a NumPy array for each pair, 
-        # containing only the required quantities and only in the rows indicated by the mask.
-        for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
-            new_catalogs = []
-            for mask,cols in zip(sys_test_data.mask_list,sys_test_data.cols_list):
-                new_catalog = {}
-                for column in cols:
-                    if column in extra_col_dict:
-                        new_catalog[column] = extra_col_dict[column][mask]
-                    elif column in catalog.schema:
-                        try:
-                            new_catalog[column] = catalog[column][mask]
-                        except:
-                            new_catalog[column] = (numpy.array([src[column] 
-                                                   for src in catalog])[mask])
-                new_catalogs.append(self.makeArray(new_catalog))
-            # run the test!
-            results = sys_test(*new_catalogs)
-            # If there's anything fancy to do with plotting the results, do that.
-            if hasattr(sys_test.sys_test,'plot'):
-                fig = sys_test.sys_test.plot(results)
-                fig.savefig(sys_test_data.sys_test_name+'.png')            
-            if has_matplotlib and isinstance(results, matplotlib.figure.Figure):
-                results.savefig(sys_test_data.sys_test_name+'.png')    
-
-    def generateColumns(self,dataRef):
-        """
-        Pull a source catalog from the dataRef, along with any associated data products (such as 
-        phometric calibration information).  Then generate required columns which are not already
-        in the data array.  
-        
-        @param dataRef An LSST pipeline dataRef (a subclass of the butler, pointing only to a 
-                       specific dataset).
-        @returns       A three-element tuple, consisting of:
-                         - The source catalog corresponding to the dataRef
-                         - A list of SysTestData object, containing information on the columns
-                           needed for each test as well as which masks should be applied to the
-                           source catalog in order to limit it to the objects we want to analyze
-                         - A dict whose keys are the quantities from the systematics tests that
-                           were not already in the source catalog, and whose values are NumPy arrays
-                           of those quantities with the same length as the source catalog.  Note 
-                           that some of the values will be "nan" in these arrays--the values are
-                           only computed within the masks that need those quantities.
-        """
         # Pull the source catalog from the butler corresponding to the particular CCD in the 
         # dataRef.  
         catalog = dataRef.get("src",immediate=True)
@@ -155,26 +113,36 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.    
             for (mask,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
-                for col in cols:
-                    if not col in catalog.schema: # If it exists, don't recompute!
-                        if not col in extra_col_dict:
-                            # Generate a NumPy array of the right length and fill it with 'nan' to
-                            # indicate we haven't computed anything yet.
-                            extra_col_dict[col] = numpy.zeros(len(catalog))
-                            extra_col_dict[col].fill('nan')
-                        nan_mask = numpy.isnan(extra_col_dict[col])
-                        # Only do uncomputed values
-                        nan_and_col_mask = numpy.logical_and(nan_mask,mask) 
-                        if any(nan_and_col_mask>0):
-                            # "extra_mask" is the new mask with the quantity-specific flags
-                            extra_col_dict[col][nan_and_col_mask], extra_mask = \
-                                self.computeExtraColumn(col,catalog[nan_and_col_mask],
-                                                        calib_data,calib_type)
-                            if extra_mask is not None:
-                                mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
-                                                                           extra_mask)
+                self.generateColumns(self,catalog,mask,cols,calib_data,calib_type,extra_col_dict)
             sys_data_list.append(sys_test_data)
-        return catalog, sys_data_list, extra_col_dict
+        # Right now, we have a source catalog, plus a dict of other computed quantities.  Step
+        # through the masks and required quantities and generate a NumPy array for each pair, 
+        # containing only the required quantities and only in the rows indicated by the mask.
+        for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
+            new_catalogs = []
+            for mask,cols in zip(sys_test_data.mask_list,sys_test_data.cols_list):
+                new_catalog = {}
+                for column in cols:
+                    if column in extra_col_dict:
+                        new_catalog[column] = extra_col_dict[column][mask]
+                    elif column in catalog.schema:
+                        try:
+                            new_catalog[column] = catalog[column][mask]
+                        except:
+                            new_catalog[column] = (numpy.array([src[column] 
+                                                   for src in catalog])[mask])
+                new_catalogs.append(self.makeArray(new_catalog))
+            # run the test!
+            if hasattr(sys_test.sys_test,'getCF'):
+                results = sys_test(corr2_kwargs,*new_catalogs)
+            else:
+                results = sys_test(*new_catalogs)
+            # If there's anything fancy to do with plotting the results, do that.
+            if hasattr(sys_test.sys_test,'plot'):
+                fig = sys_test.sys_test.plot(results)
+                fig.savefig(sys_test_data.sys_test_name+'.png')            
+            if has_matplotlib and isinstance(results, matplotlib.figure.Figure):
+                results.savefig(sys_test_data.sys_test_name+'.png')    
 
     def removeFlaggedObjects(self,catalog):
         """
@@ -216,6 +184,42 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             data[key] = catalog_dict[key]
         return data
         
+    def generateColumns(self,catalog,mask,cols,calib_data,calib_type,extra_col_dict):
+        """
+        Generate required columns which are not already in the data array, and update 
+        `extra_col_dict` to include them.  Also update "mask" to exclude any objects which have
+        specific failures for the requested quantities, such as flux measurement failures for
+        flux/magnitude measurements.
+        
+        @param catalog        A source catalog from the LSST pipeline
+        @param mask           The mask indicating which rows to generate columns for.  `mask` is 
+                              updated by this function.
+        @param cols           An iterable of strings indicating which quantities are needed
+        @param calib_data     Photometric calibration data 
+        @param calib_type     Which type of calibration data it is ("calexp" or "fcr")
+        @param extra_col_dict A dict whose keys are quantity names and whose values are 
+                              NumPy arrays of those quantities.  "nan" is used to indicate 
+                              as-yet uncomputed results; elements which are something other than 
+                              "nan" are not recomputed.  `extra_col_dict` is updated by this
+                              function.
+        """
+        for col in cols:
+            if not col in catalog.schema: # If it exists, don't recompute!
+                if not col in extra_col_dict:
+                    # Generate a NumPy array of the right length and fill it with 'nan' to indicate
+                    # we haven't computed anything yet.
+                    extra_col_dict[col] = numpy.zeros(len(catalog))
+                    extra_col_dict[col].fill('nan')
+                nan_mask = numpy.isnan(extra_col_dict[col])
+                nan_and_col_mask = numpy.logical_and(nan_mask,mask) # Only do uncomputed values
+                if any(nan_and_col_mask>0):
+                    # "extra_mask" is the new mask with the quantity-specific flags
+                    extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
+                        col,catalog[nan_and_col_mask],calib_data,calib_type)
+                    if extra_mask is not None:
+                        mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
+                                                                   extra_mask)
+
     def _computeShapeMask(self,data):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
@@ -480,48 +484,55 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
     ConfigClass = FieldSingleEpochStileConfig
     _DefaultName = "FieldSingleEpochStile"
 
+    corr2_kwargs = { 'ra_units': 'degrees', 
+                                   'dec_units': 'degrees',
+                                   'min_sep': 0.05,
+                                   'max_sep': 1,
+                                   'sep_units': 'degrees',
+                                   'nbins': 20
+                   }
+
     def run(self, field, dataRefList):
-        catalogs = []
-        sys_data_lists = []
-        extra_col_dicts = []
+        catalogs = [dataRef.get("src",immediate=True) for dataRef in dataRefList]
+        catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
+        calib_data_list = []
+        calib_types = []
         for dataRef in dataRefList:
-            catalog, sys_data_list, extra_col_dict = self.generateColumns(dataRef)
-            catalogs.append(catalog)
-            sys_data_lists.append(sys_data_list)
-            extra_col_dicts.append(extra_col_dict)
-        # We have a list of lists of sys data lists, where the top level is one per dataRef.
-        # Flip the order so the top level is one per sys_test...
-        sys_data_lists = [[sys_data_list[i] for sys_data_list in sys_data_lists] 
-                          for i in range(len(sys_data_lists[0]))]
-        # ....and check for consistency.
-        for sys_data_list in sys_data_lists:
-            names = [sdl.sys_test_name for sdl in sys_data_list]
-            cols = [sdl.cols_list for sdl in sys_data_list]
-            # Check length only for the list of masks, since they're a function of the data.
-            len_masks = [len(sdl.mask_list) for sdl in sys_data_list]
-            if not len(set(names))==1:
-                raise RuntimeError('Sys test name is not consistent for all the CCDs in the '
-                                   'field!')
-            if not all([col==cols[0] for col in cols[1:]]):
-                raise RuntimeError('Sys test column description is not consistent for all the '
-                                   'CCDs in the field!')
-            if not len(set(len_masks))==1:
-                raise RuntimeError('Number of masks for this sys test is not consistent for all '
-                                   'the CCDs in the field!')
-        # And now, collate things so this looks like the sys_data_list of the CCD version of
-        # this class, but with each element of the mask_list being a list with the same length
-        # as dataRefList (so one element per dataRef).
+            try:
+                if dataRef.datasetExists("fcr_md"):
+                    calib_data_list.append(dataRef.get("fcr_md"))
+                    calib_types.append("fcr")
+                else:
+                    calib_data_list.append(dataRef.get("calexp_md"))
+                    calib_types.append("calexp")
+            except:
+                calib_data_list.append(dataRef.get("calexp_md"))
+                calib_types.append("calexp")
         sys_data_list = []
-        for sdl in sys_data_lists:
-            sys_data_list.append(SysTestData())
-            sys_data_list[-1].sys_test_name = sdl[0].sys_test_name
-            sys_data_list[-1].cols_list = sdl[0].cols_list
-            sys_data_list[-1].mask_list = [ [s.mask_list[i] for s in sdl] 
-                                               for i in range(len(sdl.mask_list[0]))]
-                                   
-        for sys_test,sys_data in zip(self.sys_tests,sys_data_list):
+        extra_col_dicts = [{} for catalog in catalogs] 
+        for sys_test in self.sys_tests:
+            sys_test_data = SysTestData()
+            sys_test_data.sys_test_name = sys_test.name
+            # Masks expects: a tuple of masks, one for each required data set for the sys_test
+            temp_mask_list = [sys_test.getMasks(catalog) for catalog in catalogs]
+            # cols expects: an iterable of iterables, describing for each required data set
+            # the set of extra required columns.
+            sys_test_data.cols_list = sys_test.getRequiredColumns()
+            shape_masks = []
+            for cols_list in sys_test_data.cols_list:
+                if any([key in sys_test_data.cols_list for key in ['g1','g1_err','g2','g2_err','sigma','sigma_err']]):
+                    shape_masks.append([self._computeShapeMask(catalog) for catalog in catalogs])
+                else:
+                    shape_masks.append([True]*len(catalogs))
+            sys_test_data.mask_list = [[numpy.logical_and(mask[i],shape_mask) for mask,shape_mask in zip(temp_mask_list,shape_masks[i])] for i in range(len(temp_mask_list[0]))]
+            print len(sys_test_data.mask_list), len(sys_test_data.mask_list[0]), "quay"
+            for (mask_list,cols) in zip(sys_test_data.mask_list,sys_test_data.cols_list):
+                for mask, catalog, calib_data, calib_type, extra_col_dict in zip(mask_list, catalogs, calib_data_list, calib_types, extra_col_dicts):
+                    self.generateColumns(catalog,mask,cols,calib_data,calib_type,extra_col_dict)
+            sys_data_list.append(sys_test_data)
+        for sys_test,sys_test_data in zip(self.sys_tests,sys_data_list):
             new_catalogs = []
-            for mask_list,cols in zip(sys_data.mask_list,sys_data.cols_list):
+            for mask_list,cols in zip(sys_test_data.mask_list,sys_test_data.cols_list):
                 new_catalog = {}
                 for catalog, extra_col_dict, mask in zip(catalogs, extra_col_dicts, mask_list):
                     for column in cols:
@@ -537,7 +548,12 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask,MosaicTask):
                         else:
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
-            results = sys_test(*new_catalogs)
+            if hasattr(sys_test.sys_test,'getCF'):
+                print "corr2kwargs"
+                results = sys_test(corr2_kwargs,*new_catalogs)
+            else:
+                print "nocorr2kwargs", sys_test.sys_test.__dict__
+                results = sys_test(*new_catalogs)
             if hasattr(sys_test.sys_test,'plot'):
                 fig = sys_test.sys_test.plot(results)
                 fig.savefig(sys_test_data.sys_test_name+'.png')            
