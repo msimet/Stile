@@ -56,14 +56,6 @@ def MaskBrightStar(data):
 	top_tenth_mask = flux>top_tenth
     return numpy.logical_and(star_mask,top_tenth_mask)
 
-def MaskGalaxyLens(data):
-    """
-    Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows 
-    correspond to galaxies that can be used as lenses.  Right now this is set to be all galaxies.
-    """
-    # TODO: figure out a way to slice this down!
-    return MaskGalaxy(data)
-
 def MaskPSFStar(data):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows 
@@ -102,8 +94,8 @@ class BaseSysTestAdapter(object):
      - a function setupMasks() that can take a list of strings corresponding to object types and 
        generate an attribute, self.mask_funcs, that describes the mask functions which getMasks()
        can then apply to the data to generate masks. Called with no arguments, it will attempt to
-       read `self.sys_test.objects_list` for the list of objects (and will raise an error if that does
-       not exist).
+       read `self.sys_test.objects_list` for the list of objects (and will raise an error if that 
+       does not exist).
      - a function getMasks() that will apply the masks in self.mask_funcs to the data.
      - a function getRequiredColumns() that will return the list of required columns from 
        self.sys_test.required_quantities if it exists, and raise an error otherwise.
@@ -135,7 +127,7 @@ class BaseSysTestAdapter(object):
         Given data, a source catalog from the LSST pipeline, return a list of masks.  Each element
         of the list is a mask corresponding to a particular object type, such as "star" or "galaxy."
         
-        @param data  An LSST source catalog
+        @param data  An LSST source catalog.
         @returns     A list of NumPy arrays; each array is made up of Bools that can be broadcast
                      to index the data, returning only the rows that meet the requirements of the
                      mask.
