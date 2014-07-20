@@ -4,14 +4,6 @@ import numpy
 
 adapter_registry = lsst.pex.config.makeRegistry("Stile test outputs")
 
-default_corr2_args = { 'ra_units': 'degrees', 
-                                   'dec_units': 'degrees',
-                                   'min_sep': 0.05,
-                                   'max_sep': 1,
-                                   'sep_units': 'degrees',
-                                   'nbins': 20
-                     }
-
 # We need to mask the data to particular object types; these pick out the flags we need to do that.
 def MaskGalaxy(data):
     """
@@ -70,7 +62,6 @@ def MaskPSFStar(data):
 mask_dict = {'galaxy': MaskGalaxy,
              'star': MaskStar,
              'star bright': MaskBrightStar,
-             'galaxy lens': MaskGalaxyLens,
              'star PSF': MaskPSFStar}
 
 class BaseSysTestAdapter(object):
