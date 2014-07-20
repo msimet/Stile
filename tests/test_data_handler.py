@@ -151,12 +151,12 @@ class TestBinning(unittest.TestCase):
     def test_parseFileHelper(self):
         # First make sure the file list is built correctly
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'group': '_stile_group_2'}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict0))
         self.assertEqual(results,expected_results)
         # Next, make sure the group list is built correctly
@@ -173,64 +173,64 @@ class TestBinning(unittest.TestCase):
         # This test may need to be made more flexible later--it relies in the internal order of the dict, which may be different between
         # different Python installations.
         results = self.testConfigDataHandler.queryFile('s1.dat')
-        self.assertEqual(results,'1 - format: single-CCD-catalog, object type: star, fields: [], group: _stile_group_0, file_reader: None')
+        self.assertEqual(results,'1 - format: single-CCD-catalog, object type: star, group: _stile_group_0')
         # Dummy check: are these functions removing duplicates properly?  ('group' was turned into a list here...)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': None, 'group': ['_stile_group_0'], 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': ['_stile_group_2'], 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': ['_stile_group_0'], 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': None, 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': None, 'group': ['_stile_group_2'], 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'group': ['_stile_group_0']},
+                                           {'name': 'g2.dat', 'group': ['_stile_group_1']},
+                                           {'name': 'g3.dat', 'group': ['_stile_group_2']}],
+                                'star':   [{'name': 's1.dat', 'group': ['_stile_group_0']},
+                                           {'name': 's2.dat', 'group': ['_stile_group_1']},
+                                           {'name': 's3.dat', 'group': ['_stile_group_2']}]}}
         results,groups = self.testConfigDataHandler.parseFiles({'file': copy.deepcopy(self.dict0), 'file2': copy.deepcopy(self.dict0)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         # Repeat (skipping the dummy check) for dict1,2,3 etc...
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2'}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict1))
         self.assertEqual(results,expected_results)
         results, groups = self.testConfigDataHandler.parseFiles({'file0':copy.deepcopy(self.dict1)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2'}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict2))
         self.assertEqual(results,expected_results)
         results, groups = self.testConfigDataHandler.parseFiles({'filelist':copy.deepcopy(self.dict2)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='image').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2', 'fields': []}]},
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2'}]},
                             stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_3', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_4', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_5', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_3', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_4', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_5', 'fields': []}]},
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_3'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_4'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_5'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_3'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_4'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_5'}]},
                             stile_utils.Format(epoch='single',extent='field',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_6', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_7', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_8', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_6', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_7', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_8', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_6'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_7'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_8'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_6'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_7'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_8'}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict3))
         self.assertEqual(results,expected_results)
         expected_groups = {'_stile_group_0': {
@@ -256,7 +256,7 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(groups,expected_groups)
         # try queryFile with multiple files
         results = self.testConfigDataHandler.queryFile('s1.dat')
-        self.assertEqual(results,'1 - format: single-CCD-image, object type: star, fields: [], group: _stile_group_0, file_reader: None\n2 - format: single-CCD-catalog, object type: star, fields: [], group: _stile_group_3, file_reader: None\n3 - format: single-field-catalog, object type: star, fields: [], group: _stile_group_6, file_reader: None')
+        self.assertEqual(results,'1 - format: single-CCD-image, object type: star, group: _stile_group_0\n2 - format: single-CCD-catalog, object type: star, group: _stile_group_3\n3 - format: single-field-catalog, object type: star, group: _stile_group_6')
 
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict4))
         self.assertEqual(results,expected_results) # same expected results as dict3
@@ -264,36 +264,36 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2', 'fields': []}]},
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2'}]},
                             stile_utils.Format(epoch='single',extent='CCD',data_format='image').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': False, 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': False, 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': False, 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': False, 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': False, 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': False, 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': False},
+                                           {'name': 'g2.dat', 'group': False},
+                                           {'name': 'g3.dat', 'group': False}],
+                                'star':   [{'name': 's1.dat', 'group': False},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': False},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': False}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict5))
         self.assertEqual(results,expected_results)
         # parseFiles removes boolean groups
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2', 'fields': []}]},
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_2'}]},
                             stile_utils.Format(epoch='single',extent='CCD',data_format='image').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g2.dat'},
+                                           {'name': 'g3.dat'}],
+                                'star':   [{'name': 's1.dat'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII'}]}}
         expected_groups = {'_stile_group_0': {
                 'single-CCD-catalog': { 'star': 0, 'galaxy': 0}}, 
             '_stile_group_1': {
@@ -304,31 +304,31 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': True, 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': True, 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': True, 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': True, 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': True, 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': False, 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g2.dat'},
+                                           {'name': 'g3.dat'}],
+                                'star':   [{'name': 's1.dat'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': False}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict6))
         self.assertEqual(results,expected_results)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g2.dat'},
+                                           {'name': 'g3.dat'}],
+                                'star':   [{'name': 's1.dat'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII'}]}}
         results, groups = self.testConfigDataHandler.parseFiles({'file':copy.deepcopy(self.dict6)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,{})
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': None, 'group': 2, 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': 1, 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': 3, 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': 3, 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': None, 'group': 2, 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': None, 'group': 1, 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'group': 2},
+                                           {'name': 'g2.dat', 'group': 1},
+                                           {'name': 'g3.dat', 'group': 3}],
+                                'star':   [{'name': 's1.dat', 'group': 3},
+                                           {'name': 's2.dat', 'group': 2},
+                                           {'name': 's3.dat', 'group': 1}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict7))
         self.assertEqual(results,expected_results)
         results, groups = self.testConfigDataHandler.parseFiles({'file':copy.deepcopy(self.dict7)})
@@ -341,19 +341,19 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': False, 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_1'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': False},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'}]}}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict8))
         self.assertEqual(results,expected_results)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_1'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'}]}}
         results, groups = self.testConfigDataHandler.parseFiles({'file':copy.deepcopy(self.dict8)})
         expected_groups = {'_stile_group_0': {
                 'single-CCD-catalog': { 'star': 0, 'galaxy': 0}}, 
@@ -362,56 +362,54 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1-0.dat', 'file_reader': 'ASCII', 'group': True, 'fields': []},
-                                           {'name': 'g1-1.dat', 'file_reader': 'ASCII', 'group': True, 'fields': []},
-                                           {'name': 'g2-0.dat', 'file_reader': None, 'group': True, 'fields': []},
-                                           {'name': 'g2-1.dat', 'file_reader': None, 'group': True, 'fields': []},
-                                           {'name': 'g3-0.dat', 'file_reader': None, 'group': True, 'fields': []},
-                                           {'name': 'g3-1.dat', 'file_reader': None, 'group': True, 'fields': []}]},
+                                'galaxy': [{'name': 'g1-0.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g1-1.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g2-0.dat'},
+                                           {'name': 'g2-1.dat'},
+                                           {'name': 'g3-0.dat'},
+                                           {'name': 'g3-1.dat'}]},
                             stile_utils.Format(epoch='multiepoch',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': ['g1-0.dat','g1-1.dat'], 'file_reader': 'ASCII', 'group': True, 'fields': []},
-                                           {'name': ['g2-0.dat','g2-1.dat'], 'file_reader': None, 'group': True, 'fields': []},
-                                           {'name': ['g3-0.dat','g3-1.dat'], 'file_reader': None, 'group': True, 'fields': []}]} 
-                           }
+                                'galaxy': [{'name': ['g1-0.dat','g1-1.dat'], 'file_reader': 'ASCII'},
+                                           {'name': ['g2-0.dat','g2-1.dat']},
+                                           {'name': ['g3-0.dat','g3-1.dat']}]
+                           } }
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict9))
         self.assertEqual(results,expected_results)
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1-0.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 'g1-1.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 'g2-0.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 'g2-1.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 'g3-0.dat', 'file_reader': None, 'fields': []},
-                                           {'name': 'g3-1.dat', 'file_reader': None, 'fields': []}]},
+                                'galaxy': [{'name': 'g1-0.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g1-1.dat', 'file_reader': 'ASCII'},
+                                           {'name': 'g2-0.dat'},
+                                           {'name': 'g2-1.dat'},
+                                           {'name': 'g3-0.dat'},
+                                           {'name': 'g3-1.dat'}]},
                             stile_utils.Format(epoch='multiepoch',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': ['g1-0.dat','g1-1.dat'], 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': ['g2-0.dat','g2-1.dat'], 'file_reader': None, 'fields': []},
-                                           {'name': ['g3-0.dat','g3-1.dat'], 'file_reader': None, 'fields': []}]} 
+                                'galaxy': [{'name': ['g1-0.dat','g1-1.dat'], 'file_reader': 'ASCII'},
+                                           {'name': ['g2-0.dat','g2-1.dat']},
+                                           {'name': ['g3-0.dat','g3-1.dat']}]} 
                            }
         results, groups = self.testConfigDataHandler.parseFiles({'file':copy.deepcopy(self.dict9)})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,{})
         # list0: list-form
         expected_results = {stile_utils.Format(epoch='single',extent='field',data_format='catalog').str: {
-                                'galaxy': [{'name': 'sg1.dat', 'file_reader': None, 'group': False, 'flag_col': 'is_galaxy', 'fields': []}],
-                                'star':   [{'name': 'sg1.dat', 'file_reader': None, 'group': False, 'flag_col': 'is_star', 'fields': []}]
+                                'galaxy': [{'name': 'sg1.dat', 'flag_col': 'is_galaxy'}],
+                                'star':   [{'name': 'sg1.dat', 'flag_col': 'is_star'}]
                             }}
-        results, n = self.testConfigDataHandler._parseFileHelper(self.list0,group=False)
-        self.assertEqual(results,expected_results)
         results, groups = self.testConfigDataHandler.parseFiles({'file':self.list0})
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,{})
         # Now, just make sure that if you send multiple dicts through it combines them correctly
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6)})
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': ['_stile_group_2'], 'fields': []},
-                                           {'name': 'g1.dat', 'file_reader': 'ASCII', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': None, 'group': ['_stile_group_0'], 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': None, 'group': '_stile_group_1', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': None, 'group': '_stile_group_2', 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': ['_stile_group_1']},
+                                           {'name': 'g3.dat', 'group': ['_stile_group_2']},
+                                           {'name': 'g1.dat', 'file_reader': 'ASCII'}],
+                                'star':   [{'name': 's1.dat', 'group': ['_stile_group_0']},
+                                           {'name': 's2.dat', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'group': '_stile_group_2'},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII'},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII'}]}}
         expected_groups = {'_stile_group_0': {
                 'single-CCD-catalog': { 'star': 0, 'galaxy': 0}}, 
             '_stile_group_1': {
@@ -422,16 +420,17 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(groups,expected_groups)
         # Finally, check that queryFile still works with multiple same file names in the same format & object type
         results = self.testConfigDataHandler.queryFile('g1.dat')
-        self.assertEqual(results,'1 - format: single-CCD-catalog, object type: galaxy, fields: [], group: _stile_group_0, file_reader: None\n2 - format: single-CCD-catalog, object type: galaxy, fields: [], file_reader: ASCII')
+        print results
+        self.assertEqual(results,'1 - format: single-CCD-catalog, object type: galaxy, group: _stile_group_0\n2 - format: single-CCD-catalog, object type: galaxy, file_reader: ASCII')
         # And check that it handles extra keys correctly as well
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6),'file_reader':'ASCII'})
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_0'], 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_2'], 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_0'], 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_2'], 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_0']},
+                                           {'name': 'g2.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_1']},
+                                           {'name': 'g3.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_2']}],
+                                'star':   [{'name': 's1.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_0']},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_1']},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_2']}]}}
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6),'file_reader':{'extent': 'CCD', 'name': 'ASCII'}})
@@ -439,13 +438,13 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(groups,expected_groups)
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6),'file_reader':{'star':'ASCII'}})
         expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-                                'galaxy': [{'name': 'g1.dat', 'file_reader': None, 'group': '_stile_group_0', 'fields': []},
-                                           {'name': 'g2.dat', 'file_reader': None, 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 'g3.dat', 'file_reader': None, 'group': ['_stile_group_2'], 'fields': []},
-                                           {'name': 'g1.dat', 'file_reader': 'ASCII', 'fields': []}],
-                                'star':   [{'name': 's1.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_0'], 'fields': []},
-                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_1'], 'fields': []},
-                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_2'], 'fields': []}]}}
+                                'galaxy': [{'name': 'g1.dat', 'group': '_stile_group_0'},
+                                           {'name': 'g2.dat', 'group': ['_stile_group_1']},
+                                           {'name': 'g3.dat', 'group': ['_stile_group_2']},
+                                           {'name': 'g1.dat', 'file_reader': 'ASCII'}],
+                                'star':   [{'name': 's1.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_0']},
+                                           {'name': 's2.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_1']},
+                                           {'name': 's3.dat', 'file_reader': 'ASCII', 'group': ['_stile_group_2']}]}}
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6),'file_reader':{'object_type': 'star', 'name': 'ASCII'}})
