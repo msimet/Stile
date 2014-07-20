@@ -186,7 +186,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         
     def generateColumns(self, catalog, mask, raw_cols, calib_data, calib_type, extra_col_dict):
         """
-        Generate required columns which are not already in the data array, and update 
+        Generate required columns which are not already in the data array,  and update 
         `extra_col_dict` to include them.  Also update "mask" to exclude any objects which have
         specific failures for the requested quantities, such as flux measurement failures for
         flux/magnitude measurements.
@@ -203,6 +203,50 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                               "nan" are not recomputed.  `extra_col_dict` is updated by this
                               function.
         """
+        cols = []
+        cols.extend(raw_cols) # so we can pop items and not mess up our column description elsewhere
+        # The moments measurement is slow enough to make a difference if we're processing many
+        # catalogs, so we do those first, and separately, all at once.  Here, we figure out if there
+        # are any moments-related keys to pull out of the catalog.
+        shape_keys = ['g1', 'g2', 'sigma']
+        shape_err_keys = ['g1_err', 'g2_err', 'sigma_err']
+        psf_shape_keys = ['psf_g1', 'psf_g2', 'psf_sigma']
+        do_shape = [col in shape_keys for col in shape_keys if not col in catalog.schema]
+        do_err = [col in shape_keys for col in shape_err_keys if not col in catalog.schema]
+        do_psf = [col in shape_keys for col in psf_shape_keys if not col in catalog.schema]
+        shape_cols = do_shape+do_err+do_psf # a list of all shape-related columns to process
+
+        if shape_cols:
+            for col in shape_cols:
+                cols.remove(key) 
+                # Make sure there's already a NumPy array in the dict associated with this key.  
+                # We use "nan" to mark the rows we haven't computed already.
+                if col not in extra_col_dict: 
+                    extra_col_dict[col] = numpy.zeros(len(catalog))
+                    extra_col_dict[col].fill('nan')
+            # Now, figure out the rows where we need to compute at least one of these quantities
+            nan_masks = [numpy.isnan(extra_col_dict[col]) for col in shape_cols]
+            nan_mask = nan_masks[0]
+            for nm in nan_masks[1:]:
+                nan_mask = numpy.logical_or(nan_mask, nm)
+            nan_and_col_mask = numpy.logical_and(nan_mask, mask)
+            # We will have to transform to sky coordinates if the locations are in (ra,dec).  This
+            # is the more common case, so we only use CCD coordinates if explicitly requested.
+            if 'x' in cols or 'y' in cols:
+                sky_coords = False
+            else:
+                sky_coords = True
+            if any(nan_and_col_mask>0):
+                # computeShapes returns a dict of ('key': column) pairs, and sometimes an extra
+                # mask indicating where measurements were valid. Here, this is only used if 
+                # PSF shapes were computed, since we already computed the shape masking in run().
+                shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask], calib_data, 
+                    do_shape=do_shape, do_err=do_err, do_psf=do_psf, sky_coords=sky_coords)
+                if extra_mask is not None:
+                    mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask], extra_mask)
+                for col in shape_cols:
+                    extra_col_dict[col][nan_and_col_mask] = shapes_dict[col]
+        # Now we do the other quantities.  A lot of this is similar to the above code.
         for col in cols:
             if not col in catalog.schema:
                 if not col in extra_col_dict:
@@ -230,8 +274,127 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)    
         return mask
-                           
-    def computeExtraColumn(self,col,data,calib_data,calib_type):
+    
+    def computeShapes(self, data, calib, do_shape=True, do_err=True, do_psf=True, sky_coords=True):
+        """
+        Compute the shapes for the given `data`, an LSST source catalog, with the associated 
+        `calib` calibrated exposure metadata ('calexp_md' or 'fcr_md', either works).
+        
+        @param data       An LSST source catalog whose shape moments you would like to retrieve.
+        @param calib      The metadata from a calibrated exposure ('calexp_md' or 'fcr_md').  If
+                          `sky_coords=False` (see below) this can be None.
+        @param do_shape   A bool indicating whether to compute (g1,g2,sigma).
+        @param do_err     A bool indicating whether to compute (g1_err,g2_err,sigma_err).
+        @param do_psf     A bool indicating whether to compute (psf_g1,psf_g2,psf_sigma).
+        @param sky_coords If True, compute the moments in ra, dec coordinates; else compute in 
+                          native coordinates (x,y for CCD).
+        @returns          A tuple consisting of:
+                              - A dict whose keys are column names ('g1', 'psf_sigma', etc) and 
+                                whose values are a NumPy array of those quantities
+                              - None if no new mask was needed, or a NumPy array of bools indicating
+                                which rows had valid measurements.
+        """
+        if sky_coords:
+            wcs = calexp.getWcs() 
+        # First pull the quantities from the catalog that we'll need.  This first version in the try
+        # block is faster if it works, and the time cost if it fails is small, so we try it first...
+        try:
+            if sky_coords:
+                localTransform = wcs.linearizePixelToSky(data.getCentroid())
+                localLinearTranform = localTransform.getLinear()
+            if do_shape or do_err:
+                moments = data.get('shape.sdss')
+                if sky_coords:
+                    moments = moments.transform(localLinearTransform)
+                ixx = moments.getIxx()
+                ixy = moments.getIxy()
+                iyy = moments.getIyy()
+            if do_err:
+                moments_err = data.get('shape.sdss.err')
+                if sky_coords:
+                    moments_err = moments_err.transform(localLinearTransform)
+                cov_ixx = moments_err[0,0]
+                cov_iyy = moments_err[1,1]
+                cov_ixy = moments_err[2,2]
+            if do_psf:
+                psf_moments = data.get('shape.sdss.psf')
+                if sky_coords:
+                    psf_moments = psf_moments.transform(localLinearTransform)
+                psf_ixx = psf_moments.getIxx()
+                psf_iyy = psf_moments.getIyy()
+                psf_ixy = psf_moments.getIxy()
+        # ...but probably in most cases we'll have to iterate like this since the catalog is
+        # already masked, which breaks the direct calls above.
+        except:
+            if sky_coords:
+                localTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear() 
+                                    for src in data]
+            if do_shape or do_err:
+                moments = [src.get('shape.sdss') for src in data]
+                if sky_coords:
+                    moments = [moment.transform(lt) for moment, lt in 
+                                      zip(moments, localLinearTransform)]
+                ixx = numpy.array([mom.getIxx() for mom in moments])
+                ixy = numpy.array([mom.getIxy() for mom in moments])
+                iyy = numpy.array([mom.getIxy() for mom in moments])
+            if do_err:
+                moments_err = [src.get('shape.sdss.err') for src in data]
+                if sky_coords:
+                    moments_err = [moment.transform(lt) for moment, lt in 
+                                      zip(moments_err, localLinearTransform)]
+                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
+                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
+                cov_ixy = numpy.array([src.get('shape.sdss.err')[2,2] for src in data])
+            if do_psf:
+                psf_moments = [src.get('shape.sdss.psf') for src in data]
+                if sky_coords:
+                    psf_moments = [moment.transform(lt) for moment, lt in 
+                                      zip(psf_moments, localLinearTransform)]
+                psf_ixx = numpy.array([mom.getIxx() for mom in psf_moments])
+                psf_ixy = numpy.array([mom.getIxy() for mom in psf_moments])
+                psf_iyy = numpy.array([mom.getIxy() for mom in psf_moments])
+        # Now, combine the moment measurements into the actual quantities we want.
+        if do_shape:
+            g1 = (ixx-iyy)/(ixx+iyy)
+            g2 = 2.*ixy/(ixx+iyy)
+            sigma = numpy.sqrt(0.5*(ixx+iyy))
+        else:
+            g1 = None
+            g2 = None
+            sigma = None
+        if do_err:
+            dg1_dixx = 2.*iyy/(ixx+iyy)**2
+            dg1_diyy = -2.*ixx/(ixx+iyy)**2
+            g1_err = numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy
+            dg2_dixx = -2.*ixy/(ixx+iyy)**2
+            dg2_diyy = -2.*ixy/(ixx+iyy)**2
+            dg2_dixy = 2./(ixx+iyy)
+            g2_err = numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + 
+                               2. * dg2_dixy**2 * cov_ixy)
+            dsigma_dixx = 0.25/sigma
+            dsigma_diyy = 0.25/sigma
+            sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
+        else:
+            g1_err = None
+            g2_err = None
+            sigma_err = None
+        if do_psf:
+            psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
+            psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
+            psf_sigma = numpy.sqrt(0.5*(psf_ixx+psf_iyy))
+            extra_mask = numpy.array([src.get('flux.psf.flags')==0 & 
+                                 src.get('flux.psf.flags.psffactor')==0 for src in data])
+        else:
+            psf = None
+            psf_g2 = None
+            psf_sigma = None
+            extra_mask = None
+        return {'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err,
+                'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 'psf_sigma': psf_sigma},
+                new_mask
+        
+
+    def computeExtraColumn(self, col, data, calib_data, calib_type):
         """
         Compute the quantity `col` for the given `data`.
         
@@ -260,142 +423,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if calib_type=="fcr":
                 ffp = lsst.meas.mosaic.FluxFitParams(calib_data)
                 x, y = data.getX(), data.getY()
-                correction = numpy.array([ffp.eval(x[i],y[i]) for i in range(n)])
+                correction = numpy.array([ffp.eval(x[i], y[i]) for i in range(n)])
                 zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
             return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
                     numpy.array([src.get('flux.psf.flags')==0 & 
                                  src.get('flux.psf.flags.psffactor')==0 for src in data]))
-        elif col=="g1":
-            try:
-                # This fails pretty quickly if it isn't going to work, so time-wise better to
-                # try it and fail since this branch is much faster to run.
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                moments = [src.get('shape.sdss') for src in data]
-                ixx = numpy.array([mom.getIxx() for mom in moments])
-                iyy = numpy.array([mom.getIxy() for mom in moments])
-            # Shape measurement failures are already masked out, so we don't have to check again.
-            return ((ixx-iyy)/(ixx+iyy), None)
-        elif col=="g2":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                ixy = moments.getIxy()
-                iyy = moments.getIyy()
-            except:
-                moments = [src.get('shape.sdss') for src in data]
-                ixx = numpy.array([mom.getIxx() for mom in moments])
-                ixy = numpy.array([mom.getIxy() for mom in moments])
-                iyy = numpy.array([mom.getIxy() for mom in moments])
-            return (2.*ixy/(ixx+iyy), None)
-        elif col=="sigma":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            return (numpy.sqrt(0.5*(ixx+iyy)), None)
-        elif col=="g1_err":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            try:
-                moments_err = data.get('shape.sdss.err')
-                cov_ixx = moments_err[0,0]
-                cov_iyy = moments_err[1,1]
-            except:
-                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
-                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
-            dg1_dixx = 2.*iyy/(ixx+iyy)**2
-            dg1_diyy = -2.*ixx/(ixx+iyy)**2
-            return (numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy), 
-                    None)
-        elif col=="g2_err":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-                ixy = moments.getIxy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-                ixy = numpy.array([src.get('shape.sdss').getIxy() for src in data])
-            try:
-                moments_err = data.get('shape.sdss.err')
-                cov_ixx = moments_err[0,0]
-                cov_iyy = moments_err[1,1]
-                cov_ixy = moments_err[2,2]
-            except:
-                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
-                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
-                cov_ixy = numpy.array([src.get('shape.sdss.err')[2,2] for src in data])
-            dg2_dixx = -2.*ixy/(ixx+iyy)**2
-            dg2_diyy = -2.*ixy/(ixx+iyy)**2
-            dg2_dixy = 2./(ixx+iyy)
-            return (numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy + 
-                               2. * dg2_dixy**2 * cov_ixy), None)
-        elif col=="sigma_err":
-            try:
-                moments = data.get('shape.sdss')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss').getIyy() for src in data])
-            try:
-                moments_err = data.get('shape.sdss.err')
-                cov_ixx = moments_err[0,0]
-                cov_iyy = moments_err[1,1]
-            except:
-                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
-                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
-            sigma = numpy.sqrt(0.5*(ixx+iyy))
-            dsigma_dixx = 0.25/sigma
-            dsigma_diyy = 0.25/sigma
-            return (numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy), 
-                    None)
-        elif col=="psf_g1":
-            try:
-                moments = data.get('shape.sdss.psf')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return ((ixx-iyy)/(ixx+iyy),
-                    numpy.array([src.get('shape.sdss.flags.psf')==0 for src in data]))
-        elif col=="psf_g2":
-            try:
-                moments = data.get('shape.sdss.psf')
-                ixx = moments.getIxx()
-                ixy = moments.getIxy()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
-                ixy = numpy.array([src.get('shape.sdss.psf').getIxy() for src in data])
-                iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return (2.*ixy/(ixx+iyy),
-                    numpy.array([src.get('shape.sdss.flags.psf')==0 for src in data]))
-        elif col=="psf_sigma":
-            try:
-                moments = data.get('shape.sdss.psf')
-                ixx = moments.getIxx()
-                iyy = moments.getIyy()
-            except:
-                ixx = numpy.array([src.get('shape.sdss.psf').getIxx() for src in data])
-                iyy = numpy.array([src.get('shape.sdss.psf').getIyy() for src in data])
-            return (numpy.sqrt(0.5*(ixx+iyy)),
-                    numpy.array([src.get('shape.sdss.flags.psf')==0 for src in data]))
         elif col=="w":
             #TODO: better weighting measurement
             return numpy.array([1.]*len(data)), None
