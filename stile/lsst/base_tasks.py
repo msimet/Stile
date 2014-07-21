@@ -540,6 +540,10 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask, MosaicTask):
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs] 
+        # Some tests need to know which data came from which CCD
+        for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
+            extra_col_dict['CCD'] = numpy.zeros(len(catalog),dtype=int)
+            extra_col_dict['CCD'].fill(dataRef.dataId['ccd'])
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
@@ -567,13 +571,16 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask, MosaicTask):
             for (mask_list, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
                 for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_list, catalogs, extra_col_dicts):
                     self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
+            # Some tests need to know which data came from which CCD, so we add a column for that here
+            # to make sure it's propagated through to the sys_tests.
+            sys_test_data.cols_list = [tuple(list(cols)+['CCD']) for cols in sys_test_data.cols_list]
             sys_data_list.append(sys_test_data)
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
             for mask_list, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
                 new_catalog = {}
-                for catalog, extra_col_dict, mask in zip(catalogs, extra_col_dicts, mask_list):
-                    for column in cols:
+                for column in cols:
+                    for catalog, extra_col_dict, mask in zip(catalogs, extra_col_dicts, mask_list):
                         if column in extra_col_dict:
                             newcol = extra_col_dict[column][mask]
                         elif column in catalog.schema:
