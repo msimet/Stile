@@ -105,7 +105,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.    
             for (mask, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
-                self.generateColumns(dataRef, catalog, mask, cols, calib_data, calib_metadata, calib_type, extra_col_dict)
+                self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             sys_data_list.append(sys_test_data)
         # Right now, we have a source catalog, plus a dict of other computed quantities.  Step
         # through the masks and required quantities and generate a NumPy array for each pair, 
@@ -168,7 +168,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         for key in catalog_dict:
             dtypes.append((key, catalog_dict[key].dtype))
         len_list = [len(catalog_dict[key]) for key in catalog_dict]
-        if not set(len_list)==0:
+        if not len(set(len_list))==1:
             raise RuntimeError('Different catalog lengths for different columns!')
         # Make an empty array and fill it column by column.
         data = numpy.zeros(len_list[0], dtype=dtypes)
