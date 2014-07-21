@@ -4,6 +4,7 @@ import numpy
 import subprocess
 import helper
 import unittest
+
 try:
     import stile
 except ImportError:
@@ -43,9 +44,8 @@ class TestCorrelationFunctions(unittest.TestCase):
                     dtype=[("R_nominal",float),("<R>",float),("<gamT>",float),("<gamX>",float),
                            ("sig",float),("weight",float),("npairs",float)])
             
-    def test_getCorrelationFunctionSysTest(self):
-        # First, test .getCorrelationFunction() directly with both a dict and some kwargs passed in,
-        # and also test the two different kinds of file specification.
+    def test_getCF(self):
+        """Test getCF() directly, and the two kinds of file specification."""
         stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
                                         'dec_units': 'degrees',
                                         'min_sep': 0.05,
@@ -56,7 +56,7 @@ class TestCorrelationFunctions(unittest.TestCase):
         col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
         cf = stile.sys_tests.CorrelationFunctionSysTest()
         dh = temp_data_handler()
-        results = cf.getCorrelationFunction(stile_args,'ng',None,None,
+        results = cf.getCF(stile_args,'ng',None,None,
                                             file_name='../examples/example_lens_catalog.dat',
                                             file_name2='../examples/example_source_catalog.dat',
                                             **col_kwargs)
@@ -65,12 +65,12 @@ class TestCorrelationFunctions(unittest.TestCase):
         kwargs = stile_args['corr2_kwargs']
         stile_args['corr2_kwargs'] = {}
         kwargs.update(col_kwargs)
-        results2 = cf.getCorrelationFunction(stile_args,'ng',
+        results2 = cf.getCF(stile_args,'ng',
                                             file_name='../examples/example_lens_catalog.dat',
                                             file_name2='../examples/example_source_catalog.dat',
                                              **kwargs)
         numpy.testing.assert_equal(results,results2)
-        results2 = cf.getCorrelationFunction(stile_args,'ng',
+        results2 = cf.getCF(stile_args,'ng',
                                              data=('../examples/example_lens_catalog.dat',
                                                    {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
                                              data2=('../examples/example_source_catalog.dat',
@@ -78,7 +78,7 @@ class TestCorrelationFunctions(unittest.TestCase):
                                              **kwargs)
         numpy.testing.assert_equal(results,results2)
 
-        # Then, test the tests that use .getCorrelationFunction().
+        # Then, test the tests that use .getCF().
         realshear = stile.RealShearSysTest()
         results3 = realshear(stile_args,file_name='../examples/example_lens_catalog.dat',
                                         file_name2='../examples/example_source_catalog.dat',
@@ -90,11 +90,11 @@ class TestCorrelationFunctions(unittest.TestCase):
                                               {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
                                            **kwargs)
         numpy.testing.assert_equal(results,results3)
-        self.assertRaises(TypeError,cf.getCorrelationFunction)
+        self.assertRaises(TypeError,cf.getCF)
         self.assertRaises(subprocess.CalledProcessError,
-                          cf.getCorrelationFunction,stile_args,'ng',
+                          cf.getCF,stile_args,'ng',
                           file_name='../examples/example_lens_catalog.dat', **col_kwargs)
-        self.assertRaises(ValueError,cf.getCorrelationFunction,stile_args,'hello',
+        self.assertRaises(ValueError,cf.getCF,stile_args,'hello',
                           file_name='../examples/example_lens_catalog.dat',
                           file_name2='../examples/example_source_catalog.dat',
                           **col_kwargs)
