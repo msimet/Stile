@@ -26,9 +26,8 @@ class SysTestData(object):
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", "GalaxyXGalaxyShear", "BrightStarShear",
+                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
-
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
@@ -43,12 +42,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     ConfigClass = CCDSingleEpochStileConfig
     _DefaultName = "CCDSingleEpochStile"
     # necessary basic parameters for corr2 to run
-    corr2_kwargs = {'ra_units': 'degrees',
-                                   'dec_units': 'degrees',
-                                   'min_sep': 0.005,
-                                   'max_sep': 0.2,
-                                   'sep_units': 'degrees',
-                                   'nbins': 20
+    corr2_kwargs = {'ra_units': 'degrees', 
+                                'dec_units': 'degrees',
+                                'min_sep': 0.005,
+                                'max_sep': 0.2,
+                                'sep_units': 'degrees',
+                                'nbins': 20
                    }
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
@@ -88,8 +87,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     shape_masks.append(self._computeShapeMask(catalog))
                 else:
                     shape_masks.append(True)
-                sys_test_data.mask_list = [numpy.logical_and(mask, shape_mask)
-                    for mask, shape_mask in zip(sys_test_data.mask_list, shape_masks)]
+            sys_test_data.mask_list = [numpy.logical_and(mask, shape_mask) 
+                for mask, shape_mask in zip(sys_test_data.mask_list, shape_masks)]
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.
             for (mask, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
@@ -494,7 +493,8 @@ class StileFieldRunner(lsst.pipe.base.TaskRunner):
 class FieldSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the field level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", "StarXGalaxyShear"])
+                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
+                             "StarXGalaxyShear", "StarXStarShear"])
 
 class FieldSingleEpochStileTask(CCDSingleEpochStileTask, MosaicTask):
     """
@@ -515,12 +515,12 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask, MosaicTask):
     ConfigClass = FieldSingleEpochStileConfig
     _DefaultName = "FieldSingleEpochStile"
     # necessary basic parameters for corr2 to run
-    corr2_kwargs = { 'ra_units': 'degrees',
-                                   'dec_units': 'degrees',
-                                   'min_sep': 0.05,
-                                   'max_sep': 1,
-                                   'sep_units': 'degrees',
-                                   'nbins': 20
+    corr2_kwargs = {'ra_units': 'degrees', 
+                                'dec_units': 'degrees',
+                                'min_sep': 0.05,
+                                'max_sep': 1,
+                                'sep_units': 'degrees',
+                                'nbins': 20
                    }
 
     def run(self, field, dataRefList):
