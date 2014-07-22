@@ -35,7 +35,8 @@ class SysTestData(object):
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default = ["StatsPSFFlux", "StarXGalaxyShear"])
+                    default = ["StatsPSFFlux", "GalaxyXGalaxyShear", "BrightStarShear",         
+                               "StarXGalaxyShear", "StarXStarShear"])
         
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
@@ -316,8 +317,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 iyy = moments.getIyy()
             if do_err:
                 moments_err = data.get('shape.sdss.err')
-                if sky_coords:
-                    moments_err = moments_err.transform(localLinearTransform)
+                # Right now the moments_err matrix doesn't have a transform() property, so we will
+                # just use the raw errors.  
+                #if sky_coords:
+                #    moments_err = moments_err.transform(localLinearTransform)
                 cov_ixx = moments_err[0,0]
                 cov_iyy = moments_err[1,1]
                 cov_ixy = moments_err[2,2]
@@ -344,9 +347,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 iyy = numpy.array([mom.getIxy() for mom in moments])
             if do_err:
                 moments_err = [src.get('shape.sdss.err') for src in data]
-                if sky_coords:
-                    moments_err = [moment.transform(lt) for moment, lt in 
-                                      zip(moments_err, localLinearTransform)]
+                #if sky_coords:
+                #    moments_err = [moment.transform(lt) for moment, lt in 
+                #                      zip(moments_err, localLinearTransform)]
                 cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
                 cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
                 cov_ixy = numpy.array([src.get('shape.sdss.err')[2,2] for src in data])
