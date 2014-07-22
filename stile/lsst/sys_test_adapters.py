@@ -10,9 +10,9 @@ def MaskGalaxy(data):
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows 
     correspond to galaxies.
     """
+    # Will have to be more careful/clever about this when classification.extendedness is continuous.
     # These arrays are generally contiguous in memory--so we can just index them like a NumPy
     # recarray.
-    # Will have to be more careful/clever about this when classification.extendedness is continuous.
     try:
         return data['classification.extendedness']==1
     except:
@@ -22,7 +22,7 @@ def MaskGalaxy(data):
 
 def MaskStar(data):
     """
-    Given `data`, an LSST source catalog, return a NumPy boolean array  describing which rows 
+    Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows 
     correspond to stars.
     """
     try:
@@ -71,7 +71,7 @@ class BaseSysTestAdapter(object):
     
     The basic function of a SysTestAdapter is to wrap a Stile SysTest object in a way that makes it
     easy to use with the LSST drivers found in base_tasks.py.  It should always have: an
-    attribute `sys_test` which is a SysTest object; an attribute `name` that we can use to generate
+    attribute `sys_test` that is a SysTest object; an attribute `name` that we can use to generate
     output filenames; a function __call__() that will run the test; a function `getMasks()` that 
     returns a set of masks (one for each object type--such as "star" or "galaxy"--that is expected 
     for the test) if given a source catalog; and a function getRequiredColumns() that returns a 
@@ -79,7 +79,7 @@ class BaseSysTestAdapter(object):
     mask returned from getMasks().  
     
     (More complete lists of the exact expected names for object types and required columns can be 
-    found in the documentation for the class `Stile.sys_tests.BaseSysTest`.)
+    found in the documentation for the class `Stile.sys_tests.SysTest`.)
     
     BaseSysTestAdapter makes some of these functions easier.  In particular, it defines:
      - a function setupMasks() that can take a list of strings corresponding to object types and 
@@ -151,21 +151,28 @@ class BaseSysTestAdapter(object):
         """
         return self.sys_test(*data, **kwargs)
 
-
-class StarXGalaxyDensityAdapter(BaseSysTestAdapter):
+class GalaxyXGalaxyShearAdapter(BaseSysTestAdapter):
     """
-    Adapter for the StarXGalaxyDensitySysTest.  See the documentation for that class or 
+    Adapter for the GalaxyXGalaxyShearSysTest.  See the documentation for that class or 
     BaseSysTestAdapter for more information.
     """
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.StarXGalaxyDensitySysTest()
+        self.sys_test = sys_tests.GalaxyXGalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-        
-    def __call__(self):
-        raise NotImplementedError("No random catalogs implemented yet!")        
-     
+
+class BrightStarShearAdapter(BaseSysTestAdapter):
+    """
+    Adapter for the BrightStarShearSysTest.  See the documentation for that class or 
+    BaseSysTestAdapter for more information.
+    """
+    def __init__(self,config):
+        self.config = config
+        self.sys_test = sys_tests.BrightStarShearSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
 class StarXGalaxyShearAdapter(BaseSysTestAdapter):
     """
     Adapter for the StarXGalaxyShearSysTest.  See the documentation for that class or 
@@ -177,10 +184,23 @@ class StarXGalaxyShearAdapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
+class StarXStarShearAdapter(BaseSysTestAdapter):
+    """
+    Adapter for the StarXStarShearSysTest.  See the documentation for that class or 
+    BaseSysTestAdapter for more information.
+    """
+    def __init__(self,config):
+        self.config = config
+        self.sys_test = sys_tests.StarXStarShearSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+        
 class StatsPSFFluxAdapter(BaseSysTestAdapter):
     """
     Adapter for the StatSysTest.  See the documentation for that class or BaseSysTestAdapter for
     more information.  In this case, we specifically request 'flux.psf' and object_type 'galaxy'.
+    
+    In the future, we plan to have this be more configurable; for now, this works as a test.
     """
     def __init__(self,config):
         self.config = config
@@ -195,5 +215,7 @@ class StatsPSFFluxAdapter(BaseSysTestAdapter):
         return self.sys_test(*data,verbose=True,**kwargs)
 
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
-#adapter_registry.register("StarXGalaxyDensity",StarXGalaxyDensityAdapter)
+adapter_registry.register("GalaxyXGalaxyShear",GalaxyXGalaxyShearAdapter)
+adapter_registry.register("BrightStarShear",BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear",StarXGalaxyShearAdapter)
+adapter_registry.register("StarXStarShear",StarXStarShearAdapter)
