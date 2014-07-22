@@ -64,7 +64,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # This part will be updated by Jim on branch "#20".
         # The directory is 
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
-        # The file has a (visit, ccd) identifier %(visit)07d-%(ccd)03d.
+        # The file has a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
         src_filename = (dataRef.get("src_filename", immediate=True)[0]).replace('_parent/','')
         dir = os.path.join(src_filename.split('output')[0],"stile_output")
         if os.path.exists(dir) == False:
@@ -554,7 +554,7 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
         # This part will be updated by Jim on branch "#20".
         # The directory is 
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
-        # The file has a visit identifier %(visit)07d-[ccds], where [ccds] is a reduced form
+        # The file has a visit identifier -%(visit)07d-[ccds], where [ccds] is a reduced form
         # of a CCD list , e.g., if a CCD list is [0, 1, 2, 4, 5, 6, 8, 10],
         # the [ccds] becomes 0..2^4..6^8^10.
         src_filename = (dataRefList[0].get("src_filename", 
