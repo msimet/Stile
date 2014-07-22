@@ -178,11 +178,11 @@ class CorrelationFunctionSysTest(SysTest):
         # contains all the possible sets of data, in tuples with the array field name and the
         # corresponding legend labels, plus error bars (w) and y-axis titles.  In order, the
         # elements of each tuple are:
-        # a T-mode Y and a B-mode Y [or xi+ and xi-];
+        # a T-mode Y (field name, legend label) and the same for a B-mode Y [or xi+ and xi-];
         # an imaginary xi+ and xi-;
         # a  separate t-mode Y and b-mode Y for the data and randoms alone rather
-        # than together, in which case it's the keys t_dr_y + 'd' or 'r' for data and randoms, 
-        # respectively, or + 'd}$' or 'r}$' for the legend labels;
+        # than together, in which case the field names are the given keys + 'd' or 'r' for data
+        # and randoms, respectively, or + 'd}$' or 'r}$' for the legend labels;
         # error bar and y-axis title.
         # Each type of data may have only some of those elements--if not the item is None.
         for t_y, t_yb, t_y_im, t_yb_im, t_dr_y, t_dr_yb, t_w, t_ytitle in [
@@ -231,6 +231,8 @@ class CorrelationFunctionSysTest(SysTest):
         else:
             yscale = 'linear'
         fig = plt.figure()
+        fig.subplots_adjust(hspace=0) # no space between stacked plots
+        fig.subplots(sharex=True) # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
         if (y_im and yb):  
             nrows = 2
@@ -249,7 +251,6 @@ class CorrelationFunctionSysTest(SysTest):
         ax.set_xscale('log')
         ax.set_yscale(yscale)
         ax.set_xlim(xlim)
-        ax.set_xlabel(r)
         ax.set_ylabel(ytitle)
         ax.legend()
         if yb and y_im: # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
@@ -259,7 +260,6 @@ class CorrelationFunctionSysTest(SysTest):
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
-            ax.set_xlabel(r)
             ax.set_ylabel(ytitle)
             ax.legend()
         if plot_data_only and dr_y: # Plot the data-only measurements if requested
@@ -273,7 +273,6 @@ class CorrelationFunctionSysTest(SysTest):
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
-            ax.set_xlabel(r)
             ax.set_ylabel(ytitle)
             ax.legend()
         if plot_random_only and dr_y: # Plot the randoms-only measurements if requested
@@ -286,9 +285,9 @@ class CorrelationFunctionSysTest(SysTest):
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
-            ax.set_xlabel(r)
             ax.set_ylabel(ytitle)
             ax.legend()
+        ax.set_xlabel(r)
         return fig 
         
         
@@ -350,31 +349,6 @@ class StarAutoShearSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
-
-class RoweISysTest(CorrelationFunctionSysTest):
-    """
-    Compute the auto-correlation of (star-PSF model) shapes.
-    """
-    short_name = 'psf_residual_auto_shear'
-    long_name = 'Auto-correlation of (star-PSF model) shapes'
-    objects_list = ['star']
-    required_quantities = [('ra','dec','g1_residual','g2_residual','w')]
-
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
-
-class RoweIISysTest(CorrelationFunctionSysTest):
-    """
-    Compute the cross-correlation of (star-PSF model) residuals with star shapes.
-    """
-    short_name = 'psf_residual_x_star_shear'
-    long_name = 'Cross-correlation of (star-PSF model) residuals with star shapes'
-    objects_list = ['star','star']
-    required_quantities = [('ra','dec','g1_residual','g2_residual','w'),('ra','dec','g1','g2','w')]
-
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        raise NotImplementedError("Need to figure out how to tell corr2 to use the residuals!")
         return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
