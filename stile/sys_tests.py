@@ -17,8 +17,25 @@ class SysTest:
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following 
     attributes:
-        short_name = a string that can be used in filenames to denote this systematics test
-        long_name = a string to denote this systematics test within program text outputs
+        short_name: a string that can be used in filenames to denote this systematics test
+        long_name: a string to denote this systematics test within program text outputs
+        objects_list: a list of objects that the test should operate on.  We expect these objects
+            to be from the list:
+            ['galaxy', 'star',  # all such objects,
+             'galaxy lens',     # only galaxies to be used as lenses in galaxy-galaxy lensing tests,
+             'star PSF',        # stars used in PSF determination,
+             'star bright',     # especially bright stars,
+             'galaxy random',   # random catalogs with the same spatial distribution as the 
+             'star random']     # 'galaxy' or 'star' samples.
+        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that 
+            should be given for the corresponding object from the objects_list.  We expect the
+            quantities to be from the list:
+            ['ra', 'dec',       # Position on the sky
+             'x', 'y',          # Position in CCD/detector coordinates (or any flat projection)
+             'g1', g2', 'g1_err', 'g2'_err', # Two components of shear and their errors
+             'sigma', 'sigma_err', # Object size and its error
+             'w',               # Per-object weight
+             'psf_g1', 'psf_g2', 'psf_sigma'] # PSF shear and size at the object location
     
     It should define the following methods:
         __call__(self, ...) = run the SysTest. There are two typical call signatures for SysTests:
@@ -32,6 +49,7 @@ class SysTest:
         
         In both cases, the kwargs should be able to handle a "bin_list=" kwarg which will bin the 
         data accordingly--see the classes defined in binning.py for more.
+        
     """
     short_name = ''
     long_name = ''
@@ -291,9 +309,9 @@ class CorrelationFunctionSysTest(SysTest):
         return fig 
         
         
-class RealShearSysTest(CorrelationFunctionSysTest):
+class GalaxyXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
-    Compute the tangential and cross shear around a set of real objects.
+    Compute the tangential and cross shear around a set of real galaxies.
     """
     short_name = 'real_shear'
     long_name = 'Shear of galaxies around real objects'
@@ -321,8 +339,8 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_x_galaxy_density'
     long_name = 'Density of galaxies around stars'
-    objects_list = ['star','galaxy']
-    required_quantities = [('ra','dec'),('ra','dec')]
+    objects_list = ['star','galaxy','star random','galaxy random']
+    required_quantities = [('ra','dec'),('ra','dec'),('ra','dec'),('ra','dec')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
@@ -339,7 +357,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
 
-class StarAutoShearSysTest(CorrelationFunctionSysTest):
+class StarXStarShearSysTest(CorrelationFunctionSysTest):
     """
     Compute the auto-correlation of star shapes.
     """
@@ -357,8 +375,8 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'galaxy_density'
     long_name = 'Galaxy position autocorrelation'
-    objects_list = ['galaxy']
-    required_quantities = [('ra','dec')]
+    objects_list = ['galaxy','galaxy random']
+    required_quantities = [('ra','dec'),('ra','dec')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
@@ -369,8 +387,8 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_density'
     long_name = 'Star position autocorrelation'
-    objects_list = ['star']
-    required_quantities = [('ra','dec')]
+    objects_list = ['star','star random']
+    required_quantities = [('ra','dec'),('ra','dec')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
         return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
