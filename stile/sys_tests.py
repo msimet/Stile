@@ -5,13 +5,14 @@ import numpy
 import stile
 try:
     import matplotlib
-    # We should decide which backend to use (this line allows running matplotlib even on sessions 
+    # We should decide which backend to use (this line allows running matplotlib even on sessions
     # without properly defined displays, eg through PBS)
-    matplotlib.use('Agg') 
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     has_matplotlib = True
 except ImportError:
     has_matplotlib = False
+
 
 class SysTest:
     """
@@ -57,9 +58,9 @@ class SysTest:
         pass
     def __call__(self):
         raise NotImplementedError()
-        
+
+
 class CorrelationFunctionSysTest(SysTest):
-    short_name = 'corrfunc'
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method getCF(), which runs corr2 (via a call to the subprocess module) on a given set of 
@@ -67,6 +68,8 @@ class CorrelationFunctionSysTest(SysTest):
     CorrelationFunctionSysTest; see the docstring for CorrelationFunctionSysTest.getCF() for 
     information on how to write further tests using it.
     """
+    short_name = 'corrfunc'
+
     def getCF(self, stile_args, correlation_function_type, data=None, data2=None,
                                      random=None, random2=None, save_config=False, **kwargs):
         """
@@ -113,7 +116,7 @@ class CorrelationFunctionSysTest(SysTest):
         import os
         import copy
         handles = []
-        
+
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
         # passed as a kwarg to that dict.
         if not 'corr2_kwargs' in stile_args:
@@ -122,15 +125,15 @@ class CorrelationFunctionSysTest(SysTest):
         corr2_kwargs.update(kwargs)
         # Now, pass the data and random arguments to MakeCorr2FileKwargs.  This will write to disk
         # any data that's currently contained in memory for Stile, as well as making sure that all
-        # the files are in the same format--corr2 expects ra (etc) to be in the same column in 
-        # every file. Then it returns a bunch of (key,value) pairs that we can use to write a corr2 
-        # config file: the file names plus the format parameters (such as `ra_col`, `dec_col`, 
-        # etc).  Empty data sets return nothing, and if all data sets are empty, the return value 
-        # is an empty dict.  It's possible the user already ran MakeCorr2FileKwargs and the results 
-        # have been passed as kwargs to this function.  We don't explicitly check for that, but as 
-        # long as the user doesn't pass anything to `data`, `data2`, `random`, or `random2`, no 
+        # the files are in the same format--corr2 expects ra (etc) to be in the same column in
+        # every file. Then it returns a bunch of (key,value) pairs that we can use to write a corr2
+        # config file: the file names plus the format parameters (such as `ra_col`, `dec_col`,
+        # etc).  Empty data sets return nothing, and if all data sets are empty, the return value
+        # is an empty dict.  It's possible the user already ran MakeCorr2FileKwargs and the results
+        # have been passed as kwargs to this function.  We don't explicitly check for that, but as
+        # long as the user doesn't pass anything to `data`, `data2`, `random`, or `random2`, no
         # conflicts will arise.
-        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
+        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data, data2, random, random2)
         corr2_kwargs.update(corr2_file_kwargs)
 
         # make sure the set of non-None data sets makes sense
@@ -139,7 +142,7 @@ class CorrelationFunctionSysTest(SysTest):
         if ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs) and not (
             'file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs):
             raise ValueError('Given random file for file 2, but there is no file 2')
-            
+
         if save_config:
             handle, config_file = tempfile.mkstemp(dir='.')
         else:
@@ -150,18 +153,18 @@ class CorrelationFunctionSysTest(SysTest):
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
         
-        stile.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
+        stile.WriteCorr2ConfigurationFile(config_file, corr2_kwargs)
         
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', config_file])
 
         return_value = stile.ReadCorr2ResultsFile(output_file)
-        for handle in handles:  
+        for handle in handles:
             os.close(handle)
         return return_value
-    
-    def plot(self,data,colors=['r','b'],log_yscale=False,
-                  plot_bmode=True,plot_data_only=True,plot_random_only=True):
+
+    def plot(self, data, colors=['r','b'], log_yscale=False,
+                   plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
         Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some 
         sensible defaults, but much of its behavior can be changed.
@@ -177,21 +180,21 @@ class CorrelationFunctionSysTest(SysTest):
         @returns          A matplotlib Figure which may be written to a file with .savefig(), if
                           matplotlib can be imported; else None.
         """
-        
+
         if not has_matplotlib:
             return None
         fields = data.dtype.names
         # Pick which radius measurement to use
-        for t_r in ['<R>','R_nominal','R']:
+        for t_r in ['<R>', 'R_nominal', 'R']:
             if t_r in fields:
                 r = t_r
                 break
         else:
             raise ValueError('No radius parameter found in data')
-        
+
         # Logarithmic x-axes have stupid default ranges: fix this.
         rstep = data[r][1]/data[r][0]
-        xlim = [min(data[r])/rstep,max(data[r])*rstep]    
+        xlim = [min(data[r])/rstep, max(data[r])*rstep]    
         # Check what kind of data is in the array that .plot() received.  This annoyingly large list
         # contains all the possible sets of data, in tuples with the array field name and the
         # corresponding legend labels, plus error bars (w) and y-axis titles.  In order, the
@@ -204,24 +207,25 @@ class CorrelationFunctionSysTest(SysTest):
         # error bar and y-axis title.
         # Each type of data may have only some of those elements--if not the item is None.
         for t_y, t_yb, t_y_im, t_yb_im, t_dr_y, t_dr_yb, t_w, t_ytitle in [
-            (('omega','$\omega$'),None,None,None,None,None,'sig_omega',"$\omega$"), # n2
-            (('<gamT>',r'$\langle \gamma_T \rangle$'),
-             ('<gamX>',r'$\langle \gamma_X \rangle$'),None,None,
-             ('gamT_','$\gamma_{T'),('gamX_','$\gamma_{X'),'sig',"$\gamma$"), # ng
-            (('xi+',r'$\xi_+$'),('xi-',r'$\xi_-$'),
-             ('xi+_im',r'$\xi_{+,im}$'),('xi-_im',r'$\xi_{-,im}$'),None,None,'sig_xi',r"$\xi$"), #g2
-            (('<kappa>',r'$\langle \kappa \rangle$'),None,None,None,
-             ('kappa_','$kappa_{'),None,'sig',"$\kappa$"), # nk 
-            (('xi',r'$\xi$'),None,None,None,None,None,'sig_xi',r"$\xi$"), # k2 
-            (('<kgamT>',r'$\langle \kappa \gamma_T\rangle$'),
-             ('<kgamX>',r'$\langle \kappa \gamma_X\rangle$'),None,None,
-             ('kgamT_',r'$\kappa \gamma_{T'),('kgamX_',r'$\kappa \gamma_{X'),
-             'sig',"$\kappa\gamma$"), # kg 
-            (('<Map^2>',r'$\langle M_{ap}^2 \rangle$'),('<Mx^2>',r'$\langle M_x^2\rangle$'),
-             ('<MMx>(a)',r'$\langle MM_x \rangle(a)$'),('<Mmx>(b)',r'$\langle MM_x \rangle(b)$'),
-             None,None,'sig_map', "$M_{ap}^2$"), # m2 
-            (('<NMap>',r'$\langle NM_{ap} \rangle$'),('<NMx>',r'$\langle NM_{x} \rangle$'),
-             None,None,None,None,'sig_nmap',"$NM_{ap}$") # nm or norm
+            (('omega', '$\omega$'), None, None, None, None, None, 'sig_omega', "$\omega$"), # n2
+            (('<gamT>', r'$\langle \gamma_T \rangle$'),
+             ('<gamX>', r'$\langle \gamma_X \rangle$'), None, None,
+             ('gamT_', '$\gamma_{T'), ('gamX_', '$\gamma_{X'), 'sig', "$\gamma$"), # ng
+            (('xi+', r'$\xi_+$'), ('xi-', r'$\xi_-$'),
+             ('xi+_im', r'$\xi_{+,im}$'), ('xi-_im', r'$\xi_{-,im}$'), 
+             None, None, 'sig_xi', r"$\xi$"), #g2
+            (('<kappa>', r'$\langle \kappa \rangle$'), None, None, None,
+             ('kappa_', '$kappa_{'), None, 'sig', "$\kappa$"), # nk 
+            (('xi', r'$\xi$'), None, None, None, None, None, 'sig_xi', r"$\xi$"), # k2 
+            (('<kgamT>', r'$\langle \kappa \gamma_T\rangle$'),
+             ('<kgamX>', r'$\langle \kappa \gamma_X\rangle$'), None, None,
+             ('kgamT_', r'$\kappa \gamma_{T'), ('kgamX_', r'$\kappa \gamma_{X'),
+             'sig', "$\kappa\gamma$"), # kg 
+            (('<Map^2>', r'$\langle M_{ap}^2 \rangle$'), ('<Mx^2>', r'$\langle M_x^2\rangle$'),
+             ('<MMx>(a)', r'$\langle MM_x \rangle(a)$'), ('<Mmx>(b)', r'$\langle MM_x \rangle(b)$'),
+             None, None, 'sig_map', "$M_{ap}^2$"), # m2
+            (('<NMap>', r'$\langle NM_{ap} \rangle$'), ('<NMx>', r'$\langle NM_{x} \rangle$'),
+             None, None, None, None, 'sig_nmap', "$NM_{ap}$") # nm or norm
             ]:
             # Pick the one the data contains and use it; break before trying the others.
             if t_y[0] in fields:
@@ -249,10 +253,10 @@ class CorrelationFunctionSysTest(SysTest):
         else:
             yscale = 'linear'
         fig = plt.figure()
-        fig.subplots_adjust(hspace=0) # no space between stacked plots
-        fig.subplots(sharex=True) # share x-axes
+        fig.subplots_adjust(hspace=0)  # no space between stacked plots
+        fig.subplots(sharex=True)  # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
-        if (y_im and yb):  
+        if (y_im and yb):
             nrows = 2
         elif dr_y:
             nrows = 1 + plot_data_only + plot_random_only
@@ -260,66 +264,66 @@ class CorrelationFunctionSysTest(SysTest):
             nrows = 1
 
         # Plot the first thing
-        ax = fig.add_subplot(nrows,1,1)
-        ax.errorbar(data[r],data[y[0]],yerr=data[w],color=colors[0],label=y[1])
+        ax = fig.add_subplot(nrows, 1, 1)
+        ax.errorbar(data[r], data[y[0]], yerr=data[w], color=colors[0], label=y[1])
         if yb:
-            ax.errorbar(data[r],data[yb[0]],yerr=data[w],color=colors[1],label=yb[1])
+            ax.errorbar(data[r], data[yb[0]], yerr=data[w], color=colors[1], label=yb[1])
         elif y_im: # Plot y and y_im if you're not plotting yb (else it goes on a separate plot)
-            ax.errorbar(data[r],data[y_im[0]],yerr=data[w],color=colors[1],label=y_im[1])
+            ax.errorbar(data[r], data[y_im[0]], yerr=data[w], color=colors[1], label=y_im[1])
         ax.set_xscale('log')
         ax.set_yscale(yscale)
         ax.set_xlim(xlim)
         ax.set_ylabel(ytitle)
         ax.legend()
-        if yb and y_im: # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
-            ax = fig.add_subplot(nrows,1,2)
-            ax.errorbar(data[r],data[y_im[0]],yerr=data[w],color=colors[0],label=y_im[1])
-            ax.errorbar(data[r],data[yb_im[0]],yerr=data[w],color=colors[1],label=yb_im[1])
+        if yb and y_im:  # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
+            ax = fig.add_subplot(nrows, 1, 2)
+            ax.errorbar(data[r], data[y_im[0]], yerr=data[w], color=colors[0], label=y_im[1])
+            ax.errorbar(data[r], data[yb_im[0]], yerr=data[w], color=colors[1], label=yb_im[1])
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
             ax.set_ylabel(ytitle)
             ax.legend()
-        if plot_data_only and dr_y: # Plot the data-only measurements if requested
-            curr_plot+=1
-            ax = fig.add_subplot(nrows,1,2)
-            ax.errorbar(data[r],data[dr_y[0]+'d'],yerr=data[w],color=colors[0],
+        if plot_data_only and dr_y:  # Plot the data-only measurements if requested
+            curr_plot += 1
+            ax = fig.add_subplot(nrows, 1, 2)
+            ax.errorbar(data[r], data[dr_y[0]+'d'], yerr=data[w], color=colors[0],
                         label=dr_y[1]+'d}$')
             if dr_yb:
-                ax.errorbar(data[r],data[dr_yb[0]+'d'],yerr=data[w],color=colors[1],
+                ax.errorbar(data[r], data[dr_yb[0]+'d'], yerr=data[w], color=colors[1],
                         label=dr_yb[1]+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
             ax.set_ylabel(ytitle)
             ax.legend()
-        if plot_random_only and dr_y: # Plot the randoms-only measurements if requested
-            ax = fig.add_subplot(nrows,1,nrows)
-            ax.errorbar(data[r],data[dr_y[0]+'r'],yerr=data[w],color=colors[0],
+        if plot_random_only and dr_y:  # Plot the randoms-only measurements if requested
+            ax = fig.add_subplot(nrows, 1, nrows)
+            ax.errorbar(data[r], data[dr_y[0]+'r'], yerr=data[w], color=colors[0],
                         label=dr_y[1]+'r}$')
             if dr_yb:
-                ax.errorbar(data[r],data[dr_yb[0]+'r'],yerr=data[w],color=colors[1],
-                        label=dr_yb[1]+'r}$')
+                ax.errorbar(data[r], data[dr_yb[0]+'r'], yerr=data[w], color=colors[1],
+                            label=dr_yb[1]+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
             ax.set_ylabel(ytitle)
             ax.legend()
         ax.set_xlabel(r)
-        return fig 
-        
-        
+        return fig
+
+
 class GalaxyXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of real galaxies.
     """
     short_name = 'real_shear'
     long_name = 'Shear of galaxies around real objects'
-    objects_list = ['galaxy lens','galaxy']
-    required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
+    objects_list = ['galaxy lens', 'galaxy']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'ng',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
 
 class BrightStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -327,11 +331,11 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_shear'
     long_name = 'Shear of galaxies around bright stars'
-    objects_list = ['star bright','galaxy']
-    required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
+    objects_list = ['star bright', 'galaxy']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'ng',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
 
 class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     """
@@ -339,11 +343,11 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_x_galaxy_density'
     long_name = 'Density of galaxies around stars'
-    objects_list = ['star','galaxy','star random','galaxy random']
-    required_quantities = [('ra','dec'),('ra','dec'),('ra','dec'),('ra','dec')]
+    objects_list = ['star', 'galaxy', 'star random', 'galaxy random']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
 
 class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
@@ -351,11 +355,11 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_x_galaxy_shear'
     long_name = 'Cross-correlation of galaxy and star shapes'
-    objects_list = ['star','galaxy']
-    required_quantities = [('ra','dec','g1','g2','w'),('ra','dec','g1','g2','w')]
+    objects_list = ['star', 'galaxy']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'w'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
 
 class StarXStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -364,10 +368,10 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     short_name = 'star_auto_shear'
     long_name = 'Auto-correlation of star shapes'
     objects_list = ['star']
-    required_quantities = [('ra','dec','g1','g2','w')]
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'g2',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -375,11 +379,11 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'galaxy_density'
     long_name = 'Galaxy position autocorrelation'
-    objects_list = ['galaxy','galaxy random']
-    required_quantities = [('ra','dec'),('ra','dec')]
+    objects_list = ['galaxy', 'galaxy random']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
 
 class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -387,11 +391,11 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_density'
     long_name = 'Star position autocorrelation'
-    objects_list = ['star','star random']
-    required_quantities = [('ra','dec'),('ra','dec')]
+    objects_list = ['star', 'star random']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'n2',data,data2,random,random2,**kwargs)
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
 
 
 class StatSysTest(SysTest):
