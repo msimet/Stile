@@ -19,7 +19,7 @@ def MaskGalaxy(data):
     except:
         # But sometimes we've already masked the array--this will work in that case (but is slower
         # than above if the above is possible).
-    	return numpy.array([src['classification.extendedness']==1 for src in data])
+        return numpy.array([src['classification.extendedness']==1 for src in data])
 
 def MaskStar(data):
     """
@@ -45,9 +45,9 @@ def MaskBrightStar(data):
         top_tenth_mask = data['flux.psf'] > top_tenth
     except:
         flux = numpy.array([src['flux.psf'] for src in data])
-    	top_tenth = numpy.percentile(flux[star_mask], 0.9)
-	top_tenth_mask = flux > top_tenth
-    return numpy.logical_and(star_mask,top_tenth_mask)
+        top_tenth = numpy.percentile(flux[star_mask], 0.9)
+    top_tenth_mask = flux > top_tenth
+    return numpy.logical_and(star_mask, top_tenth_mask)
 
 def MaskPSFStar(data):
     """
@@ -61,7 +61,7 @@ def MaskPSFStar(data):
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,
-             'galaxy lens': MaskGalaxy, # should do something different here!
+             'galaxy lens': MaskGalaxy,  # should do something different here!
              'star': MaskStar,
              'star bright': MaskBrightStar,
              'star PSF': MaskPSFStar}
@@ -101,7 +101,7 @@ class BaseSysTestAdapter(object):
     # that class.  (There are examples in previous versions of this file.)
     ConfigClass = lsst.pex.config.Config
 
-    def setupMasks(self,objects_list=None):
+    def setupMasks(self, objects_list=None):
         """
         Generate a list of mask functions to match `objects_list`.  If no such list is given, will
         attempt to read the objects_list from self.sys_test, and raise an error if that is not
@@ -217,7 +217,7 @@ class StatsPSFFluxAdapter(BaseSysTestAdapter):
     def getRequiredColumns(self):
         return (('flux.psf',),)
 
-    def __call__(self,*data,**kwargs):
+    def __call__(self, *data, **kwargs):
         return self.sys_test(*data, verbose=True, **kwargs)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)

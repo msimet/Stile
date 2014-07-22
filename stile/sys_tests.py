@@ -152,9 +152,9 @@ class CorrelationFunctionSysTest(SysTest):
         handles.append(handle)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
-        
+       
         stile.WriteCorr2ConfigurationFile(config_file, corr2_kwargs)
-        
+
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', config_file])
 
@@ -163,7 +163,7 @@ class CorrelationFunctionSysTest(SysTest):
             os.close(handle)
         return return_value
 
-    def plot(self, data, colors=['r','b'], log_yscale=False,
+    def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
         Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some 
@@ -207,25 +207,25 @@ class CorrelationFunctionSysTest(SysTest):
         # error bar and y-axis title.
         # Each type of data may have only some of those elements--if not the item is None.
         for t_y, t_yb, t_y_im, t_yb_im, t_dr_y, t_dr_yb, t_w, t_ytitle in [
-            (('omega', '$\omega$'), None, None, None, None, None, 'sig_omega', "$\omega$"), # n2
+            (('omega', '$\omega$'), None, None, None, None, None, 'sig_omega', "$\omega$"),  # n2
             (('<gamT>', r'$\langle \gamma_T \rangle$'),
              ('<gamX>', r'$\langle \gamma_X \rangle$'), None, None,
-             ('gamT_', '$\gamma_{T'), ('gamX_', '$\gamma_{X'), 'sig', "$\gamma$"), # ng
+             ('gamT_', '$\gamma_{T'), ('gamX_', '$\gamma_{X'), 'sig', "$\gamma$"),  # ng
             (('xi+', r'$\xi_+$'), ('xi-', r'$\xi_-$'),
              ('xi+_im', r'$\xi_{+,im}$'), ('xi-_im', r'$\xi_{-,im}$'), 
-             None, None, 'sig_xi', r"$\xi$"), #g2
+             None, None, 'sig_xi', r"$\xi$"),  #g2
             (('<kappa>', r'$\langle \kappa \rangle$'), None, None, None,
-             ('kappa_', '$kappa_{'), None, 'sig', "$\kappa$"), # nk 
-            (('xi', r'$\xi$'), None, None, None, None, None, 'sig_xi', r"$\xi$"), # k2 
+             ('kappa_', '$kappa_{'), None, 'sig', "$\kappa$"),  # nk 
+            (('xi', r'$\xi$'), None, None, None, None, None, 'sig_xi', r"$\xi$"),  # k2 
             (('<kgamT>', r'$\langle \kappa \gamma_T\rangle$'),
              ('<kgamX>', r'$\langle \kappa \gamma_X\rangle$'), None, None,
              ('kgamT_', r'$\kappa \gamma_{T'), ('kgamX_', r'$\kappa \gamma_{X'),
-             'sig', "$\kappa\gamma$"), # kg 
+             'sig', "$\kappa\gamma$"),  # kg 
             (('<Map^2>', r'$\langle M_{ap}^2 \rangle$'), ('<Mx^2>', r'$\langle M_x^2\rangle$'),
              ('<MMx>(a)', r'$\langle MM_x \rangle(a)$'), ('<Mmx>(b)', r'$\langle MM_x \rangle(b)$'),
-             None, None, 'sig_map', "$M_{ap}^2$"), # m2
+             None, None, 'sig_map', "$M_{ap}^2$"),  # m2
             (('<NMap>', r'$\langle NM_{ap} \rangle$'), ('<NMx>', r'$\langle NM_{x} \rangle$'),
-             None, None, None, None, 'sig_nmap', "$NM_{ap}$") # nm or norm
+             None, None, None, None, 'sig_nmap', "$NM_{ap}$")  # nm or norm
             ]:
             # Pick the one the data contains and use it; break before trying the others.
             if t_y[0] in fields:
@@ -268,7 +268,7 @@ class CorrelationFunctionSysTest(SysTest):
         ax.errorbar(data[r], data[y[0]], yerr=data[w], color=colors[0], label=y[1])
         if yb:
             ax.errorbar(data[r], data[yb[0]], yerr=data[w], color=colors[1], label=yb[1])
-        elif y_im: # Plot y and y_im if you're not plotting yb (else it goes on a separate plot)
+        elif y_im:  # Plot y and y_im if you're not plotting yb (else it goes on a separate plot)
             ax.errorbar(data[r], data[y_im[0]], yerr=data[w], color=colors[1], label=y_im[1])
         ax.set_xscale('log')
         ax.set_yscale(yscale)
@@ -502,7 +502,7 @@ class StatSysTest(SysTest):
                 raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
             if use_field not in use_array.dtype.fields.keys():
                 raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
-                                   (use_field,use_array.dtype.fields.keys()))
+                                   (use_field, use_array.dtype.fields.keys()))
             # Select the appropriate field for this catalog.
             use_array = use_array[use_field]
         # Now take care of case (b):
