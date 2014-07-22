@@ -139,7 +139,6 @@ class CorrelationFunctionSysTest(SysTest):
         if ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs) and not (
             'file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs):
             raise ValueError('Given random file for file 2, but there is no file 2')
-            
         if save_config:
             handle, config_file = tempfile.mkstemp(dir='.')
         else:
@@ -250,7 +249,7 @@ class CorrelationFunctionSysTest(SysTest):
             yscale = 'linear'
         fig = plt.figure()
         fig.subplots_adjust(hspace=0) # no space between stacked plots
-        fig.subplots(sharex=True) # share x-axes
+        plt.subplots(sharex=True) # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
         if (y_im and yb):  
             nrows = 2
@@ -309,11 +308,11 @@ class CorrelationFunctionSysTest(SysTest):
         return fig 
         
         
-class GalaxyXGalaxyShearSysTest(CorrelationFunctionSysTest):
+class GalaxyShearSysTest(CorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of real galaxies.
     """
-    short_name = 'real_shear'
+    short_name = 'shear_around_galaxies'
     long_name = 'Shear of galaxies around real objects'
     objects_list = ['galaxy lens','galaxy']
     required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
@@ -325,12 +324,14 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of bright stars.
     """
-    short_name = 'star_shear'
+    short_name = 'shear_around_bright_stars'
     long_name = 'Shear of galaxies around bright stars'
     objects_list = ['star bright','galaxy']
     required_quantities = [('ra','dec'),('ra','dec','g1','g2','w')]
 
     def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
+    	print "data", data
+	print "data2", data2
         return self.getCF(stile_args,'ng',data,data2,random,random2,**kwargs)
 
 class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
@@ -361,7 +362,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     """
     Compute the auto-correlation of star shapes.
     """
-    short_name = 'star_auto_shear'
+    short_name = 'star_x_star_shear'
     long_name = 'Auto-correlation of star shapes'
     objects_list = ['star']
     required_quantities = [('ra','dec','g1','g2','w')]

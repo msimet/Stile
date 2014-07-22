@@ -60,6 +60,7 @@ def MaskPSFStar(data):
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,
+             'galaxy lens': MaskGalaxy, # should do something different here!
              'star': MaskStar,
              'star bright': MaskBrightStar,
              'star PSF': MaskPSFStar}
@@ -151,14 +152,14 @@ class BaseSysTestAdapter(object):
         """
         return self.sys_test(*data, **kwargs)
 
-class GalaxyXGalaxyShearAdapter(BaseSysTestAdapter):
+class GalaxyShearAdapter(BaseSysTestAdapter):
     """
-    Adapter for the GalaxyXGalaxyShearSysTest.  See the documentation for that class or 
+    Adapter for the GalaxyShearSysTest.  See the documentation for that class or 
     BaseSysTestAdapter for more information.
     """
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.GalaxyXGalaxyShearSysTest()
+        self.sys_test = sys_tests.GalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -215,7 +216,7 @@ class StatsPSFFluxAdapter(BaseSysTestAdapter):
         return self.sys_test(*data,verbose=True,**kwargs)
 
 adapter_registry.register("StatsPSFFlux",StatsPSFFluxAdapter)
-adapter_registry.register("GalaxyXGalaxyShear",GalaxyXGalaxyShearAdapter)
+adapter_registry.register("GalaxyShear",GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear",BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear",StarXGalaxyShearAdapter)
 adapter_registry.register("StarXStarShear",StarXStarShearAdapter)
