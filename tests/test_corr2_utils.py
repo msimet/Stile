@@ -153,6 +153,7 @@ class TestCorr2Utils(unittest.TestCase):
         return f1_data==f2_data
 
     def test_CheckArguments(self):
+        """Test the corr2 argument-checker to make sure it catches obvious problems."""
         stile.corr2_utils.CheckArguments(self.dict2,check_status=False)
         stile.corr2_utils.CheckArguments(self.dict3,check_status=False)
         stile.corr2_utils.CheckArguments(self.dict6,check_status=True)
@@ -165,6 +166,7 @@ class TestCorr2Utils(unittest.TestCase):
         self.assertRaises(ValueError,stile.corr2_utils.CheckArguments,self.dict5,check_status=False)
         
     def test_WriteCorr2ConfigurationFile(self):
+        """Test the routine that writes the corr2 configuration files."""
         import tempfile
         import os
         handle, f2 = tempfile.mkstemp(dir='.')
@@ -176,12 +178,14 @@ class TestCorr2Utils(unittest.TestCase):
         os.remove(f2)
         
     def test_ReadCorr2ResultsFile(self):
+        """Test the routine that reads in corr2 results files."""
         arr = stile.ReadCorr2ResultsFile('test_data/corr2_output.dat')
         numpy.testing.assert_equal(arr,self.corr2_output)
         self.assertRaises(StopIteration,stile.ReadCorr2ResultsFile,
                                     'test_data/empty_file.dat')
 
     def test_AddCorr2Dict(self):
+        """Test the routine that adds to a dict to be given to corr2."""
         new_dict = stile.corr2_utils.AddCorr2Dict(self.dict1) # nonsense dict
         self.assertEqual(len(new_dict['corr2_kwargs']),0,
                           msg='The "corr2_kwargs" key of the new dict should have no entries')
@@ -191,6 +195,8 @@ class TestCorr2Utils(unittest.TestCase):
                              '"corr2_options" key of the new dict')
 
     def test_MakeCorr2Cols(self):
+        """Test the routine that extracts the 'ra_col', 'dec_col' etc parameters from an array 
+        schema to pass as config arguments to corr2."""
         self.assertEqual(len(stile.corr2_utils.MakeCorr2Cols(self.dict1)),0,
                           msg='Returned dict should have no entries')
         self.assertEqual(len(stile.corr2_utils.MakeCorr2Cols(self.dict2)),0,
@@ -218,6 +224,7 @@ class TestCorr2Utils(unittest.TestCase):
         numpy.testing.assert_equal(stile.corr2_utils.MakeCorr2Cols(listdict3),list3_results)
         
     def test_OSFile(self):
+        """Test the creation of objects that hold temporary files and some metadata about them."""
         arr0 = [1,2,3,4,5]
         arr1 = numpy.array([[1,2,3],[4.,5.,6.]])
         arr2 = numpy.array([(1.5,2,3.5),(4,5,6)],dtype='d,l,d')
@@ -259,6 +266,8 @@ class TestCorr2Utils(unittest.TestCase):
         del OSFile0
         
     def test_MakeCorr2FileKwargs(self):
+        """Test the function that generates the "file_name"/"file_list" config parameters for corr2 
+        from a list of files."""
         data = [(1.0, 2.54, 0.25, -0.16),
                 (3.1, 2.36, 0.0, 0.8)]
         data = numpy.array(data,dtype=[('ra', float),('dec',float),('g1',float),('g2',float)])
