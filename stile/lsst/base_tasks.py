@@ -496,7 +496,7 @@ class FieldSingleEpochStileConfig(lsst.pex.config.Config):
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
 
-class FieldSingleEpochStileTask(CCDSingleEpochStileTask, MosaicTask):
+class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
     """
     A basic Task class to run field-level single-epoch tests.  Inheriting from
     lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
@@ -625,4 +625,15 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask, MosaicTask):
                 data[key][current_position:current_position+len(catalog)] = catalog
                 current_position+=len(catalog)
         return data
+
+class FieldNoTractSingleEpochStileTask(FieldSingleEpochStileTask):
+    """Like FieldSingleEpochStileTask, but we use a different argument parser that doesn't require
+    an available coadd to run on the CCD level."""
+    _DefaultName = "FieldNoTractSingleEpochStile"
+
+    @classmethod
+    def _makeArgumentParser(cls):
+        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
+        return parser
 
