@@ -12,6 +12,24 @@ from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from .sys_test_adapters import adapter_registry
 import numpy
 
+parser_description = """
+This is a script to run Stile through the LSST/HSC pipeline.
+You could configure which systematic tests to run by setting the following option.
+From command line, add
+-c 'sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]'
+. To check names of tests, run this command by adding '--show config', and then read
+'config.sys_tests.names=[...]'. By default, all the tests in this list are run.
+You could remove tests from the default by the following option
+-c 'sys_tests.names.remove('TEST_NAME')'
+. You could also specipy these options by writing a file, e.g.,
+====================== config.py ======================
+import stile.lsst.base_tasks
+root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
+=======================================================
+, and then adding an option 
+-C config.py
+to the coomand line.
+"""
 
 class SysTestData(object):
     """
@@ -482,6 +500,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
                                ContainerClass=PerTractCcdDataIdContainer)
+        parser.description = parser_description
         return parser
 
     def writeConfig(self, *args, **kwargs):
@@ -500,6 +519,7 @@ class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
+        parser.description = parser_description
         return parser
 
 
@@ -703,5 +723,6 @@ class FieldNoTractSingleEpochStileTask(FieldSingleEpochStileTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
+        parser.description = parser_description
         return parser
 
