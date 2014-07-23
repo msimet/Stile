@@ -14,12 +14,11 @@ import numpy
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
-You could configure which systematic tests to run by setting the following option.
+You could configure which systematic tests to be run by setting the following option.
 From command line, add
 -c 'sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]'
-. To check names of tests, run this command by adding '--show config', and then read
-'config.sys_tests.names=[...]'. By default, all the tests in this list are run.
-You could remove tests from the default by the following option
+. You could add and remove tests from a default by the following option
+-c 'sys_tests.names.add('TEST_NAME')'
 -c 'sys_tests.names.remove('TEST_NAME')'
 . You could also specipy these options by writing a file, e.g.,
 ====================== config.py ======================
