@@ -3,6 +3,7 @@ Contains the Task classes that interface between the LSST/HSC pipeline and the
 systematics tests described by Stile.
 """
 
+import os
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
@@ -60,6 +61,19 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # Pull the source catalog from the butler corresponding to the particular CCD in the
         # dataRef.
         catalog = dataRef.get("src", immediate=True)
+
+        # Hironao's dirty fix for getting a directory for saving results and plots
+        # and a (visit, ccd) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is 
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
+        # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
+        src_filename = (dataRef.get("src_filename", immediate=True)[0]).replace('_parent/','')
+        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+        filename_chip = "-%07d-%03d" % (dataRef.dataId["visit"], dataRef.dataId["ccd"])
+
         # Remove objects so badly measured we shouldn't use them in any test.
         catalog = self.removeFlaggedObjects(catalog)
         sys_data_list = []
@@ -122,9 +136,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # If there's anything fancy to do with plotting the results, do that.
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                fig.savefig(sys_test_data.sys_test_name+'.png')
+                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
             if hasattr(results, 'savefig'):
-                results.savefig(sys_test_data.sys_test_name+'.png')
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
 
     def removeFlaggedObjects(self, catalog):
         """
@@ -308,15 +322,29 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixx = moments.getIxx()
                 ixy = moments.getIxy()
                 iyy = moments.getIyy()
+            # Get covariance of meoments. We ignore off-diagonal compoients because
+            # they are not implemented in the LSST pipeline yet.
             if do_err:
-                moments_err = data.get('shape.sdss.err')
-                # Right now the moments_err matrix doesn't have a transform() property, so we will
-                # just use the raw errors.
-                #if sky_coords:
-                #    moments_err = moments_err.transform(localLinearTransform)
-                cov_ixx = moments_err[0,0]
-                cov_iyy = moments_err[1,1]
-                cov_ixy = moments_err[2,2]
+                covariances = data.get('shape.sdss.err')
+                if sky_coords:
+                    cov_ixx = numpy.zeros(covariances[:,0,0].shape)
+                    cov_iyy = numpy.zeros(covariances[:,0,0].shape)
+                    cov_ixy = numpy.zeros(covariances[:,0,0].shape)
+                    # We need this loop because localLinearTransform is 1-d array of
+                    # lsst.afw.geom.geomLib.LinearTransform so that we cannot specify
+                    # an array of (i,j) component as localLinearTransform[:,i,j].
+                    for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
+                        cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
+                                      (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
+                        cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
+                                      (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
+                        cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
+                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] + 
+                                      (lt[0,1]*lt[1,1])**2*cov[1,1])
+                else:
+                    cov_ixx = covariances[:,0,0]
+                    cov_iyy = covariances[:,1,1]
+                    cov_ixy = covariances[:,2,2]
             if do_psf:
                 psf_moments = data.get('shape.sdss.psf')
                 if sky_coords:
@@ -337,15 +365,25 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                       zip(moments, localLinearTransform)]
                 ixx = numpy.array([mom.getIxx() for mom in moments])
                 ixy = numpy.array([mom.getIxy() for mom in moments])
-                iyy = numpy.array([mom.getIxy() for mom in moments])
+                iyy = numpy.array([mom.getIyy() for mom in moments])
             if do_err:
-                moments_err = [src.get('shape.sdss.err') for src in data]
-                #if sky_coords:
-                #    moments_err = [moment.transform(lt) for moment, lt in
-                #                      zip(moments_err, localLinearTransform)]
-                cov_ixx = numpy.array([src.get('shape.sdss.err')[0,0] for src in data])
-                cov_iyy = numpy.array([src.get('shape.sdss.err')[1,1] for src in data])
-                cov_ixy = numpy.array([src.get('shape.sdss.err')[2,2] for src in data])
+                covariances = numpy.array([src.get('shape.sdss.err') for src in data])
+                if sky_coords:
+                    cov_ixx = numpy.zeros(covariances[:,0,0].shape)
+                    cov_iyy = numpy.zeros(covariances[:,0,0].shape)
+                    cov_ixy = numpy.zeros(covariances[:,0,0].shape)
+                    for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
+                        cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
+                                      (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
+                        cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
+                                      (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
+                        cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
+                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] + 
+                                      (lt[0,1]*lt[1,1])**2*cov[1,1])
+                else:
+                    cov_ixx = covariances[:,0,0]
+                    cov_iyy = covariances[:,1,1]
+                    cov_ixy = covariances[:,2,2]
             if do_psf:
                 psf_moments = [src.get('shape.sdss.psf') for src in data]
                 if sky_coords:
@@ -353,7 +391,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                       zip(psf_moments, localLinearTransform)]
                 psf_ixx = numpy.array([mom.getIxx() for mom in psf_moments])
                 psf_ixy = numpy.array([mom.getIxy() for mom in psf_moments])
-                psf_iyy = numpy.array([mom.getIxy() for mom in psf_moments])
+                psf_iyy = numpy.array([mom.getIyy() for mom in psf_moments])
         # Now, combine the moment measurements into the actual quantities we want.
         if do_shape:
             g1 = (ixx-iyy)/(ixx+iyy)
@@ -537,6 +575,32 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
+
+        # Hironao's dirty fix for getting a directory for saving results and plots
+        # and a (visit, chip) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is 
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
+        # The filename has a visit identifier -%(visit)07d-[ccds], where [ccds] is a reduced form
+        # of a CCD list, e.g., if a CCD list is [0, 1, 2, 4, 5, 8, 10],
+        # [ccds] becomes 0..2^4..5^8^10.
+        src_filename = (dataRefList[0].get("src_filename", 
+                                           immediate=True)[0]).replace('_parent/','')
+        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+        ccds = [dataRef.dataId['ccd'] for dataRef in dataRefList]
+        ccds.sort()
+        ccd_str = "%s" % ccds[0]
+        for i, ccd in enumerate(ccds[1:]):
+            if not(ccd - 1 in ccds) and (ccd+1 in ccds):
+                ccd_str += "^%s" % ccd
+            elif (ccd - 1 in ccds) and not(ccd+1 in ccds):
+                ccd_str += "..%s" % ccd
+            elif not(ccd - 1 in ccds) and not(ccd+1 in ccds):
+                ccd_str += "^%s" % ccd
+        filename_chips = "-%07d-%s" % (dataRefList[0].dataId["visit"], ccd_str)
+
         # Some tests need to know which data came from which CCD
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=int)
@@ -598,9 +662,9 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
                 results = sys_test(*new_catalogs)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                fig.savefig(sys_test_data.sys_test_name+'.png')
+                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
             if hasattr(results, 'savefig'):
-                results.savefig(sys_test_data.sys_test_name+'.png')
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
     def makeArray(self, catalog_dict):
         """
