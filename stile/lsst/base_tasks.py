@@ -3,6 +3,7 @@ Contains the Task classes that interface between the LSST/HSC pipeline and the
 systematics tests described by Stile.
 """
 
+import os
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
@@ -63,6 +64,19 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # Pull the source catalog from the butler corresponding to the particular CCD in the
         # dataRef.
         catalog = dataRef.get("src", immediate=True)
+
+        # Hironao's dirty fix for getting a directory for saving results and plots
+        # and a (visit, ccd) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is 
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
+        # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
+        src_filename = (dataRef.get("src_filename", immediate=True)[0]).replace('_parent/','')
+        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+        filename_chip = "-%07d-%03d" % (dataRef.dataId["visit"], dataRef.dataId["ccd"])
+
         # Remove objects so badly measured we shouldn't use them in any test.
         catalog = self.removeFlaggedObjects(catalog)
         sys_data_list = []
@@ -125,9 +139,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # If there's anything fancy to do with plotting the results, do that.
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                fig.savefig(sys_test_data.sys_test_name+'.png')
+                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
             if hasattr(results, 'savefig'):
-                results.savefig(sys_test_data.sys_test_name+'.png')
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
 
     def removeFlaggedObjects(self, catalog):
         """
@@ -564,6 +578,32 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
+
+        # Hironao's dirty fix for getting a directory for saving results and plots
+        # and a (visit, chip) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is 
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
+        # The filename has a visit identifier -%(visit)07d-[ccds], where [ccds] is a reduced form
+        # of a CCD list, e.g., if a CCD list is [0, 1, 2, 4, 5, 8, 10],
+        # [ccds] becomes 0..2^4..5^8^10.
+        src_filename = (dataRefList[0].get("src_filename", 
+                                           immediate=True)[0]).replace('_parent/','')
+        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+        ccds = [dataRef.dataId['ccd'] for dataRef in dataRefList]
+        ccds.sort()
+        ccd_str = "%s" % ccds[0]
+        for i, ccd in enumerate(ccds[1:]):
+            if not(ccd - 1 in ccds) and (ccd+1 in ccds):
+                ccd_str += "^%s" % ccd
+            elif (ccd - 1 in ccds) and not(ccd+1 in ccds):
+                ccd_str += "..%s" % ccd
+            elif not(ccd - 1 in ccds) and not(ccd+1 in ccds):
+                ccd_str += "^%s" % ccd
+        filename_chips = "-%07d-%s" % (dataRefList[0].dataId["visit"], ccd_str)
+
         # Some tests need to know which data came from which CCD
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=int)
@@ -625,9 +665,9 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
                 results = sys_test(*new_catalogs)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                fig.savefig(sys_test_data.sys_test_name+'.png')
+                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
             if hasattr(results, 'savefig'):
-                results.savefig(sys_test_data.sys_test_name+'.png')
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
     def makeArray(self, catalog_dict):
         """
