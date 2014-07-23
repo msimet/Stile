@@ -452,6 +452,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             return [src.getRa().asDegrees() for src in data], None
         elif col=="dec":
             return [src.getDec().asDegrees() for src in data], None
+        elif col=="x":
+            return [src.getX() for src in data], None
+        elif col=="y":
+            return [src.getY() for src in data], None
         elif col=="mag_err":
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
                                                     for src in data]),
