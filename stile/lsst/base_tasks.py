@@ -27,7 +27,7 @@ root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
 =======================================================
 , and then adding an option 
 -C config.py
-to the coomand line.
+to the command line.
 """
 
 class SysTestData(object):
