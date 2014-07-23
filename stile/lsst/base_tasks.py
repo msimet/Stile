@@ -17,17 +17,18 @@ This is a script to run Stile through the LSST/HSC pipeline.
 You could configure which systematic tests to be run by setting the following option.
 From command line, add
 -c 'sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]'
-. You could add and remove tests from a default by the following option
--c 'sys_tests.names.add('TEST_NAME')'
--c 'sys_tests.names.remove('TEST_NAME')'
-. You could also specipy these options by writing a file, e.g.,
+. You could also specipy this option by writing a file, e.g.,
 ====================== config.py ======================
 import stile.lsst.base_tasks
 root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
 =======================================================
 , and then adding an option 
 -C config.py
-to the command line.
+to the command line. If you use a file, you could add and remove tests from a default
+by the following option
+root.sys_tests.names.add('TEST_NAME')'
+root.sys_tests.names.remove('TEST_NAME')'
+. 
 """
 
 class SysTestData(object):
