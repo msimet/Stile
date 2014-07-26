@@ -161,9 +161,7 @@ class CorrelationFunctionSysTest(SysTest):
 
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
         # passed as a kwarg to that dict.
-        if not 'corr2_kwargs' in stile_args:
-            stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
-        corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
+        corr2_kwargs = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs.update(kwargs)
         # Now, pass the data and random arguments to MakeCorr2FileKwargs.  This will write to disk
         # any data that's currently contained in memory for Stile, as well as making sure that all
