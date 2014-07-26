@@ -47,14 +47,12 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
-    corr2_kwargs = {'ra_units': 'degrees', 
-                    'dec_units': 'degrees',
-                    'min_sep': 0.005,
-                    'max_sep': 0.2,
-                    'sep_units': 'degrees',
-                    'nbins': 20
-                    }
-    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+    corr2_kwargs = lsst.pex.config.dictField(doc="extra kwargs to control corr2",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.005', 'max_sep': '0.2',
+                                 'sep_units': 'degrees', 'nbins': '20'})
+    flags = lsst.pex.config.listField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
@@ -62,10 +60,11 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
                    'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
-    shape_flags = lsst.pex.config.ListField(dtype=str, 
+    shape_flags = lsst.pex.config.listField(dtype=str, 
         doc="Flags that indicate failures for shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
                    'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted','shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
+    bright_star_sn_cutoff = 50
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
@@ -114,7 +113,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            sys_test_data.mask_list = sys_test.getMasks(catalog)
+            sys_test_data.mask_list = sys_test.getMasks(catalog, self.config)
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns. len(mask_list) should be equal to len(cols_list).
             sys_test_data.cols_list = sys_test.getRequiredColumns()
@@ -559,18 +558,17 @@ class StileVisitRunner(CCDSingleEpochStileConfig):
         task = self.TaskClass(config=self.config, log=self.log)
         result = task.run(*args)
 
-class VisitSingleEpochStileConfig(lsst.pex.config.Config):
-    # Set the default systematics tests for the visit level.
+class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
+    # Set the default systematics tests for the visit level.  Some keys (eg "flags", "shape_flags")
+    # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
-    corr2_kwargs = {'ra_units': 'degrees', 
-                    'dec_units': 'degrees',
-                    'min_sep': 0.05,
-                    'max_sep': 1,
-                    'sep_units': 'degrees',
-                    'nbins': 20
-                   }
+    corr2_kwargs = lsst.pex.config.dictField(doc="extra kwargs to control corr2",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.05', 'max_sep': '1',
+                                 'sep_units': 'degrees', 'nbins': '20'})
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -637,7 +635,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            temp_mask_list = [sys_test.getMasks(catalog) for catalog in catalogs]
+            temp_mask_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
