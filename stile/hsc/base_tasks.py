@@ -448,7 +448,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g2 = None
             psf_sigma = None
             extra_mask = None
-        return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err,
+        return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
                  'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 'psf_sigma': psf_sigma},
                  extra_mask)
 
