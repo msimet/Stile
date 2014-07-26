@@ -223,7 +223,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # catalogs, so we do those first, and separately, all at once.  Here, we figure out if there
         # are any moments-related keys to pull out of the catalog.
         shape_keys = ['g1', 'g2', 'sigma']
-        shape_err_keys = ['g1_err', 'g2_err', 'sigma_err']
+        shape_err_keys = ['g1_err', 'g2_err', 'sigma_err', 'w']
         psf_shape_keys = ['psf_g1', 'psf_g2', 'psf_sigma']
         do_shape = [col for col in shape_keys if col in cols and not col in catalog.schema]
         do_err = [col for col in shape_err_keys if col in cols and not col in catalog.schema]
@@ -340,7 +340,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixx = moments.getIxx()
                 ixy = moments.getIxy()
                 iyy = moments.getIyy()
-            # Get covariance of meoments. We ignore off-diagonal compoients because
+            # Get covariance of moments. We ignore off-diagonal components because
             # they are not implemented in the LSST pipeline yet.
             if do_err:
                 covariances = data.get('shape.sdss.err')
@@ -431,10 +431,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dsigma_dixx = 0.25/sigma
             dsigma_diyy = 0.25/sigma
             sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
+            w = numpy.maximum(g1_err,g2_err)
+            w = 1./(0.36**2+w**2)
         else:
             g1_err = None
             g2_err = None
             sigma_err = None
+            w = [1.]*len(data)
         if do_psf:
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
@@ -492,7 +495,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     numpy.array([src.get('flux.psf.flags')==0 &
                                  src.get('flux.psf.flags.psffactor')==0 for src in data]))
         elif col=="w":
-            #TODO: better weighting measurement
+            # Use uniform weights for now if we don't use shapes ("w" will be removed from the
+            # list of columns if shapes are computed).
             return numpy.array([1.]*len(data)), None
         raise NotImplementedError("Cannot compute field %s" % col)
 
