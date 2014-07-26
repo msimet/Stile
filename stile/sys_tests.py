@@ -65,11 +65,15 @@ class SysTest:
         raise NotImplementedError()
     def plot(self, results):
         """
-        If the results returned from the __call__() function of this class can be plotted, plot
-        them and return an object with a .savefig() method.  If they can't be plotted, return
-        an object with a .savefig() method that doesn't do anything.
+        If the results returned from the __call__() function of this class have a .savefig() 
+        method, return that object.  Otherwise, return an object with a .savefig() method that 
+        doesn't do anything.  plot() should be overridden by child classes to actually generate 
+        plots if desired.
         """
-        return PlotNone()
+        if hasattr(results,'savefig'):
+            return results
+        else:
+            return PlotNone()
         
 class PlotDetails(object):
     """
