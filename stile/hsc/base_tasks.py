@@ -47,12 +47,12 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
-    corr2_kwargs = lsst.pex.config.dictField(doc="extra kwargs to control corr2",
+    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.005', 'max_sep': '0.2',
                                  'sep_units': 'degrees', 'nbins': '20'})
-    flags = lsst.pex.config.listField(dtype=str, doc="Flags that indicate unrecoverable failures",
+    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
@@ -60,7 +60,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
                    'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
-    shape_flags = lsst.pex.config.listField(dtype=str, 
+    shape_flags = lsst.pex.config.ListField(dtype=str, 
         doc="Flags that indicate failures for shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
                    'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted','shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
@@ -564,7 +564,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
-    corr2_kwargs = lsst.pex.config.dictField(doc="extra kwargs to control corr2",
+    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.05', 'max_sep': '1',
