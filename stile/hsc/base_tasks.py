@@ -47,6 +47,25 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
+    corr2_kwargs = {'ra_units': 'degrees', 
+                    'dec_units': 'degrees',
+                    'min_sep': 0.005,
+                    'max_sep': 0.2,
+                    'sep_units': 'degrees',
+                    'nbins': 20
+                    }
+    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                   'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
+                   'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
+                   'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                   'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
+                   'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+    shape_flags = lsst.pex.config.ListField(dtype=str, 
+        doc="Flags that indicate failures for shape measurements",
+        default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
+                   'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted','shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
@@ -61,13 +80,6 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     ConfigClass = CCDSingleEpochStileConfig
     _DefaultName = "CCDSingleEpochStile"
     # necessary basic parameters for corr2 to run
-    corr2_kwargs = {'ra_units': 'degrees', 
-                                'dec_units': 'degrees',
-                                'min_sep': 0.005,
-                                'max_sep': 0.2,
-                                'sep_units': 'degrees',
-                                'nbins': 20
-                   }
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
@@ -145,7 +157,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 new_catalogs.append(self.makeArray(new_catalog))
             # run the test!
             if hasattr(sys_test.sys_test, 'getCF'):
-                results = sys_test(self.corr2_kwargs, *new_catalogs)
+                results = sys_test(self.config.corr2_kwargs, *new_catalogs)
             else:
                 results = sys_test(*new_catalogs)
             # If there's anything fancy to do with plotting the results, do that.
@@ -164,14 +176,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @returns       The source catalog, masked to the rows which don't have any of our defined
                        flags set.
         """
-        flags = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
-                 'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
-                 'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
-                 'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
-                 'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
-                 'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                 'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center']
-        masks = [catalog[flag]==False for flag in flags]
+        masks = [catalog[flag]==False for flag in self.config.flags]
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -294,10 +299,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
-        flags = ['shape.sdss.flags', 'shape.sdss.centroid.flags', 'shape.sdss.flags.unweightedbad',
-                 'shape.sdss.flags.unweighted', 'shape.sdss.flags.shift',
-                 'shape.sdss.flags.maxiter']
-        masks = [numpy.array([src.get(flag)==False for src in data]) for flag in flags]
+        masks = [numpy.array([src.get(flag)==False for src in data]) 
+                 for flag in self.config.shape_flags]
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -523,7 +526,7 @@ class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
         return parser
 
 
-class StileFieldRunner(lsst.pipe.base.TaskRunner):
+class StileFieldRunner(CCDSingleEpochStileConfig):
     """Subclass of TaskRunner for Stile field tasks.  Most of this code (incl this docstring)
     pulled from measMosaic.
 
@@ -557,6 +560,13 @@ class FieldSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
+    corr2_kwargs = {'ra_units': 'degrees', 
+                    'dec_units': 'degrees',
+                    'min_sep': 0.05,
+                    'max_sep': 1,
+                    'sep_units': 'degrees',
+                    'nbins': 20
+                   }
 
 class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -577,13 +587,6 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
     ConfigClass = FieldSingleEpochStileConfig
     _DefaultName = "FieldSingleEpochStile"
     # necessary basic parameters for corr2 to run
-    corr2_kwargs = {'ra_units': 'degrees', 
-                                'dec_units': 'degrees',
-                                'min_sep': 0.05,
-                                'max_sep': 1,
-                                'sep_units': 'degrees',
-                                'nbins': 20
-                   }
 
     def run(self, field, dataRefList):
         # It seems like it would make more sense to put all of this in a separate function and run
@@ -678,15 +681,12 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             if hasattr(sys_test.sys_test, 'getCF'):
-                results = sys_test(self.corr2_kwargs, *new_catalogs)
+                results = sys_test(self.config.corr2_kwargs, *new_catalogs)
             else:
                 results = sys_test(*new_catalogs)
-            if hasattr(sys_test.sys_test, 'plot'):
-                fig = sys_test.sys_test.plot(results)
-                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
-            if hasattr(results, 'savefig'):
-                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
-
+            fig = sys_test.sys_test.plot(results)
+            fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            
     def makeArray(self, catalog_dict):
         """
         Take a dict whose keys contain lists of NumPy arrays which will concatenate to the same

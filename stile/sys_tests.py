@@ -13,7 +13,12 @@ try:
 except ImportError:
     has_matplotlib = False
 
-
+# Silly class so we can call savefig() on something returned from a plot() class that doesn't
+# actually do anything.
+class PlotNone(object):
+    def savefig(self,filename):
+        pass
+    
 class SysTest:
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following 
@@ -58,7 +63,14 @@ class SysTest:
         pass
     def __call__(self):
         raise NotImplementedError()
-
+    def plot(self, results):
+        """
+        If the results returned from the __call__() function of this class can be plotted, plot
+        them and return an object with a .savefig() method.  If they can't be plotted, return
+        an object with a .savefig() method that doesn't do anything.
+        """
+        return PlotNone()
+        
 class PlotDetails(object):
     """
     A container class to hold details about field names, titles for legends, and y-axis labels for
