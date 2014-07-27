@@ -529,7 +529,7 @@ class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
         return parser
 
 
-class StileVisitRunner(CCDSingleEpochStileConfig):
+class StileVisitRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile visit tasks.  Most of this code (incl this docstring)
     pulled from measMosaic.
 
