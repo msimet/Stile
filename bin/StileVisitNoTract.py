@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 
-from stile.hsc.base_tasks import FieldNoTractSingleEpochStileTask
+from stile.hsc.base_tasks import VisitNoTractSingleEpochStileTask
 
-FieldNoTractSingleEpochStileTask.parseAndRun()
+VisitNoTractSingleEpochStileTask.parseAndRun()
