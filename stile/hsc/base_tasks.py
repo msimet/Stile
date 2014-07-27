@@ -9,6 +9,7 @@ import lsst.pipe.base
 import lsst.meas.mosaic
 from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
+from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
 
@@ -150,7 +151,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     elif column in catalog.schema:
                         try:
                             new_catalog[column] = catalog[column][mask]
-                        except:
+                        except LsstCppException:
                             new_catalog[column] = (numpy.array([src[column]
                                                    for src in catalog])[mask])
                 new_catalogs.append(self.makeArray(new_catalog))
@@ -371,7 +372,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 psf_ixy = psf_moments.getIxy()
         # ...but probably in most cases we'll have to iterate like this since the catalog is
         # already masked, which breaks the direct calls above.
-        except:
+        except LsstCppException:
             if sky_coords:
                 localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                     for src in data]
@@ -673,7 +674,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         elif column in catalog.schema:
                             try:
                                 newcol = catalog[column][mask]
-                            except:
+                            except LsstCppException:
                                 newcol = numpy.array([src[column] for src in catalog])[mask]
                         # The new_catalog dict has values which are lists of the quantity we want,
                         # one per dataRef.

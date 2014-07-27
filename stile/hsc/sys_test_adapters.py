@@ -1,4 +1,9 @@
+"""sys_test_adapters.py
+Contains classes to wrap Stile systematics tests with functions necessary to run the tests via the
+HSC/LSST pipeline.
+"""
 import lsst.pex.config
+from lsst.pex.exceptions import LsstCppException
 from .. import sys_tests
 import numpy
 
@@ -16,7 +21,7 @@ def MaskGalaxy(data, config):
     # recarray.
     try:
         return data['classification.extendedness']==1
-    except:
+    except LsstCppException:
         # But sometimes we've already masked the array--this will work in that case (but is slower
         # than above if the above is possible).
         return numpy.array([src['classification.extendedness']==1 for src in data])
@@ -28,7 +33,7 @@ def MaskStar(data, config):
     """
     try:
         return data['classification.extendedness']==0
-    except:
+    except LsstCppException:
         return numpy.array([src['classification.extendedness']==1 for src in data])
 
 def MaskBrightStar(data, config):
@@ -50,7 +55,7 @@ def MaskPSFStar(data, config):
     """
     try:
         return data['calib.psf.used']==True
-    except:
+    except LsstCppException:
         return numpy.array([src.get('calib.psf.used')==True for src in data])
 
 # Map the object type strings onto the above functions.
