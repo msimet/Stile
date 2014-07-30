@@ -1,6 +1,6 @@
-""" base_tasks.py
-Contains the Task classes that interface between the LSST/HSC pipeline and the
-systematics tests described by Stile.
+""" base_tasks.py 
+Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
+described by Stile.
 """
 
 import os
@@ -15,21 +15,25 @@ import numpy
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
-You can configure which systematic tests to be run by setting the following option.
+
+You can configure which systematic tests to run by setting the following option.
 From command line, add
 -c 'sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]'
-. You can also specipy this option by writing a file, e.g.,
+
+You can also specify this option by writing a file, e.g.,
+
 ====================== config.py ======================
 import stile.lsst.base_tasks
 root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
 =======================================================
-, and then adding an option 
+
+and then adding an option 
 -C config.py
-to the command line. If you use a file, you can add and remove tests from a default
-by the following option
-root.sys_tests.names.add('TEST_NAME')'
-root.sys_tests.names.remove('TEST_NAME')'
-. 
+to the command line.
+
+If you use a file, you can add and remove tests from a default by the following option
+root.sys_tests.names.add('TEST_NAME')
+root.sys_tests.names.remove('TEST_NAME')
 """
 
 class SysTestData(object):
