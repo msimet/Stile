@@ -1,4 +1,4 @@
-""" base_tasks.py 
+""" base_tasks.py
 Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
 described by Stile.
 """
@@ -68,15 +68,18 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     shape_flags = lsst.pex.config.ListField(dtype=str, 
         doc="Flags that indicate failures for shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
-                   'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted','shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
+                   'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted',
+                   'shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
     bright_star_sn_cutoff = 50
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
     A basic Task class to run CCD-level single-epoch tests.  Inheriting from
-    lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
-    data ID, rather than reimplementing this ourselves.  Calling
+    lsst.pipe.base.CmdLineTask() lets us use the already-built command-line interface for the data
+    ID, rather than reimplementing this ourselves.  Calling
+
     >>> CCDSingleEpochStileTask.parseAndRun()
+
     from within a script will send all the command-line arguments through the argument parser, then
     call the run() method sequentially, once per CCD defined by the input arguments.
     """
