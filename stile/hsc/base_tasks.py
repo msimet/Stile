@@ -1,6 +1,7 @@
 """ base_tasks.py
 Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
-described by Stile.
+described by Stile.  At the moment, we use some functionality that is only available on the HSC 
+side of the pipeline, but eventually this will be usable for both.
 """
 
 import os
@@ -57,6 +58,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.005', 'max_sep': '0.2',
                                  'sep_units': 'degrees', 'nbins': '20'})
+    # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
@@ -65,6 +67,8 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
                    'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+    # Generate a list of flag columns to be used in the ._computeShapeMask() method for objects
+    # where we have shape information
     shape_flags = lsst.pex.config.ListField(dtype=str, 
         doc="Flags that indicate failures for shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
@@ -177,7 +181,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def removeFlaggedObjects(self, catalog):
         """
         Remove objects which have certain flags we consider unrecoverable failures for weak lensing.
-        Currently set to be quite conservative--we may want to relax this in the future.
+        Currently set to be quite conservative--we may want to relax this in the future.  The actual
+        flags are set in the config object for this class and can be accessed as the variable 
+        self.config.flags.  They can be altered on the command line or via configuration files as 
+        described in the parser help.
 
         @param catalog A source catalog pulled from the LSST pipeline.
         @returns       The source catalog, masked to the rows which don't have any of our defined
