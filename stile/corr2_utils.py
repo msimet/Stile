@@ -482,7 +482,6 @@ def AddCorr2Dict(input_dict):
     @returns          A dict containing the (key,value) pairs from input_dict that apply to corr2.
     """    
     corr2_dict = {}
-    new_dict = copy.deepcopy(input_dict)
     for key in corr2_kwargs:
         if key in input_dict:
             corr2_dict[key] = input_dict[key]
