@@ -19,7 +19,7 @@ This is a script to run Stile through the LSST/HSC pipeline.
 
 You can configure which systematic tests to run by setting the following option.
 From command line, add
--c 'sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]'
+-c "sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]"
 
 You can also specify this option by writing a file, e.g.,
 
