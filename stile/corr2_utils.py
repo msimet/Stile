@@ -474,25 +474,18 @@ def ReadCorr2ResultsFile(file_name):
 
 def AddCorr2Dict(input_dict):
     """
-    Take an `input_dict`, harvest the kwargs you'll need for corr2, and create a new 'corr2_args'
-    key in the input_dict containing these values (or update the existing 'corr2_args' key).  This
-    is useful if you have a parameters dict that contains some things corr2 might want, but some
-    other keys that shouldn't be written to the corr2 parameter file.
+    Take an `input_dict`, harvest the kwargs you'll need for corr2, and return a dict containing 
+    these values.  This is useful if you have a parameters dict that contains some things corr2 might
+    want, but some other keys that shouldn't be written to the corr2 parameter file.
     
     @param input_dict A dict containing some (key,value) pairs that apply to corr2.
-    @returns          The input_dict with an added or updated key 'corr2_kwargs' whose value is a
-                      dict containing the (key,value) pairs from input_dict that apply to corr2.
+    @returns          A dict containing the (key,value) pairs from input_dict that apply to corr2.
     """    
     corr2_dict = {}
-    new_dict = copy.deepcopy(input_dict)
     for key in corr2_kwargs:
         if key in input_dict:
             corr2_dict[key] = input_dict[key]
-    if 'corr2_kwargs' in new_dict:
-        new_dict['corr2_kwargs'].update(corr2_dict)
-    else:
-        new_dict['corr2_kwargs'] = corr2_dict
-    return new_dict
+    return corr2_dict
     
 def MakeCorr2Cols(cols, use_as_k=None):
     """

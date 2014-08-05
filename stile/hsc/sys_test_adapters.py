@@ -1,4 +1,9 @@
+"""sys_test_adapters.py
+Contains classes to wrap Stile systematics tests with functions necessary to run the tests via the
+HSC/LSST pipeline.
+"""
 import lsst.pex.config
+from lsst.pex.exceptions import LsstCppException
 from .. import sys_tests
 import numpy
 
@@ -6,7 +11,7 @@ adapter_registry = lsst.pex.config.makeRegistry("Stile test outputs")
 
 
 # We need to mask the data to particular object types; these pick out the flags we need to do that.
-def MaskGalaxy(data):
+def MaskGalaxy(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to galaxies.
@@ -16,47 +21,41 @@ def MaskGalaxy(data):
     # recarray.
     try:
         return data['classification.extendedness']==1
-    except:
+    except LsstCppException:
         # But sometimes we've already masked the array--this will work in that case (but is slower
         # than above if the above is possible).
         return numpy.array([src['classification.extendedness']==1 for src in data])
 
-def MaskStar(data):
+def MaskStar(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to stars.
     """
     try:
         return data['classification.extendedness']==0
-    except:
+    except LsstCppException:
         return numpy.array([src['classification.extendedness']==1 for src in data])
 
-def MaskBrightStar(data):
+def MaskBrightStar(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to bright stars.  Right now this is set to be the upper 10% of stars in a given
     sample.
     """
     star_mask = MaskStar(data)
-    # Get the top 10% of *star* fluxes, but generate a top_tenth_mask for *all* fluxes so we can
-    # just numpy.logical_and the two masks.
-    try:
-        top_tenth = numpy.percentile(data['flux.psf'][star_mask], 0.9)
-        top_tenth_mask = data['flux.psf'] > top_tenth
-    except:
-        flux = numpy.array([src['flux.psf'] for src in data])
-        top_tenth = numpy.percentile(flux[star_mask], 0.9)
-    top_tenth_mask = flux > top_tenth
-    return numpy.logical_and(star_mask, top_tenth_mask)
+    bright_mask = (numpy.array([src['flux.psf']/src['flux.psf.err'] for src in data]) >
+                   config.bright_star_sn_cutoff)
 
-def MaskPSFStar(data):
+    return numpy.logical_and(star_mask, bright_mask)
+
+def MaskPSFStar(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to the stars used to determine the PSF.
     """
     try:
         return data['calib.psf.used']==True
-    except:
+    except LsstCppException:
         return numpy.array([src.get('calib.psf.used')==True for src in data])
 
 # Map the object type strings onto the above functions.
@@ -77,9 +76,9 @@ class BaseSysTestAdapter(object):
     attribute `sys_test` that is a SysTest object; an attribute `name` that we can use to generate
     output filenames; a function __call__() that will run the test; a function `getMasks()` that
     returns a set of masks (one for each object type--such as "star" or "galaxy"--that is expected
-    for the test) if given a source catalog; and a function getRequiredColumns() that returns a
-    list of tuples of required quantities (such as "ra" or "g1"), one tuple corresponding to each
-    mask returned from getMasks().
+    for the test) if given a source catalog and config object; and a function getRequiredColumns() 
+    that returns a list of tuples of required quantities (such as "ra" or "g1"), one tuple 
+    corresponding to each mask returned from getMasks().
 
     (More complete lists of the exact expected names for object types and required columns can be
     found in the documentation for the class `Stile.sys_tests.SysTest`.)
@@ -117,7 +116,7 @@ class BaseSysTestAdapter(object):
         self.mask_funcs = [mask_dict[obj_type] for obj_type in objects_list]
 
 
-    def getMasks(self, data):
+    def getMasks(self, data, config):
         """
         Given data, a source catalog from the LSST pipeline, return a list of masks.  Each element
         of the list is a mask corresponding to a particular object type, such as "star" or "galaxy."
@@ -126,7 +125,7 @@ class BaseSysTestAdapter(object):
                      to index the data, returning only the rows that meet the requirements of the
                      mask.
         """
-        return [mask_func(data) for mask_func in self.mask_funcs]
+        return [mask_func(data, config) for mask_func in self.mask_funcs]
 
 
     def getRequiredColumns(self):
