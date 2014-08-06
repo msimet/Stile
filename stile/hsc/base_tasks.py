@@ -631,14 +631,14 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             os.makedirs(dir)
         ccds = [dataRef.dataId['ccd'] for dataRef in dataRefList]
         ccds.sort()
-        ccd_str = "%s" % ccds[0]
+        ccd_str = "%03d" % ccds[0]
         for i, ccd in enumerate(ccds[1:]):
             if not(ccd - 1 in ccds) and (ccd+1 in ccds):
-                ccd_str += "^%s" % ccd
+                ccd_str += "^%03d" % ccd
             elif (ccd - 1 in ccds) and not(ccd+1 in ccds):
-                ccd_str += "..%s" % ccd
+                ccd_str += "..%03d" % ccd
             elif not(ccd - 1 in ccds) and not(ccd+1 in ccds):
-                ccd_str += "^%s" % ccd
+                ccd_str += "^%03d" % ccd
         filename_chips = "-%07d-%s" % (dataRefList[0].dataId["visit"], ccd_str)
 
         # Some tests need to know which data came from which CCD
