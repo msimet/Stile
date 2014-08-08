@@ -583,6 +583,8 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.05', 'max_sep': '1',
                                  'sep_units': 'degrees', 'nbins': '20'})
+    scatterplot_per_ccd = lsst.pex.config.Field(dtype=bool, default=True,
+                                                doc="scatter points in scatter plot per ccd?")
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -696,6 +698,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         else:
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
+            import pdb; pdb.set_trace()
             if hasattr(sys_test.sys_test, 'getCF'):
                 results = sys_test(self.config.corr2_kwargs, *new_catalogs)
             else:

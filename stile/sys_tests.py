@@ -773,17 +773,27 @@ class ScatterPlotSysTest(SysTest):
             cov_mc = -Sx/Delta
             return m, c, cov_m, cov_c, cov_mc
 
+    def getStatisticsPerCCD(ccd, x, y, yerr):
+        pass
+
 class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
     long_name = 'Make a scatter plot of star g1 vs psf g1'
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, color = '', lim=None):
-        return self.scatterPlot(array['psf_g1'], array['g1'], yerr=array['g1_err'],
-                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line='one-to-one')
+    def __call__(self, array, color = '', lim=None, per_ccd = False):
+        if per_ccd:
+            psf_g1, g1, g1_err = getStatisticsPerCcd(array['CCD'], array['psf_g1'], array['g1'], yerr=array['g1_err'])
+            return self.scatterPlot(psf_g1, g1, g1_err,
+                                    xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
+                                    color=color, lim=lim, equal_axis=False,
+                                    linear_regression=True, reference_line='one-to-one')
+        else:
+            return self.scatterPlot(array['psf_g1'], array['g1'], yerr=array['g1_err'],
+                                    xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
+                                    color=color, lim=lim, equal_axis=False,
+                                    linear_regression=True, reference_line='one-to-one')
 
 class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
