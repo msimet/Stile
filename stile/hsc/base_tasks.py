@@ -166,10 +166,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                                    for src in catalog])[mask])
                 new_catalogs.append(self.makeArray(new_catalog))
             # run the test!
-            if hasattr(sys_test.sys_test, 'getCF'):
-                results = sys_test(self.config.corr2_kwargs, *new_catalogs)
-            else:
-                results = sys_test(*new_catalogs)
+            results = sys_test(self.config, *new_catalogs)
             # If there's anything fancy to do with plotting the results, do that.
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
@@ -698,11 +695,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         else:
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
-            import pdb; pdb.set_trace()
-            if hasattr(sys_test.sys_test, 'getCF'):
-                results = sys_test(self.config.corr2_kwargs, *new_catalogs)
-            else:
-                results = sys_test(*new_catalogs)
+            results = sys_test(self.config, *new_catalogs)
             fig = sys_test.sys_test.plot(results)
             fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
             
