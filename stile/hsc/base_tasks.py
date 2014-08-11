@@ -653,8 +653,8 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             sys_test_data.cols_list = sys_test.getRequiredColumns()
             shape_masks = []
             for cols_list in sys_test_data.cols_list:
-                if any([key in sys_test_data.cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
-                                                                    'sigma', 'sigma_err']]):
+                if any([key in cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
+                                                     'sigma', 'sigma_err']]):
                     shape_masks.append([self._computeShapeMask(catalog) for catalog in catalogs])
                 else:
                     shape_masks.append([True]*len(catalogs))
