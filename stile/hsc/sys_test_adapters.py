@@ -148,7 +148,7 @@ class BaseSysTestAdapter(object):
         return self.sys_test.required_quantities
 
 
-    def __call__(self, *data, **kwargs):
+    def __call__(self, task_config, *data, **kwargs):
         """
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
@@ -165,6 +165,12 @@ class GalaxyShearAdapter(BaseSysTestAdapter):
         self.sys_test = sys_tests.GalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
 
 class BrightStarShearAdapter(BaseSysTestAdapter):
     """
@@ -176,6 +182,12 @@ class BrightStarShearAdapter(BaseSysTestAdapter):
         self.sys_test = sys_tests.BrightStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
 
 class StarXGalaxyShearAdapter(BaseSysTestAdapter):
     """
@@ -187,6 +199,12 @@ class StarXGalaxyShearAdapter(BaseSysTestAdapter):
         self.sys_test = sys_tests.StarXGalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
 
 class StarXStarShearAdapter(BaseSysTestAdapter):
     """
@@ -198,7 +216,12 @@ class StarXStarShearAdapter(BaseSysTestAdapter):
         self.sys_test = sys_tests.StarXStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
 
 class StatsPSFFluxAdapter(BaseSysTestAdapter):
     """
@@ -216,7 +239,7 @@ class StatsPSFFluxAdapter(BaseSysTestAdapter):
     def getRequiredColumns(self):
         return (('flux.psf',),)
 
-    def __call__(self, *data, **kwargs):
+    def __call__(self, task_config, *data, **kwargs):
         return self.sys_test(*data, verbose=True, **kwargs)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
