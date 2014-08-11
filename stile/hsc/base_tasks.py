@@ -335,6 +335,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                               - None if no new mask was needed, or a NumPy array of bools indicating
                                 which rows had valid measurements.
         """
+        print sky_coords
         if sky_coords:
             wcs = calib.getWcs()
         # First pull the quantities from the catalog that we'll need.  This first version in the try
@@ -645,6 +646,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=int)
             extra_col_dict['CCD'].fill(dataRef.dataId['ccd'])
         for sys_test in self.sys_tests:
+            print "sys_test:", sys_test.name
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
@@ -670,6 +672,8 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         for i in range(len(temp_mask_list[0]))]
             for (mask_list, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
                 for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_list, catalogs, extra_col_dicts):
+                    print "CCD:", dataRef.dataId['ccd']
+                    print "cols:", cols
                     self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             # Some tests need to know which data came from which CCD, so we add a column for that here
             # to make sure it's propagated through to the sys_tests.

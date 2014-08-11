@@ -728,6 +728,9 @@ class ScatterPlotSysTest(SysTest):
                 yerr = numpy.sqrt(xtmp**2*cov_m + 2.*xtmp*cov_mc + cov_c)
                 ax.fill_between(xtmp, y-yerr, y+yerr, facecolor = used_color,
                                 edgecolor = used_color, alpha =0.5)
+                ax.annotate(r"$m=%.4f\pm%.4f$" %(m, numpy.sqrt(cov_m))+"\n"+
+                            r"$c=%.4f\pm%.4f$" %(c, numpy.sqrt(cov_c)), xy=(0.75, 0.05),
+                            xycoords='axes fraction')
 
         # draw a reference line
         if reference_line is not None:
@@ -773,8 +776,20 @@ class ScatterPlotSysTest(SysTest):
             cov_mc = -Sx/Delta
             return m, c, cov_m, cov_c, cov_mc
 
-    def getStatisticsPerCCD(ccd, x, y, yerr):
-        pass
+    def getStatisticsPerCCD(self, ccds, x, y, yerr = None):
+        x_ave = numpy.array([numpy.average(x[ccds == ccd]) for ccd in set(ccds)])
+        if yerr is None:
+            y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
+            y_ave_err = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+                                     for ccd in set(ccds)])
+            return x_ave, y_ave, y_ave_err
+        # calculate y and its error under the inverse variance weight if yerr is given
+        else:
+            y_ave = numpy.array([numpy.sum(y[ccds == ccd]/yerr[ccds == ccd]**2)/
+                                 numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
+            y_ave_err = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
+                                     for ccd in set(ccds)])
+            return x_ave, y_ave, y_ave_err
 
 class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
@@ -782,18 +797,17 @@ class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, color = '', lim=None, per_ccd = False):
+    def __call__(self, array, per_ccd = False, color = '', lim=None):
         if per_ccd:
-            psf_g1, g1, g1_err = getStatisticsPerCcd(array['CCD'], array['psf_g1'], array['g1'], yerr=array['g1_err'])
-            return self.scatterPlot(psf_g1, g1, g1_err,
-                                    xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
-                                    color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='one-to-one')
+            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
+                                                          array['g1'], yerr = array['g1_err'])
         else:
-            return self.scatterPlot(array['psf_g1'], array['g1'], yerr=array['g1_err'],
-                                    xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
-                                    color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='one-to-one')
+            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
+        return self.scatterPlot(psf_g1, g1, yerr=g1_err,
+                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
+
 
 class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
@@ -801,8 +815,13 @@ class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, color = '', lim=None):
-        return self.scatterPlot(array['psf_g2'], array['g2'], yerr=array['g2_err'],
+    def __call__(self, array, per_ccd=False, color = '', lim=None):
+        if per_ccd:
+            psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
+                                                          array['g2'], yerr = array['g2_err'])
+        else:
+            psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
+        return self.scatterPlot(psf_g2, g2, yerr=g2_err,
                                 xlabel=r'$g^{\rm PSF}_2$', ylabel=r'$g^{\rm star}_2$',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
@@ -813,8 +832,13 @@ class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, color = '', lim=None):
-        return self.scatterPlot(array['psf_sigma'], array['sigma'], yerr=array['sigma_err'],
+    def __call__(self, array, per_ccd=False, color = '', lim=None):
+        if per_ccd:
+            psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
+                                                          array['sigma'], yerr = array['sigma_err'])
+        else:
+            psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
+        return self.scatterPlot(psf_sigma, sigma, yerr=sigma_err,
                                 xlabel=r'$\sigma^{\rm PSF}$', ylabel=r'$\sigma^{\rm star}$',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
@@ -825,8 +849,13 @@ class ScatterPlotResidualVsPsfG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, color = '', lim=None):
-        return self.scatterPlot(array['psf_g1'], array['g1']-array['psf_g1'], yerr=array['g1_err'],
+    def __call__(self, array, per_ccd=False, color = '', lim=None):
+        if per_ccd:
+            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
+                                                          array['g1'], yerr = array['g1_err'])
+        else:
+            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
+        return self.scatterPlot(psf_g1, g1-psf_g1, yerr=g1_err,
                                 xlabel=r'$g^{\rm PSF}_1$',
                                 ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
                                 color=color, lim=lim, equal_axis=False,
@@ -838,8 +867,13 @@ class ScatterPlotResidualVsPsfG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, color = '', lim=None):
-        return self.scatterPlot(array['psf_g2'], array['g2']-array['psf_g2'], yerr=array['g2_err'],
+    def __call__(self, array, per_ccd=False, color = '', lim=None):
+        if per_ccd:
+            psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
+                                                          array['g2'], yerr = array['g2_err'])
+        else:
+            psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
+        return self.scatterPlot(psf_g2, g2-psf_g2, yerr=g2_err,
                                 xlabel=r'$g^{\rm PSF}_2$',
                                 ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
                                 color=color, lim=lim, equal_axis=False,
@@ -851,9 +885,14 @@ class ScatterPlotResidualVsPsfSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, color = '', lim=None):
-        return self.scatterPlot(array['psf_sigma'], array['sigma']-array['psf_sigma'],
-                                yerr=array['sigma_err'], xlabel=r'$\sigma^{\rm PSF}$',
+    def __call__(self, array, per_ccd=False, color = '', lim=None):
+        if per_ccd:
+            psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
+                                                          array['sigma'], yerr = array['sigma_err'])
+        else:
+            psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
+        return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
+                                xlabel=r'$\sigma^{\rm PSF}$',
                                 ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$', color=color,
                                 lim=lim, equal_axis=False, 
                                 linear_regression=True, reference_line='zero')

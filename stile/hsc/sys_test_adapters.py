@@ -251,7 +251,11 @@ class ScatterPlotStarVsPsfG1Adapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self, task_config,*data):
-        return self.sys_test(*data, lim=5)
+        try:
+            per_ccd = task_config.scatterplot_per_ccd
+        except  AttributeError:
+            per_ccd = False
+        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
 class ScatterPlotStarVsPsfG2Adapter(BaseSysTestAdapter):
     def __init__(self,config):
