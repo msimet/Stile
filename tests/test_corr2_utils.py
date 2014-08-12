@@ -187,12 +187,12 @@ class TestCorr2Utils(unittest.TestCase):
     def test_AddCorr2Dict(self):
         """Test the routine that adds to a dict to be given to corr2."""
         new_dict = stile.corr2_utils.AddCorr2Dict(self.dict1) # nonsense dict
-        self.assertEqual(len(new_dict['corr2_kwargs']),0,
-                          msg='The "corr2_kwargs" key of the new dict should have no entries')
+        self.assertEqual(len(new_dict),0,
+                          msg='The new dict should have no entries')
         new_dict = stile.corr2_utils.AddCorr2Dict(self.dict2)
-        self.assertEqual(new_dict['corr2_kwargs'],self.dict2,
+        self.assertEqual(new_dict,self.dict2,
                          msg='All entries from the dict should have been copied to the '+
-                             '"corr2_options" key of the new dict')
+                             'new dict')
 
     def test_MakeCorr2Cols(self):
         """Test the routine that extracts the 'ra_col', 'dec_col' etc parameters from an array 
