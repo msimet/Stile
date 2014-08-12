@@ -28,11 +28,8 @@ def main():
     data = dh.getData(data_ids[0],'galaxy lens','single','field','table')
     data2 = dh.getData(data_ids[1],'galaxy','single','field','table')
     
-    # convert all files to files on disk if they aren't already
-    corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
-    
     # run the test
-    results = sys_test(stile_args,**corr2_kwargs)
+    results = sys_test(stile_args, data=data, data2=data2)
     
     fig = sys_test.plot(results)
     fig.savefig(sys_test.short_name+'.png')
@@ -51,7 +48,7 @@ def main():
         bins_name = '-'.join([bl.short_name for bl in bin_list])
         data2 = dh.getData(data_ids[1],'galaxy','single','field','table',bin_list=bin_list)
         
-        corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
+        #corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
         
         results = sys_test(stile_args,**corr2_kwargs)
         stile.WriteASCIITable('realshear-'+bins_name+'.dat',results)

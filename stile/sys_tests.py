@@ -4,6 +4,7 @@ Contains the class definitions of the Stile systematics tests.
 import numpy
 import stile
 import treecorr
+from treecorr.corr2 import corr2_valid_params
 try:
     import matplotlib
     # We should decide which backend to use (this line allows running matplotlib even on sessions
@@ -203,14 +204,7 @@ class CorrelationFunctionSysTest(SysTest):
         # passed as a kwarg to that dict.
         corr2_kwargs = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs.update(kwargs)
-        treecorr.check_config(corr2_kwargs)
-
-        # make sure the set of non-None data sets makes sense
-        if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
-            raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
-        if ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs) and not (
-            'file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs):
-            raise ValueError('Given random file for file 2, but there is no file 2')
+        treecorr.config.check_config(corr2_kwargs,corr2_valid_params)
 
         if save_config:
             handle, config_file = tempfile.mkstemp(dir='.')
@@ -219,12 +213,14 @@ class CorrelationFunctionSysTest(SysTest):
         handles.append(handle)
         handle, output_file = tempfile.mkstemp()
         handles.append(handle)
-        data = treecorr.Catalog(ra=data['ra'],dec=data['dec'],g1=data['g1'],g2=data['g2'])
-        data2 = treecorr.Catalog(ra=data2['ra'],dec=data2['dec'],g1=data2['g1'],g2=data2['g2'])
+        data = treecorr.Catalog(ra=numpy.array([data['ra']]),dec=numpy.array([data['dec']]),g1=numpy.array([data['g1']]),g2=numpy.array([data['g2']]),config=corr2_kwargs)
+        data2 = treecorr.Catalog(ra=data2['ra']*treecorr.angle_units[corr2_kwargs['ra_units']],dec=data2['dec']*treecorr.angle_units[corr2_kwargs['dec_units']],g1=data2['g1'],g2=data2['g2'],config=corr2_kwargs)
+        if save_config:
+            stile.corr2_utils.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
        
-        func = corr2_func_dict[correlation_function_type]()
+        func = corr2_func_dict[correlation_function_type](corr2_kwargs)
         func.process(data,data2)
         func.write(output_file)
         results = stile.ReadCorr2ResultsFile(output_file)
@@ -289,7 +285,8 @@ class CorrelationFunctionSysTest(SysTest):
             nrows = 1 + plot_data_only + plot_random_only
         else:
             nrows = 1
-
+        if 'sigma' in fields and pd.sigma_field=='sig':
+            pd.sigma_field='sigma'
         # Plot the first thing
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)

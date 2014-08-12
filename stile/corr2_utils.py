@@ -442,7 +442,7 @@ def WriteCorr2ConfigurationFile(config_file_name, corr2_dict, **kwargs):
         close_file=True
     if kwargs:
         corr2_dict.update(kwargs)
-    CheckArguments(corr2_dict, check_status=False)
+    #CheckArguments(corr2_dict, check_status=False)
     for key in corr2_dict:
         f.write(key+' = ' + str(corr2_dict[key])+'\n')
     if close_file:
