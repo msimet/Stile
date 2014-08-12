@@ -789,6 +789,9 @@ class ScatterPlotSysTest(SysTest):
                                  numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
             y_ave_err = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
                                      for ccd in set(ccds)])
+#            y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
+#            y_ave_err = numpy.array([numpy.sqrt(numpy.sum(yerr[ccds == ccd]**2))/len(y[ccds == ccd]) for ccd in set(ccds)])
+
             return x_ave, y_ave, y_ave_err
 
 class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):

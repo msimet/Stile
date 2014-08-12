@@ -265,7 +265,11 @@ class ScatterPlotStarVsPsfG2Adapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self, task_config,*data):
-        return self.sys_test(*data, lim=5)
+        try:
+            per_ccd = task_config.scatterplot_per_ccd
+        except  AttributeError:
+            per_ccd = False
+        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
 class ScatterPlotStarVsPsfSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -275,7 +279,11 @@ class ScatterPlotStarVsPsfSigmaAdapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self, task_config,*data):
-        return self.sys_test(*data, lim=5)
+        try:
+            per_ccd = task_config.scatterplot_per_ccd
+        except  AttributeError:
+            per_ccd = False
+        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
 class ScatterPlotResidualVsPsfG1Adapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -285,7 +293,11 @@ class ScatterPlotResidualVsPsfG1Adapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self,task_config,*data):
-        return self.sys_test(*data, lim=5)
+        try:
+            per_ccd = task_config.scatterplot_per_ccd
+        except  AttributeError:
+            per_ccd = False
+        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
 class ScatterPlotResidualVsPsfG2Adapter(BaseSysTestAdapter):
     def __init__(self, config):
@@ -295,7 +307,11 @@ class ScatterPlotResidualVsPsfG2Adapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self,task_config,*data):
-        return self.sys_test(*data, lim=5)
+        try:
+            per_ccd = task_config.scatterplot_per_ccd
+        except  AttributeError:
+            per_ccd = False
+        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
 class ScatterPlotResidualVsPsfSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -305,7 +321,11 @@ class ScatterPlotResidualVsPsfSigmaAdapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self,task_config,*data):
-        return self.sys_test(*data, lim=5)
+        try:
+            per_ccd = task_config.scatterplot_per_ccd
+        except  AttributeError:
+            per_ccd = False
+        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
