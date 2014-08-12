@@ -12,7 +12,7 @@ def main():
     dh = dummy.DummyDataHandler()
     bin_list = [stile.BinStep('ra',low=-1,high=1,step=1),
                 stile.BinStep('dec',low=-1,high=1,step=1)]
-    sys_test = stile.RealShearSysTest()
+    sys_test = stile.GalaxyShearSysTest()
     
     stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
                                     'dec_units': 'degrees',

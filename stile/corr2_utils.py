@@ -481,7 +481,10 @@ def AddCorr2Dict(input_dict):
     @param input_dict A dict containing some (key,value) pairs that apply to corr2.
     @returns          A dict containing the (key,value) pairs from input_dict that apply to corr2.
     """    
-    corr2_dict = {}
+    if 'corr2_kwargs' in input_dict:
+        corr2_dict = input_dict['corr2_kwargs']
+    else:
+        corr2_dict = {}
     for key in corr2_kwargs:
         if key in input_dict:
             corr2_dict[key] = input_dict[key]

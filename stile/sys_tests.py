@@ -282,6 +282,8 @@ class CorrelationFunctionSysTest(SysTest):
         fig.subplots_adjust(hspace=0)  # no space between stacked plots
         plt.subplots(sharex=True)  # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
+	plot_data_only &= pd.datarandom_t_field+'d' in fields
+	plot_random_only &= pd.datarandom_t_field+'r' in fields
         if plot_bmode and pd.b_field and pd.t_im_field:
             nrows = 2
         elif pd.datarandom_t_field:
@@ -290,6 +292,7 @@ class CorrelationFunctionSysTest(SysTest):
             nrows = 1
 
         # Plot the first thing
+	curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
         ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0], 
                     label=pd.t_title)
