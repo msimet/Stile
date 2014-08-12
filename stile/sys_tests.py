@@ -13,7 +13,12 @@ try:
 except ImportError:
     has_matplotlib = False
 
-
+# Silly class so we can call savefig() on something returned from a plot() class that doesn't
+# actually do anything.
+class PlotNone(object):
+    def savefig(self,filename):
+        pass
+    
 class SysTest:
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following 
@@ -58,7 +63,18 @@ class SysTest:
         pass
     def __call__(self):
         raise NotImplementedError()
-
+    def plot(self, results):
+        """
+        If the results returned from the __call__() function of this class have a .savefig() 
+        method, return that object.  Otherwise, return an object with a .savefig() method that 
+        doesn't do anything.  plot() should be overridden by child classes to actually generate 
+        plots if desired.
+        """
+        if hasattr(results,'savefig'):
+            return results
+        else:
+            return PlotNone()
+        
 class PlotDetails(object):
     """
     A container class to hold details about field names, titles for legends, and y-axis labels for
@@ -145,9 +161,7 @@ class CorrelationFunctionSysTest(SysTest):
 
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
         # passed as a kwarg to that dict.
-        if not 'corr2_kwargs' in stile_args:
-            stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
-        corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
+        corr2_kwargs = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs.update(kwargs)
         # Now, pass the data and random arguments to MakeCorr2FileKwargs.  This will write to disk
         # any data that's currently contained in memory for Stile, as well as making sure that all
@@ -268,6 +282,8 @@ class CorrelationFunctionSysTest(SysTest):
         fig.subplots_adjust(hspace=0)  # no space between stacked plots
         plt.subplots(sharex=True)  # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
+        plot_data_only &= pd.datarandom_t_field+'d' in fields
+        plot_random_only &= pd.datarandom_t_field+'r' in fields
         if plot_bmode and pd.b_field and pd.t_im_field:
             nrows = 2
         elif pd.datarandom_t_field:
@@ -276,6 +292,7 @@ class CorrelationFunctionSysTest(SysTest):
             nrows = 1
 
         # Plot the first thing
+        curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
         ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0], 
                     label=pd.t_title)

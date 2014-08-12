@@ -65,6 +65,8 @@ class TestCorrelationFunctions(unittest.TestCase):
         kwargs = stile_args['corr2_kwargs']
         stile_args['corr2_kwargs'] = {}
         kwargs.update(col_kwargs)
+	del kwargs['file_name']
+	del kwargs['file_name2']
         results2 = cf.getCF(stile_args,'ng',
                                             file_name='../examples/example_lens_catalog.dat',
                                             file_name2='../examples/example_source_catalog.dat',
@@ -79,7 +81,7 @@ class TestCorrelationFunctions(unittest.TestCase):
         numpy.testing.assert_equal(results,results2)
 
         # Then, test the tests that use .getCF().
-        realshear = stile.RealShearSysTest()
+        realshear = stile.GalaxyShearSysTest()
         results3 = realshear(stile_args,file_name='../examples/example_lens_catalog.dat',
                                         file_name2='../examples/example_source_catalog.dat',
                                         **kwargs)
@@ -90,9 +92,8 @@ class TestCorrelationFunctions(unittest.TestCase):
                                               {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
                                            **kwargs)
         numpy.testing.assert_equal(results,results3)
-        self.assertRaises(TypeError,cf.getCF)
         self.assertRaises(subprocess.CalledProcessError,
-                          cf.getCF,stile_args,'ng',
+                          cf.getCF,{},'ng',
                           file_name='../examples/example_lens_catalog.dat', **col_kwargs)
         self.assertRaises(ValueError,cf.getCF,stile_args,'hello',
                           file_name='../examples/example_lens_catalog.dat',

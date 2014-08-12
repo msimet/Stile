@@ -1,21 +1,43 @@
 """ base_tasks.py
-Contains the Task classes that interface between the LSST/HSC pipeline and the
-systematics tests described by Stile.
+Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
+described by Stile.  At the moment, we use some functionality that is only available on the HSC 
+side of the pipeline, but eventually this will be usable for both.
 """
 
 import os
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
+import lsst.afw.geom as afwGeom
 from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
+from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
 
-class CCDSingleEpochStileConfig(lsst.pex.config.Config):
-    sys_tests = adapter_registry.makeField("tests to run",multi=True,
-                                           default = ["WhiskerPlotStar"])
-    
+parser_description = """
+This is a script to run Stile through the LSST/HSC pipeline.
+
+You can configure which systematic tests to run by setting the following option.
+From command line, add
+-c "sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]"
+
+You can also specify this option by writing a file, e.g.,
+
+====================== config.py ======================
+import stile.lsst.base_tasks
+root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
+=======================================================
+
+and then adding an option 
+-C config.py
+to the command line.
+
+If you use a file, you can add and remove tests from a default by the following option
+root.sys_tests.names.add('TEST_NAME')
+root.sys_tests.names.remove('TEST_NAME')
+"""
+
 class SysTestData(object):
     """
     A simple container object holding the name of a sys_test, plus the corresponding masks and
@@ -31,14 +53,44 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
-                             "StarXGalaxyShear", "StarXStarShear", "WhiskerPlotStar"])
+                             "StarXGalaxyShear", "StarXStarShear"])
+    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.005', 'max_sep': '0.2',
+                                 'sep_units': 'degrees', 'nbins': '20'})
+    # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
+    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                   'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
+                   'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
+                   'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                   'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
+                   'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+    # Generate a list of flag columns to be used in the ._computeShapeMask() method for objects
+    # where we have shape information
+    shape_flags = lsst.pex.config.ListField(dtype=str, 
+        doc="Flags that indicate failures for shape measurements",
+        default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
+                   'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted',
+                   'shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
+    bright_star_sn_cutoff = 50
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [7., 10.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [-100., 2100.])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [-100., 4200.])
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
     A basic Task class to run CCD-level single-epoch tests.  Inheriting from
-    lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
-    data ID, rather than reimplementing this ourselves.  Calling
+    lsst.pipe.base.CmdLineTask() lets us use the already-built command-line interface for the data
+    ID, rather than reimplementing this ourselves.  Calling
+
     >>> CCDSingleEpochStileTask.parseAndRun()
+
     from within a script will send all the command-line arguments through the argument parser, then
     call the run() method sequentially, once per CCD defined by the input arguments.
     """
@@ -46,13 +98,6 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     ConfigClass = CCDSingleEpochStileConfig
     _DefaultName = "CCDSingleEpochStile"
     # necessary basic parameters for corr2 to run
-    corr2_kwargs = {'ra_units': 'degrees', 
-                                'dec_units': 'degrees',
-                                'min_sep': 0.005,
-                                'max_sep': 0.2,
-                                'sep_units': 'degrees',
-                                'nbins': 20
-                   }
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
@@ -87,7 +132,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            sys_test_data.mask_list = sys_test.getMasks(catalog)
+            sys_test_data.mask_list = sys_test.getMasks(catalog, self.config)
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns. len(mask_list) should be equal to len(cols_list).
             sys_test_data.cols_list = sys_test.getRequiredColumns()
@@ -124,15 +169,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     elif column in catalog.schema:
                         try:
                             new_catalog[column] = catalog[column][mask]
-                        except:
+                        except LsstCppException:
                             new_catalog[column] = (numpy.array([src[column]
                                                    for src in catalog])[mask])
                 new_catalogs.append(self.makeArray(new_catalog))
             # run the test!
-            if hasattr(sys_test.sys_test, 'getCF'):
-                results = sys_test(self.corr2_kwargs, *new_catalogs)
-            else:
-                results = sys_test(*new_catalogs)
+            results = sys_test(self.config, *new_catalogs)
             # If there's anything fancy to do with plotting the results, do that.
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
@@ -143,20 +185,16 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def removeFlaggedObjects(self, catalog):
         """
         Remove objects which have certain flags we consider unrecoverable failures for weak lensing.
-        Currently set to be quite conservative--we may want to relax this in the future.
+        Currently set to be quite conservative--we may want to relax this in the future.  The actual
+        flags are set in the config object for this class and can be accessed as the variable 
+        self.config.flags.  They can be altered on the command line or via configuration files as 
+        described in the parser help.
 
         @param catalog A source catalog pulled from the LSST pipeline.
         @returns       The source catalog, masked to the rows which don't have any of our defined
                        flags set.
         """
-        flags = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
-                 'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
-                 'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
-                 'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
-                 'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
-                 'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                 'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center']
-        masks = [catalog[flag]==False for flag in flags]
+        masks = [catalog[flag]==False for flag in self.config.flags]
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -203,7 +241,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # catalogs, so we do those first, and separately, all at once.  Here, we figure out if there
         # are any moments-related keys to pull out of the catalog.
         shape_keys = ['g1', 'g2', 'sigma']
-        shape_err_keys = ['g1_err', 'g2_err', 'sigma_err']
+        shape_err_keys = ['g1_err', 'g2_err', 'sigma_err', 'w']
         psf_shape_keys = ['psf_g1', 'psf_g2', 'psf_sigma']
         do_shape = [col for col in shape_keys if col in cols and not col in catalog.schema]
         do_err = [col for col in shape_err_keys if col in cols and not col in catalog.schema]
@@ -228,6 +266,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 calib_data = dataRef.get("calexp")
             calib_metadata = dataRef.get("calexp_md")
             calib_type = "calexp"
+
+        # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
+        # in pixel. When the pipeline is updated, we should update this line as well.
+        xy0 = dataRef.get("calexp").getDetector().getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
 
         if shape_cols:
             for col in shape_cols:
@@ -270,7 +312,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 if any(nan_and_col_mask>0):
                     # "extra_mask" is the new mask with the quantity-specific flags
                     extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
-                        col, catalog[nan_and_col_mask], calib_metadata, calib_type)
+                        col, catalog[nan_and_col_mask], calib_metadata, calib_type, xy0)
                     if extra_mask is not None:
                         mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
                                                                    extra_mask)
@@ -279,10 +321,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
-        flags = ['shape.sdss.flags', 'shape.sdss.centroid.flags', 'shape.sdss.flags.unweightedbad',
-                 'shape.sdss.flags.unweighted', 'shape.sdss.flags.shift',
-                 'shape.sdss.flags.maxiter']
-        masks = [numpy.array([src.get(flag)==False for src in data]) for flag in flags]
+        masks = [numpy.array([src.get(flag)==False for src in data]) 
+                 for flag in self.config.shape_flags]
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -322,7 +362,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixx = moments.getIxx()
                 ixy = moments.getIxy()
                 iyy = moments.getIyy()
-            # Get covariance of meoments. We ignore off-diagonal compoients because
+            # Get covariance of moments. We ignore off-diagonal components because
             # they are not implemented in the LSST pipeline yet.
             if do_err:
                 covariances = data.get('shape.sdss.err')
@@ -354,7 +394,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 psf_ixy = psf_moments.getIxy()
         # ...but probably in most cases we'll have to iterate like this since the catalog is
         # already masked, which breaks the direct calls above.
-        except:
+        except LsstCppException:
             if sky_coords:
                 localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                     for src in data]
@@ -413,10 +453,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dsigma_dixx = 0.25/sigma
             dsigma_diyy = 0.25/sigma
             sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
+            w = numpy.maximum(g1_err,g2_err)
+            w = 1./(0.36**2+w**2)
         else:
             g1_err = None
             g2_err = None
             sigma_err = None
+            w = [1.]*len(data)
         if do_psf:
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
@@ -428,12 +471,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g2 = None
             psf_sigma = None
             extra_mask = None
-        return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err,
+        return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
                  'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 'psf_sigma': psf_sigma},
                  extra_mask)
 
 
-    def computeExtraColumn(self, col, data, calib_data, calib_type):
+    def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):
         """
         Compute the quantity `col` for the given `data`.
 
@@ -453,9 +496,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         elif col=="dec":
             return [src.getDec().asDegrees() for src in data], None
         elif col=="x":
-            return [src.getX() for src in data], None
+            if xy0:
+                return [src.getX() + xy0.getX() for src in data], None
+            else:
+                return [src.getX() for src in data], None
         elif col=="y":
-            return [src.getY() for src in data], None
+            if xy0:
+                return [src.getY() + xy0.getY() for src in data], None
+            else:
+                return [src.getY() for src in data], None
         elif col=="mag_err":
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
                                                     for src in data]),
@@ -474,7 +523,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     numpy.array([src.get('flux.psf.flags')==0 &
                                  src.get('flux.psf.flags.psffactor')==0 for src in data]))
         elif col=="w":
-            #TODO: better weighting measurement
+            # Use uniform weights for now if we don't use shapes ("w" will be removed from the
+            # list of columns if shapes are computed).
             return numpy.array([1.]*len(data)), None
         raise NotImplementedError("Cannot compute field %s" % col)
 
@@ -485,6 +535,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
                                ContainerClass=PerTractCcdDataIdContainer)
+        parser.description = parser_description
         return parser
 
     def writeConfig(self, *args, **kwargs):
@@ -503,18 +554,19 @@ class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
+        parser.description = parser_description
         return parser
 
 
-class StileFieldRunner(lsst.pipe.base.TaskRunner):
-    """Subclass of TaskRunner for Stile field tasks.  Most of this code (incl this docstring)
+class StileVisitRunner(lsst.pipe.base.TaskRunner):
+    """Subclass of TaskRunner for Stile visit tasks.  Most of this code (incl this docstring)
     pulled from measMosaic.
 
-    FieldSingleEpochStileTask.run() takes a number of arguments, one of which is a list of dataRefs
+    VisitSingleEpochStileTask.run() takes a number of arguments, one of which is a list of dataRefs
     extracted from the command line (whereas most CmdLineTasks' run methods take a single dataRef,
     and are called repeatedly).  This class transforms the processed arguments generated by the
-    ArgumentParser into the arguments expected by FieldSingleEpochStileTask.run().  It will still
-    call run() once per field if multiple fields are present, but not once per CCD as would
+    ArgumentParser into the arguments expected by VisitSingleEpochStileTask.run().  It will still
+    call run() once per visit if multiple visits are present, but not once per CCD as would
     otherwise occur.
 
     See pipeBase.TaskRunner for more information.
@@ -522,53 +574,58 @@ class StileFieldRunner(lsst.pipe.base.TaskRunner):
 
     @staticmethod
     def getTargetList(parsedCmd, **kwargs):
-        # organize data IDs by field
+        # organize data IDs by visit
         refListDict = {}
         for ref in parsedCmd.id.refList:
-            refListDict.setdefault(ref.dataId["field"], []).append(ref)
-        # we call run() once with each field
-        return [(field,
-                 refListDict[field]
-                 ) for field in sorted(refListDict.keys())]
+            refListDict.setdefault(ref.dataId["visit"], []).append(ref)
+        # we call run() once with each visit
+        return [(visit,
+                 refListDict[visit]
+                 ) for visit in sorted(refListDict.keys())]
 
     def __call__(self, args):
         task = self.TaskClass(config=self.config, log=self.log)
         result = task.run(*args)
 
-class FieldSingleEpochStileConfig(lsst.pex.config.Config):
-    # Set the default systematics tests for the field level.
+class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
+    # Set the default systematics tests for the visit level.  Some keys (eg "flags", "shape_flags")
+    # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
                              "StarXGalaxyShear", "StarXStarShear"])
+    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.05', 'max_sep': '1',
+                                 'sep_units': 'degrees', 'nbins': '20'})
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [12., 10.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [-20000., 20000.])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [-20000., 20000.])
 
-class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
+class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
-    A basic Task class to run field-level single-epoch tests.  Inheriting from
+    A basic Task class to run visit-level single-epoch tests.  Inheriting from
     lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
     data ID, rather than reimplementing this ourselves.  Calling
-    >>> FieldSingleEpochStileTask.parseAndRun()
+    >>> VisitSingleEpochStileTask.parseAndRun()
     from within a script will send all the command-line arguments through the argument parser, then
     call the run() method sequentially, once per CCD defined by the input arguments.
 
-    The "Field" version of this class is different from the "CCD" level of the task in that we will
+    The "Visit" version of this class is different from the "CCD" level of the task in that we will
     have to combine catalogs from each CCD in the visit, and do some trickery with iterables to keep
     everything aligned.
     """
     # lsst magic
-    RunnerClass = StileFieldRunner
+    RunnerClass = StileVisitRunner
     canMultiprocess = False
-    ConfigClass = FieldSingleEpochStileConfig
-    _DefaultName = "FieldSingleEpochStile"
+    ConfigClass = VisitSingleEpochStileConfig
+    _DefaultName = "VisitSingleEpochStile"
     # necessary basic parameters for corr2 to run
-    corr2_kwargs = {'ra_units': 'degrees', 
-                                'dec_units': 'degrees',
-                                'min_sep': 0.05,
-                                'max_sep': 1,
-                                'sep_units': 'degrees',
-                                'nbins': 20
-                   }
 
-    def run(self, field, dataRefList):
+    def run(self, visit, dataRefList):
         # It seems like it would make more sense to put all of this in a separate function and run
         # it once per catalog, then collate the results at the end (just before running the test).
         # Turns out that, compared to the current implementation, that takes 2-3 times as long to
@@ -595,14 +652,14 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
             os.makedirs(dir)
         ccds = [dataRef.dataId['ccd'] for dataRef in dataRefList]
         ccds.sort()
-        ccd_str = "%s" % ccds[0]
+        ccd_str = "%03d" % ccds[0]
         for i, ccd in enumerate(ccds[1:]):
             if not(ccd - 1 in ccds) and (ccd+1 in ccds):
-                ccd_str += "^%s" % ccd
+                ccd_str += "^%03d" % ccd
             elif (ccd - 1 in ccds) and not(ccd+1 in ccds):
-                ccd_str += "..%s" % ccd
+                ccd_str += "..%03d" % ccd
             elif not(ccd - 1 in ccds) and not(ccd+1 in ccds):
-                ccd_str += "^%s" % ccd
+                ccd_str += "^%03d" % ccd
         filename_chips = "-%07d-%s" % (dataRefList[0].dataId["visit"], ccd_str)
 
         # Some tests need to know which data came from which CCD
@@ -613,14 +670,14 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            temp_mask_list = [sys_test.getMasks(catalog) for catalog in catalogs]
+            temp_mask_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
             shape_masks = []
             for cols_list in sys_test_data.cols_list:
-                if any([key in sys_test_data.cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
-                                                                    'sigma', 'sigma_err']]):
+                if any([key in cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
+                                                     'sigma', 'sigma_err']]):
                     shape_masks.append([self._computeShapeMask(catalog) for catalog in catalogs])
                 else:
                     shape_masks.append([True]*len(catalogs))
@@ -651,7 +708,7 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
                         elif column in catalog.schema:
                             try:
                                 newcol = catalog[column][mask]
-                            except:
+                            except LsstCppException:
                                 newcol = numpy.array([src[column] for src in catalog])[mask]
                         # The new_catalog dict has values which are lists of the quantity we want,
                         # one per dataRef.
@@ -660,16 +717,10 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
                         else:
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
-            if hasattr(sys_test.sys_test, 'getCF'):
-                results = sys_test(self.corr2_kwargs, *new_catalogs)
-            else:
-                results = sys_test(*new_catalogs)
-            if hasattr(sys_test.sys_test, 'plot'):
-                fig = sys_test.sys_test.plot(results)
-                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
-            if hasattr(results, 'savefig'):
-                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
-
+            results = sys_test(self.config, *new_catalogs)
+            fig = sys_test.sys_test.plot(results)
+            fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            
     def makeArray(self, catalog_dict):
         """
         Take a dict whose keys contain lists of NumPy arrays which will concatenate to the same
@@ -697,14 +748,15 @@ class FieldSingleEpochStileTask(CCDSingleEpochStileTask):
                 current_position+=len(catalog)
         return data
 
-class FieldNoTractSingleEpochStileTask(FieldSingleEpochStileTask):
-    """Like FieldSingleEpochStileTask, but we use a different argument parser that doesn't require
+class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
+    """Like VisitSingleEpochStileTask, but we use a different argument parser that doesn't require
     an available coadd to run on the CCD level."""
-    _DefaultName = "FieldNoTractSingleEpochStile"
+    _DefaultName = "VisitNoTractSingleEpochStile"
 
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
+        parser.description = parser_description
         return parser
 
