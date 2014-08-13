@@ -12,7 +12,7 @@ def main():
     dh = dummy.DummyDataHandler()
     bin_list = [stile.BinStep('ra',low=-1,high=1,step=1),
                 stile.BinStep('dec',low=-1,high=1,step=1)]
-    sys_test = stile.RealShearSysTest()
+    sys_test = stile.GalaxyShearSysTest()
     
     stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
                                     'dec_units': 'degrees',
@@ -33,18 +33,11 @@ def main():
     
     # run the test
     results = sys_test(stile_args,**corr2_kwargs)
+    
+    fig = sys_test.plot(results)
+    fig.savefig(sys_test.short_name+'.png')
+
     stile.WriteASCIITable('realshear.dat',results)
-    # Plot the results
-    P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
-    P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
-    P.xscale('log')
-    P.xlim([0.05,0.7])
-    P.xlabel('<R> [deg]')
-    P.ylabel('<gam>')
-    P.title('All data')
-    P.legend()
-    P.savefig(sys_test.short_name+'.png')
-    P.clf()
     print "Done with unbinned systematics test"
     
     # do with binning
@@ -62,16 +55,8 @@ def main():
         
         results = sys_test(stile_args,**corr2_kwargs)
         stile.WriteASCIITable('realshear-'+bins_name+'.dat',results)
-        P.errorbar(results['<R>'],results['<gamX>'],yerr=results['sig'],fmt='og',label='cross')
-        P.errorbar(results['<R>'],results['<gamT>'],yerr=results['sig'],fmt='or',label='tangential')
-        P.xlabel('<R> [deg]')
-        P.ylabel('<gam>')
-        P.xscale('log')
-        P.xlim([0.05,0.7])
-        P.title('Bins'+bins_name)
-        P.legend()
-        P.savefig(sys_test.short_name+bins_name+'.png')
-        P.clf()
+        fig = sys_test.plot(results)
+        fig.savefig(sys_test.short_name+bins_name+'.png')
         print "Done with binned systematics test", bins_name
 
 if __name__=='__main__':

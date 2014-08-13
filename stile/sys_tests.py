@@ -3,13 +3,45 @@ Contains the class definitions of the Stile systematics tests.
 """
 import numpy
 import stile
+try:
+    import matplotlib
+    # We should decide which backend to use (this line allows running matplotlib even on sessions
+    # without properly defined displays, eg through PBS)
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
 
+# Silly class so we can call savefig() on something returned from a plot() class that doesn't
+# actually do anything.
+class PlotNone(object):
+    def savefig(self,filename):
+        pass
+    
 class SysTest:
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following 
     attributes:
-        short_name = a string that can be used in filenames to denote this systematics test
-        long_name = a string to denote this systematics test within program text outputs
+        short_name: a string that can be used in filenames to denote this systematics test
+        long_name: a string to denote this systematics test within program text outputs
+        objects_list: a list of objects that the test should operate on.  We expect these objects
+            to be from the list:
+            ['galaxy', 'star',  # all such objects,
+             'galaxy lens',     # only galaxies to be used as lenses in galaxy-galaxy lensing tests,
+             'star PSF',        # stars used in PSF determination,
+             'star bright',     # especially bright stars,
+             'galaxy random',   # random catalogs with the same spatial distribution as the 
+             'star random']     # 'galaxy' or 'star' samples.
+        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that 
+            should be given for the corresponding object from the objects_list.  We expect the
+            quantities to be from the list:
+            ['ra', 'dec',       # Position on the sky
+             'x', 'y',          # Position in CCD/detector coordinates (or any flat projection)
+             'g1', g2', 'g1_err', 'g2'_err', # Two components of shear and their errors
+             'sigma', 'sigma_err', # Object size and its error
+             'w',               # Per-object weight
+             'psf_g1', 'psf_g2', 'psf_sigma'] # PSF shear and size at the object location
     
     It should define the following methods:
         __call__(self, ...) = run the SysTest. There are two typical call signatures for SysTests:
@@ -23,6 +55,7 @@ class SysTest:
         
         In both cases, the kwargs should be able to handle a "bin_list=" kwarg which will bin the 
         data accordingly--see the classes defined in binning.py for more.
+        
     """
     short_name = ''
     long_name = ''
@@ -30,9 +63,46 @@ class SysTest:
         pass
     def __call__(self):
         raise NotImplementedError()
+    def plot(self, results):
+        """
+        If the results returned from the __call__() function of this class have a .savefig() 
+        method, return that object.  Otherwise, return an object with a .savefig() method that 
+        doesn't do anything.  plot() should be overridden by child classes to actually generate 
+        plots if desired.
+        """
+        if hasattr(results,'savefig'):
+            return results
+        else:
+            return PlotNone()
         
+class PlotDetails(object):
+    """
+    A container class to hold details about field names, titles for legends, and y-axis labels for
+    plots of correlation functions.
+    """
+    def __init__(self, t_field=None, t_title=None, b_field=None, b_title=None,
+                 t_im_field=None, t_im_title=None, b_im_field=None, b_im_title=None,
+                 datarandom_t_field=None, datarandom_t_title=None,
+                 datarandom_b_field=None, datarandom_b_title=None,
+                 sigma_field=None, y_title=None):
+        self.t_field = t_field  # Field of t-mode/+-mode shear correlation functions
+        self.t_title = t_title  # Legend title for previous line
+        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions 
+        self.b_title = b_title  # Legend title for previous line
+        self.t_im_field = t_im_field  # Imaginary part of t-mode/+-mode
+        self.t_im_title = t_im_title  # Legend title for previous line
+        self.b_im_field = b_im_field  # Imaginary part of b-mode/x-mode
+        self.b_im_title = b_im_title  # Legend title for previous line
+        self.datarandom_t_field = datarandom_t_field  # If data or randoms are available separately,
+                                                      # this +'d' or +'r' is the t-mode field name
+        self.datarandom_t_title = datarandom_t_title  # Legend title for previous line
+        self.datarandom_b_field = datarandom_b_field  # As above, for b-mode
+        self.datarandom_b_title = datarandom_b_title  # Legend title for previous line
+        self.sigma_field = sigma_field  # 1-sigma error bar field
+        self.y_title = y_title  # y-axis label
+               
+
 class CorrelationFunctionSysTest(SysTest):
-    short_name = 'corrfunc'
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method getCF(), which runs corr2 (via a call to the subprocess module) on a given set of 
@@ -40,6 +110,8 @@ class CorrelationFunctionSysTest(SysTest):
     CorrelationFunctionSysTest; see the docstring for CorrelationFunctionSysTest.getCF() for 
     information on how to write further tests using it.
     """
+    short_name = 'corrfunc'
+
     def getCF(self, stile_args, correlation_function_type, data=None, data2=None,
                                      random=None, random2=None, save_config=False, **kwargs):
         """
@@ -86,24 +158,22 @@ class CorrelationFunctionSysTest(SysTest):
         import os
         import copy
         handles = []
-        
+
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
         # passed as a kwarg to that dict.
-        if not 'corr2_kwargs' in stile_args:
-            stile_args = stile.corr2_utils.AddCorr2Dict(stile_args)
-        corr2_kwargs = copy.deepcopy(stile_args['corr2_kwargs'])
+        corr2_kwargs = stile.corr2_utils.AddCorr2Dict(stile_args)
         corr2_kwargs.update(kwargs)
         # Now, pass the data and random arguments to MakeCorr2FileKwargs.  This will write to disk
         # any data that's currently contained in memory for Stile, as well as making sure that all
-        # the files are in the same format--corr2 expects ra (etc) to be in the same column in 
-        # every file. Then it returns a bunch of (key,value) pairs that we can use to write a corr2 
-        # config file: the file names plus the format parameters (such as `ra_col`, `dec_col`, 
-        # etc).  Empty data sets return nothing, and if all data sets are empty, the return value 
-        # is an empty dict.  It's possible the user already ran MakeCorr2FileKwargs and the results 
-        # have been passed as kwargs to this function.  We don't explicitly check for that, but as 
-        # long as the user doesn't pass anything to `data`, `data2`, `random`, or `random2`, no 
+        # the files are in the same format--corr2 expects ra (etc) to be in the same column in
+        # every file. Then it returns a bunch of (key,value) pairs that we can use to write a corr2
+        # config file: the file names plus the format parameters (such as `ra_col`, `dec_col`,
+        # etc).  Empty data sets return nothing, and if all data sets are empty, the return value
+        # is an empty dict.  It's possible the user already ran MakeCorr2FileKwargs and the results
+        # have been passed as kwargs to this function.  We don't explicitly check for that, but as
+        # long as the user doesn't pass anything to `data`, `data2`, `random`, or `random2`, no
         # conflicts will arise.
-        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data,data2,random,random2)
+        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data, data2, random, random2)
         corr2_kwargs.update(corr2_file_kwargs)
 
         # make sure the set of non-None data sets makes sense
@@ -112,7 +182,7 @@ class CorrelationFunctionSysTest(SysTest):
         if ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs) and not (
             'file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs):
             raise ValueError('Given random file for file 2, but there is no file 2')
-            
+
         if save_config:
             handle, config_file = tempfile.mkstemp(dir='.')
         else:
@@ -122,26 +192,246 @@ class CorrelationFunctionSysTest(SysTest):
         handles.append(handle)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
-        
-        stile.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
-        
+       
+        stile.WriteCorr2ConfigurationFile(config_file, corr2_kwargs)
+
         #TODO: don't hard-code the name of corr2!
         subprocess.check_call(['corr2', config_file])
 
         return_value = stile.ReadCorr2ResultsFile(output_file)
-        for handle in handles:  
+        for handle in handles:
             os.close(handle)
         return return_value
+    
+    # Set the details (such as field names and titles) for all the possible plots generated by corr2
+    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$', 
+                                sigma_field='sig_omega', y_title="$\omega$"),  # n2
+        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$', 
+                    b_field='<gamX>', b_title=r'$\langle \gamma_X \rangle$',
+                    datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
+                    datarandom_b_field='gamX_', datarandom_b_title='$\gamma_{X',
+                    sigma_field='sig', y_title="$\gamma$"),  #ng
+        PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
+                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$', 
+                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$', 
+                    sigma_field='sig_xi', y_title=r"$\xi$"),  #g2
+        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$', 
+                    datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
+                    sigma_field='sig', y_title="$\kappa$"),  # nk 
+        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sig_xi', y_title=r"$\xi$"),  # k2 
+        PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
+                    b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
+                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T', 
+                    datarandom_b_field='kgamX_', datarandom_b_title=r'$\kappa \gamma_{X',
+                    sigma_field='sig', y_title="$\kappa\gamma$"),  # kg 
+        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$', 
+                    b_field='<Mx^2>', b_title=r'$\langle M_x^2\rangle$',
+                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$', 
+                    b_im_field='<Mmx>(b)', b_im_title=r'$\langle MM_x \rangle(b)$',
+                    sigma_field='sig_map', y_title="$M_{ap}^2$"),  # m2
+        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$', 
+                    b_field='<NMx>', b_title=r'$\langle NM_{x} \rangle$',
+                    sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
+        ]
         
-class RealShearSysTest(CorrelationFunctionSysTest):
-    """
-    Compute the tangential and cross shear around a set of real objects.
-    """
-    short_name = 'realshear'
-    long_name = 'Shear of galaxies around real objects'
+    def plot(self, data, colors=['r', 'b'], log_yscale=False,
+                   plot_bmode=True, plot_data_only=True, plot_random_only=True):
+        """
+        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some 
+        sensible defaults, but much of its behavior can be changed.
+        
+        @param data       The data returned from a CorrelationFunctionSysTest, as-is.
+        @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
+        @param log_yscale Whether to use a logarithmic y-scale (default: False)
+        @param plot_bmode Whether to plot the b-mode signal, if there is one (default: True)
+        @param plot_data_only   Whether to plot the data-only correlation functions, if present
+                                (default: True)
+        @param plot_random_only Whether to plot the random-only correlation functions, if present
+                                (default: True)
+        @returns          A matplotlib Figure which may be written to a file with .savefig(), if
+                          matplotlib can be imported; else None.
+        """
 
-    def __call__(self,stile_args,data=None,data2=None,random=None,random2=None,**kwargs):
-        return self.getCF(stile_args,'ng',data,data2,random,random2,**kwargs)
+        if not has_matplotlib:
+            return None
+        fields = data.dtype.names
+        # Pick which radius measurement to use
+        for t_r in ['<R>', 'R_nominal', 'R']:
+            if t_r in fields:
+                r = t_r
+                break
+        else:
+            raise ValueError('No radius parameter found in data')
+
+        # Logarithmic x-axes have stupid default ranges: fix this.
+        rstep = data[r][1]/data[r][0]
+        xlim = [min(data[r])/rstep, max(data[r])*rstep]    
+        # Check what kind of data is in the array that .plot() received.  
+        for plot_details in self.plot_details:
+            # Pick the one the data contains and use it; break before trying the others.
+            if plot_details.t_field in fields:
+                pd = plot_details
+                break
+        else:
+            raise ValueError("No valid y-values found in data")
+        if log_yscale:
+            yscale = 'log'
+        else:
+            yscale = 'linear'
+        fig = plt.figure()
+        fig.subplots_adjust(hspace=0)  # no space between stacked plots
+        plt.subplots(sharex=True)  # share x-axes
+        # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
+        plot_data_only &= pd.datarandom_t_field+'d' in fields
+        plot_random_only &= pd.datarandom_t_field+'r' in fields
+        if plot_bmode and pd.b_field and pd.t_im_field:
+            nrows = 2
+        elif pd.datarandom_t_field:
+            nrows = 1 + plot_data_only + plot_random_only
+        else:
+            nrows = 1
+
+        # Plot the first thing
+        curr_plot = 0
+        ax = fig.add_subplot(nrows, 1, 1)
+        ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0], 
+                    label=pd.t_title)
+        if pd.b_title and plot_bmode:
+            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1], 
+                        label=pd.b_title)
+        elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
+            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1], 
+                        label=pd.t_im_title)
+        ax.set_xscale('log')
+        ax.set_yscale(yscale)
+        ax.set_xlim(xlim)
+        ax.set_ylabel(pd.y_title)
+        ax.legend()
+        if pd.b_field and plot_bmode and pd.t_im_field:  
+            # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
+            ax = fig.add_subplot(nrows, 1, 2)
+            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0], 
+                        label=pd.t_im_title)
+            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1], 
+                        label=pd.b_im_title)
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.set_xlim(xlim)
+            ax.set_ylabel(pd.y_title)
+            ax.legend()
+        if plot_data_only and pd.datarandom_t_field:  # Plot the data-only measurements if requested
+            curr_plot += 1
+            ax = fig.add_subplot(nrows, 1, 2)
+            ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field], 
+                        color=colors[0], label=pd.datarandom_t_title+'d}$')
+            if plot_bmode and pd.datarandom_b_field:
+                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field], 
+                        color=colors[1], label=pd.datarandom_b_title+'d}$')
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.set_xlim(xlim)
+            ax.set_ylabel(pd.y_title)
+            ax.legend()
+        if plot_random_only and pd.datarandom_t_field:  # Plot the randoms-only measurements if requested
+            ax = fig.add_subplot(nrows, 1, nrows)
+            ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field], 
+                        color=colors[0], label=pd.datarandom_t_title+'r}$')
+            if plot_bmode and pd.datarandom_b_field:
+                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field], 
+                        color=colors[1], label=pd.datarandom_b_title+'r}$')
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.set_xlim(xlim)
+            ax.set_ylabel(pd.y_title)
+            ax.legend()
+        ax.set_xlabel(r)
+        return fig
+
+
+class GalaxyShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the tangential and cross shear around a set of real galaxies.
+    """
+    short_name = 'shear_around_galaxies'
+    long_name = 'Shear of galaxies around real objects'
+    objects_list = ['galaxy lens', 'galaxy']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
+
+class BrightStarShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the tangential and cross shear around a set of bright stars.
+    """
+    short_name = 'shear_around_bright_stars'
+    long_name = 'Shear of galaxies around bright stars'
+    objects_list = ['star bright', 'galaxy']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
+
+class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
+    """
+    Compute the number density of galaxies around stars.
+    """
+    short_name = 'star_x_galaxy_density'
+    long_name = 'Density of galaxies around stars'
+    objects_list = ['star', 'galaxy', 'star random', 'galaxy random']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+
+class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the cross-correlation of galaxy and star shapes.
+    """
+    short_name = 'star_x_galaxy_shear'
+    long_name = 'Cross-correlation of galaxy and star shapes'
+    objects_list = ['star', 'galaxy']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'w'), ('ra', 'dec', 'g1', 'g2', 'w')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
+
+class StarXStarShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto-correlation of star shapes.
+    """
+    short_name = 'star_x_star_shear'
+    long_name = 'Auto-correlation of star shapes'
+    objects_list = ['star']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'w')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
+
+class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the galaxy position autocorrelations.
+    """
+    short_name = 'galaxy_density'
+    long_name = 'Galaxy position autocorrelation'
+    objects_list = ['galaxy', 'galaxy random']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+
+class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the star position autocorrelations.
+    """
+    short_name = 'star_density'
+    long_name = 'Star position autocorrelation'
+    objects_list = ['star', 'star random']
+    required_quantities = [('ra', 'dec'), ('ra', 'dec')]
+
+    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+
 
 class StatSysTest(SysTest):
     """
@@ -247,7 +537,7 @@ class StatSysTest(SysTest):
                 raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
             if use_field not in use_array.dtype.fields.keys():
                 raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
-                                   (use_field,use_array.dtype.fields.keys()))
+                                   (use_field, use_array.dtype.fields.keys()))
             # Select the appropriate field for this catalog.
             use_array = use_array[use_field]
         # Now take care of case (b):
