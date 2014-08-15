@@ -221,8 +221,23 @@ class CorrelationFunctionSysTest(SysTest):
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
        
         func = corr2_func_dict[correlation_function_type](corr2_kwargs)
-        func.process(data,data2)
         import cPickle
+        with open('quicko.p') as f:
+            func_orig = cPickle.load(f)
+        for key in func.__dict__.keys():
+            if key in func_orig.__dict__:
+                try:
+                    if func.__dict__[key]!=func_orig.__dict__[key] and key!="config":
+                        print key, func.__dict__[key], func_orig.__dict__[key], "norp"
+                except:
+                    if any(func.__dict__[key]!=func_orig.__dict__[key]):
+                        print key, func.__dict__[key], func_orig.__dict__[key], "norp"
+            else:
+                print key, "missing from func_orig"
+        for key in func_orig.__dict__.keys():
+            if key not in func.__dict__:
+                print key, "missing from func"
+        func.process(data,data2)
         with open('cat1.p') as f:
             cat1 = cPickle.load(f)
         with open('cat2.p') as f:
