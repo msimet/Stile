@@ -222,6 +222,28 @@ class CorrelationFunctionSysTest(SysTest):
        
         func = corr2_func_dict[correlation_function_type](corr2_kwargs)
         func.process(data,data2)
+        import cPickle
+        with open('quick.p') as f:
+            func2 = cPickle.load(f)
+        for key in func.__dict__.keys():
+            if key in func2.__dict__:
+                print key, func.__dict__[key]==func2.__dict__[key]
+            else:
+                print key, "missing from func2"
+        for key in func2.__dict__.keys():
+            if key not in func.__dict__:
+                print key, "missing from func"
+        print func.corr, func2.corr, "corr"
+        c1 = func.config
+        c2 = func2.config
+        c1_keys = c1.viewkeys()
+        c2_keys = c2.viewkeys()
+        print c1_keys - c2_keys, c2_keys-c1_keys, "diff keys"
+        for key in c1_keys:
+            if c1[key]!=c2[key]:
+                print key, c1[key], c2[key], "configchecker"
+        
+        raise RuntimeError()
         func.write(output_file)
         results = stile.ReadCorr2ResultsFile(output_file)
         
