@@ -213,8 +213,8 @@ class CorrelationFunctionSysTest(SysTest):
         handles.append(handle)
         handle, output_file = tempfile.mkstemp()
         handles.append(handle)
-        data = treecorr.Catalog(ra=numpy.array([data['ra']]),dec=numpy.array([data['dec']]),g1=numpy.array([data['g1']]),g2=numpy.array([data['g2']]),config=corr2_kwargs)
-        data2 = treecorr.Catalog(ra=data2['ra']*treecorr.angle_units[corr2_kwargs['ra_units']],dec=data2['dec']*treecorr.angle_units[corr2_kwargs['dec_units']],g1=data2['g1'],g2=data2['g2'],config=corr2_kwargs)
+        data = [treecorr.Catalog(ra=numpy.array([data['ra']]),dec=numpy.array([data['dec']]),g1=numpy.array([data['g1']]),g2=numpy.array([data['g2']]),config=corr2_kwargs)]
+        data2 = [treecorr.Catalog(ra=data2['ra']*treecorr.angle_units[corr2_kwargs['ra_units']],dec=data2['dec']*treecorr.angle_units[corr2_kwargs['dec_units']],g1=data2['g1'],g2=data2['g2'],config=corr2_kwargs)]
         if save_config:
             stile.corr2_utils.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
 
