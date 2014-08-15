@@ -213,7 +213,7 @@ class CorrelationFunctionSysTest(SysTest):
         handles.append(handle)
         handle, output_file = tempfile.mkstemp()
         handles.append(handle)
-        data = [treecorr.Catalog(ra=numpy.array([data['ra']]),dec=numpy.array([data['dec']]),g1=numpy.array([data['g1']]),g2=numpy.array([data['g2']]),config=corr2_kwargs)]
+        data = [treecorr.Catalog(ra=numpy.array([data['ra']]),dec=numpy.array([data['dec']]),config=corr2_kwargs)]
         data2 = [treecorr.Catalog(ra=data2['ra']*treecorr.angle_units[corr2_kwargs['ra_units']],dec=data2['dec']*treecorr.angle_units[corr2_kwargs['dec_units']],g1=data2['g1'],g2=data2['g2'],config=corr2_kwargs)]
         if save_config:
             stile.corr2_utils.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
@@ -223,17 +223,63 @@ class CorrelationFunctionSysTest(SysTest):
         func = corr2_func_dict[correlation_function_type](corr2_kwargs)
         func.process(data,data2)
         import cPickle
+        with open('cat1.p') as f:
+            cat1 = cPickle.load(f)
+        with open('cat2.p') as f:
+            cat2 = cPickle.load(f)
+        for d,c in zip(data,cat1):
+            dd = d.__dict__
+            cd = c.__dict__
+            ddk = dd.viewkeys()
+            cdk = cd.viewkeys()
+            print ddk-cdk, cdk-ddk, "key diff1"
+            for key in ddk & cdk:
+                if cd[key]!=dd[key] and key!='config':
+                    print key, cd[key], dd[key], "catdiff1"
+            dc = d.config
+            cc = c.config
+            dck = dc.viewkeys()
+            cck = cc.viewkeys()
+            print dck-cck, cck-dck, "key diff1a"
+            for key in dck & cck:
+                if cc[key]!=dc[key]:
+                    print key, cc[key], dc[key], "catconfigdiff1"
+        for d,c in zip(data2,cat2):
+            dd = d.__dict__
+            cd = c.__dict__
+            ddk = dd.viewkeys()
+            cdk = cd.viewkeys()
+            print ddk-cdk, cdk-ddk, "key diff2"
+            for key in ddk & cdk:
+                try:
+                    if cd[key]!=dd[key] and key!='config':
+                        print key, cd[key], dd[key], "catdiff2"
+                except:
+                    if any(cd[key]!=dd[key]) and key!='config':
+                        print key, cd[key], dd[key], "catdiff2"
+            dc = d.config
+            cc = c.config
+            dck = dc.viewkeys()
+            cck = cc.viewkeys()
+            print dck-cck, cck-dck, "key diff2a"
+            for key in dck & cck:
+                if cc[key]!=dc[key]:
+                    print key, cc[key], dc[key], "catconfigdiff2"
         with open('quick.p') as f:
             func2 = cPickle.load(f)
         for key in func.__dict__.keys():
             if key in func2.__dict__:
-                print key, func.__dict__[key]==func2.__dict__[key]
+                try:
+                    if func.__dict__[key]!=func2.__dict__[key] and key!="config":
+                        print key, func.__dict__[key], func2.__dict__[key]
+                except:
+                    if any(func.__dict__[key]!=func2.__dict__[key]):
+                        print key, func.__dict__[key], func2.__dict__[key]
             else:
                 print key, "missing from func2"
         for key in func2.__dict__.keys():
             if key not in func.__dict__:
                 print key, "missing from func"
-        print func.corr, func2.corr, "corr"
         c1 = func.config
         c2 = func2.config
         c1_keys = c1.viewkeys()
