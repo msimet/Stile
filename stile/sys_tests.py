@@ -715,4 +715,33 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
                                 xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
+
+class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
+    short_name = 'whiskerplot_psf'
+    long_name = 'Make a Whisker plot of PSFs'
+    objects_list = ['star PSF']
+    required_quantities = [('x','y','psf_g1','psf_g2','psf_sigma')]
+
+    def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
+                 xlim = None, ylim = None):
+        return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
+                                array['psf_sigma'], linewidth = linewidth, scale = scale,
+                                figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
+                                size_label = r'$\sigma$ [pixel]', 
+                                xlim = xlim, ylim = ylim, equal_axis = True)
+    
+class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
+    short_name = 'whiskerplot_residual'
+    long_name = 'Make a Whisker plot of residuals'
+    objects_list = ['star PSF']
+    required_quantities = [('x','y', 'g1','g2','sigma', 'psf_g1','psf_g2','psf_sigma')]
+
+    def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
+                 xlim = None, ylim = None):
+        return self.whiskerPlot(array['x'], array['y'], array['g1'] - array['psf_g1'],
+                                array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
+                                linewidth = linewidth, scale = scale,
+                                figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
+                                size_label = r'$\sigma$ [pixel]', 
+                                xlim = xlim, ylim = ylim, equal_axis = True)
     

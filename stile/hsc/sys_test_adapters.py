@@ -255,11 +255,38 @@ class WhiskerPlotStarAdapter(BaseSysTestAdapter):
                               xlim = task_config.whiskerplot_xlim,
                               ylim = task_config.whiskerplot_ylim)
 
+class WhiskerPlotPSFAdapter(BaseSysTestAdapter):
+    def __init__(self,config):
+        self.config = config
+        self.sys_test = sys_tests.WhiskerPlotPSFSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data):
+        return self.sys_test(*data, linewidth = 0.01, scale = task_config.whiskerplot_scale,
+                              figsize = task_config.whiskerplot_figsize,
+                              xlim = task_config.whiskerplot_xlim,
+                              ylim = task_config.whiskerplot_ylim)
+
+class WhiskerPlotResidualAdapter(BaseSysTestAdapter):
+    def __init__(self,config):
+        self.config = config
+        self.sys_test = sys_tests.WhiskerPlotResidualSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data):
+        return self.sys_test(*data, linewidth = 0.01, scale = task_config.whiskerplot_scale,
+                              figsize = task_config.whiskerplot_figsize,
+                              xlim = task_config.whiskerplot_xlim,
+                              ylim = task_config.whiskerplot_ylim)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear", StarXGalaxyShearAdapter)
 adapter_registry.register("StarXStarShear", StarXStarShearAdapter)
-adapter_registry.register("WhiskerPlotStar",WhiskerPlotStarAdapter)
+adapter_registry.register("WhiskerPlotStar", WhiskerPlotStarAdapter)
+adapter_registry.register("WhiskerPlotPSF", WhiskerPlotPSFAdapter)
+adapter_registry.register("WhiskerPlotResidual", WhiskerPlotResidualAdapter)
 
