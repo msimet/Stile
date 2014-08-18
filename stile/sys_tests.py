@@ -693,7 +693,6 @@ class ScatterPlotSysTest(SysTest):
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
                             '`int` to indicate n-sigma around mean.')
 
-
         # set axis limits if specified
         if lim is not None:
             ax.set_xlim(*xlim)
@@ -792,9 +791,6 @@ class ScatterPlotSysTest(SysTest):
                                  numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
             y_ave_err = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
                                      for ccd in set(ccds)])
-#            y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
-#            y_ave_err = numpy.array([numpy.sqrt(numpy.sum(yerr[ccds == ccd]**2))/len(y[ccds == ccd]) for ccd in set(ccds)])
-
             return x_ave, y_ave, y_ave_err
 
 class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
@@ -813,7 +809,6 @@ class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
                                 xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
-
 
 class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
