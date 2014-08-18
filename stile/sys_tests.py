@@ -793,7 +793,7 @@ class ScatterPlotSysTest(SysTest):
                                      for ccd in set(ccds)])
             return x_ave, y_ave, y_ave_err
 
-class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
     long_name = 'Make a scatter plot of star g1 vs psf g1'
     objects_list = ['star PSF']
@@ -810,7 +810,7 @@ class ScatterPlotStarVsPsfG1SysTest(ScatterPlotSysTest):
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
 
-class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
     long_name = 'Make a scatter plot of star g2 vs psf g2'
     objects_list = ['star PSF']
@@ -827,7 +827,7 @@ class ScatterPlotStarVsPsfG2SysTest(ScatterPlotSysTest):
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
 
-class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_sigma'
     long_name = 'Make a scatter plot of star sigma vs psf sigma'
     objects_list = ['star PSF']
@@ -844,7 +844,7 @@ class ScatterPlotStarVsPsfSigmaSysTest(ScatterPlotSysTest):
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
 
-class ScatterPlotResidualVsPsfG1SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g1'
     long_name = 'Make a scatter plot of residual g1 vs psf g1'
     objects_list = ['star PSF']
@@ -862,7 +862,7 @@ class ScatterPlotResidualVsPsfG1SysTest(ScatterPlotSysTest):
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='zero')
 
-class ScatterPlotResidualVsPsfG2SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g2'
     long_name = 'Make a scatter plot of residual g2 vs psf g2'
     objects_list = ['star PSF']
@@ -880,7 +880,7 @@ class ScatterPlotResidualVsPsfG2SysTest(ScatterPlotSysTest):
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='zero')
 
-class ScatterPlotResidualVsPsfSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_sigma'
     long_name = 'Make a scatter plot of residual sigma vs psf sigma'
     objects_list = ['star PSF']

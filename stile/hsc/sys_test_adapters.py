@@ -243,10 +243,10 @@ class StatsPSFFluxAdapter(BaseSysTestAdapter):
         return self.sys_test(*data, verbose=True, **kwargs)
 
 
-class ScatterPlotStarVsPsfG1Adapter(BaseSysTestAdapter):
+class ScatterPlotStarVsPSFG1Adapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.ScatterPlotStarVsPsfG1SysTest()
+        self.sys_test = sys_tests.ScatterPlotStarVsPSFG1SysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -257,10 +257,10 @@ class ScatterPlotStarVsPsfG1Adapter(BaseSysTestAdapter):
             per_ccd = False
         return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
-class ScatterPlotStarVsPsfG2Adapter(BaseSysTestAdapter):
+class ScatterPlotStarVsPSFG2Adapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.ScatterPlotStarVsPsfG2SysTest()
+        self.sys_test = sys_tests.ScatterPlotStarVsPSFG2SysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -271,10 +271,10 @@ class ScatterPlotStarVsPsfG2Adapter(BaseSysTestAdapter):
             per_ccd = False
         return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
-class ScatterPlotStarVsPsfSigmaAdapter(BaseSysTestAdapter):
+class ScatterPlotStarVsPSFSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.ScatterPlotStarVsPsfSigmaSysTest()
+        self.sys_test = sys_tests.ScatterPlotStarVsPSFSigmaSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -285,10 +285,10 @@ class ScatterPlotStarVsPsfSigmaAdapter(BaseSysTestAdapter):
             per_ccd = False
         return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
-class ScatterPlotResidualVsPsfG1Adapter(BaseSysTestAdapter):
+class ScatterPlotResidualVsPSFG1Adapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.ScatterPlotResidualVsPsfG1SysTest()
+        self.sys_test = sys_tests.ScatterPlotResidualVsPSFG1SysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -299,10 +299,10 @@ class ScatterPlotResidualVsPsfG1Adapter(BaseSysTestAdapter):
             per_ccd = False
         return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
-class ScatterPlotResidualVsPsfG2Adapter(BaseSysTestAdapter):
+class ScatterPlotResidualVsPSFG2Adapter(BaseSysTestAdapter):
     def __init__(self, config):
         self.config = config
-        self.sys_test = sys_tests.ScatterPlotResidualVsPsfG2SysTest()
+        self.sys_test = sys_tests.ScatterPlotResidualVsPSFG2SysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -313,10 +313,10 @@ class ScatterPlotResidualVsPsfG2Adapter(BaseSysTestAdapter):
             per_ccd = False
         return self.sys_test(*data, per_ccd = per_ccd, lim=5)
 
-class ScatterPlotResidualVsPsfSigmaAdapter(BaseSysTestAdapter):
+class ScatterPlotResidualVsPSFSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
         self.config = config
-        self.sys_test = sys_tests.ScatterPlotResidualVsPsfSigmaSysTest()
+        self.sys_test = sys_tests.ScatterPlotResidualVsPSFSigmaSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
 
@@ -332,9 +332,9 @@ adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear", StarXGalaxyShearAdapter)
 adapter_registry.register("StarXStarShear", StarXStarShearAdapter)
-adapter_registry.register("ScatterPlotStarVsPsfG1", ScatterPlotStarVsPsfG1Adapter)
-adapter_registry.register("ScatterPlotStarVsPsfG2", ScatterPlotStarVsPsfG2Adapter)
-adapter_registry.register("ScatterPlotStarVsPsfSigma", ScatterPlotStarVsPsfSigmaAdapter)
-adapter_registry.register("ScatterPlotResidualVsPsfG1", ScatterPlotResidualVsPsfG1Adapter)
-adapter_registry.register("ScatterPlotResidualVsPsfG2", ScatterPlotResidualVsPsfG2Adapter)
-adapter_registry.register("ScatterPlotResidualVsPsfSigma", ScatterPlotResidualVsPsfSigmaAdapter)
+adapter_registry.register("ScatterPlotStarVsPSFG1", ScatterPlotStarVsPSFG1Adapter)
+adapter_registry.register("ScatterPlotStarVsPSFG2", ScatterPlotStarVsPSFG2Adapter)
+adapter_registry.register("ScatterPlotStarVsPSFSigma", ScatterPlotStarVsPSFSigmaAdapter)
+adapter_registry.register("ScatterPlotResidualVsPSFG1", ScatterPlotResidualVsPSFG1Adapter)
+adapter_registry.register("ScatterPlotResidualVsPSFG2", ScatterPlotResidualVsPSFG2Adapter)
+adapter_registry.register("ScatterPlotResidualVsPSFSigma", ScatterPlotResidualVsPSFSigmaAdapter)
