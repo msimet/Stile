@@ -271,7 +271,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 = dataRef.get("calexp").getDetector().getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
+        xy0 = dataRef.get("calexp").getDetector().getPositionFromPixel(
+            afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD'
+            ) and ('x' in raw_cols or 'y' in raw_cols) else None
 
         if shape_cols:
             for col in shape_cols:
@@ -487,6 +489,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @param calib_data Photometric calibration data for flux/magnitude measurements.
         @param calib_type Which type of calibration calib_data is ("fcr" or "calexp"--"fcr" for
                           coadds where available, else "calexp").
+        @param xy0        Offset of a CCD
+                          [Default: None, meaning do not add any offset.]
         @returns          A 2-element tuple.  The first element is a list or NumPy array of the
                           quantity indicated by `col`. The second is either None (if no further
                           masking is needed) or a NumPy array of boolean values indicating where the
