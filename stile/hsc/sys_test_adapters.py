@@ -250,7 +250,7 @@ class WhiskerPlotStarAdapter(BaseSysTestAdapter):
         self.setupMasks()
 
     def __call__(self, task_config, *data):
-        return self.sys_test(*data, linewidth = 0.01,
+        return self.sys_test(*data, linewidth = 0.01, scale = task_config.whiskerplot_scale,
                               figsize = task_config.whiskerplot_figsize,
                               xlim = task_config.whiskerplot_xlim,
                               ylim = task_config.whiskerplot_ylim)

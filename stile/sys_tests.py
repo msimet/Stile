@@ -615,8 +615,8 @@ class WhiskerPlotSysTest(SysTest):
     WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
     WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
     """
-    def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, keylength = 0.05,
-                    figsize = None, xlabel = None, ylabel = None,
+    def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, scale = None,
+                    keylength = 0.05, figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
         """
         Draw a whisker plot plot and return a `matplotlib.figure.Figure` object.
@@ -634,6 +634,9 @@ class WhiskerPlotSysTest(SysTest):
                                [default: None, meaning do not show the size information]
         @param linewidth       Width of whiskers in units of inches.
                                [default: 0.01]
+        @param scale           Lenth of whisker per inch.
+                               [default: None, meaning follow default of an autoscaling algorithm by 
+                               matplotlib ]
         @param keylength       Length of a key.
                                [default: 0.05]
         @param figsize         Size of a figure (x, y) in units of inches.
@@ -674,11 +677,13 @@ class WhiskerPlotSysTest(SysTest):
         if size is None:
             q = ax.quiver(x, y, gx, gy, units = 'inches',
                           headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = linewidth)
+                          pivot = 'middle', width = linewidth, 
+                          scale = scale)
         else:
             q = ax.quiver(x, y, gx, gy, size, units = 'inches',
                           headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = linewidth)
+                          pivot = 'middle', width = linewidth,
+                          scale = scale)
             cb = fig.colorbar(q)
             if size_label is not None:
                 cb.set_label(size_label)
@@ -703,9 +708,10 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('x','y','g1','g2','sigma')]
 
-    def __call__(self, array, linewidth = 0.01, figsize = None, xlim = None, ylim = None):
+    def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
+                 xlim = None, ylim = None):
         return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
-                                linewidth = linewidth, figsize = figsize,
+                                linewidth = linewidth, scale = scale, figsize = figsize,
                                 xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
