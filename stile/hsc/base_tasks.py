@@ -83,7 +83,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
         doc="y limit for whisker plot", default = [-100., 4200.])
     whiskerplot_scale = lsst.pex.config.Field(dtype=float,
-        doc="length of whisker per inch", default = 0.2)
+        doc="length of whisker per inch", default = 0.4)
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
@@ -607,7 +607,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
         doc="y limit for whisker plot", default = [-20000., 20000.])
     whiskerplot_scale = lsst.pex.config.Field(dtype=float,
-        doc="length of whisker per inch", default = 0.2)
+        doc="length of whisker per inch", default = 0.4)
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
