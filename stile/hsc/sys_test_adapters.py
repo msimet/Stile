@@ -255,7 +255,7 @@ class ScatterPlotStarVsPSFG1Adapter(BaseSysTestAdapter):
             per_ccd = task_config.scatterplot_per_ccd
         except  AttributeError:
             per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
+        return self.sys_test(*data, per_ccd = per_ccd)
 
 class ScatterPlotStarVsPSFG2Adapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -269,7 +269,7 @@ class ScatterPlotStarVsPSFG2Adapter(BaseSysTestAdapter):
             per_ccd = task_config.scatterplot_per_ccd
         except  AttributeError:
             per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
+        return self.sys_test(*data, per_ccd = per_ccd)
 
 class ScatterPlotStarVsPSFSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -283,7 +283,7 @@ class ScatterPlotStarVsPSFSigmaAdapter(BaseSysTestAdapter):
             per_ccd = task_config.scatterplot_per_ccd
         except  AttributeError:
             per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
+        return self.sys_test(*data, per_ccd = per_ccd)
 
 class ScatterPlotResidualVsPSFG1Adapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -297,7 +297,7 @@ class ScatterPlotResidualVsPSFG1Adapter(BaseSysTestAdapter):
             per_ccd = task_config.scatterplot_per_ccd
         except  AttributeError:
             per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
+        return self.sys_test(*data, per_ccd = per_ccd)
 
 class ScatterPlotResidualVsPSFG2Adapter(BaseSysTestAdapter):
     def __init__(self, config):
@@ -311,7 +311,7 @@ class ScatterPlotResidualVsPSFG2Adapter(BaseSysTestAdapter):
             per_ccd = task_config.scatterplot_per_ccd
         except  AttributeError:
             per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
+        return self.sys_test(*data, per_ccd = per_ccd)
 
 class ScatterPlotResidualVsPSFSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -325,7 +325,7 @@ class ScatterPlotResidualVsPSFSigmaAdapter(BaseSysTestAdapter):
             per_ccd = task_config.scatterplot_per_ccd
         except  AttributeError:
             per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd, lim=5)
+        return self.sys_test(*data, per_ccd = per_ccd)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)

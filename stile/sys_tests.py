@@ -644,7 +644,7 @@ class ScatterPlotSysTest(SysTest):
         @param lim             The limit of axis. This can be specified explicitly by
                                using tuples such as ((xmin, xmax), (ymin, ymax)), or ((xmin, xmax), 
                                (ymin, ymax), (zmin, zmax)) if z is provided.
-                               If one passes int n, it calculate n-sigma limit around mean
+                               If one passes float p, it calculate p%-percentile around median
                                for each of x-axis and y-axis.
                                [default: None, meaning do not set any limits]
         @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
@@ -699,25 +699,19 @@ class ScatterPlotSysTest(SysTest):
             ylim = lim[1]
             if z is not None:
                 zlim = lim[2]
-        # calculate n-sigma limits around mean if lim is int
-        elif isinstance(lim, int):
-            nsigma = lim
-            mean = numpy.average(x)
-            stddev = numpy.std(x)
-            xlim = (mean - nsigma*stddev, mean + nsigma*stddev)
-            mean = numpy.average(y)
-            stddev = numpy.std(y)
-            ylim = (mean - nsigma*stddev, mean + nsigma*stddev)
+        # calculate n-sigma limits around mean if lim is float
+        elif isinstance(lim, float):
+            p = lim
+            xlim = (numpy.percentile(x, 50.-0.5*p), numpy.percentile(x, 50.+0.5*p))
+            ylim = (numpy.percentile(y, 50.-0.5*p), numpy.percentile(y, 50.+0.5*p))
             if z is not None:
-                mean = numpy.average(z)
-                stddev = numpy.std(z)
-                zlim = (mean - nsigma*stddev, mean + nsigma*stddev)
+                zlim = (numpy.percentile(z, 50.-0.5*p), numpy.percentile(z, 50.+0.5*p))
         # in other cases (except for the default value None), 
         # just raise a warning and silently keep going
         elif lim is not None:
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
-                            '`int` to indicate n-sigma around mean.')
-
+                            '`float` to indicate p%-percentile around median.')
+        import pdb; pdb.set_trace()
         # plot
         if z is None:
             if yerr is None:
@@ -849,7 +843,6 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd = False, color = '', lim=None):
-        lim = None
         if per_ccd:
             psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
                                                           array['g1'], yerr = array['g1_err'])
