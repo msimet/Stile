@@ -453,8 +453,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
             psf_sigma = numpy.sqrt(0.5*(psf_ixx+psf_iyy))
-            extra_mask = numpy.array([src.get('flux.psf.flags')==0 &
-                                 src.get('flux.psf.flags.psffactor')==0 for src in data])
+            extra_mask = numpy.array([src.get('flux.psf.flags')==0 for src in data])
         else:
             psf_g1 = None
             psf_g2 = None
