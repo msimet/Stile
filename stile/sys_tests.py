@@ -658,7 +658,7 @@ class ScatterPlotSysTest(SysTest):
                                drawn. If reference_line == 'zero', y=0 id drawn. A user-specific
                                function can be used by passing an object which has an attribute
                                '__call__' and returns a 1-d Numpy array.
-        @ returns a matplotlib.figure.Figure object
+        @returns                a matplotlib.figure.Figure object
         """
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
@@ -803,6 +803,15 @@ class ScatterPlotSysTest(SysTest):
         return fig
 
     def linearRegression(self, x, y, err = None):
+        """
+        Perform linear regression (y=mx+c). If error is given, it returns covariance.
+        @param x               NumPy array for x.
+        @param y               NumPy array for y.
+        @param err             Numpy array for y error.
+                               [default: None, meaning do not consider y error]
+        @returns               m, c. If err is not None, m, c, cov_m, cov_c, cov_mc.
+        """
+
         e = numpy.ones(x.shape) if err is None else err
         S = numpy.sum(1./e**2)
         Sx = numpy.sum(x/e**2)
@@ -821,19 +830,29 @@ class ScatterPlotSysTest(SysTest):
             return m, c, cov_m, cov_c, cov_mc
 
     def getStatisticsPerCCD(self, ccds, x, y, yerr = None):
+        """
+        Calculate average for x and y for each ccd.
+        @param ccd             NumPy array for ccd, an array in which each element indicates CCD ID
+                               of each data point.
+        @param x               NumPy array for x.
+        @param y               NumPy array for y.
+        @param err             Numpy array for y error.
+                               [default: None, meaning do not consider y error]
+        @returns               x_ave, y_ave, y_ave_std.
+        """
         x_ave = numpy.array([numpy.average(x[ccds == ccd]) for ccd in set(ccds)])
         if yerr is None:
             y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
-            y_ave_err = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+            y_ave_std = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
                                      for ccd in set(ccds)])
-            return x_ave, y_ave, y_ave_err
-        # calculate y and its error under the inverse variance weight if yerr is given
+            return x_ave, y_ave, y_ave_std
+        # calculate y and its std under the inverse variance weight if yerr is given
         else:
             y_ave = numpy.array([numpy.sum(y[ccds == ccd]/yerr[ccds == ccd]**2)/
                                  numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
-            y_ave_err = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
+            y_ave_std = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
                                      for ccd in set(ccds)])
-            return x_ave, y_ave, y_ave_err
+            return x_ave, y_ave, y_ave_std
 
 class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
