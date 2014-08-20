@@ -616,8 +616,8 @@ class ScatterPlotSysTest(SysTest):
     ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
     ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
     """
-    def scatterPlot(self, x, y, yerr=None, xlabel=None, ylabel=None, color = "", lim=None,
-                    equal_axis=False, linear_regression=False, reference_line = None):
+    def scatterPlot(self, x, y, yerr=None, z=None, xlabel=None, ylabel=None, zlabel=None, color = ""
+                    , lim=None, equal_axis=False, linear_regression=False, reference_line = None):
         """
         Draw a scatter plot and return a `matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
@@ -627,16 +627,24 @@ class ScatterPlotSysTest(SysTest):
         @param y               The tuple, list, or NumPy array for y-axis.
         @param yerr            The tuple, list, or Numpy array for error of the y values.
                                [default: None, meaning do not plot an error]
+        @param z               The tuple, list, or Numpy array for an additional quantitiy
+                               which appears as colors of scattered points.
+                               [default: None, meaning there is no additional quantity]
         @param xlabel          The label of x-axis.
                                [default: None, meaning do not show a label of x-axis]
         @param ylabel          The label of y-axis.
                                [default: None, meaning do not show a label of y-axis]
-        @param color           The color of scatter plots. This color is applied to
-                               linear regression if argument `linear_regression` is True.
+        @param zlabel          The label of z values which apprears at the side of color bar.
+                               [default: None, meaning do not show a label of z values]
+        @param color           The color of scattered points. This color is also applied to linear
+                               regression if argument `linear_regression` is True. This parameter is 
+                               ignored when z is not None. In this case, the color of linear 
+                               regression is set to blue.
                                [default: None, meaning follow a matplotlib's default color]
         @param lim             The limit of axis. This can be specified explicitly by
-                               using tuples such as ((xmin, xmax), (ymin, ymax)),
-                               or if one passes int n, it calculate n-sigma limit around mean
+                               using tuples such as ((xmin, xmax), (ymin, ymax)), or ((xmin, xmax), 
+                               (ymin, ymax), (zmin, zmax)) if z is provided.
+                               If one passes int n, it calculate n-sigma limit around mean
                                for each of x-axis and y-axis.
                                [default: None, meaning do not set any limits]
         @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
@@ -655,29 +663,42 @@ class ScatterPlotSysTest(SysTest):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
 
-        # mask data with nan
-        sel = numpy.logical_and(numpy.invert(numpy.isnan(x)), numpy.invert(numpy.isnan(y)))
-        sel = numpy.logical_and(sel, numpy.invert(numpy.isnan(yerr))) if yerr is not None else sel
+        # mask data with nan. Emit a warning if an array has nan in it.
+        x_isnan = numpy.isnan(x)
+        y_isnan = numpy.isnan(y)
+        import warnings
+        if numpy.sum(x_isnan) != 0:
+            warnins.warn('There are %s nans in x, out of %s.' % (numpy.sum(x_isnan), len(x_isnan)))
+        if numpy.sum(y_isnan) != 0:
+            warnins.warn('There are %s nans in y, out of %s.' % (numpy.sum(y_isnan), len(y_isnan)))
+        sel = numpy.logical_and(numpy.invert(x_isnan), numpy.invert(y_isnan))
+        if yerr is not None:
+            yerr_isnan = numpy.isnan(yerr)
+            if numpy.sum(yerr_isnan) != 0:
+                warnins.warn('There are %s nans in yerr, out of %s.'
+                             % (numpy.sum(yerr_isnan), len(yerr_isnan)))
+            sel = numpy.logical_and(sel, numpy.invert(yerr_isnan))
+        if z is not None:
+            z_isnan = numpy.isnan(z)
+            if numpy.sum(z_isnan) != 0:
+                warnins.warn('There are %s nans in z, out of %s.'
+                             % (numpy.sum(z_isnan), len(z_isnan)))
+            sel = numpy.logical_and(sel, numpy.invert(z_isnan))
         x = x[sel]
         y = y[sel]
         yerr = yerr[sel] if yerr is not None else None
-
-        # plot
-        if yerr is None:
-            p = ax.plot(x, y, ".%s" % color)
-        else:
-            p = ax.errorbar(x, y, yerr, fmt=".%s" % color)
-        # store color for latter use
-        used_color = p[0].get_color()
-
-        # make axes ticks equal to each other if specified
-        if equal_axis:
-            ax.axis("equal")
+        z = z[sel] if z is not None else None
 
         # load axis limits if argument lim is ((xmin, xmax), (ymin, ymax))
         if isinstance(lim, tuple):
+            if z is None and len(lim) !=2:
+                raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)).')
+            elif z is not None and len(lim) !=3:
+                raise TypeError('lim should be ((xmin, xmax), (ymin, ymax), (zmin, zmax)).')
             xlim = lim[0]
             ylim = lim[1]
+            if z is not None:
+                zlim = lim[2]
         # calculate n-sigma limits around mean if lim is int
         elif isinstance(lim, int):
             nsigma = lim
@@ -687,11 +708,37 @@ class ScatterPlotSysTest(SysTest):
             mean = numpy.average(y)
             stddev = numpy.std(y)
             ylim = (mean - nsigma*stddev, mean + nsigma*stddev)
+            if z is not None:
+                mean = numpy.average(z)
+                stddev = numpy.std(z)
+                zlim = (mean - nsigma*stddev, mean + nsigma*stddev)
         # in other cases (except for the default value None), 
         # just raise a warning and silently keep going
         elif lim is not None:
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
                             '`int` to indicate n-sigma around mean.')
+
+        # plot
+        if z is None:
+            if yerr is None:
+                p = ax.plot(x, y, ".%s" % color)
+            else:
+                p = ax.errorbar(x, y, yerr, fmt=".%s" % color)
+            # store color for latter use
+            used_color = p[0].get_color()
+        else:
+            if yerr is not None:
+                plt.errorbar(x, y, yerr=yerr, linestyle="None", color = "k", zorder=0)
+            if lim is not None:
+                plt.scatter(x, y, c=z, vmin=zlim[0], vmax=zlim[1], zorder=1)
+            else:
+                plt.scatter(x, y, c=z, zorder=1)
+            cb = plt.colorbar()
+            used_color = "b"
+
+        # make axes ticks equal to each other if specified
+        if equal_axis:
+            ax.axis("equal")
 
         # set axis limits if specified
         if lim is not None:
@@ -755,6 +802,8 @@ class ScatterPlotSysTest(SysTest):
             ax.set_xlabel(xlabel)
         if ylabel is not None:
             ax.set_ylabel(ylabel)
+        if zlabel is not None:
+            cb.set_label(zlabel)
 
         fig.tight_layout()
 
@@ -800,13 +849,14 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd = False, color = '', lim=None):
+        lim = None
         if per_ccd:
             psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
                                                           array['g1'], yerr = array['g1_err'])
         else:
             psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
         return self.scatterPlot(psf_g1, g1, yerr=g1_err,
-                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
+                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}#_1$',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
 
