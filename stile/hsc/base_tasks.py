@@ -452,8 +452,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
             psf_sigma = numpy.sqrt(0.5*(psf_ixx+psf_iyy))
-            extra_mask = numpy.array([src.get('flux.psf.flags')==0 &
-                                 src.get('flux.psf.flags.psffactor')==0 for src in data])
+            extra_mask = numpy.array([src.get('flux.psf.flags')==0 for src in data])
         else:
             psf_g1 = None
             psf_g2 = None
@@ -490,8 +489,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         elif col=="mag_err":
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
                                                     for src in data]),
-                    numpy.array([src.get('flux.psf.flags')==0 &
-                                 src.get('flux.psf.flags.psffactor')==0 for src in data]))
+                    numpy.array([src.get('flux.psf.flags')==0 for src in data]))
         elif col=="mag":
             # From Steve Bickerton's helpful HSC butler documentation
             if calib_type=="fcr":
@@ -502,8 +500,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
             return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
-                    numpy.array([src.get('flux.psf.flags')==0 &
-                                 src.get('flux.psf.flags.psffactor')==0 for src in data]))
+                    numpy.array([src.get('flux.psf.flags')==0 for src in data]))
         elif col=="w":
             # Use uniform weights for now if we don't use shapes ("w" will be removed from the
             # list of columns if shapes are computed).
