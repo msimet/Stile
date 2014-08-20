@@ -710,7 +710,6 @@ class ScatterPlotSysTest(SysTest):
         elif lim is not None:
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
                             '`float` to indicate p%-percentile around median.')
-        import pdb; pdb.set_trace()
         # plot
         if z is None:
             if yerr is None:
@@ -783,8 +782,9 @@ class ScatterPlotSysTest(SysTest):
                     ax.plot(xtmp, numpy.zeros(xtmp.shape), "--k")
             elif hasattr(reference_line, '__call__'):
                 y = reference_line(xtmp)
-                if len(numpy.array(y).shape) != 1:
-                    raise TypeError('an object for reference_line should return a 1-d array')
+                if len(numpy.array(y).shape) != 1 or len(y) != len(xtmp):
+                    raise TypeError('an object for reference_line should return a 1-d array whose'
+                                    'size is the same as input')
                 ax.plot(xtmp, y, "--k")
             else:
                 raise TypeError("reference_line should be str 'one-to-one' or 'zero',"
