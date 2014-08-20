@@ -634,7 +634,7 @@ class ScatterPlotSysTest(SysTest):
                                [default: None, meaning do not show a label of x-axis]
         @param ylabel          The label of y-axis.
                                [default: None, meaning do not show a label of y-axis]
-        @param zlabel          The label of z values which apprears at the side of color bar.
+        @param zlabel          The label of z values which appears at the side of color bar.
                                [default: None, meaning do not show a label of z values]
         @param color           The color of scattered points. This color is also applied to linear
                                regression if argument `linear_regression` is True. This parameter is 
@@ -831,8 +831,8 @@ class ScatterPlotSysTest(SysTest):
 
     def getStatisticsPerCCD(self, ccds, x, y, yerr = None):
         """
-        Calculate average for x and y for each ccd.
-        @param ccd             NumPy array for ccd, an array in which each element indicates CCD ID
+        Calculate average for x and y for each CCD.
+        @param ccd             NumPy array for CCD, an array in which each element indicates CCD ID
                                of each data point.
         @param x               NumPy array for x.
         @param y               NumPy array for y.
