@@ -706,8 +706,7 @@ class ScatterPlotSysTest(SysTest):
             ylim = (numpy.percentile(y, 50.-0.5*p), numpy.percentile(y, 50.+0.5*p))
             if z is not None:
                 zlim = (numpy.percentile(z, 50.-0.5*p), numpy.percentile(z, 50.+0.5*p))
-        # in other cases (except for the default value None), 
-        # just raise a warning and silently keep going
+        # in other cases (except for the default value None), raise an exception
         elif lim is not None:
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
                             '`float` to indicate p%-percentile around median.')
