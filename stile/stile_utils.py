@@ -140,3 +140,12 @@ class Stats:
 
         return ret_str
 
+fieldNames = {
+    'g1': 'g1, a shear component in the ra direction',
+    'g2': 'g2, a shear component 45 degrees from the ra direction',
+    'sigma': 'a size parameter for objects with dimension [length] in arbitrary units',
+    'psf_g1': 'the g1 of the psf at the location of this object',
+    'psf_g2': 'the g2 of the psf at the location of this object',
+    'psf_sigma': 'the sigma of the psf at the location of this object',
+    'w': 'the weight to apply per object',
+    'z': 'the redshift of the object'}
