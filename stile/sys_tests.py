@@ -129,20 +129,20 @@ class CorrelationFunctionSysTest(SysTest):
                     b_field='<gamX>', b_title=r'$\langle \gamma_X \rangle$',
                     datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
                     datarandom_b_field='gamX_', datarandom_b_title='$\gamma_{X',
-                    sigma_field='sig', y_title="$\gamma$"),  #ng
+                    sigma_field='sigma', y_title="$\gamma$"),  #ng
         PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
                     t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$', 
                     b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$', 
                     sigma_field='sig_xi', y_title=r"$\xi$"),  #g2
         PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$', 
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
-                    sigma_field='sig', y_title="$\kappa$"),  # nk 
+                    sigma_field='sigma', y_title="$\kappa$"),  # nk 
         PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sig_xi', y_title=r"$\xi$"),  # k2 
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
                     b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
                     datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T', 
                     datarandom_b_field='kgamX_', datarandom_b_title=r'$\kappa \gamma_{X',
-                    sigma_field='sig', y_title="$\kappa\gamma$"),  # kg 
+                    sigma_field='sigma', y_title="$\kappa\gamma$"),  # kg 
         PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$', 
                     b_field='<Mx^2>', b_title=r'$\langle M_x^2\rangle$',
                     t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$', 
@@ -153,12 +153,41 @@ class CorrelationFunctionSysTest(SysTest):
                     sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
         ]
 
-    def getCF(self, stile_args, correlation_function_type, data=None, data2=None,
-                                     random=None, random2=None, save_config=False, **kwargs):
+    def makeCatalog(self, data, use_as_k=None, use_chip_coords=False):
+        if data is None or isinstance(data,treecorr.Catalog):
+            return data
+        catalog_kwargs = {}
+        fields = data.dtype.names
+        if 'ra' in fields and 'dec' in fields:
+            if not use_chip_coords:
+                catalog_kwargs['ra'] = data['ra']
+                catalog_kwargs['dec'] = data['dec']
+            elif 'x' in fields and 'y' in fields:
+                catalog_kwargs['x'] = data['x']
+                catalog_kwargs['y'] = data['y']
+            else:
+                raise ValueError('Chip coordinates requested, but "x" and "y" fields not found '
+                                 'in data')
+        elif 'x' in fields and 'y' in fields:
+            catalog_kwargs['x'] = data['x']
+            catalog_kwargs['y'] = data['y']
+        else:
+            raise ValueError("Data must contain (ra,dec) or (x,y) in order to do correlation "
+                             "function tests.")
+        if 'g1' in fields and 'g2' in fields:
+            catalog_kwargs['g1'] = data['g1']
+            catalog_kwargs['g2'] = data['g2']
+        if use_as_k:
+            if use_as_k in fields:
+                catalog_kwargs['k'] = data[use_as_k]
+        elif 'k' in fields:
+            catalog_kwargs['k'] = data['k']
+        return treecorr.Catalog(**catalog_kwargs)
+        
+    def getCF(self, stile_args, correlation_function_type, data, data2=None,
+                    random=None, random2=None, use_as_k = None, use_chip_coords=False, **kwargs):
         """
-        Sets up and calls corr2 on the given set of data.  The data files and random files can
-        be contained already in stile_args['corr2_kwargs'] or **kwargs, in which case passing None
-        to the `data` and `random` kwargs is fine; otherwise they should be properly populated.
+        Sets up and calls treecorr on the given set of data.  
         
         The user needs to specify the type of correlation function requested.  The available types
         are:
@@ -179,137 +208,40 @@ class CorrelationFunctionSysTest(SysTest):
         program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the 
         correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
         
-        Note: by default, the corr2 configuration files are written to the temp directory called by 
-        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass 
-        `save_config=True` and they will be written (as temp files probably beginning with "tmp") 
-        to your working directory, which shouldn't be automatically cleaned up.  
-        
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
                              'kg','m2','nm','norm') to request from corr2--see above.
-        @param data, data2, random, random2: data sets in the format requested by 
-                             corr2_utils.MakeCorr2FileKwargs().
+        @param data, data2, random, random2: NumPy arrays of data with fields using the field name
+                             strings given in the stile.fieldNames dict.
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file (will
                              silently supercede anything in stile_args).
         @returns             a numpy array of the corr2 outputs.
         """
         #TODO: know what kinds of data this needs and make sure it has it
         import tempfile
-        import subprocess
         import os
-        import copy
-        handles = []
+        handle, output_file = tempfile.mkstemp()
 
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
         # passed as a kwarg to that dict.
-        corr2_kwargs = stile.corr2_utils.AddCorr2Dict(stile_args)
-        corr2_kwargs.update(kwargs)
+        corr2_kwargs = stile.corr2_utils.PickTreeCorrKwargs(stile_args)
+        corr2_kwargs.update(stile.corr2_utils.PickTreeCorrKwargs(kwargs))
         treecorr.config.check_config(corr2_kwargs,corr2_valid_params)
 
-        if save_config:
-            handle, config_file = tempfile.mkstemp(dir='.')
-        else:
-            handle, config_file = tempfile.mkstemp()
-        handles.append(handle)
-        handle, output_file = tempfile.mkstemp()
-        handles.append(handle)
-        data = [treecorr.Catalog(ra=numpy.array([data['ra']]),dec=numpy.array([data['dec']]),config=corr2_kwargs)]
-        data2 = [treecorr.Catalog(ra=data2['ra']*treecorr.angle_units[corr2_kwargs['ra_units']],dec=data2['dec']*treecorr.angle_units[corr2_kwargs['dec_units']],g1=data2['g1'],g2=data2['g2'],config=corr2_kwargs)]
-        if save_config:
-            stile.corr2_utils.WriteCorr2ConfigurationFile(config_file,corr2_kwargs)
+        data = self.makeCatalog(data, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        data2 = self.makeCatalog(data2, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        random = self.makeCatalog(random, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        random2 = self.makeCatalog(random2, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
        
         func = corr2_func_dict[correlation_function_type](corr2_kwargs)
-        import cPickle
-        with open('quicko.p') as f:
-            func_orig = cPickle.load(f)
-        for key in func.__dict__.keys():
-            if key in func_orig.__dict__:
-                try:
-                    if func.__dict__[key]!=func_orig.__dict__[key] and key!="config":
-                        print key, func.__dict__[key], func_orig.__dict__[key], "norp"
-                except:
-                    if any(func.__dict__[key]!=func_orig.__dict__[key]):
-                        print key, func.__dict__[key], func_orig.__dict__[key], "norp"
-            else:
-                print key, "missing from func_orig"
-        for key in func_orig.__dict__.keys():
-            if key not in func.__dict__:
-                print key, "missing from func"
         func.process(data,data2)
-        with open('cat1.p') as f:
-            cat1 = cPickle.load(f)
-        with open('cat2.p') as f:
-            cat2 = cPickle.load(f)
-        for d,c in zip(data,cat1):
-            dd = d.__dict__
-            cd = c.__dict__
-            ddk = dd.viewkeys()
-            cdk = cd.viewkeys()
-            print ddk-cdk, cdk-ddk, "key diff1"
-            for key in ddk & cdk:
-                if cd[key]!=dd[key] and key!='config':
-                    print key, cd[key], dd[key], "catdiff1"
-            dc = d.config
-            cc = c.config
-            dck = dc.viewkeys()
-            cck = cc.viewkeys()
-            print dck-cck, cck-dck, "key diff1a"
-            for key in dck & cck:
-                if cc[key]!=dc[key]:
-                    print key, cc[key], dc[key], "catconfigdiff1"
-        for d,c in zip(data2,cat2):
-            dd = d.__dict__
-            cd = c.__dict__
-            ddk = dd.viewkeys()
-            cdk = cd.viewkeys()
-            print ddk-cdk, cdk-ddk, "key diff2"
-            for key in ddk & cdk:
-                try:
-                    if cd[key]!=dd[key] and key!='config':
-                        print key, cd[key], dd[key], "catdiff2"
-                except:
-                    if any(cd[key]!=dd[key]) and key!='config':
-                        print key, cd[key], dd[key], "catdiff2"
-            dc = d.config
-            cc = c.config
-            dck = dc.viewkeys()
-            cck = cc.viewkeys()
-            print dck-cck, cck-dck, "key diff2a"
-            for key in dck & cck:
-                if cc[key]!=dc[key]:
-                    print key, cc[key], dc[key], "catconfigdiff2"
-        with open('quick.p') as f:
-            func2 = cPickle.load(f)
-        for key in func.__dict__.keys():
-            if key in func2.__dict__:
-                try:
-                    if func.__dict__[key]!=func2.__dict__[key] and key!="config":
-                        print key, func.__dict__[key], func2.__dict__[key]
-                except:
-                    if any(func.__dict__[key]!=func2.__dict__[key]):
-                        print key, func.__dict__[key], func2.__dict__[key]
-            else:
-                print key, "missing from func2"
-        for key in func2.__dict__.keys():
-            if key not in func.__dict__:
-                print key, "missing from func"
-        c1 = func.config
-        c2 = func2.config
-        c1_keys = c1.viewkeys()
-        c2_keys = c2.viewkeys()
-        print c1_keys - c2_keys, c2_keys-c1_keys, "diff keys"
-        for key in c1_keys:
-            if c1[key]!=c2[key]:
-                print key, c1[key], c2[key], "configchecker"
-        
-        raise RuntimeError()
         func.write(output_file)
         results = stile.ReadCorr2ResultsFile(output_file)
-        
-        for handle in handles:
-            os.close(handle)
+        os.close(handle)
+        if os.path.isfile(output_file):
+            os.remove(output_file)
         return results
         
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
@@ -436,7 +368,7 @@ class GalaxyShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['galaxy lens', 'galaxy']
     required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
 
 class BrightStarShearSysTest(CorrelationFunctionSysTest):
@@ -448,7 +380,7 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star bright', 'galaxy']
     required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
 
 class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
@@ -460,7 +392,7 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'galaxy', 'star random', 'galaxy random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
 
 class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
@@ -472,7 +404,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'galaxy']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
 
 class StarXStarShearSysTest(CorrelationFunctionSysTest):
@@ -484,7 +416,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
@@ -496,7 +428,7 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     objects_list = ['galaxy', 'galaxy random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
 
 class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
@@ -508,7 +440,7 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'star random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
+    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
         return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
 
 
