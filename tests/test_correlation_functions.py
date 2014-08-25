@@ -45,63 +45,35 @@ class TestCorrelationFunctions(unittest.TestCase):
                            ("sig",float),("weight",float),("npairs",float)])
             
     def test_getCF(self):
-        """Test getCF() directly, and the two kinds of file specification."""
-        stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
-                                        'dec_units': 'degrees',
-                                        'min_sep': 0.05,
-                                        'max_sep': 1,
-                                        'sep_units': 'degrees',
-                                        'nbins': 20
-                                        } }
-        col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
+        """Test getCF() directly, without first processing by child classes."""
+        stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
+                      'sep_units': 'degrees', 'nbins': 20}
         cf = stile.sys_tests.CorrelationFunctionSysTest()
         dh = temp_data_handler()
-        results = cf.getCF(stile_args,'ng',None,None,
-                                            file_name='../examples/example_lens_catalog.dat',
-                                            file_name2='../examples/example_source_catalog.dat',
-                                            **col_kwargs)
+        lens_data = stile.ReadAsciiCatalog('../examples/example_lens_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        source_data = stile.ReadAsciiCatalog('../examples/example_source_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        results = cf.getCF(stile_args,'ng',lens_data,source_data)
         self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
         numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
-        kwargs = stile_args['corr2_kwargs']
-        stile_args['corr2_kwargs'] = {}
-        kwargs.update(col_kwargs)
-	del kwargs['file_name']
-	del kwargs['file_name2']
-        results2 = cf.getCF(stile_args,'ng',
-                                            file_name='../examples/example_lens_catalog.dat',
-                                            file_name2='../examples/example_source_catalog.dat',
-                                             **kwargs)
+        lens_catalog = treecorr.Catalog(ra=lens_data['ra'],dec=lens_data['dec'])
+        source_catalog = treecorr.Catalog(ra=source_data['ra'],dec=source_data['dec'],
+                                          g1=source_data['g1'],g2=source_data['g2'])
+        results2 = cf.getCF({},'ng',lens_catalog,source_catalog,**stile_args)
         numpy.testing.assert_equal(results,results2)
-        results2 = cf.getCF(stile_args,'ng',
-                                             data=('../examples/example_lens_catalog.dat',
-                                                   {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                             data2=('../examples/example_source_catalog.dat',
-                                                   {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                             **kwargs)
-        numpy.testing.assert_equal(results,results2)
-
-        # Then, test the tests that use .getCF().
-        realshear = stile.GalaxyShearSysTest()
-        results3 = realshear(stile_args,file_name='../examples/example_lens_catalog.dat',
-                                        file_name2='../examples/example_source_catalog.dat',
-                                        **kwargs)
-        numpy.testing.assert_equal(results,results3)
-        results3 = realshear(stile_args,data=('../examples/example_lens_catalog.dat',
-                                              {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                        data2=('../examples/example_source_catalog.dat',
-                                              {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                           **kwargs)
-        numpy.testing.assert_equal(results,results3)
-        self.assertRaises(subprocess.CalledProcessError,
+        # Missing necessary data file
+        self.assertRaises(MemoryError,
                           cf.getCF,{},'ng',
-                          file_name='../examples/example_lens_catalog.dat', **col_kwargs)
-        self.assertRaises(ValueError,cf.getCF,stile_args,'hello',
-                          file_name='../examples/example_lens_catalog.dat',
-                          file_name2='../examples/example_source_catalog.dat',
-                          **col_kwargs)
+                          file_name='../examples/example_lens_catalog.dat')
+        # Nonsensical correlation type
+        self.assertRaises(ValueError,cf.getCF,stile_args,'hello', lens_data, source_data)
+
+        # Then, test a test that uses .getCF().
+        realshear = stile.GalaxyShearSysTest()
+        results3 = realshear(stile_args,lens_data,source_data)
+        numpy.testing.assert_equal(results,results3)
     
 if __name__=='__main__':
-    print "Note: You may see some errors printed as we deliberately send wrong arguments to corr2.",
-    print "You do not need to worry about these as long as the Python script completes correctly."
     unittest.main()
 
