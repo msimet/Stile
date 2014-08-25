@@ -242,12 +242,12 @@ class CorrelationFunctionSysTest(SysTest):
         
         @param data       The data returned from a CorrelationFunctionSysTest, as-is.
         @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
-        @param log_yscale Whether to use a logarithmic y-scale (default: False)
-        @param plot_bmode Whether to plot the b-mode signal, if there is one (default: True)
+        @param log_yscale Whether to use a logarithmic y-scale [default: False]
+        @param plot_bmode Whether to plot the b-mode signal, if there is one [default: True]
         @param plot_data_only   Whether to plot the data-only correlation functions, if present
-                                (default: True)
+                                [default: True]
         @param plot_random_only Whether to plot the random-only correlation functions, if present
-                                (default: True)
+                                [default: True]
         @returns          A matplotlib Figure which may be written to a file with .savefig(), if
                           matplotlib can be imported; else None.
         """
@@ -619,41 +619,43 @@ class WhiskerPlotSysTest(SysTest):
                     keylength = 0.05, figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
         """
-        Draw a whisker plot plot and return a `matplotlib.figure.Figure` object.
-        This method has a bunch of options for controlling appearance of a plot, which is
+        Draw a whisker plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling the appearance of a plot, which are
         explained below. To implement a child class of WhiskerPlotSysTest, call whiskerPlot within
-        __call__ of the child class and return `matplotlib.figure.Figure` that whiskerPlot returns.
-        @param x               The tuple, list, or NumPy array for x-position of objects.
-        @param y               The tuple, list, or NumPy array for y-position of objects.
-        @param g1              The tuple, list, or Numpy array for 1st ellipticity component
+        __call__ of the child class and return the `matplotlib.figure.Figure` that whiskerPlot 
+        returns.
+        @param x               The tuple, list, or NumPy array for the x-position of objects.
+        @param y               The tuple, list, or NumPy array for the y-position of objects.
+        @param g1              The tuple, list, or Numpy array for the 1st ellipticity component
                                of objects.
-        @param g2              The tuple, list, or Numpy array for 2nd ellipticity component
+        @param g2              The tuple, list, or Numpy array for the 2nd ellipticity component
                                of objects.
-        @param size            The tuple, list, or Numpy array for size of objects. The size
+        @param size            The tuple, list, or Numpy array for the size of objects. The size
                                information is shown as color gradation.
                                [default: None, meaning do not show the size information]
         @param linewidth       Width of whiskers in units of inches.
                                [default: 0.01]
-        @param scale           Lenth of whisker per inch.
-                               [default: None, meaning follow default of an autoscaling algorithm by 
-                               matplotlib ]
+        @param scale           Length of whisker per inch.
+                               [default: None, meaning follow the default autoscaling algorithm from
+                               matplotlib]
         @param keylength       Length of a key.
                                [default: 0.05]
         @param figsize         Size of a figure (x, y) in units of inches.
                                [default: None, meaning use the default value of matplotlib]
-        @param xlabel          The label of x-axis.
-                               [default: None, meaning do not show a label of x-axis]
-        @param ylabel          The label of y-axis.
-                               [default: None, meaning do not show a label of y-axis]
-        @param size_label      The label of size whihc is shown at the right of color bar.
-                               [default: None, meaning do not show a label of size]
-        @param xlim            Limit of x-axis (min, max). 
+        @param xlabel          The x-axis label.
+                               [default: None, meaning do not show a label for the x-axis]
+        @param ylabel          The y-axis label.
+                               [default: None, meaning do not show a label for the y-axis]
+        @param size_label      The label for `size`, which is shown at the right of the color bar.
+                               [default: None, meaning do not show a size label]
+        @param xlim            Limits of x-axis (min, max). 
                                [default: None, meaning do not set any limits for x]
-        @param ylim            Limit of y-axis (min, max). 
+        @param ylim            Limits of y-axis (min, max). 
                                [default: None, meaning do not set any limits for y]
-        @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
+        @equal_axis            If True, force equal scaling for the x and y axes (distance between
+                               ticks of the same numerical values are equal on the x and y axes).
                                [default: False]
-        @ returns a matplotlib.figure.Figure object
+        @returns a matplotlib.figure.Figure object.
         """
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
