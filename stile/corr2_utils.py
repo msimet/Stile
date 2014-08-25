@@ -168,8 +168,8 @@ def PickTreeCorrKeys(input_dict):
         corr2_dict = input_dict['corr2_kwargs']
     else:
         corr2_dict = {}
-    for key in corr2_kwargs:
-        if key in corr2_valid_params:
+    for key in corr2_valid_params:
+        if key in input_dict:
             corr2_dict[key] = input_dict[key]
     return corr2_dict
     

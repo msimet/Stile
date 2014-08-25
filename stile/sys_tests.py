@@ -224,8 +224,8 @@ class CorrelationFunctionSysTest(SysTest):
 
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
         # passed as a kwarg to that dict.
-        corr2_kwargs = stile.corr2_utils.PickTreeCorrKwargs(stile_args)
-        corr2_kwargs.update(stile.corr2_utils.PickTreeCorrKwargs(kwargs))
+        corr2_kwargs = stile.corr2_utils.PickTreeCorrKeys(stile_args)
+        corr2_kwargs.update(stile.corr2_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(corr2_kwargs,corr2_valid_params)
 
         data = self.makeCatalog(data, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
