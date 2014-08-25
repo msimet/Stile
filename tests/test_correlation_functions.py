@@ -4,6 +4,7 @@ import numpy
 import subprocess
 import helper
 import unittest
+import treecorr
 
 try:
     import stile
@@ -41,8 +42,8 @@ class TestCorrelationFunctions(unittest.TestCase):
                     (6.877e-01, 6.877e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00),
                     (7.988e-01, 7.988e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00),
                     (9.278e-01, 9.278e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00)],
-                    dtype=[("R_nominal",float),("<R>",float),("<gamT>",float),("<gamX>",float),
-                           ("sig",float),("weight",float),("npairs",float)])
+                    dtype=[("R_nom",float),("<R>",float),("<gamT>",float),("<gamX>",float),
+                           ("sigma",float),("weight",float),("npairs",float)])
             
     def test_getCF(self):
         """Test getCF() directly, without first processing by child classes."""
@@ -50,19 +51,19 @@ class TestCorrelationFunctions(unittest.TestCase):
                       'sep_units': 'degrees', 'nbins': 20}
         cf = stile.sys_tests.CorrelationFunctionSysTest()
         dh = temp_data_handler()
-        lens_data = stile.ReadAsciiCatalog('../examples/example_lens_catalog.dat',
+        lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
                     fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
-        source_data = stile.ReadAsciiCatalog('../examples/example_source_catalog.dat',
+        source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
                     fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
-        results = cf.getCF(stile_args,'ng',lens_data,source_data)
-        self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
-        numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
-        lens_catalog = treecorr.Catalog(ra=lens_data['ra'],dec=lens_data['dec'])
+        lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),dec=numpy.array([lens_data['dec']]), ra_units='degrees', dec_units='degrees')
         source_catalog = treecorr.Catalog(ra=source_data['ra'],dec=source_data['dec'],
-                                          g1=source_data['g1'],g2=source_data['g2'])
-        results2 = cf.getCF({},'ng',lens_catalog,source_catalog,**stile_args)
-        numpy.testing.assert_equal(results,results2)
+                                          g1=source_data['g1'],g2=source_data['g2'], ra_units='degrees', dec_units='degrees')
+        results = cf.getCF({},'ng',lens_catalog,source_catalog,**stile_args)
+        numpy.testing.assert_almost_equal(*helper.FormatSame(results,self.expected_result))
+        results2 = cf.getCF(stile_args,'ng',lens_data,source_data)
+        self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
         # Missing necessary data file
+        numpy.testing.assert_equal(results,results2)
         self.assertRaises(MemoryError,
                           cf.getCF,{},'ng',
                           file_name='../examples/example_lens_catalog.dat')

@@ -153,7 +153,7 @@ class CorrelationFunctionSysTest(SysTest):
                     sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
         ]
 
-    def makeCatalog(self, data, use_as_k=None, use_chip_coords=False):
+    def makeCatalog(self, data, config=None, use_as_k=None, use_chip_coords=False):
         if data is None or isinstance(data,treecorr.Catalog):
             return data
         catalog_kwargs = {}
@@ -182,6 +182,13 @@ class CorrelationFunctionSysTest(SysTest):
                 catalog_kwargs['k'] = data[use_as_k]
         elif 'k' in fields:
             catalog_kwargs['k'] = data['k']
+        # Quirk of length-1 formatted arrays: the fields will be floats, not 
+        # arrays, which would break the Catalog init.
+        if not hasattr(data,'len') and isinstance(data,numpy.ndarray): 
+            for key in catalog_kwargs:
+                catalog_kwargs[key] = numpy.array([catalog_kwargs[key]])
+        catalog_kwargs['config'] = config
+	print config
         return treecorr.Catalog(**catalog_kwargs)
         
     def getCF(self, stile_args, correlation_function_type, data, data2=None,
@@ -228,10 +235,10 @@ class CorrelationFunctionSysTest(SysTest):
         corr2_kwargs.update(stile.corr2_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(corr2_kwargs,corr2_valid_params)
 
-        data = self.makeCatalog(data, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
-        data2 = self.makeCatalog(data2, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
-        random = self.makeCatalog(random, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
-        random2 = self.makeCatalog(random2, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        data = self.makeCatalog(data, config=corr2_kwargs, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        data2 = self.makeCatalog(data2, config=corr2_kwargs, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        random = self.makeCatalog(random, config=corr2_kwargs, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
+        random2 = self.makeCatalog(random2, config=corr2_kwargs, use_as_k = use_as_k, use_chip_coords = use_chip_coords)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
        
@@ -240,8 +247,9 @@ class CorrelationFunctionSysTest(SysTest):
         func.write(output_file)
         results = stile.ReadCorr2ResultsFile(output_file)
         os.close(handle)
-        if os.path.isfile(output_file):
-            os.remove(output_file)
+        print output_file
+#        if os.path.isfile(output_file):
+#            os.remove(output_file)
         return results
         
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
