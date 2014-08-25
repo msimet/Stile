@@ -74,7 +74,8 @@ class ConfigDataHandler(DataHandler):
     def __init__(self,stile_args):
         if 'config_file' in stile_args:
             config = self.loadConfig('config_file')
-            stile_args.update(config)
+            config.update(stile_args)
+            stile_args = config
         self.data_files = self.parseFiles(stile_args)
         self.stile_args = stile_args
         pass
@@ -103,16 +104,25 @@ class ConfigDataHandler(DataHandler):
         return config
     
     def parseFiles(self,stile_args):
+        """
+        Process the arguments from the config file/command line that tell Stile which data files
+        to use and how to use them.
+        """
+        # Get the 'group' and 'wildcard' keys, which indicate whether to try to match star & galaxy
+        # etc files or to expand wildcards in filenames
         group = stile_utils.PopAndCheckFormat(stile_args,'group',bool,default=True)
         wildcard = stile_utils.PopAndCheckFormat(stile_args,'wildcard',bool,default=False)
         keys = sorted(stile_args.keys())
         file_list = []
         n = 0
         for key in keys:
+            # Pull out the file arguments and process them
             if key[:4]=='file' and key!='file_reader':
                 file_obj = stile_args.pop(key)
                 new_file_list, n = self._parseFileHelper(file_obj,start_n=n)
                 file_list.append(new_file_list)
+        # Now, update the file list with global arguments if lower levels didn't already override
+        # them
         fields = stile_utils.PopAndCheckFormat(stile_args,'fields',(list,dict),default=[])
         if fields:
             file_list = self.addKwarg('fields',fields,file_list)
@@ -123,13 +133,18 @@ class ConfigDataHandler(DataHandler):
         file_reader = stile_utils.PopAndCheckFormat(stile_args,'file_reader',(str,dict),default='')
         if file_reader:
             file_list = self.addKwarg('file_reader',file_reader,file_list)
+        # Clean up the grouping keywords and group names
         self.files, self.groups = self._fixGroupings(file_list)
         return self.files, self.groups # Return for checking purposes, mainly
         
     def _parseFileHelper(self,files,start_n=0):
+        # Recurse through all the levels of the current file arg
         if isinstance(files,dict):
+            # This is a nested dict, so recurse down through it and turn it into a list of dicts
+            # instead.
             files = self._recurseDict(files)
         else:
+            # If it's already a list, check that it's a list of dicts
             if not hasattr(files,'__iter__'):
                 raise ValueError('file config keyword must be a list or dict: got %s of type %s'%(
                                     files,type(files)))
@@ -137,8 +152,11 @@ class ConfigDataHandler(DataHandler):
                 if not isinstance(file,dict):
                     raise ValueError('If file parameter is a list, each element must be a dict.  '+
                         'Got %s of type %s instead.'%(file,type(file)))
-                file['group'] = file.get('group',False)
+                # We don't group lists unless specifically instructed, so set that keyword
+                file['group'] = file.get('group',False) 
         for item in files:
+            # Check for proper formatting and all relevant keywords, plus expand wildcards if 
+            # requested
             if not isinstance(item,dict):
                 raise ValueError('Expected a list of dicts. Either the config file was in error, '
                                  'or the Stile processing failed.  Current state of "files" '
@@ -147,13 +165,8 @@ class ConfigDataHandler(DataHandler):
             if not all([format_key in item for format_key in format_keys]):
                 raise ValueError('Got file item %s missing one of the required format keywords %s'%
                                     (item,format_keys))
-            # Okay, this is a dict; either it's a list member and the format will come from 
-            # the kwargs, or it's a standalone dict.  Technically it can be somewhere in 
-            # between--it doesn't really matter for this processing, so I'm not going to
-            # *advertise* that you can switch in the middle, but it doesn't really matter.
-            # Apart from some trickery of updating dicts instead of just adding 'name', this
-            # code is doing the same thing as the same as the previous code block.
             item['name'] = self._expandWildcard(item)
+        # Clean up formatting
         return_list, n = self._group(files,start_n)
         return_val = self._formatFileList(return_list)
         return return_val, n
@@ -161,15 +174,25 @@ class ConfigDataHandler(DataHandler):
     def _recurseDict(self,files,**kwargs):
         format_keys = ['epoch','extent','data_format','object_type']
 
+        # First things first: if this is a list, we've recursed through all the levels of the dict.
+        # The kwargs contain the format keys from all the superior levels, so we'll update with
+        # the things contained in this list and return a list of dicts that isn't nested any more.
         if isinstance(files,list):
             if all([format_key in kwargs for format_key in format_keys]):
                 if not kwargs: # This means it's a top-level list of dicts and shouldn't be grouped
                     pass_kwargs = {'group': False}
                 elif kwargs.get('epoch')=='multiepoch':
+                    # Multiepoch files come in a set, so we can't turn them into single items the
+                    # way we do with coadds & single epoch files.
                     if isinstance(files,dict):
+                        # Copy the kwargs, then update with the stuff in this dict (which should
+                        # override higher levels).
                         pass_kwargs = copy.deepcopy(kwargs)
                         pass_kwargs.update(files)
                     elif isinstance(files,(list,tuple)):
+                        # Okay.  It's a list of files.  If each item of the list is itself iterable,
+                        # then we can split the list up; if none of them are iterable, it's a set
+                        # that should be analyzed together.  Anything else is an error.
                         iterable = [hasattr(item,'__iter__') for item in files]
                         if all(iterable):
                             return_list = []
@@ -193,6 +216,8 @@ class ConfigDataHandler(DataHandler):
                                           files+'. Should be an iterable, or an iterable of '+
                                          'iterables.')
                 else:
+                    # This one's easier, just recurse if the file list is iterable or else return
+                    # the item.
                     return_list = []
                     for file in files:
                         pass_kwargs = copy.deepcopy(kwargs)
@@ -205,6 +230,8 @@ class ConfigDataHandler(DataHandler):
             else:
                 raise ValueError('File description does not include all format keywords: %s, %s'%(files,kwargs))
             
+        # We didn't hit the previous "if" statement, so this is a dict.  Check for the non-format-
+        # related keywords and add them...
         return_list = []
         
         pass_kwargs = copy.deepcopy(kwargs)
@@ -219,6 +246,7 @@ class ConfigDataHandler(DataHandler):
         if 'file_reader' in files:
             pass_kwargs['file_reader'] = files.get('file_reader')
         
+        # Now, if there are format keywords, recurse through them, removing the keys as we go.
         keys = files.keys()
         for name, default in zip(format_keys,
                                  [stile_utils.epochs,stile_utils.extents,
@@ -231,6 +259,7 @@ class ConfigDataHandler(DataHandler):
                     new_files = files.pop(key)
                     pass_kwargs[name] = key
                     return_list += self._recurseDict(new_files,**pass_kwargs)
+        # If there are keys left, it might be a single dict describing one file; check for that.
         if files:
             if any([format_key in files for format_key in format_keys]) and 'name' in files:
                 if all([format_key in files or format_key in kwargs for format_key in format_keys]):
