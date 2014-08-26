@@ -312,8 +312,6 @@ class CorrelationFunctionSysTest(SysTest):
             nrows = 1 + plot_data_only + plot_random_only
         else:
             nrows = 1
-        if 'sigma' in fields and pd.sigma_field=='sig':
-            pd.sigma_field='sigma'
         # Plot the first thing
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
