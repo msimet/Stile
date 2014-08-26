@@ -126,11 +126,11 @@ class CorrelationFunctionSysTest(SysTest):
         PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
                     t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$', 
                     b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$', 
-                    sigma_field='sig_xi', y_title=r"$\xi$"),  #g2
+                    sigma_field='sigma_xi', y_title=r"$\xi$"),  #g2
         PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$', 
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
                     sigma_field='sigma', y_title="$\kappa$"),  # nk 
-        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sig_xi', y_title=r"$\xi$"),  # k2 
+        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2 
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
                     b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
                     datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T', 
@@ -303,8 +303,9 @@ class CorrelationFunctionSysTest(SysTest):
         fig.subplots_adjust(hspace=0)  # no space between stacked plots
         plt.subplots(sharex=True)  # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
-        plot_data_only &= pd.datarandom_t_field+'d' in fields
-        plot_random_only &= pd.datarandom_t_field+'r' in fields
+        if pd.datarandom_t_field:
+            plot_data_only &= pd.datarandom_t_field+'d' in fields
+            plot_random_only &= pd.datarandom_t_field+'r' in fields
         if plot_bmode and pd.b_field and pd.t_im_field:
             nrows = 2
         elif pd.datarandom_t_field:
