@@ -72,10 +72,10 @@ def Parser():
                    dest='w_col')
     p.add_argument('--flip_g1',
                    help="Flip the sign of g1 (default: False)",
-                   dest='flip_g1',default=False)
+                   dest='flip_g1', default=False)
     p.add_argument('--flip_g2',
                    help="Flip the sign of g2 (default: False)",
-                   dest='flip_g2',default=False)
+                   dest='flip_g2', default=False)
     p.add_argument('--project',
                    help="TreeCorr argument: use a tangent-plane projection instead of curved-sky "+
                         "(this is a negligible performance improvement, and not recommended)",
@@ -117,7 +117,7 @@ def Parser():
                         "of the aperture mass statistic in TreeCorr (see TreeCorr Read.me for "+
                         "more info)",
                    dest='m2_uform')
-    p.add_argument('-v','--verbose',
+    p.add_argument('-v', '--verbose',
                    help="Level of verbosity",
                    dest='verbose')
     p.add_argument('--num_threads',
@@ -128,20 +128,20 @@ def Parser():
                    help="One of 'mean', 'median', or 'middle', directing TreeCorr how to split the "
                         "tree into child nodes. (default: 'mean')",
                    dest='split_method')
-    return p                   
+    return p
 
 
 def ReadTreeCorrResultsFile(file_name):
     """
-    Read in the given `file_name`.  Cast it into a formatted numpy array with the appropriate 
+    Read in the given `file_name`.  Cast it into a formatted numpy array with the appropriate
     fields and return it.
-    
+
     @param file_name The location of an output file from TreeCorr.
     @returns         A numpy array corresponding to the data in `file_name`.
-    """    
+    """
     import stile_utils
     output = file_io.ReadASCIITable(file_name, comments='#')
-    
+
     if not len(output):
         raise RuntimeError('File %s (supposedly an output from TreeCorr) is empty.'%file_name)
     # Now, the first line of the TreeCorr output file is of the form:
@@ -151,18 +151,18 @@ def ReadTreeCorrResultsFile(file_name):
         fields = f.readline().split()
     fields = fields[1:]
     fields = [field for field in fields if field!='.']
-    return stile_utils.FormatArray(output,fields=fields)
+    return stile_utils.FormatArray(output, fields=fields)
 
 def PickTreeCorrKeys(input_dict):
     """
-    Take an `input_dict`, harvest the kwargs you'll need for TreeCorr, and return a dict containing 
+    Take an `input_dict`, harvest the kwargs you'll need for TreeCorr, and return a dict containing
     these values.  This is useful if you have a parameters dict that contains some things TreeCorr
     might want, but some other keys that shouldn't be used by it.
-    
-    @param input_dict A dict containing some (key,value) pairs that apply to TreeCorr.
-    @returns          A dict containing the (key,value) pairs from input_dict that apply to 
+
+    @param input_dict A dict containing some (key, value) pairs that apply to TreeCorr.
+    @returns          A dict containing the (key, value) pairs from input_dict that apply to
                       TreeCorr.
-    """    
+    """
     if not input_dict:
         return {}
     if 'treecorr_kwargs' in input_dict:
@@ -173,4 +173,3 @@ def PickTreeCorrKeys(input_dict):
         if key in input_dict:
             treecorr_dict[key] = input_dict[key]
     return treecorr_dict
-    

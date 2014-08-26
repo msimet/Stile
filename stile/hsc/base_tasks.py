@@ -1,6 +1,6 @@
 """ base_tasks.py
 Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
-described by Stile.  At the moment, we use some functionality that is only available on the HSC 
+described by Stile.  At the moment, we use some functionality that is only available on the HSC
 side of the pipeline, but eventually this will be usable for both.
 """
 
@@ -28,7 +28,7 @@ import stile.lsst.base_tasks
 root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
 =======================================================
 
-and then adding an option 
+and then adding an option
 -C config.py
 to the command line.
 
@@ -51,7 +51,7 @@ class SysTestData(object):
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
+                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear"])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
@@ -69,7 +69,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                    'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
     # Generate a list of flag columns to be used in the ._computeShapeMask() method for objects
     # where we have shape information
-    shape_flags = lsst.pex.config.ListField(dtype=str, 
+    shape_flags = lsst.pex.config.ListField(dtype=str,
         doc="Flags that indicate failures for shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
                    'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted',
@@ -103,11 +103,11 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, ccd) identifier for filename.
         # This part will be updated by Jim on branch "#20".
-        # The directory is 
+        # The directory is
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
         # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
         src_filename = (dataRef.get("src_filename", immediate=True)[0]).replace('_parent/','')
-        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        dir = os.path.join(src_filename.split('output')[0], "stile_output")
         if os.path.exists(dir) == False:
             os.makedirs(dir)
         filename_chip = "-%07d-%03d" % (dataRef.dataId["visit"], dataRef.dataId["ccd"])
@@ -142,7 +142,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     shape_masks.append(self._computeShapeMask(catalog))
                 else:
                     shape_masks.append(True)
-            sys_test_data.mask_list = [numpy.logical_and(mask, shape_mask) 
+            sys_test_data.mask_list = [numpy.logical_and(mask, shape_mask)
                 for mask, shape_mask in zip(sys_test_data.mask_list, shape_masks)]
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.
@@ -179,8 +179,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Remove objects which have certain flags we consider unrecoverable failures for weak lensing.
         Currently set to be quite conservative--we may want to relax this in the future.  The actual
-        flags are set in the config object for this class and can be accessed as the variable 
-        self.config.flags.  They can be altered on the command line or via configuration files as 
+        flags are set in the config object for this class and can be accessed as the variable
+        self.config.flags.  They can be altered on the command line or via configuration files as
         described in the parser help.
 
         @param catalog A source catalog pulled from the LSST pipeline.
@@ -274,7 +274,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             for nm in nan_masks[1:]:
                 nan_mask = numpy.logical_or(nan_mask, nm)
             nan_and_col_mask = numpy.logical_and(nan_mask, mask)
-            # We will have to transform to sky coordinates if the locations are in (ra,dec).  This
+            # We will have to transform to sky coordinates if the locations are in (ra, dec).  This
             # is the more common case, so we only use CCD coordinates if explicitly requested.
             if 'x' in cols or 'y' in cols:
                 sky_coords = False
@@ -310,7 +310,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
-        masks = [numpy.array([src.get(flag)==False for src in data]) 
+        masks = [numpy.array([src.get(flag)==False for src in data])
                  for flag in self.config.shape_flags]
         mask = masks[0]
         for new_mask in masks[1:]:
@@ -325,11 +325,11 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @param data       An LSST source catalog whose shape moments you would like to retrieve.
         @param calib      The metadata from a calibrated exposure ('calexp_md' or 'fcr_md').  If
                           `sky_coords=False` (see below) this can be None.
-        @param do_shape   A bool indicating whether to compute (g1,g2,sigma).
-        @param do_err     A bool indicating whether to compute (g1_err,g2_err,sigma_err).
-        @param do_psf     A bool indicating whether to compute (psf_g1,psf_g2,psf_sigma).
+        @param do_shape   A bool indicating whether to compute (g1, g2, sigma).
+        @param do_err     A bool indicating whether to compute (g1_err, g2_err, sigma_err).
+        @param do_psf     A bool indicating whether to compute (psf_g1, psf_g2, psf_sigma).
         @param sky_coords If True, compute the moments in ra, dec coordinates; else compute in
-                          native coordinates (x,y for CCD).
+                          native coordinates (x, y for CCD).
         @returns          A tuple consisting of:
                               - A dict whose keys are column names ('g1', 'psf_sigma', etc) and
                                 whose values are a NumPy array of those quantities
@@ -368,7 +368,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                         cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
                                       (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
                         cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
-                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] + 
+                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
                                       (lt[0,1]*lt[1,1])**2*cov[1,1])
                 else:
                     cov_ixx = covariances[:,0,0]
@@ -407,7 +407,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                         cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
                                       (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
                         cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
-                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] + 
+                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
                                       (lt[0,1]*lt[1,1])**2*cov[1,1])
                 else:
                     cov_ixx = covariances[:,0,0]
@@ -442,7 +442,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dsigma_dixx = 0.25/sigma
             dsigma_diyy = 0.25/sigma
             sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
-            w = numpy.maximum(g1_err,g2_err)
+            w = numpy.maximum(g1_err, g2_err)
             w = 1./(0.36**2+w**2)
         else:
             g1_err = None
@@ -574,7 +574,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     # Set the default systematics tests for the visit level.  Some keys (eg "flags", "shape_flags")
     # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
+                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear"])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
@@ -616,14 +616,14 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, chip) identifier for filename.
         # This part will be updated by Jim on branch "#20".
-        # The directory is 
+        # The directory is
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
         # The filename has a visit identifier -%(visit)07d-[ccds], where [ccds] is a reduced form
         # of a CCD list, e.g., if a CCD list is [0, 1, 2, 4, 5, 8, 10],
         # [ccds] becomes 0..2^4..5^8^10.
-        src_filename = (dataRefList[0].get("src_filename", 
+        src_filename = (dataRefList[0].get("src_filename",
                                            immediate=True)[0]).replace('_parent/','')
-        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        dir = os.path.join(src_filename.split('output')[0], "stile_output")
         if os.path.exists(dir) == False:
             os.makedirs(dir)
         ccds = [dataRef.dataId['ccd'] for dataRef in dataRefList]
@@ -696,7 +696,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             results = sys_test(self.config, *new_catalogs)
             fig = sys_test.sys_test.plot(results)
             fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
-            
+
     def makeArray(self, catalog_dict):
         """
         Take a dict whose keys contain lists of NumPy arrays which will concatenate to the same

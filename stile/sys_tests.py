@@ -18,12 +18,12 @@ except ImportError:
 # Silly class so we can call savefig() on something returned from a plot() class that doesn't
 # actually do anything.
 class PlotNone(object):
-    def savefig(self,filename):
+    def savefig(self, filename):
         pass
-    
+
 class SysTest:
     """
-    A SysTest is a lensing systematics test of some sort.  It should define the following 
+    A SysTest is a lensing systematics test of some sort.  It should define the following
     attributes:
         short_name: a string that can be used in filenames to denote this systematics test
         long_name: a string to denote this systematics test within program text outputs
@@ -33,9 +33,9 @@ class SysTest:
              'galaxy lens',     # only galaxies to be used as lenses in galaxy-galaxy lensing tests,
              'star PSF',        # stars used in PSF determination,
              'star bright',     # especially bright stars,
-             'galaxy random',   # random catalogs with the same spatial distribution as the 
+             'galaxy random',   # random catalogs with the same spatial distribution as the
              'star random']     # 'galaxy' or 'star' samples.
-        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that 
+        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that
             should be given for the corresponding object from the objects_list.  We expect the
             quantities to be from the list:
             ['ra', 'dec',       # Position on the sky
@@ -44,9 +44,9 @@ class SysTest:
              'sigma', 'sigma_err', # Object size and its error
              'w',               # Per-object weight
              'psf_g1', 'psf_g2', 'psf_sigma'] # PSF shear and size at the object location
-    
+
     It should define the following methods:
-        __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs): 
+        __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
             Run a test on a set of data, or a test involving two data sets data and data2, with
             optional corresponding randoms random and random2.  Keyword args can be in a dict passed
             to `config` or as explicit kwargs.  Explicit kwargs should override `config` arguments.
@@ -59,16 +59,16 @@ class SysTest:
         raise NotImplementedError()
     def plot(self, results):
         """
-        If the results returned from the __call__() function of this class have a .savefig() 
-        method, return that object.  Otherwise, return an object with a .savefig() method that 
-        doesn't do anything.  plot() should be overridden by child classes to actually generate 
+        If the results returned from the __call__() function of this class have a .savefig()
+        method, return that object.  Otherwise, return an object with a .savefig() method that
+        doesn't do anything.  plot() should be overridden by child classes to actually generate
         plots if desired.
         """
-        if hasattr(results,'savefig'):
+        if hasattr(results, 'savefig'):
             return results
         else:
             return PlotNone()
-        
+
 class PlotDetails(object):
     """
     A container class to hold details about field names, titles for legends, and y-axis labels for
@@ -81,7 +81,7 @@ class PlotDetails(object):
                  sigma_field=None, y_title=None):
         self.t_field = t_field  # Field of t-mode/+-mode shear correlation functions
         self.t_title = t_title  # Legend title for previous line
-        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions 
+        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions
         self.b_title = b_title  # Legend title for previous line
         self.t_im_field = t_im_field  # Imaginary part of t-mode/+-mode
         self.t_im_title = t_im_title  # Legend title for previous line
@@ -108,46 +108,46 @@ treecorr_func_dict = {'g2': treecorr.G2Correlation,
 class CorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-    class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact 
-    arguments to this method should be created by child classes of CorrelationFunctionSysTest; see 
-    the docstring for CorrelationFunctionSysTest.getCF() for information on how to write further 
+    class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact
+    arguments to this method should be created by child classes of CorrelationFunctionSysTest; see
+    the docstring for CorrelationFunctionSysTest.getCF() for information on how to write further
     tests using it.
     """
     short_name = 'corrfunc'
-    # Set the details (such as field names and titles) for all the possible plots generated by 
+    # Set the details (such as field names and titles) for all the possible plots generated by
     # TreeCorr
-    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$', 
+    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$',
                                 sigma_field='sig_omega', y_title="$\omega$"),  # n2
-        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$', 
+        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$',
                     b_field='<gamX>', b_title=r'$\langle \gamma_X \rangle$',
                     datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
                     datarandom_b_field='gamX_', datarandom_b_title='$\gamma_{X',
-                    sigma_field='sigma', y_title="$\gamma$"),  #ng
+                    sigma_field='sigma', y_title="$\gamma$"),  # ng
         PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
-                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$', 
-                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$', 
-                    sigma_field='sigma_xi', y_title=r"$\xi$"),  #g2
-        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$', 
+                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$',
+                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$',
+                    sigma_field='sigma_xi', y_title=r"$\xi$"),  # g2
+        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
-                    sigma_field='sigma', y_title="$\kappa$"),  # nk 
-        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2 
+                    sigma_field='sigma', y_title="$\kappa$"),  # nk
+        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
                     b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
-                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T', 
+                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
                     datarandom_b_field='kgamX_', datarandom_b_title=r'$\kappa \gamma_{X',
-                    sigma_field='sigma', y_title="$\kappa\gamma$"),  # kg 
-        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$', 
+                    sigma_field='sigma', y_title="$\kappa\gamma$"),  # kg
+        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$',
                     b_field='<Mx^2>', b_title=r'$\langle M_x^2\rangle$',
-                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$', 
+                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$',
                     b_im_field='<Mmx>(b)', b_im_title=r'$\langle MM_x \rangle(b)$',
                     sigma_field='sig_map', y_title="$M_{ap}^2$"),  # m2
-        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$', 
+        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$',
                     b_field='<NMx>', b_title=r'$\langle NM_{x} \rangle$',
                     sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
         ]
 
     def makeCatalog(self, data, config=None, use_as_k=None, use_chip_coords=False):
-        if data is None or isinstance(data,treecorr.Catalog):
+        if data is None or isinstance(data, treecorr.Catalog):
             return data
         catalog_kwargs = {}
         fields = data.dtype.names
@@ -175,23 +175,23 @@ class CorrelationFunctionSysTest(SysTest):
                 catalog_kwargs['k'] = data[use_as_k]
         elif 'k' in fields:
             catalog_kwargs['k'] = data['k']
-        # Quirk of length-1 formatted arrays: the fields will be floats, not 
+        # Quirk of length-1 formatted arrays: the fields will be floats, not
         # arrays, which would break the Catalog init.
         try:
             len(data)
         except:
-            if not hasattr(data,'len') and isinstance(data,numpy.ndarray): 
+            if not hasattr(data, 'len') and isinstance(data, numpy.ndarray):
                 for key in catalog_kwargs:
                     catalog_kwargs[key] = numpy.array([catalog_kwargs[key]])
         catalog_kwargs['config'] = config
         return treecorr.Catalog(**catalog_kwargs)
-        
+
     def getCF(self, correlation_function_type, data, data2=None,
-                    random=None, random2=None, use_as_k = None, use_chip_coords=False, 
+                    random=None, random2=None, use_as_k = None, use_chip_coords=False,
                     config=None, **kwargs):
         """
-        Sets up and calls treecorr on the given set of data.  
-        
+        Sets up and calls treecorr on the given set of data.
+
         The user needs to specify the type of correlation function requested.  The available types
         are:
             'n2': a 2-point correlation function
@@ -203,20 +203,20 @@ class CorrelationFunctionSysTest(SysTest):
             'm2': an aperture mass measurement
             'nm': an <N aperture mass> measurement
             'norm': 'nm' properly normalized by the average values of n and aperture mass to return
-                    something like a correlation coefficient. 
+                    something like a correlation coefficient.
         More details can be found in the Readme.md for TreeCorr.
-        
-        This function accepts all (self-consistent) sets of data, data2, random, and random2.  
-        Including "data2" and possibly "random2" will return a cross-correlation; otherwise the 
-        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the 
+
+        This function accepts all (self-consistent) sets of data, data2, random, and random2.
+        Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
+        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the
         correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
-        
+
         @param stile_args    The dict containing the parameters that control Stile's behavior
-        @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
-                             'kg','m2','nm','norm') to request from TreeCorr--see above.
+        @param correlation_function_type The type of correlation function ('n2', 'ng', 'g2', 'nk',
+                             'k2', 'kg', 'm2', 'nm', 'norm') to request from TreeCorr--see above.
         @param data, data2, random, random2: NumPy arrays of data with fields using the field name
                              strings given in the stile.fieldNames dict.
-        @param kwargs        Any other TreeCorr parameters (will silently supercede anything in 
+        @param kwargs        Any other TreeCorr parameters (will silently supercede anything in
                              stile_args).
         @returns             a numpy array of the TreeCorr outputs.
         """
@@ -233,34 +233,34 @@ class CorrelationFunctionSysTest(SysTest):
         # anything passed as a kwarg to that dict.
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
-        treecorr.config.check_config(treecorr_kwargs,corr2_valid_params)
+        treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
 
-        data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k, 
+        data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k,
                                       use_chip_coords = use_chip_coords)
-        data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k, 
+        data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k,
                                         use_chip_coords = use_chip_coords)
-        random = self.makeCatalog(random, config=treecorr_kwargs, use_as_k = use_as_k, 
+        random = self.makeCatalog(random, config=treecorr_kwargs, use_as_k = use_as_k,
                                           use_chip_coords = use_chip_coords)
         random2 = self.makeCatalog(random2, config=treecorr_kwargs, use_as_k = use_as_k,
                                             use_chip_coords = use_chip_coords)
 
         treecorr_kwargs[correlation_function_type+'_file_name'] = output_file
-       
+
         func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
-        func.process(data,data2)
+        func.process(data, data2)
         func.write(output_file)
         results = stile.ReadTreeCorrResultsFile(output_file)
         os.close(handle)
         if os.path.isfile(output_file):
             os.remove(output_file)
         return results
-        
+
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
-        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some 
+        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some
         sensible defaults, but much of its behavior can be changed.
-        
+
         @param data       The data returned from a CorrelationFunctionSysTest, as-is.
         @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
         @param log_yscale Whether to use a logarithmic y-scale (default: False)
@@ -286,8 +286,8 @@ class CorrelationFunctionSysTest(SysTest):
 
         # Logarithmic x-axes have stupid default ranges: fix this.
         rstep = data[r][1]/data[r][0]
-        xlim = [min(data[r])/rstep, max(data[r])*rstep]    
-        # Check what kind of data is in the array that .plot() received.  
+        xlim = [min(data[r])/rstep, max(data[r])*rstep]
+        # Check what kind of data is in the array that .plot() received.
         for plot_details in self.plot_details:
             # Pick the one the data contains and use it; break before trying the others.
             if plot_details.t_field in fields:
@@ -317,25 +317,25 @@ class CorrelationFunctionSysTest(SysTest):
         # Plot the first thing
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
-        ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0], 
+        ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0],
                     label=pd.t_title)
         if pd.b_title and plot_bmode:
-            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1], 
+            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.b_title)
         elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
-            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1], 
+            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
         ax.set_xscale('log')
         ax.set_yscale(yscale)
         ax.set_xlim(xlim)
         ax.set_ylabel(pd.y_title)
         ax.legend()
-        if pd.b_field and plot_bmode and pd.t_im_field:  
-            # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
+        if pd.b_field and plot_bmode and pd.t_im_field:
+            # Both yb and y_im: plot (y, yb) on one plot and (y_im, yb_im) on the other.
             ax = fig.add_subplot(nrows, 1, 2)
-            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0], 
+            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0],
                         label=pd.t_im_title)
-            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1], 
+            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.b_im_title)
             ax.set_xscale('log')
             ax.set_yscale(yscale)
@@ -345,10 +345,10 @@ class CorrelationFunctionSysTest(SysTest):
         if plot_data_only and pd.datarandom_t_field:  # Plot the data-only measurements if requested
             curr_plot += 1
             ax = fig.add_subplot(nrows, 1, 2)
-            ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field], 
+            ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'d}$')
             if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field], 
+                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[1], label=pd.datarandom_b_title+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
@@ -357,10 +357,10 @@ class CorrelationFunctionSysTest(SysTest):
             ax.legend()
         if plot_random_only and pd.datarandom_t_field:  # Plot the randoms-only measurements if requested
             ax = fig.add_subplot(nrows, 1, nrows)
-            ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field], 
+            ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
             if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field], 
+                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[1], label=pd.datarandom_b_title+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
@@ -594,7 +594,7 @@ class StatSysTest(SysTest):
                           'skew', 'kurtosis']
         except ImportError:
             simple_stats=['min', 'max', 'median', 'mad', 'mean', 'stddev', 'variance', 'N']
-            
+
         result = stile.stile_utils.Stats(simple_stats=simple_stats)
 
         # Populate the basic entries, like median, mean, standard deviation, etc.
