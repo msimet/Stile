@@ -223,7 +223,7 @@ class CorrelationFunctionSysTest(SysTest):
         import tempfile
         import os
 
-        if not correlation_function_type in corr2_func_dict:
+        if not correlation_function_type in treecorr_func_dict:
             raise ValueError('Unknown correlation function type: %s'%correlation_function_type)
 
         handle, output_file = tempfile.mkstemp()

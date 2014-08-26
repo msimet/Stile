@@ -8,9 +8,9 @@ except:
     sys.path.append('..')
     import stile
 
-class TestCorr2Utils(unittest.TestCase):
+class TestTreeCorrUtils(unittest.TestCase):
     def setUp(self):
-        # Some sample corr2 dicts to play with
+        # Some sample TreeCorr dicts to play with
         # Nonsense key/value pair
         self.dict1 = {'flarp': 'fwep'} 
         # OK if check_status=False, fails if check_status = True
@@ -31,8 +31,8 @@ class TestCorr2Utils(unittest.TestCase):
                       'm2_file_name': 'o7.dat', 'm2_uform': 'Crittenden', 'nm_file_name': 'o8.dat', 
                       'norm_file_name': 'o9.dat', 'verbose': 3, 'num_threads': 16, 
                       'split_method': 'median'} 
-        # The output of a run of corr2.
-        self.corr2_output = numpy.array(
+        # The output of a run of TreeCorr.
+        self.treecorr_output = numpy.array(
             [(5.389e-02, 5.443e-02, 2.206e-02, -4.259e-02, 2.578e-02, 1.820e+02, 1.820e+02),
              (6.260e-02, 6.205e-02, 3.738e-03, 2.995e-02, 2.079e-02, 2.800e+02, 2.800e+02),
              (7.271e-02, 7.241e-02, 1.857e-02, -4.192e-02, 1.755e-02, 3.930e+02, 3.930e+02), 
@@ -56,20 +56,20 @@ class TestCorr2Utils(unittest.TestCase):
              dtype=[("R_nominal",float),("<R>",float),("<gamT>",float),("<gamX>",float),
                     ("sig",float),("weight",float),("npairs",float)])
 
-    def test_ReadCorr2ResultsFile(self):
-        """Test the routine that reads in corr2 results files."""
-        arr = stile.ReadCorr2ResultsFile('test_data/corr2_output.dat')
-        numpy.testing.assert_equal(arr,self.corr2_output)
+    def test_ReadTreeCorrResultsFile(self):
+        """Test the routine that reads in TreeCorr results files."""
+        arr = stile.ReadTreeCorrResultsFile('test_data/TreeCorr_output.dat')
+        numpy.testing.assert_equal(arr,self.treecorr_output)
 	# Seems to depend on which version of NumPy which error is raised
-        self.assertRaises((TypeError,StopIteration),stile.ReadCorr2ResultsFile,
+        self.assertRaises((TypeError,StopIteration),stile.ReadTreeCorrResultsFile,
                                     'test_data/empty_file.dat')
 
     def test_PickTreeCorrKeys(self):
-        """Test the routine that adds to a dict to be given to corr2."""
-        new_dict = stile.corr2_utils.PickTreeCorrKeys(self.dict1) # nonsense dict
+        """Test the routine that adds to a dict to be given to TreeCorr."""
+        new_dict = stile.treecorr_utils.PickTreeCorrKeys(self.dict1) # nonsense dict
         self.assertEqual(len(new_dict),0,
                           msg='The new dict should have no entries')
-        new_dict = stile.corr2_utils.PickTreeCorrKeys(self.dict2)
+        new_dict = stile.treecorr_utils.PickTreeCorrKeys(self.dict2)
         self.assertEqual(new_dict,self.dict2,
                          msg='All entries from the dict should have been copied to the '+
                              'new dict')
