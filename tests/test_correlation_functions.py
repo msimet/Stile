@@ -58,9 +58,9 @@ class TestCorrelationFunctions(unittest.TestCase):
         lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),dec=numpy.array([lens_data['dec']]), ra_units='degrees', dec_units='degrees')
         source_catalog = treecorr.Catalog(ra=source_data['ra'],dec=source_data['dec'],
                                           g1=source_data['g1'],g2=source_data['g2'], ra_units='degrees', dec_units='degrees')
-        results = cf.getCF({},'ng',lens_catalog,source_catalog,**stile_args)
+        results = cf.getCF('ng',lens_catalog,source_catalog,**stile_args)
         numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
-        results2 = cf.getCF(stile_args,'ng',lens_data,source_data)
+        results2 = cf.getCF('ng',lens_data,source_data,config=stile_args)
         self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
         # Missing necessary data file
         numpy.testing.assert_equal(results,results2)
@@ -68,11 +68,11 @@ class TestCorrelationFunctions(unittest.TestCase):
                           cf.getCF,{},'ng',
                           file_name='../examples/example_lens_catalog.dat')
         # Nonsensical correlation type
-        self.assertRaises(ValueError,cf.getCF,stile_args,'hello', lens_data, source_data)
+        self.assertRaises(ValueError,cf.getCF,'hello', lens_data, source_data, config=stile_args)
 
         # Then, test a test that uses .getCF().
         realshear = stile.GalaxyShearSysTest()
-        results3 = realshear(stile_args,lens_data,source_data)
+        results3 = realshear(lens_data,source_data,config=stile_args)
         numpy.testing.assert_equal(results,results3)
     
 if __name__=='__main__':

@@ -163,6 +163,8 @@ def PickTreeCorrKeys(input_dict):
     @returns          A dict containing the (key,value) pairs from input_dict that apply to 
                       TreeCorr.
     """    
+    if not input_dict:
+        return {}
     if 'treecorr_kwargs' in input_dict:
         treecorr_dict = input_dict['treecorr_kwargs']
     else:
