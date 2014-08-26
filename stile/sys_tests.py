@@ -184,11 +184,13 @@ class CorrelationFunctionSysTest(SysTest):
             catalog_kwargs['k'] = data['k']
         # Quirk of length-1 formatted arrays: the fields will be floats, not 
         # arrays, which would break the Catalog init.
-        if not hasattr(data,'len') and isinstance(data,numpy.ndarray): 
-            for key in catalog_kwargs:
-                catalog_kwargs[key] = numpy.array([catalog_kwargs[key]])
+        try:
+            len(data)
+        except:
+            if not hasattr(data,'len') and isinstance(data,numpy.ndarray): 
+                for key in catalog_kwargs:
+                    catalog_kwargs[key] = numpy.array([catalog_kwargs[key]])
         catalog_kwargs['config'] = config
-	print config
         return treecorr.Catalog(**catalog_kwargs)
         
     def getCF(self, stile_args, correlation_function_type, data, data2=None,
@@ -227,6 +229,10 @@ class CorrelationFunctionSysTest(SysTest):
         #TODO: know what kinds of data this needs and make sure it has it
         import tempfile
         import os
+
+        if not correlation_function_type in corr2_func_dict:
+            raise ValueError('Unknown correlation function type: %s'%correlation_function_type)
+
         handle, output_file = tempfile.mkstemp()
 
         # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
@@ -247,9 +253,8 @@ class CorrelationFunctionSysTest(SysTest):
         func.write(output_file)
         results = stile.ReadCorr2ResultsFile(output_file)
         os.close(handle)
-        print output_file
-#        if os.path.isfile(output_file):
-#            os.remove(output_file)
+        if os.path.isfile(output_file):
+            os.remove(output_file)
         return results
         
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
