@@ -1,5 +1,5 @@
-"""@file corr2_utils.py
-Contains elements of Stile needed to interface with Mike Jarvis's corr2 program.
+"""@file treecorr_utils.py
+Contains elements of Stile needed to interface with Mike Jarvis's TreeCorr program.
 """
 import copy
 import numpy
@@ -80,73 +80,74 @@ def Parser():
                    help="Flip the sign of g2 (default: False)",
                    dest='flip_g2',default=False)
     p.add_argument('--project',
-                   help="Corr2 argument: use a tangent-plane projection instead of curved-sky "+
+                   help="TreeCorr argument: use a tangent-plane projection instead of curved-sky "+
                         "(this is a negligible performance improvement, and not recommended)",
                    dest='project')
     p.add_argument('--project_ra',
-                   help="Corr2 argument: the RA of the tangent point for projection, used in "+
+                   help="TreeCorr argument: the RA of the tangent point for projection, used in "+
                         "conjunction with --project, and not recommended",
                    dest='project_ra')
     p.add_argument('--project_dec',
-                   help="Corr2 argument: the dec of the tangent point for projection, used in "+
+                   help="TreeCorr argument: the dec of the tangent point for projection, used in "+
                         "conjunction with --project, and not recommended",
                    dest='project_dec')
     p.add_argument('--min_sep',
-                   help="Minimum separation for the corr2 correlation functions",
+                   help="Minimum separation for the TreeCorr correlation functions",
                    dest='min_sep')
     p.add_argument('--max_sep',
-                   help="Maximum separation for the corr2 correlation functions",
+                   help="Maximum separation for the TreeCorr correlation functions",
                    dest='max_sep')
     p.add_argument('--nbins',
-                   help="Number of bins for the corr2 correlation functions",
+                   help="Number of bins for the TreeCorr correlation functions",
                    dest='nbins')
     p.add_argument('--bin_size',
-                   help="Bin width for the corr2 correlation functions",
+                   help="Bin width for the TreeCorr correlation functions",
                    dest='bin_size')
     p.add_argument('--sep_units',
-                   help="Units for the max_sep/min_sep/bin_size arguments for the corr2 "+
+                   help="Units for the max_sep/min_sep/bin_size arguments for the TreeCorr "+
                         "correlation functions",
                    dest='max_sep')
     p.add_argument('--bin_slop',
-                   help="A parameter relating to accuracy of the corr2 bins--changing is not "+
+                   help="A parameter relating to accuracy of the TreeCorr bins--changing is not "+
                         "recommended",
                    dest='bin_slop')
     p.add_argument('--precision',
-                   help="Number of digits after (scientific notation) decimal point in corr2 "+
+                   help="Number of digits after (scientific notation) decimal point in TreeCorr "+
                         "(default: 3)",
                    dest='precision')
     p.add_argument('--m2_uform',
                    help="Set to 'Schneider' to use the Schneider rather than the Crittenden forms "+
-                        "of the aperture mass statistic in corr2 (see corr2 Read.me for more info)",
+                        "of the aperture mass statistic in TreeCorr (see TreeCorr Read.me for "+
+                        "more info)",
                    dest='m2_uform')
     p.add_argument('-v','--verbose',
                    help="Level of verbosity",
                    dest='verbose')
     p.add_argument('--num_threads',
-                   help='Number of OpenMP threads (corr2) or multprocessing.Pool processors '+
+                   help='Number of threads (TreeCorr) or multprocessing.Pool processors '+
                         '(Stile) to use; default is to automatically determine',
                    dest='num_threads')
     p.add_argument('--split_method',
-                   help="One of 'mean', 'median', or 'middle', directing corr2 how to split the "
+                   help="One of 'mean', 'median', or 'middle', directing TreeCorr how to split the "
                         "tree into child nodes. (default: 'mean')",
                    dest='split_method')
     return p                   
 
 
-def ReadCorr2ResultsFile(file_name):
+def ReadTreeCorrResultsFile(file_name):
     """
     Read in the given `file_name`.  Cast it into a formatted numpy array with the appropriate 
     fields and return it.
     
-    @param file_name The location of an output file from corr2.
+    @param file_name The location of an output file from TreeCorr.
     @returns         A numpy array corresponding to the data in `file_name`.
     """    
     import stile_utils
     output = file_io.ReadASCIITable(file_name, comments='#')
     
     if not len(output):
-        raise RuntimeError('File %s (supposedly an output from corr2) is empty.'%file_name)
-    # Now, the first line of the corr2 output file is of the form:
+        raise RuntimeError('File %s (supposedly an output from TreeCorr) is empty.'%file_name)
+    # Now, the first line of the TreeCorr output file is of the form:
     # "# col1 . col2 . col3 [...]"
     # so we can get the proper field names by reading the first line of the file and processing it.
     with open(file_name) as f:
@@ -161,15 +162,16 @@ def PickTreeCorrKeys(input_dict):
     these values.  This is useful if you have a parameters dict that contains some things TreeCorr
     might want, but some other keys that shouldn't be used by it.
     
-    @param input_dict A dict containing some (key,value) pairs that apply to corr2.
-    @returns          A dict containing the (key,value) pairs from input_dict that apply to corr2.
+    @param input_dict A dict containing some (key,value) pairs that apply to TreeCorr.
+    @returns          A dict containing the (key,value) pairs from input_dict that apply to 
+                      TreeCorr.
     """    
-    if 'corr2_kwargs' in input_dict:
-        corr2_dict = input_dict['corr2_kwargs']
+    if 'treecorr_kwargs' in input_dict:
+        treecorr_dict = input_dict['treecorr_kwargs']
     else:
-        corr2_dict = {}
-    for key in corr2_valid_params:
+        treecorr_dict = {}
+    for key in treecorr_valid_params:
         if key in input_dict:
-            corr2_dict[key] = input_dict[key]
-    return corr2_dict
+            treecorr_dict[key] = input_dict[key]
+    return treecorr_dict
     
