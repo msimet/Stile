@@ -186,8 +186,9 @@ class CorrelationFunctionSysTest(SysTest):
         catalog_kwargs['config'] = config
         return treecorr.Catalog(**catalog_kwargs)
         
-    def getCF(self, stile_args, correlation_function_type, data, data2=None,
-                    random=None, random2=None, use_as_k = None, use_chip_coords=False, **kwargs):
+    def getCF(self, correlation_function_type, data, data2=None,
+                    random=None, random2=None, use_as_k = None, use_chip_coords=False, 
+                    config=None, **kwargs):
         """
         Sets up and calls treecorr on the given set of data.  
         
@@ -230,7 +231,7 @@ class CorrelationFunctionSysTest(SysTest):
 
         # First, pull out the TreeCorr-relevant parameters from the stile_args dict, and add
         # anything passed as a kwarg to that dict.
-        treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(stile_args)
+        treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(treecorr_kwargs,corr2_valid_params)
 
@@ -378,8 +379,8 @@ class GalaxyShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['galaxy lens', 'galaxy']
     required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
 class BrightStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -390,8 +391,8 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star bright', 'galaxy']
     required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
 class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     """
@@ -402,8 +403,8 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'galaxy', 'star random', 'galaxy random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('n2', data, data2, random, random2, config=config, **kwargs)
 
 class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
@@ -414,8 +415,8 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'galaxy']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('g2', data, data2, random, random2, config=config, **kwargs)
 
 class StarXStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -426,8 +427,8 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('g2', data, data2, random, random2, config=config, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -438,8 +439,8 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     objects_list = ['galaxy', 'galaxy random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('n2', data, data2, random, random2, config=config, **kwargs)
 
 class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -450,8 +451,8 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'star random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('n2', data, data2, random, random2, config=config, **kwargs)
 
 
 class StatSysTest(SysTest):
