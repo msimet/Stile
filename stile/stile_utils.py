@@ -4,7 +4,6 @@ functions.
 """
 
 import numpy
-import os
 
 def Parser():
     """

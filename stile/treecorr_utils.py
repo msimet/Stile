@@ -1,13 +1,9 @@
 """@file treecorr_utils.py
 Contains elements of Stile needed to interface with Mike Jarvis's TreeCorr program.
 """
-import copy
 import numpy
-import os
 import file_io
-import tempfile
 import treecorr
-from treecorr.corr2 import corr2_valid_params
 
 def Parser():
     import argparse

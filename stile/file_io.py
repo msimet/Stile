@@ -183,7 +183,6 @@ def WriteFITSTable(file_name, data_array, fields=None):
     At the moment, if your maximum column number in the fields dict is greater than the number of
     fields in the data_array, an error will occur.
     """
-    import time
     if not has_fits:
         raise ImportError('FITS-type table requested, but no FITS handler found')
     data = _handleFields(data_array, fields)
