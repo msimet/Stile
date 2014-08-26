@@ -4,15 +4,14 @@ functions.
 """
 
 import numpy
-import os
 
 def Parser():
     """
-    Returns an argparse Parser object with input args used by Stile and corr2.
+    Returns an argparse Parser object with input args used by Stile and TreeCorr.
     """
-    import corr2_utils
+    import treecorr_utils
     import argparse
-    p = argparse.Parser(parent=corr2_utils.Parser())
+    p = argparse.Parser(parent=treecorr_utils.Parser())
     #TODO: add, obviously, EVERYTHING ELSE
     return p
 

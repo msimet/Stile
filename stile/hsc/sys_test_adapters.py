@@ -170,7 +170,7 @@ class GalaxyShearAdapter(BaseSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
-        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class BrightStarShearAdapter(BaseSysTestAdapter):
     """
@@ -187,7 +187,7 @@ class BrightStarShearAdapter(BaseSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
-        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
+        return self.sys_test(task_config.treecorr_kwargs, *data, **kwargs)
 
 class StarXGalaxyShearAdapter(BaseSysTestAdapter):
     """
@@ -204,7 +204,7 @@ class StarXGalaxyShearAdapter(BaseSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
-        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class StarXStarShearAdapter(BaseSysTestAdapter):
     """
@@ -221,7 +221,7 @@ class StarXStarShearAdapter(BaseSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
-        return self.sys_test(task_config.corr2_kwargs, *data, **kwargs)
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class StatsPSFFluxAdapter(BaseSysTestAdapter):
     """
