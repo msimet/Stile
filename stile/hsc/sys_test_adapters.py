@@ -250,7 +250,7 @@ class ScatterPlotStarVsPSFG1Adapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self, task_config,*data):
+    def __call__(self, task_config,*data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
@@ -264,7 +264,7 @@ class ScatterPlotStarVsPSFG2Adapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self, task_config,*data):
+    def __call__(self, task_config,*data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
@@ -278,7 +278,7 @@ class ScatterPlotStarVsPSFSigmaAdapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self, task_config,*data):
+    def __call__(self, task_config,*data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
@@ -292,7 +292,7 @@ class ScatterPlotResidualVsPSFG1Adapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self,task_config,*data):
+    def __call__(self,task_config,*data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
@@ -306,7 +306,7 @@ class ScatterPlotResidualVsPSFG2Adapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self,task_config,*data):
+    def __call__(self,task_config,*data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
@@ -320,7 +320,7 @@ class ScatterPlotResidualVsPSFSigmaAdapter(BaseSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self,task_config,*data):
+    def __call__(self,task_config,*data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
