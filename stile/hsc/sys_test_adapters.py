@@ -252,10 +252,10 @@ class ScatterPlotStarVsPSFG1Adapter(BaseSysTestAdapter):
 
     def __call__(self, task_config,*data):
         try:
-            per_ccd = task_config.scatterplot_per_ccd
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
-            per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd)
+            per_ccd_stat = False
+        return self.sys_test(*data, per_ccd_stat = per_ccd_stat)
 
 class ScatterPlotStarVsPSFG2Adapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -266,10 +266,10 @@ class ScatterPlotStarVsPSFG2Adapter(BaseSysTestAdapter):
 
     def __call__(self, task_config,*data):
         try:
-            per_ccd = task_config.scatterplot_per_ccd
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
-            per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd)
+            per_ccd_stat = False
+        return self.sys_test(*data, per_ccd_stat = per_ccd_stat)
 
 class ScatterPlotStarVsPSFSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -280,10 +280,10 @@ class ScatterPlotStarVsPSFSigmaAdapter(BaseSysTestAdapter):
 
     def __call__(self, task_config,*data):
         try:
-            per_ccd = task_config.scatterplot_per_ccd
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
-            per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd)
+            per_ccd_stat = False
+        return self.sys_test(*data, per_ccd_stat = per_ccd_stat)
 
 class ScatterPlotResidualVsPSFG1Adapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -294,10 +294,10 @@ class ScatterPlotResidualVsPSFG1Adapter(BaseSysTestAdapter):
 
     def __call__(self,task_config,*data):
         try:
-            per_ccd = task_config.scatterplot_per_ccd
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
-            per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd)
+            per_ccd_stat = False
+        return self.sys_test(*data, per_ccd_stat = per_ccd_stat)
 
 class ScatterPlotResidualVsPSFG2Adapter(BaseSysTestAdapter):
     def __init__(self, config):
@@ -308,10 +308,10 @@ class ScatterPlotResidualVsPSFG2Adapter(BaseSysTestAdapter):
 
     def __call__(self,task_config,*data):
         try:
-            per_ccd = task_config.scatterplot_per_ccd
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
-            per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd)
+            per_ccd_stat = False
+        return self.sys_test(*data, per_ccd_stat = per_ccd_stat)
 
 class ScatterPlotResidualVsPSFSigmaAdapter(BaseSysTestAdapter):
     def __init__(self,config):
@@ -322,10 +322,10 @@ class ScatterPlotResidualVsPSFSigmaAdapter(BaseSysTestAdapter):
 
     def __call__(self,task_config,*data):
         try:
-            per_ccd = task_config.scatterplot_per_ccd
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
-            per_ccd = False
-        return self.sys_test(*data, per_ccd = per_ccd)
+            per_ccd_stat = False
+        return self.sys_test(*data, per_ccd_stat = per_ccd_stat)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)

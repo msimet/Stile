@@ -829,7 +829,7 @@ class ScatterPlotSysTest(SysTest):
             cov_mc = -Sx/Delta
             return m, c, cov_m, cov_c, cov_mc
 
-    def getStatisticsPerCCD(self, ccds, x, y, yerr = None):
+    def getStatisticsPerCCD(self, ccds, x, y, yerr = None, stat = "mean"):
         """
         Calculate average for x and y for each CCD.
         @param ccd             NumPy array for CCD, an array in which each element indicates CCD ID
@@ -840,19 +840,28 @@ class ScatterPlotSysTest(SysTest):
                                [default: None, meaning do not consider y error]
         @returns               x_ave, y_ave, y_ave_std.
         """
-        x_ave = numpy.array([numpy.average(x[ccds == ccd]) for ccd in set(ccds)])
-        if yerr is None:
-            y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
-            y_ave_std = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+        if stat == "mean":
+            x_ave = numpy.array([numpy.average(x[ccds == ccd]) for ccd in set(ccds)])
+            if yerr is None:
+                y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
+                y_ave_std = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+                                         for ccd in set(ccds)])
+                return x_ave, y_ave, y_ave_std
+            # calculate y and its std under the inverse variance weight if yerr is given
+            else:
+                y_ave = numpy.array([numpy.sum(y[ccds == ccd]/yerr[ccds == ccd]**2)/
+                                     numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
+                y_ave_std = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
+                                         for ccd in set(ccds)])
+                return x_ave, y_ave, y_ave_std
+        elif stat == "median":
+            x_med = numpy.array([numpy.median(x[ccds == ccd]) for ccd in set(ccds)])
+            y_med = numpy.array([numpy.median(y[ccds == ccd]) for ccd in set(ccds)])
+            y_med_std = numpy.array([numpy.sqrt(numpy.pi/2.)*numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
                                      for ccd in set(ccds)])
-            return x_ave, y_ave, y_ave_std
-        # calculate y and its std under the inverse variance weight if yerr is given
         else:
-            y_ave = numpy.array([numpy.sum(y[ccds == ccd]/yerr[ccds == ccd]**2)/
-                                 numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
-            y_ave_std = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
-                                     for ccd in set(ccds)])
-            return x_ave, y_ave, y_ave_std
+            raise ValueError('stat should be mean or median.')
+            return x_med, y_med, y_med_std
 
 class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
@@ -860,10 +869,12 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd = False, color = '', lim=None):
-        if per_ccd:
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
             psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
-                                                          array['g1'], yerr = array['g1_err'])
+                                                          array['g1'], yerr = array['g1_err'],
+                                                          stat = per_ccd_stat)
         else:
             psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
         return self.scatterPlot(psf_g1, g1, yerr=g1_err,
@@ -877,10 +888,12 @@ class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd=False, color = '', lim=None):
-        if per_ccd:
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
             psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
-                                                          array['g2'], yerr = array['g2_err'])
+                                                          array['g2'], yerr = array['g2_err'],
+                                                          stat = per_ccd_stat)
         else:
             psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
         return self.scatterPlot(psf_g2, g2, yerr=g2_err,
@@ -894,10 +907,13 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd=False, color = '', lim=None):
-        if per_ccd:
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
             psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
-                                                          array['sigma'], yerr = array['sigma_err'])
+                                                                   array['sigma'],
+                                                                   yerr = array['sigma_err'],
+                                                                   stat = per_ccd_stat)
         else:
             psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
         return self.scatterPlot(psf_sigma, sigma, yerr=sigma_err,
@@ -911,10 +927,12 @@ class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd=False, color = '', lim=None):
-        if per_ccd:
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
             psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
-                                                          array['g1'], yerr = array['g1_err'])
+                                                          array['g1'], yerr = array['g1_err'],
+                                                          stat = per_ccd_stat)
         else:
             psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
         return self.scatterPlot(psf_g1, g1-psf_g1, yerr=g1_err,
@@ -929,10 +947,12 @@ class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd=False, color = '', lim=None):
-        if per_ccd:
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
             psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
-                                                          array['g2'], yerr = array['g2_err'])
+                                                          array['g2'], yerr = array['g2_err'],
+                                                          stat = per_ccd_stat)
         else:
             psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
         return self.scatterPlot(psf_g2, g2-psf_g2, yerr=g2_err,
@@ -947,10 +967,13 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd=False, color = '', lim=None):
-        if per_ccd:
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
             psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
-                                                          array['sigma'], yerr = array['sigma_err'])
+                                                                   array['sigma'],
+                                                                   yerr = array['sigma_err'],
+                                                                   stat = per_ccd_stat)
         else:
             psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
         return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
