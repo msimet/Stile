@@ -215,7 +215,7 @@ def WriteTable(file_name, data_array, fields=None):
     ext = os.path.splitext(file_name)[1]
     if not ext:
         if has_fits:
-            WriteFITSTable(file_name, data_array,f ields)
+            WriteFITSTable(file_name, data_array, fields)
         else:
             WriteASCIITable(file_name, data_array, fields)
     else:
