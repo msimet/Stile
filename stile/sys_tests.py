@@ -702,6 +702,17 @@ class ScatterPlotSysTest(SysTest):
         elif lim is not None:
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
                             '`float` to indicate p%-percentile around median.')
+        else:
+            # Even if lim = None, we want to set limits. Limits set by matplotlib looks uneven probably because it seems to pick round numbers for the endpoints (eg -0.2 and 0.2).
+            xlim = (numpy.min(x)-0.05*(numpy.max(x)-numpy.min(x)),
+                    numpy.max(x)+0.05*(numpy.max(x)-numpy.min(x)))
+            # We apply the same thing to y. However, when y has error, setting the limit may cut out error, so we just leave it.
+            if yerr is None:
+                ylim = (numpy.min(y)-0.05*(numpy.max(y)-numpy.min(y)),
+                        numpy.max(y)+0.05*(numpy.max(y)-numpy.min(y)))
+            else:
+                ylim = None
+
         # plot
         if z is None:
             if yerr is None:
@@ -722,8 +733,9 @@ class ScatterPlotSysTest(SysTest):
             ax.axis("equal")
 
         # set axis limits if specified
-        if lim is not None:
+        if xlim is not None:
             ax.set_xlim(*xlim)
+        if ylim is not None:
             ax.set_ylim(*ylim)
 
         # set up x value for linear regression or a reference line
