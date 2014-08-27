@@ -642,8 +642,7 @@ class ScatterPlotSysTest(SysTest):
                                regression is set to blue.
                                [default: None, meaning follow a matplotlib's default color]
         @param lim             The limit of axis. This can be specified explicitly by
-                               using tuples such as ((xmin, xmax), (ymin, ymax)), or ((xmin, xmax), 
-                               (ymin, ymax), (zmin, zmax)) if z is provided.
+                               using tuples such as ((xmin, xmax), (ymin, ymax)).
                                If one passes float p, it calculate p%-percentile around median
                                for each of x-axis and y-axis.
                                [default: None, meaning do not set any limits]
@@ -691,21 +690,14 @@ class ScatterPlotSysTest(SysTest):
 
         # load axis limits if argument lim is ((xmin, xmax), (ymin, ymax))
         if isinstance(lim, tuple):
-            if z is None and len(lim) !=2:
-                raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)).')
-            elif z is not None and len(lim) !=3:
-                raise TypeError('lim should be ((xmin, xmax), (ymin, ymax), (zmin, zmax)).')
             xlim = lim[0]
             ylim = lim[1]
-            if z is not None:
-                zlim = lim[2]
+
         # calculate n-sigma limits around mean if lim is float
         elif isinstance(lim, float):
             p = lim
             xlim = (numpy.percentile(x, 50.-0.5*p), numpy.percentile(x, 50.+0.5*p))
             ylim = (numpy.percentile(y, 50.-0.5*p), numpy.percentile(y, 50.+0.5*p))
-            if z is not None:
-                zlim = (numpy.percentile(z, 50.-0.5*p), numpy.percentile(z, 50.+0.5*p))
         # in other cases (except for the default value None), raise an exception
         elif lim is not None:
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
@@ -721,10 +713,7 @@ class ScatterPlotSysTest(SysTest):
         else:
             if yerr is not None:
                 plt.errorbar(x, y, yerr=yerr, linestyle="None", color = "k", zorder=0)
-            if lim is not None:
-                plt.scatter(x, y, c=z, vmin=zlim[0], vmax=zlim[1], zorder=1)
-            else:
-                plt.scatter(x, y, c=z, zorder=1)
+            plt.scatter(x, y, c=z, zorder=1)
             cb = plt.colorbar()
             used_color = "b"
 
