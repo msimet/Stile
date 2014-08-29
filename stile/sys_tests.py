@@ -282,8 +282,9 @@ class CorrelationFunctionSysTest(SysTest):
         fig.subplots_adjust(hspace=0)  # no space between stacked plots
         plt.subplots(sharex=True)  # share x-axes
         # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
-        plot_data_only &= pd.datarandom_t_field+'d' in fields
-        plot_random_only &= pd.datarandom_t_field+'r' in fields
+        if pd.datarandom_t_field:
+            plot_data_only &= pd.datarandom_t_field+'d' in fields
+            plot_random_only &= pd.datarandom_t_field+'r' in fields
         if plot_bmode and pd.b_field and pd.t_im_field:
             nrows = 2
         elif pd.datarandom_t_field:
