@@ -51,7 +51,11 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
-                             "StarXGalaxyShear", "StarXStarShear"])
+                             "StarXGalaxyShear", "StarXStarShear",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             ])
     corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
