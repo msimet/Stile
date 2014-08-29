@@ -10,6 +10,7 @@ import lsst.pipe.base
 import lsst.meas.mosaic
 from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
+from lsst.pipe.tasks.coaddBase import ExistingCoaddDataIdContainer
 from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
@@ -94,12 +95,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
+	self.catalog_type = 'src'
 
-    def run(self, dataRef):
-        # Pull the source catalog from the butler corresponding to the particular CCD in the
-        # dataRef.
-        catalog = dataRef.get("src", immediate=True)
-
+    def getFilenameBase(self,dataRef):
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, ccd) identifier for filename.
         # This part will be updated by Jim on branch "#20".
@@ -110,7 +108,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         dir = os.path.join(src_filename.split('output')[0],"stile_output")
         if os.path.exists(dir) == False:
             os.makedirs(dir)
-        filename_chip = "-%07d-%03d" % (dataRef.dataId["visit"], dataRef.dataId["ccd"])
+        return "-%07d-%03d" % (dataRef.dataId["visit"], dataRef.dataId["ccd"])
+        
+
+    def run(self, dataRef):
+        # Pull the source catalog from the butler corresponding to the particular CCD in the
+        # dataRef.
+        catalog = dataRef.get(self.catalog_type, immediate=True)
+
+        filename_chip = self.getFilenameBase(dataRef)
 
         # Remove objects so badly measured we shouldn't use them in any test.
         catalog = self.removeFlaggedObjects(catalog)
@@ -284,7 +290,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 # computeShapes returns a dict of ('key': column) pairs, and sometimes an extra
                 # mask indicating where measurements were valid. Here, this is only used if
                 # PSF shapes were computed, since we already computed the shape masking in run().
-                shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask], calib_data,
+                shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask].copy(deep=True), calib_data,
                     do_shape=do_shape, do_err=do_err, do_psf=do_psf, sky_coords=sky_coords)
                 if extra_mask is not None:
                     mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask], extra_mask)
@@ -301,7 +307,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 if any(nan_and_col_mask>0):
                     # "extra_mask" is the new mask with the quantity-specific flags
                     extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
-                        col, catalog[nan_and_col_mask], calib_metadata, calib_type)
+                        col, catalog[nan_and_col_mask].copy(deep=True), calib_metadata, calib_type)
                     if extra_mask is not None:
                         mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
                                                                    extra_mask)
@@ -336,6 +342,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                               - None if no new mask was needed, or a NumPy array of bools indicating
                                 which rows had valid measurements.
         """
+        print data, "bwaha"
         if sky_coords:
             wcs = calib.getWcs()
         # First pull the quantities from the catalog that we'll need.  This first version in the try
@@ -735,4 +742,45 @@ class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
         parser.add_id_argument("--id", "src", help="data ID, with raw CCD keys")
         parser.description = parser_description
         return parser
+
+class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
+    coaddName = lsst.pex.config.Field(
+        doc = "coadd name: typically one of deep or goodSeeing",
+        dtype = str,
+        default = "deep",
+    )
+
+class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
+    """Like CCDSingleEpochStileTask, but we use a different argument parser that doesn't require
+    an available coadd to run on the CCD level."""
+    _DefaultName = "PatchSingleEpochStile"
+    ConfigClass = PatchSingleEpochStileConfig
+    
+    def __init__(self, **kwargs):
+        lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
+        self.sys_tests = self.config.sys_tests.apply()
+	self.catalog_type = 'deepCoadd_src'
+
+    def getFilenameBase(self,dataRef):
+        # Hironao's dirty fix for getting a directory for saving results and plots
+        # and a (visit, ccd) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is 
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
+        # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
+        src_filename = (dataRef.get("deepCoadd_src_filename", immediate=True)[0]).replace('_parent/','')
+        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+        return "-%07d-%5s" % (dataRef.dataId["tract"], dataRef.dataId["patch"])
+        
+
+    @classmethod
+    def _makeArgumentParser(cls):
+        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", "deepCoadd_src", help="data ID, with raw CCD keys",
+	                       ContainerClass=ExistingCoaddDataIdContainer)
+        parser.description = parser_description
+        return parser
+
 
