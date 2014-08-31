@@ -18,10 +18,10 @@ except ImportError:
 class PlotNone(object):
     def savefig(self,filename):
         pass
-    
+
 class SysTest:
     """
-    A SysTest is a lensing systematics test of some sort.  It should define the following 
+    A SysTest is a lensing systematics test of some sort.  It should define the following
     attributes:
         short_name: a string that can be used in filenames to denote this systematics test
         long_name: a string to denote this systematics test within program text outputs
@@ -31,9 +31,9 @@ class SysTest:
              'galaxy lens',     # only galaxies to be used as lenses in galaxy-galaxy lensing tests,
              'star PSF',        # stars used in PSF determination,
              'star bright',     # especially bright stars,
-             'galaxy random',   # random catalogs with the same spatial distribution as the 
+             'galaxy random',   # random catalogs with the same spatial distribution as the
              'star random']     # 'galaxy' or 'star' samples.
-        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that 
+        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that
             should be given for the corresponding object from the objects_list.  We expect the
             quantities to be from the list:
             ['ra', 'dec',       # Position on the sky
@@ -42,20 +42,20 @@ class SysTest:
              'sigma', 'sigma_err', # Object size and its error
              'w',               # Per-object weight
              'psf_g1', 'psf_g2', 'psf_sigma'] # PSF shear and size at the object location
-    
+
     It should define the following methods:
         __call__(self, ...) = run the SysTest. There are two typical call signatures for SysTests:
-            __call__(self,data[,data2],**kwargs): run a test on a set of data, or a test involving 
+            __call__(self,data[,data2],**kwargs): run a test on a set of data, or a test involving
                 two data sets data and data2.
             __call__(self,stile_args_dict,data=None,data2=None,random=None,random2=None,**kwargs):
-                the call signature for the CorrelationFunctionSysTests, which leave the data as 
-                kwargs because the CorrelationFunctionSysTests() can also take filenames as kwargs 
-                from the function corr2_utils.MakeCorr2FileKwargs(), rather than ingesting the data 
+                the call signature for the CorrelationFunctionSysTests, which leave the data as
+                kwargs because the CorrelationFunctionSysTests() can also take filenames as kwargs
+                from the function corr2_utils.MakeCorr2FileKwargs(), rather than ingesting the data
                 directly, though they can also ingest the data directly as well.
-        
-        In both cases, the kwargs should be able to handle a "bin_list=" kwarg which will bin the 
+
+        In both cases, the kwargs should be able to handle a "bin_list=" kwarg which will bin the
         data accordingly--see the classes defined in binning.py for more.
-        
+
     """
     short_name = ''
     long_name = ''
@@ -65,16 +65,16 @@ class SysTest:
         raise NotImplementedError()
     def plot(self, results):
         """
-        If the results returned from the __call__() function of this class have a .savefig() 
-        method, return that object.  Otherwise, return an object with a .savefig() method that 
-        doesn't do anything.  plot() should be overridden by child classes to actually generate 
+        If the results returned from the __call__() function of this class have a .savefig()
+        method, return that object.  Otherwise, return an object with a .savefig() method that
+        doesn't do anything.  plot() should be overridden by child classes to actually generate
         plots if desired.
         """
         if hasattr(results,'savefig'):
             return results
         else:
             return PlotNone()
-        
+
 class PlotDetails(object):
     """
     A container class to hold details about field names, titles for legends, and y-axis labels for
@@ -87,7 +87,7 @@ class PlotDetails(object):
                  sigma_field=None, y_title=None):
         self.t_field = t_field  # Field of t-mode/+-mode shear correlation functions
         self.t_title = t_title  # Legend title for previous line
-        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions 
+        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions
         self.b_title = b_title  # Legend title for previous line
         self.t_im_field = t_im_field  # Imaginary part of t-mode/+-mode
         self.t_im_title = t_im_title  # Legend title for previous line
@@ -100,14 +100,14 @@ class PlotDetails(object):
         self.datarandom_b_title = datarandom_b_title  # Legend title for previous line
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
-               
+
 
 class CorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-    class method getCF(), which runs corr2 (via a call to the subprocess module) on a given set of 
+    class method getCF(), which runs corr2 (via a call to the subprocess module) on a given set of
     data.  Exact arguments to this method should be created by child classes of
-    CorrelationFunctionSysTest; see the docstring for CorrelationFunctionSysTest.getCF() for 
+    CorrelationFunctionSysTest; see the docstring for CorrelationFunctionSysTest.getCF() for
     information on how to write further tests using it.
     """
     short_name = 'corrfunc'
@@ -118,7 +118,7 @@ class CorrelationFunctionSysTest(SysTest):
         Sets up and calls corr2 on the given set of data.  The data files and random files can
         be contained already in stile_args['corr2_kwargs'] or **kwargs, in which case passing None
         to the `data` and `random` kwargs is fine; otherwise they should be properly populated.
-        
+
         The user needs to specify the type of correlation function requested.  The available types
         are:
             'n2': a 2-point correlation function
@@ -130,23 +130,23 @@ class CorrelationFunctionSysTest(SysTest):
             'm2': an aperture mass measurement
             'nm': an <N aperture mass> measurement
             'norm': 'nm' properly normalized by the average values of n and aperture mass to return
-                    something like a correlation coefficient. 
+                    something like a correlation coefficient.
         More details can be found in the Read.me for corr2.
-        
-        This function accepts all (self-consistent) sets of data, data2, random, and random2.  
-        Including "data2" and possibly "random2" will return a cross-correlation; otherwise the 
-        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the 
+
+        This function accepts all (self-consistent) sets of data, data2, random, and random2.
+        Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
+        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the
         correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
-        
-        Note: by default, the corr2 configuration files are written to the temp directory called by 
-        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass 
-        `save_config=True` and they will be written (as temp files probably beginning with "tmp") 
-        to your working directory, which shouldn't be automatically cleaned up.  
-        
+
+        Note: by default, the corr2 configuration files are written to the temp directory called by
+        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass
+        `save_config=True` and they will be written (as temp files probably beginning with "tmp")
+        to your working directory, which shouldn't be automatically cleaned up.
+
         @param stile_args    The dict containing the parameters that control Stile's behavior
         @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
                              'kg','m2','nm','norm') to request from corr2--see above.
-        @param data, data2, random, random2: data sets in the format requested by 
+        @param data, data2, random, random2: data sets in the format requested by
                              corr2_utils.MakeCorr2FileKwargs().
         @param kwargs        Any other corr2 parameters to be written to the corr2 param file (will
                              silently supercede anything in stile_args).
@@ -192,7 +192,7 @@ class CorrelationFunctionSysTest(SysTest):
         handles.append(handle)
 
         corr2_kwargs[correlation_function_type+'_file_name'] = output_file
-       
+
         stile.WriteCorr2ConfigurationFile(config_file, corr2_kwargs)
 
         #TODO: don't hard-code the name of corr2!
@@ -202,44 +202,44 @@ class CorrelationFunctionSysTest(SysTest):
         for handle in handles:
             os.close(handle)
         return return_value
-    
+
     # Set the details (such as field names and titles) for all the possible plots generated by corr2
-    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$', 
+    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$',
                                 sigma_field='sig_omega', y_title="$\omega$"),  # n2
-        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$', 
+        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$',
                     b_field='<gamX>', b_title=r'$\langle \gamma_X \rangle$',
                     datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
                     datarandom_b_field='gamX_', datarandom_b_title='$\gamma_{X',
                     sigma_field='sig', y_title="$\gamma$"),  #ng
         PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
-                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$', 
-                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$', 
+                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$',
+                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$',
                     sigma_field='sig_xi', y_title=r"$\xi$"),  #g2
-        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$', 
+        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
-                    sigma_field='sig', y_title="$\kappa$"),  # nk 
-        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sig_xi', y_title=r"$\xi$"),  # k2 
+                    sigma_field='sig', y_title="$\kappa$"),  # nk
+        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sig_xi', y_title=r"$\xi$"),  # k2
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
                     b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
-                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T', 
+                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
                     datarandom_b_field='kgamX_', datarandom_b_title=r'$\kappa \gamma_{X',
-                    sigma_field='sig', y_title="$\kappa\gamma$"),  # kg 
-        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$', 
+                    sigma_field='sig', y_title="$\kappa\gamma$"),  # kg
+        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$',
                     b_field='<Mx^2>', b_title=r'$\langle M_x^2\rangle$',
-                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$', 
+                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$',
                     b_im_field='<Mmx>(b)', b_im_title=r'$\langle MM_x \rangle(b)$',
                     sigma_field='sig_map', y_title="$M_{ap}^2$"),  # m2
-        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$', 
+        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$',
                     b_field='<NMx>', b_title=r'$\langle NM_{x} \rangle$',
                     sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
         ]
-        
+
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
-        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some 
+        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some
         sensible defaults, but much of its behavior can be changed.
-        
+
         @param data       The data returned from a CorrelationFunctionSysTest, as-is.
         @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
         @param log_yscale Whether to use a logarithmic y-scale [default: False]
@@ -265,8 +265,8 @@ class CorrelationFunctionSysTest(SysTest):
 
         # Logarithmic x-axes have stupid default ranges: fix this.
         rstep = data[r][1]/data[r][0]
-        xlim = [min(data[r])/rstep, max(data[r])*rstep]    
-        # Check what kind of data is in the array that .plot() received.  
+        xlim = [min(data[r])/rstep, max(data[r])*rstep]
+        # Check what kind of data is in the array that .plot() received.
         for plot_details in self.plot_details:
             # Pick the one the data contains and use it; break before trying the others.
             if plot_details.t_field in fields:
@@ -295,25 +295,25 @@ class CorrelationFunctionSysTest(SysTest):
         # Plot the first thing
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
-        ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0], 
+        ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0],
                     label=pd.t_title)
         if pd.b_title and plot_bmode:
-            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1], 
+            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.b_title)
         elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
-            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1], 
+            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
         ax.set_xscale('log')
         ax.set_yscale(yscale)
         ax.set_xlim(xlim)
         ax.set_ylabel(pd.y_title)
         ax.legend()
-        if pd.b_field and plot_bmode and pd.t_im_field:  
+        if pd.b_field and plot_bmode and pd.t_im_field:
             # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
             ax = fig.add_subplot(nrows, 1, 2)
-            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0], 
+            ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0],
                         label=pd.t_im_title)
-            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1], 
+            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.b_im_title)
             ax.set_xscale('log')
             ax.set_yscale(yscale)
@@ -323,10 +323,10 @@ class CorrelationFunctionSysTest(SysTest):
         if plot_data_only and pd.datarandom_t_field:  # Plot the data-only measurements if requested
             curr_plot += 1
             ax = fig.add_subplot(nrows, 1, 2)
-            ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field], 
+            ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'d}$')
             if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field], 
+                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[1], label=pd.datarandom_b_title+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
@@ -335,10 +335,10 @@ class CorrelationFunctionSysTest(SysTest):
             ax.legend()
         if plot_random_only and pd.datarandom_t_field:  # Plot the randoms-only measurements if requested
             ax = fig.add_subplot(nrows, 1, nrows)
-            ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field], 
+            ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
             if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field], 
+                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[1], label=pd.datarandom_b_title+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
@@ -572,7 +572,7 @@ class StatSysTest(SysTest):
                           'skew', 'kurtosis']
         except ImportError:
             simple_stats=['min', 'max', 'median', 'mad', 'mean', 'stddev', 'variance', 'N']
-            
+
         result = stile.stile_utils.Stats(simple_stats=simple_stats)
 
         # Populate the basic entries, like median, mean, standard deviation, etc.
@@ -623,7 +623,7 @@ class WhiskerPlotSysTest(SysTest):
         Draw a whisker plot and return a `matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling the appearance of a plot, which are
         explained below. To implement a child class of WhiskerPlotSysTest, call whiskerPlot within
-        __call__ of the child class and return the `matplotlib.figure.Figure` that whiskerPlot 
+        __call__ of the child class and return the `matplotlib.figure.Figure` that whiskerPlot
         returns.
         @param x               The tuple, list, or NumPy array for the x-position of objects.
         @param y               The tuple, list, or NumPy array for the y-position of objects.
@@ -649,9 +649,9 @@ class WhiskerPlotSysTest(SysTest):
                                [default: None, meaning do not show a label for the y-axis]
         @param size_label      The label for `size`, which is shown at the right of the color bar.
                                [default: None, meaning do not show a size label]
-        @param xlim            Limits of x-axis (min, max). 
+        @param xlim            Limits of x-axis (min, max).
                                [default: None, meaning do not set any limits for x]
-        @param ylim            Limits of y-axis (min, max). 
+        @param ylim            Limits of y-axis (min, max).
                                [default: None, meaning do not set any limits for y]
         @equal_axis            If True, force equal scaling for the x and y axes (distance between
                                ticks of the same numerical values are equal on the x and y axes).
@@ -680,7 +680,7 @@ class WhiskerPlotSysTest(SysTest):
         if size is None:
             q = ax.quiver(x, y, gx, gy, units = 'inches',
                           headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = linewidth, 
+                          pivot = 'middle', width = linewidth,
                           scale = scale)
         else:
             q = ax.quiver(x, y, gx, gy, size, units = 'inches',
@@ -730,9 +730,9 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
         return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
                                 array['psf_sigma'], linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
-    
+
 class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
     long_name = 'Make a Whisker plot of residuals'
@@ -745,6 +745,287 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
                                 linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
-    
+
+###############################################################################
+# Histogram by Song Huang (2014-08-30)
+class HistogramSysTest(SysTest):
+
+    short_name = 'histogram'
+
+    """
+    A base class for Stile systematics tests that generate histogram
+    """
+
+    """
+    The Scott rule for bin size
+    This function is directly copied from the astroML library
+    (astroMl/density_estimation/histtool.py)
+    """
+    def scotts_bin_width(data, return_bins=False):
+        r"""Return the optimal histogram bin width using Scott's rule:
+
+        Parameters
+        ----------
+        data : array-like, ndim=1
+            observed (one-dimensional) data
+        return_bins : bool (optional)
+            if True, then return the bin edges
+
+        Returns
+        -------
+        width : float
+            optimal bin width using Scott's rule
+        bins : ndarray
+            bin edges: returned if `return_bins` is True
+
+        Notes
+        -----
+        The optimal bin width is
+
+        .. math::
+            \Delta_b = \frac{3.5\sigma}{n^{1/3}}
+
+        where :math:`\sigma` is the standard deviation of the data, and
+        :math:`n` is the number of data points.
+
+        See Also
+        --------
+        knuth_bin_width
+        freedman_bin_width
+        astroML.plotting.hist
+        """
+        data = numpy.asarray(data)
+        if data.ndim != 1:
+            raise ValueError("data should be one-dimensional")
+
+        n = data.size
+        sigma = numpy.std(data)
+
+        dx = 3.5 * sigma * 1. / (n ** (1. / 3))
+
+        if return_bins:
+            Nbins = numpy.ceil((data.max() - data.min()) * 1. / dx)
+            Nbins = max(1, Nbins)
+            bins = data.min() + dx * numpy.arange(Nbins + 1)
+            return dx, bins
+        else:
+            return dx
+
+    """
+    The Freedman-Diaconis rule of bin size
+    This function is directly copied from the astroML library
+    (astroMl/density_estimation/histtool.py)
+    """
+    def freedman_bin_width(data, return_bins=False):
+        r"""Return the optimal histogram bin width using the Freedman-Diaconis
+            rule
+
+        Parameters
+        ----------
+        data : array-like, ndim=1
+            observed (one-dimensional) data
+        return_bins : bool (optional)
+            if True, then return the bin edges
+
+        Returns
+        -------
+        width : float
+            optimal bin width using Scott's rule
+        bins : ndarray
+            bin edges: returned if `return_bins` is True
+
+        Notes
+        -----
+        The optimal bin width is
+
+        .. math::
+            \Delta_b = \frac{2(q_{75} - q_{25})}{n^{1/3}}
+
+        where :math:`q_{N}` is the :math:`N` percent quartile of the data, and
+        :math:`n` is the number of data points.
+
+        See Also
+        --------
+        knuth_bin_width
+        scotts_bin_width
+        astroML.plotting.hist
+        """
+        data = numpy.asarray(data)
+        if data.ndim != 1:
+            raise ValueError("data should be one-dimensional")
+
+        n = data.size
+        if n < 4:
+            raise ValueError("data should have more than three entries")
+
+        dsorted = numpy.sort(data)
+        v25 = dsorted[n / 4 - 1]
+        v75 = dsorted[(3 * n) / 4 - 1]
+
+        dx = 2 * (v75 - v25) * 1. / (n ** (1. / 3))
+
+        if return_bins:
+            Nbins = numpy.ceil((dsorted[-1] - dsorted[0]) * 1. / dx)
+            Nbins = max(1, Nbins)
+            bins = dsorted[0] + dx * numpy.arange(Nbins + 1)
+            return dx, bins
+        else:
+            return dx
+
+    """
+    Generate the histogram
+    """
+    def HistoPlot( self, data, style, nbins = 50, range = None,
+                   figsize = None, normed = 0, histtype = 'stepfilled',
+                   xlabel = None, ylabel = None,
+                   xlim = None, ylim = None, hide_x = False, hide_y = False,
+                   cumulative = False, align = 'mid', rwidth = None,
+                   log = False, color = None, alpha = None,
+                   text = None, text_x = 0.90, text_y = 0.90, fontsize = 12,
+                   linewidth = 1.8, vlines = None, vcolor = 'black' ):
+
+        """
+        Draw a histogram and return a `matplotlib.figure.Figure` object.
+
+        This section strongly depends on the above WhiskerPlotSysTest section,
+        since I am still very new to Python
+
+        This method has a bunch of options for controlling the appearance of
+        the histogram, which are explained below.
+
+        To implement a child class of HistogramSysTest, call HistoPlot within
+        __call__ of the child class and return the `matplotlib.figure.Figure`
+        that HistoPlot returns.
+
+        @param data          The 1-Dimension NumPy array for the histogram
+        @param style         Different selections of Histogram bin size:
+               style = 1 :   Using the Scott's rule to decide the bin size
+               style = 2 :   Using the Freedman-Diaconis rule to decide the bin
+                             size
+               style = 3 :   Manually select a fixed number of bins
+
+        @param nbins         The number of bins if style = 3 is selected.
+                             [Default: nbins = 50]
+        @param range         The [min, max] limits to trim the data before the
+                             histogram is made
+                             [Default: range = None]
+        @param normed        Whether the normalized histogram is shown
+                             [Default: normed = False]
+        @param cumulative    Whether the cumulative histogram is shown
+                             [Default: cumulative = False]
+        @param histtype      The type of histogram to show:
+               histtype = 'bar'        : Tradition bar-type histogram
+               histtype = 'step'       : Unfilled lineplot-type histogram
+               histtype = 'stepfilled' : Filled lineplot-type histogram
+                             [Default: histtype = 'stepfilled']
+        @param align         Where the bars are centered relative to bin edges
+                             = 'left', 'mid', or 'right'
+                             [Default: align = 'mid' ]
+        @param rwidth        The relative width of the bars as a fraction of the
+                             bin width. Ignored for histtype = 'step' or
+                             'stepfilled'
+                             [Default = None]
+        @param log           If True, the histogram axis will be set to a log scale
+                             [Default = False]
+        @param color         Color of the histogram
+                             [Default = None]
+        @param figsize       Size of a figure (x, y) in units of inches.
+                             [Default: None, meaning use the default value of matplotlib]
+        @param xlabel        The x-axis label.
+                             [Default: None, meaning do not show a label for the x-axis]
+        @param ylabel        The y-axis label.
+                             [Default: None, meaning do not show a label for the y-axis]
+                             [Default: None, meaning do not show a size label]
+        @param xlim          Limits of x-axis (min, max).
+                             [Default: None, meaning do not set any limits for x]
+        @param ylim          Limits of y-axis (min, max).
+                             [Default: None, meaning do not set any limits for y]
+        @param hide_x        Whether hide the labels for x-axis
+                             [Default: hide_x = False]
+        @param hide_y        Whether hide the labels for y-axis
+                             [Default: hide_y = False]
+        @param alpha
+        @param linewidth
+        @param text
+        @param text_x
+        @param text_y
+        @param vlines
+        @param vcolor
+
+        @returns a matplotlib.figure.Figure object.
+        """
+
+        hist = plt.figure( figsize=figsize )
+        ax   = hist.add_subplot( 1,1,1 )
+
+        # mask data with NaN
+        sel  = numpy.logical_and.reduce( [numpy.isnan( data ) == False ] )
+        data = data[ sel ]
+        data = numpy.asarray(data)
+
+        if (range is not None ):
+            data = data[( data >= range[0]) & ( data <= range[1] ) ]
+
+        if ( style is 1 ):
+            "Use the Scott rule"
+            dx, bins = self.scotts_bin_width( data, True )
+        elif ( style is 2 ):
+            "Use the Freedman rule"
+            dx, bins = self.freedman_bin_width( data, True )
+        elif ( style is 3 ):
+            bins = nbins
+        elif isinstance( style, str):
+            raise ValueError("Unrecognized histogram style: '%s'" % style )
+
+        counts, edges, patches = ax.hist( data, bins,
+                                        histtype = histtype,
+                                        color = color,
+                                        normed = normed,
+                                        cumulative = cumulative,
+                                        alpha = alpha,
+                                        rwidth = rwidth,
+                                        log = log,
+                                        align = align,
+                                        linewidth = linewidth
+                                        )
+        if histtype is 'stepfilled':
+            counts, edges, patches = ax.hist( data, bins,
+                                            histtype = 'step',
+                                            color = 'black',
+                                            normed = normed,
+                                            cumulative = cumulative,
+                                            alpha = 1.0,
+                                            rwidth = rwidth,
+                                            log = log,
+                                            align = align,
+                                            linewidth = 1.8
+                                            )
+
+
+        if xlabel is not None:
+            ax.set_xlabel( xlabel )
+        if ylabel is not None:
+            ax.set_ylabel( ylabel )
+
+        if xlim is not None:
+            ax.set_xlim( *xlim )
+        if ylim is not None:
+            ax.set_ylim( *ylim )
+
+        if hide_x:
+            ax.xaxis.set_major_formatter( plt.NullFormatter() )
+        if hide_y:
+            ax.yaxis.set_major_formatter( plt.NullFormatter() )
+
+        if text is not None:
+            ax.text( text_x, text_y, text, transform=ax.transAxes,
+                    ha='right', va='top', fontsize = fontsize )
+
+        ymin, ymax = ax.get_ylim()
+        if vlines is not None:
+            ax.vlines( vlines, ymin, ymax, colors=vcolor, linestyle='dashed',
+                       linewidth = 1.8)
+
+        return hist
