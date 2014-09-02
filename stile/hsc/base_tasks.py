@@ -167,12 +167,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # Right now, we have a source catalog, plus a dict of other computed quantities.  Step
         # through the masks and required quantities and generate a NumPy array for each pair,
         # containing only the required quantities and only in the rows indicated by the mask.
-	# First we need to add the non-chip or non-sky shape quantity names, if any.
-	for sys_data in sys_data_list:
+        # First we need to add the non-chip or non-sky shape quantity names, if any.
+        for sys_data in sys_data_list:
             for cols in sys_data.cols_list:
-	        for c in cols:
-		    if '_sky' in c or '_chip' in c:
-		        cols.append('_'.join(c.split('_')[:-1]))
+                for c in cols:
+                    if '_sky' in c or '_chip' in c:
+                        cols.append('_'.join(c.split('_')[:-1]))
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
             for mask, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
@@ -256,7 +256,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # are any moments-related keys to pull out of the catalog.
         base_shape_keys = ['g1', 'g2', 'psf_g1', 'psf_g2', 'w']
         shape_keys = ['g1_sky', 'g1_chip', 'g2_sky', 'g2_chip', 'sigma']
-        shape_err_keys = ['g1_err_sky', 'g1_err_chip', 'g2_err_sky', 'g2_err_chip', 'sigma_err', 'w_sky', 'w_chip']
+        shape_err_keys = ['g1_err_sky', 'g1_err_chip', 'g2_err_sky', 'g2_err_chip', 'sigma_err', 
+                          'w_sky', 'w_chip']
         psf_shape_keys = ['psf_g1_sky', 'psf_g1_chip', 'psf_g2_sky', 'psf_g2_chip', 'psf_sigma']
         do_shape = [col for col in shape_keys if col in cols and not col in catalog.schema]
         do_err = [col for col in shape_err_keys if col in cols and not col in catalog.schema]
@@ -328,7 +329,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                             mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask], 
                                                                        extra_mask)
                         for col in shapes_dict:
-			    if shapes_dict[col] is not None and col in extra_col_dict:
+                            if shapes_dict[col] is not None and col in extra_col_dict:
                                 extra_col_dict[col][nan_and_col_mask] = shapes_dict[col]
         # Now we do the other quantities.  A lot of this is similar to the above code.
         for col in cols:
@@ -501,15 +502,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             extra_mask = None
         if sky_coords:
             return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
-                     'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 'psf_sigma': psf_sigma,
-                     'g1_sky': g1, 'g2_sky': g2, 'g1_err_sky': g1_err, 'g2_err_sky': g2_err, 'w_sky': w,
-                     'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2},
+                     'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 
+                     'psf_sigma': psf_sigma, 'g1_sky': g1, 'g2_sky': g2, 'g1_err_sky': g1_err, 
+                     'g2_err_sky': g2_err, 'w_sky': w, 'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2},
                      extra_mask)
         else:
             return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
-                     'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 'psf_sigma': psf_sigma,
-                     'g1_chip': g1, 'g2_chip': g2, 'g1_err_chip': g1_err, 'g2_err_chip': g2_err, 'w_chip': w,
-                     'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2},
+                     'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2, 
+                     'psf_sigma': psf_sigma, 'g1_chip': g1, 'g2_chip': g2, 'g1_err_chip': g1_err, 
+                     'g2_err_chip': g2_err, 'w_chip': w, 'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2},
                      extra_mask)
 
     def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):
@@ -731,7 +732,8 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         for mask, shape_mask in zip(temp_mask_list, shape_masks[i])]
                         for i in range(len(temp_mask_list[0]))]
             for (mask_list, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
-                for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_list, catalogs, extra_col_dicts):
+                for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_list, catalogs, 
+                                                                  extra_col_dicts):
                     self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             # Some tests need to know which data came from which CCD, so we add a column for that here
             # to make sure it's propagated through to the sys_tests.

@@ -163,14 +163,15 @@ class ShapeSysTestAdapter(BaseSysTestAdapter):
         reqs = self.sys_test.required_quantities
         return_reqs = []
         for req in reqs:
-            return_reqs.append([r+'_'+self.shape_type if r in self.shape_fields else r for r in req])
+            return_reqs.append([r+'_'+self.shape_type if r in self.shape_fields else r 
+                                for r in req])
         return return_reqs
 
     def fixArray(self, array):
         for field in self.shape_fields:
             if field in array.dtype.names:
                 array[field] = array[field+'_'+self.shape_type]
-	return array
+        return array
         
     def __call__(self, task_config, *data, **kwargs):
         """
