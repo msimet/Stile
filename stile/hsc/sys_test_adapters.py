@@ -34,7 +34,7 @@ def MaskStar(data, config):
     try:
         return data['classification.extendedness']==0
     except LsstCppException:
-        return numpy.array([src['classification.extendedness']==1 for src in data])
+        return numpy.array([src['classification.extendedness']==0 for src in data])
 
 def MaskBrightStar(data, config):
     """
@@ -155,7 +155,7 @@ class BaseSysTestAdapter(object):
         """
         return self.sys_test(*data, **kwargs)
 
-def ShapeSysTestAdapter(BaseSysTestAdapter):
+class ShapeSysTestAdapter(BaseSysTestAdapter):
     shape_fields = ['g1', 'g2', 'g1_err', 'g2_err', 
                     'psf_g1', 'psf_g1_err', 'psf_g2', 'psf_g2_err', 'w']
                     
@@ -163,13 +163,14 @@ def ShapeSysTestAdapter(BaseSysTestAdapter):
         reqs = self.sys_test.required_quantities
         return_reqs = []
         for req in reqs:
-            return_reqs.append([r+'_'+self.shape_type for r in req if r in shape_fields else r])
+            return_reqs.append([r+'_'+self.shape_type if r in self.shape_fields else r for r in req])
         return return_reqs
 
     def fixArray(self, array):
         for field in self.shape_fields:
             if field in array.dtype.names:
                 array[field] = array[field+'_'+self.shape_type]
+	return array
         
     def __call__(self, task_config, *data, **kwargs):
         """
