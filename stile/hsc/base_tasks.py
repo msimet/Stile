@@ -8,6 +8,7 @@ import os
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
+import lsst.afw.geom as afwGeom
 from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from lsst.pex.exceptions import LsstCppException
@@ -51,9 +52,11 @@ class SysTestData(object):
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear"])
-    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
+                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",         
+                             "StarXGalaxyShear", "StarXStarShear",
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual"
+                             ])
+    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.005', 'max_sep': '0.2',
@@ -75,6 +78,14 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                    'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted',
                    'shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
     bright_star_sn_cutoff = 50
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [7., 10.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [-100., 2100.])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [-100., 4200.])
+    whiskerplot_scale = lsst.pex.config.Field(dtype=float,
+        doc="length of whisker per inch", default = 0.4)
 
 class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
@@ -260,6 +271,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             calib_metadata = dataRef.get("calexp_md")
             calib_type = "calexp"
 
+        # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
+        # in pixel. When the pipeline is updated, we should update this line as well.
+        xy0 = dataRef.get("calexp").getDetector().getPositionFromPixel(
+            afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD'
+            ) and ('x' in raw_cols or 'y' in raw_cols) else None
+
         if shape_cols:
             for col in shape_cols:
                 cols.remove(col)
@@ -301,7 +318,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 if any(nan_and_col_mask>0):
                     # "extra_mask" is the new mask with the quantity-specific flags
                     extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
-                        col, catalog[nan_and_col_mask], calib_metadata, calib_type)
+                        col, catalog[nan_and_col_mask], calib_metadata, calib_type, xy0)
                     if extra_mask is not None:
                         mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
                                                                    extra_mask)
@@ -453,8 +470,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
             psf_sigma = numpy.sqrt(0.5*(psf_ixx+psf_iyy))
-            extra_mask = numpy.array([src.get('flux.psf.flags')==0 &
-                                 src.get('flux.psf.flags.psffactor')==0 for src in data])
+            extra_mask = numpy.array([src.get('flux.psf.flags')==0 for src in data])
         else:
             psf_g1 = None
             psf_g2 = None
@@ -465,7 +481,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                  extra_mask)
 
 
-    def computeExtraColumn(self, col, data, calib_data, calib_type):
+    def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):
         """
         Compute the quantity `col` for the given `data`.
 
@@ -474,6 +490,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @param calib_data Photometric calibration data for flux/magnitude measurements.
         @param calib_type Which type of calibration calib_data is ("fcr" or "calexp"--"fcr" for
                           coadds where available, else "calexp").
+        @param xy0        Offset of a CCD
+                          [Default: None, meaning do not add any offset.]
         @returns          A 2-element tuple.  The first element is a list or NumPy array of the
                           quantity indicated by `col`. The second is either None (if no further
                           masking is needed) or a NumPy array of boolean values indicating where the
@@ -485,9 +503,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         elif col=="dec":
             return [src.getDec().asDegrees() for src in data], None
         elif col=="x":
-            return [src.getX() for src in data], None
+            if xy0:
+                return [src.getX() + xy0.getX() for src in data], None
+            else:
+                return [src.getX() for src in data], None
         elif col=="y":
-            return [src.getY() for src in data], None
+            if xy0:
+                return [src.getY() + xy0.getY() for src in data], None
+            else:
+                return [src.getY() for src in data], None
         elif col=="mag_err":
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
                                                     for src in data]),
@@ -581,6 +605,14 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.05', 'max_sep': '1',
                                  'sep_units': 'degrees', 'nbins': '20'})
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [12., 10.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [-20000., 20000.])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [-20000., 20000.])
+    whiskerplot_scale = lsst.pex.config.Field(dtype=float,
+        doc="length of whisker per inch", default = 0.4)
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """

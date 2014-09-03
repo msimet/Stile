@@ -263,12 +263,12 @@ class CorrelationFunctionSysTest(SysTest):
 
         @param data       The data returned from a CorrelationFunctionSysTest, as-is.
         @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
-        @param log_yscale Whether to use a logarithmic y-scale (default: False)
-        @param plot_bmode Whether to plot the b-mode signal, if there is one (default: True)
+        @param log_yscale Whether to use a logarithmic y-scale [default: False]
+        @param plot_bmode Whether to plot the b-mode signal, if there is one [default: True]
         @param plot_data_only   Whether to plot the data-only correlation functions, if present
-                                (default: True)
+                                [default: True]
         @param plot_random_only Whether to plot the random-only correlation functions, if present
-                                (default: True)
+                                [default: True]
         @returns          A matplotlib Figure which may be written to a file with .savefig(), if
                           matplotlib can be imported; else None.
         """
@@ -627,3 +627,144 @@ class StatSysTest(SysTest):
 
         # Return.
         return result
+
+class WhiskerPlotSysTest(SysTest):
+    short_name = 'whiskerplot'
+    """
+    A base class for Stile systematics tests that generate whisker plots. This implements the class
+    method whiskerPlot. Every child class of WhiskerPlotSysTest should use
+    WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
+    WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
+    """
+    def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, scale = None,
+                    keylength = 0.05, figsize = None, xlabel = None, ylabel = None,
+                    size_label = None, xlim = None, ylim = None, equal_axis = False):
+        """
+        Draw a whisker plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling the appearance of a plot, which are
+        explained below. To implement a child class of WhiskerPlotSysTest, call whiskerPlot within
+        __call__ of the child class and return the `matplotlib.figure.Figure` that whiskerPlot 
+        returns.
+        @param x               The tuple, list, or NumPy array for the x-position of objects.
+        @param y               The tuple, list, or NumPy array for the y-position of objects.
+        @param g1              The tuple, list, or Numpy array for the 1st ellipticity component
+                               of objects.
+        @param g2              The tuple, list, or Numpy array for the 2nd ellipticity component
+                               of objects.
+        @param size            The tuple, list, or Numpy array for the size of objects. The size
+                               information is shown as color gradation.
+                               [default: None, meaning do not show the size information]
+        @param linewidth       Width of whiskers in units of inches.
+                               [default: 0.01]
+        @param scale           Length of whisker per inch.
+                               [default: None, meaning follow the default autoscaling algorithm from
+                               matplotlib]
+        @param keylength       Length of a key.
+                               [default: 0.05]
+        @param figsize         Size of a figure (x, y) in units of inches.
+                               [default: None, meaning use the default value of matplotlib]
+        @param xlabel          The x-axis label.
+                               [default: None, meaning do not show a label for the x-axis]
+        @param ylabel          The y-axis label.
+                               [default: None, meaning do not show a label for the y-axis]
+        @param size_label      The label for `size`, which is shown at the right of the color bar.
+                               [default: None, meaning do not show a size label]
+        @param xlim            Limits of x-axis (min, max). 
+                               [default: None, meaning do not set any limits for x]
+        @param ylim            Limits of y-axis (min, max). 
+                               [default: None, meaning do not set any limits for y]
+        @equal_axis            If True, force equal scaling for the x and y axes (distance between
+                               ticks of the same numerical values are equal on the x and y axes).
+                               [default: False]
+        @returns a matplotlib.figure.Figure object.
+        """
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(1,1,1)
+
+        # mask data with nan
+        sel = numpy.logical_and.reduce(
+            [numpy.isnan(x) == False, numpy.isnan(y) == False,
+             numpy.isnan(g1) == False, numpy.isnan(g2) == False])
+        sel = numpy.logical_and(sel, numpy.isnan(size) == False) if size is not None else sel
+        x = x[sel]
+        y = y[sel]
+        g1 = g1[sel]
+        g2 = g2[sel]
+        size = size[sel] if size is not None else size
+
+        # plot
+        g = numpy.sqrt(g1*g1+g2*g2)
+        theta = numpy.arctan2(g2,g1)/2
+        gx = g * numpy.cos(theta)
+        gy = g * numpy.sin(theta)
+        if size is None:
+            q = ax.quiver(x, y, gx, gy, units = 'inches',
+                          headwidth = 0., headlength = 0., headaxislength = 0.,
+                          pivot = 'middle', width = linewidth, 
+                          scale = scale)
+        else:
+            q = ax.quiver(x, y, gx, gy, size, units = 'inches',
+                          headwidth = 0., headlength = 0., headaxislength = 0.,
+                          pivot = 'middle', width = linewidth,
+                          scale = scale)
+            cb = fig.colorbar(q)
+            if size_label is not None:
+                cb.set_label(size_label)
+
+        qk = plt.quiverkey(q, 0.5, 0.92, keylength, r'$g= %s$' % str(keylength), labelpos='W')
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+        if equal_axis:
+            ax.axis('equal')
+        if xlim is not None:
+            ax.set_xlim(*xlim)
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+
+        return fig
+
+class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
+    short_name = 'whiskerplot_star'
+    long_name = 'Make a Whisker plot of stars'
+    objects_list = ['star PSF']
+    required_quantities = [('x','y','g1','g2','sigma')]
+
+    def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
+                 xlim = None, ylim = None):
+        return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
+                                linewidth = linewidth, scale = scale, figsize = figsize,
+                                xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
+                                size_label = r'$\sigma$ [pixel]',
+                                xlim = xlim, ylim = ylim, equal_axis = True)
+
+class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
+    short_name = 'whiskerplot_psf'
+    long_name = 'Make a Whisker plot of PSFs'
+    objects_list = ['star PSF']
+    required_quantities = [('x','y','psf_g1','psf_g2','psf_sigma')]
+
+    def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
+                 xlim = None, ylim = None):
+        return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
+                                array['psf_sigma'], linewidth = linewidth, scale = scale,
+                                figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
+                                size_label = r'$\sigma$ [pixel]', 
+                                xlim = xlim, ylim = ylim, equal_axis = True)
+    
+class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
+    short_name = 'whiskerplot_residual'
+    long_name = 'Make a Whisker plot of residuals'
+    objects_list = ['star PSF']
+    required_quantities = [('x','y', 'g1','g2','sigma', 'psf_g1','psf_g2','psf_sigma')]
+
+    def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
+                 xlim = None, ylim = None):
+        return self.whiskerPlot(array['x'], array['y'], array['g1'] - array['psf_g1'],
+                                array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
+                                linewidth = linewidth, scale = scale,
+                                figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
+                                size_label = r'$\sigma$ [pixel]', 
+                                xlim = xlim, ylim = ylim, equal_axis = True)
+    
