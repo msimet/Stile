@@ -95,15 +95,26 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-treecorr_func_dict = {'g2': treecorr.G2Correlation,
-                      'm2': treecorr.G2Correlation,
-                      'ng': treecorr.NGCorrelation,
-                      'nm': treecorr.NGCorrelation,
-                      'norm': treecorr.NGCorrelation,
-                      'n2': treecorr.N2Correlation,
-                      'k2': treecorr.K2Correlation,
-                      'nk': treecorr.NKCorrelation,
-                      'kg': treecorr.KGCorrelation}
+if treecorr.version<'3.1':        
+    treecorr_func_dict = {'gg': treecorr.G2Correlation,
+                          'm2': treecorr.G2Correlation,
+                          'ng': treecorr.NGCorrelation,
+                          'nm': treecorr.NGCorrelation,
+                          'norm': treecorr.NGCorrelation,
+                          'nn': treecorr.N2Correlation,
+                          'kk': treecorr.K2Correlation,
+                          'nk': treecorr.NKCorrelation,
+                          'kg': treecorr.KGCorrelation}
+else:
+    treecorr_func_dict = {'gg': treecorr.GGCorrelation,
+                          'm2': treecorr.GGCorrelation,
+                          'ng': treecorr.NGCorrelation,
+                          'nm': treecorr.NGCorrelation,
+                          'norm': treecorr.NGCorrelation,
+                          'nn': treecorr.NNCorrelation,
+                          'kk': treecorr.KKCorrelation,
+                          'nk': treecorr.NKCorrelation,
+                          'kg': treecorr.KGCorrelation}
 
 class CorrelationFunctionSysTest(SysTest):
     """
@@ -126,7 +137,7 @@ class CorrelationFunctionSysTest(SysTest):
         PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
                     t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$',
                     b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$',
-                    sigma_field='sigma_xi', y_title=r"$\xi$"),  # g2
+                    sigma_field='sigma_xi', y_title=r"$\xi$"),  # gg
         PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
                     sigma_field='sigma', y_title="$\kappa$"),  # nk
@@ -194,11 +205,11 @@ class CorrelationFunctionSysTest(SysTest):
 
         The user needs to specify the type of correlation function requested.  The available types
         are:
-            'n2': a 2-point correlation function
+            'nn': a 2-point correlation function
             'ng': a point-shear correlation function (eg galaxy-galaxy lensing)
-            'g2': a shear-shear correlation function (eg cosmic shear)
+            'gg': a shear-shear correlation function (eg cosmic shear)
             'nk': a point-scalar [such as convergence, hence k meaning "kappa"] correlation function
-            'k2': a scalar-scalar correlation function
+            'kk': a scalar-scalar correlation function
             'kg': a scalar-shear correlation function
             'm2': an aperture mass measurement
             'nm': an <N aperture mass> measurement
@@ -208,11 +219,11 @@ class CorrelationFunctionSysTest(SysTest):
 
         This function accepts all (self-consistent) sets of data, data2, random, and random2.
         Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
-        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the
+        program returns an autocorrelation.  "Random" keys are necessary for the 'nn' form of the
         correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
 
         @param stile_args    The dict containing the parameters that control Stile's behavior
-        @param correlation_function_type The type of correlation function ('n2', 'ng', 'g2', 'nk',
+        @param correlation_function_type The type of correlation function ('nn', 'ng', 'gg', 'nk',
                              'k2', 'kg', 'm2', 'nm', 'norm') to request from TreeCorr--see above.
         @param data, data2, random, random2: NumPy arrays of data with fields using the field name
                              strings given in the stile.fieldNames dict.
@@ -403,7 +414,7 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        return self.getCF('n2', data, data2, random, random2, config=config, **kwargs)
+        return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
 class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
@@ -415,7 +426,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        return self.getCF('g2', data, data2, random, random2, config=config, **kwargs)
+        return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
 class StarXStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -427,7 +438,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        return self.getCF('g2', data, data2, random, random2, config=config, **kwargs)
+        return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -439,7 +450,7 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        return self.getCF('n2', data, data2, random, random2, config=config, **kwargs)
+        return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
 class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -451,7 +462,7 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        return self.getCF('n2', data, data2, random, random2, config=config, **kwargs)
+        return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
 
 class StatSysTest(SysTest):
