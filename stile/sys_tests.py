@@ -231,7 +231,6 @@ class CorrelationFunctionSysTest(SysTest):
                              stile_args).
         @returns             a numpy array of the TreeCorr outputs.
         """
-        #TODO: know what kinds of data this needs and make sure it has it
         import tempfile
         import os
 
@@ -242,10 +241,41 @@ class CorrelationFunctionSysTest(SysTest):
 
         # First, pull out the TreeCorr-relevant parameters from the stile_args dict, and add
         # anything passed as a kwarg to that dict.
+        if random and len(random) or (random2 and len(random2)):
+            treecorr_kwargs[correlation_function_type+'_statistic'] = \
+                treecorr_kwargs.get(correlation_function_type+'_statistic','compensated')
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
-
+        
+        if data is None:
+            raise ValueError('Must include a data array!')
+        if correlation_function_type=='nn':
+            if random is None or ((data2 is not None or random2 is not None) and not 
+                                  (data2 is not None and random2 is not None)):
+                raise ValueError('Incorrect data types for correlation function: must have '
+                                   'data and random, and random2 if data2.')
+        elif correlation_function_type in ['gg', 'm2', 'kk']:
+            if random or random2:
+                print "Warning: randoms ignored for this correlation function type"
+        elif correlation_function_type in ['ng', 'nm', 'nk']:
+            if data2 is None:
+                raise ValueError('Must include data2 for this correlation function type')
+            if random2 is not None:
+                print "Warning: random2 ignored for this correlation function type"
+        elif correlation_function_type=='norm':
+            if data2 is None:
+                raise ValueError('Must include data2 for this correlation function type')
+            if random is None:
+                raise ValueError('Must include random for this correlation function type')
+            if random2 is None:
+                print "Warning: random2 ignored for this correlation function type"
+        elif correlation_function_type=='kg':
+            if data2 is None:
+                raise ValueError('Must include data2 for this correlation function type')
+            if random is not None or random2 is not None:
+                print "Warning: randoms ignored for this correlation function type"
+                
         data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k,
                                       use_chip_coords = use_chip_coords)
         data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k,
@@ -259,7 +289,63 @@ class CorrelationFunctionSysTest(SysTest):
 
         func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
         func.process(data, data2)
-        func.write(output_file)
+        if correlation_function_type in ['ng', 'nm', 'nk']:
+            if random is not None:
+                func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+                func_random.process(random, data2)
+            else:
+                func_random = None
+        elif correlation_function_type=='norm':
+            func_gg = treecorr_func_dict['gg'](treecorr_kwargs)
+            func_gg.process(data2)
+            func_dd = treecorr_func_dict['nn'](treecorr_kwargs)
+            func_dd.process(data)
+            func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+            func_rr.process(data)
+            # think about defaults here
+            if treecorr_kwargs['nn_statistic'] == 'compensated':
+                func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                func_dr.process(data,random)
+            else:
+                func_dr = None
+        elif correlation_function_type=='nn':
+            func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+            if len(random2):
+                func_random.process(random, random2)
+            else:
+                func_random.process(random)
+            if not len(data2):
+                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+                func_rr.process(data,random)
+                if treecorr_kwargs['nn_statistic'] == 'compensated':
+                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                    func_dr.process(data,random)
+                    func_rd = None
+                else:
+                    func_dr = None
+                    func_rd = None
+            else:
+                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+                func_rr.process(random,random2)
+                if treecorr_kwargs['nn_statistic'] == 'compensated':
+                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                    func_dr.process(data,random2)
+                    func_rd = treecorr_func_dict['nn'](treecorr_kwargs)
+                    func_rd.process(random,data2)
+        else:
+            func_random = None
+        if correlation_function_type=='m2':
+            func.writeMapSq(output_file)
+        elif correlation_function_type=='nm':
+            func.writeNMap(output_file, func_random)
+        elif correlation_function_type=='norm':
+            func.writeNorm(output_file, func_gg, func_dd, func_rr, func_dr, func_rg)
+        elif correlation_function_type=='nn':
+            func.write(output_file, func_rr, func_dr, func_rd)
+        elif func_random:
+            func.write(output_file,func_random)
+        else:
+            func.write(output_file)
         results = stile.ReadTreeCorrResultsFile(output_file)
         os.close(handle)
         if os.path.isfile(output_file):
