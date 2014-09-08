@@ -56,7 +56,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "StarXGalaxyShear", "StarXStarShear",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual"
                              ])
-    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.005', 'max_sep': '0.2',
