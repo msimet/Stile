@@ -152,8 +152,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             for cols_list in sys_test_data.cols_list:
                 if any([key in cols_list for key in
                                 ['g1_sky', 'g1_err_sky', 'g2_sky', 'g2_err_sky',
+                                 'sigma_sky', 'sigma_err_sky',
                                  'g1_chip', 'g1_err_chip', 'g2_chip', 'g2_err_chip',
-                                 'sigma', 'sigma_err']]):
+                                 'sigma_chip', 'sigma_err_chip']]):
                     shape_masks.append(self._computeShapeMask(catalog))
                 else:
                     shape_masks.append(True)
@@ -314,14 +315,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             nan_and_col_mask = numpy.logical_and(nan_mask, mask)
             # We will have to transform to sky coordinates if the locations are in (ra,dec).  But
             # we may also need the quantities in chip coordinates.
-            if 'x' in cols or 'y' in cols:
-                do_chip_coords = True
-            else:
-                do_chip_coords = False
-            if 'ra' in cols or 'dec' in cols:
-                do_sky_coords = True
-            else:
-                do_sky_coords = False
+            do_sky_coords = True if numpy.any(['_sky' in col for col in raw_cols]) else False
+            do_chip_coords = True if numpy.any(['_chip' in col for col in raw_cols]) else False
             if any(nan_and_col_mask>0):
                 # computeShapes returns a dict of ('key': column) pairs, and sometimes an extra
                 # mask indicating where measurements were valid. Here, the extra mask is only used
@@ -512,15 +507,18 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         if sky_coords:
             return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
                      'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2,
-                     'psf_sigma': psf_sigma, 'g1_sky': g1, 'g2_sky': g2, 'g1_err_sky': g1_err,
-                     'g2_err_sky': g2_err, 'w_sky': w, 'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2},
+                     'psf_sigma': psf_sigma, 'g1_sky': g1, 'g2_sky': g2, 'sigma_sky': sigma,
+                     'g1_err_sky': g1_err, 'g2_err_sky': g2_err, 'sigma_err_sky': sigma_err, 
+                     'w_sky': w, 'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2,
+                     'psf_sigma_sky': psf_sigma},
                      extra_mask)
         else:
             return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
                      'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2,
-                     'psf_sigma': psf_sigma, 'g1_chip': g1, 'g2_chip': g2, 'g1_err_chip': g1_err,
-                     'g2_err_chip': g2_err, 'w_chip': w, 'psf_g1_sky': psf_g1,
-                     'psf_g2_sky': psf_g2},
+                     'psf_sigma': psf_sigma, 'g1_chip': g1, 'g2_chip': g2, 'sigma_chip': sigma,
+                     'g1_err_chip': g1_err, 'g2_err_chip': g2_err, 'sigma_err_chip': sigma_err,
+                     'w_chip': w, 'psf_g1_chip': psf_g1,
+                     'psf_g2_chip': psf_g2, 'psf_sigma_chip': psf_sigma},
                      extra_mask)
 
     def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):

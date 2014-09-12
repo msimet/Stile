@@ -1018,7 +1018,7 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
         else:
             psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
         return self.scatterPlot(psf_g1, g1, yerr=g1_err,
-                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}#_1$',
+                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
 
