@@ -509,17 +509,22 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if sigma is not None: sigma *= 3600.
             if sigma_err is not None: sigma_err *= 3600.
             if psf_sigma is not None: psf_sigma *= 3600.
-            return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
-                     'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2,
-                     'psf_sigma': psf_sigma, 'g1_sky': g1, 'g2_sky': g2, 'sigma_sky': sigma,
-                     'g1_err_sky': g1_err, 'g2_err_sky': g2_err, 'sigma_err_sky': sigma_err, 
-                     'w_sky': w, 'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2,
-                     'psf_sigma_sky': psf_sigma},
+            return ({'g1': numpy.zeros(len(g1)), 'g2': numpy.zeros(len(g2)), 
+                     'sigma': numpy.zeros(len(sigma)), 'g1_err': numpy.zeros(len(g1_err)), 
+                     'g2_err': numpy.zeros(len(g2_err)), 'w': numpy.zeros(len(w)),
+                     'sigma_err': numpy.zeros(len(sigma_err)), 'psf_g1': numpy.zeros(len(psf_g1)), 
+                     'psf_g2': numpy.zeros(len(psf_g1)), 'psf_sigma': numpy.zeros(len(psf_sigma)),
+                     'g1_sky': g1, 'g2_sky': g2, 'sigma_sky': sigma, 'g1_err_sky': g1_err, 
+                     'g2_err_sky': g2_err, 'sigma_err_sky': sigma_err, 'w_sky': w, 
+                     'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2, 'psf_sigma_sky': psf_sigma},
                      extra_mask)
         else:
-            return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
-                     'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2,
-                     'psf_sigma': psf_sigma, 'g1_chip': g1, 'g2_chip': g2, 'sigma_chip': sigma,
+            return ({'g1': numpy.zeros(len(g1)), 'g2': numpy.zeros(len(g2)), 
+                     'sigma': numpy.zeros(len(sigma)), 'g1_err': numpy.zeros(len(g1_err)), 
+                     'g2_err': numpy.zeros(len(g2_err)), 'w': numpy.zeros(len(w)),
+                     'sigma_err': numpy.zeros(len(sigma_err)), 'psf_g1': numpy.zeros(len(psf_g1)), 
+                     'psf_g2': numpy.zeros(len(psf_g1)), 'psf_sigma': numpy.zeros(len(psf_sigma)),
+                     'g1_chip': g1, 'g2_chip': g2, 'sigma_chip': sigma,
                      'g1_err_chip': g1_err, 'g2_err_chip': g2_err, 'sigma_err_chip': sigma_err,
                      'w_chip': w, 'psf_g1_chip': psf_g1,
                      'psf_g2_chip': psf_g2, 'psf_sigma_chip': psf_sigma},
