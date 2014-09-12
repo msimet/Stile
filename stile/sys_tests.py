@@ -806,20 +806,20 @@ class ScatterPlotSysTest(SysTest):
         y_isnan = numpy.isnan(y)
         import warnings
         if numpy.sum(x_isnan) != 0:
-            warnins.warn('There are %s nans in x, out of %s.' % (numpy.sum(x_isnan), len(x_isnan)))
+            warnings.warn('There are %s nans in x, out of %s.' % (numpy.sum(x_isnan), len(x_isnan)))
         if numpy.sum(y_isnan) != 0:
-            warnins.warn('There are %s nans in y, out of %s.' % (numpy.sum(y_isnan), len(y_isnan)))
+            warnings.warn('There are %s nans in y, out of %s.' % (numpy.sum(y_isnan), len(y_isnan)))
         sel = numpy.logical_and(numpy.invert(x_isnan), numpy.invert(y_isnan))
         if yerr is not None:
             yerr_isnan = numpy.isnan(yerr)
             if numpy.sum(yerr_isnan) != 0:
-                warnins.warn('There are %s nans in yerr, out of %s.'
+                warnings.warn('There are %s nans in yerr, out of %s.'
                              % (numpy.sum(yerr_isnan), len(yerr_isnan)))
             sel = numpy.logical_and(sel, numpy.invert(yerr_isnan))
         if z is not None:
             z_isnan = numpy.isnan(z)
             if numpy.sum(z_isnan) != 0:
-                warnins.warn('There are %s nans in z, out of %s.'
+                warnings.warn('There are %s nans in z, out of %s.'
                              % (numpy.sum(z_isnan), len(z_isnan)))
             sel = numpy.logical_and(sel, numpy.invert(z_isnan))
         x = x[sel]
