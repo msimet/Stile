@@ -1057,7 +1057,8 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
         else:
             psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
         return self.scatterPlot(psf_sigma, sigma, yerr=sigma_err,
-                                xlabel=r'$\sigma^{\rm PSF}$', ylabel=r'$\sigma^{\rm star}$',
+                                xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
+                                ylabel=r'$\sigma^{\rm star}$ [arcsec]',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
 
@@ -1117,8 +1118,8 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
         else:
             psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
         return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
-                                xlabel=r'$\sigma^{\rm PSF}$',
-                                ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$', color=color,
-                                lim=lim, equal_axis=False, 
+                                xlabel=r'$\sigma^{\rm PSF}$  [arcsec]',
+                                ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$  [arcsec]',
+                                color=color, lim=lim, equal_axis=False, 
                                 linear_regression=True, reference_line='zero')
 

@@ -505,6 +505,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_sigma = None
             extra_mask = None
         if sky_coords:
+            # convert degree to arcsec
+            if sigma is not None: sigma *= 3600.
+            if sigma_err is not None: sigma_err *= 3600.
+            if psf_sigma is not None: psf_sigma *= 3600.
             return ({'g1': g1, 'g2': g2, 'sigma': sigma, 'g1_err': g1_err, 'g2_err': g2_err, 'w': w,
                      'sigma_err': sigma_err, 'psf_g1': psf_g1, 'psf_g2': psf_g2,
                      'psf_sigma': psf_sigma, 'g1_sky': g1, 'g2_sky': g2, 'sigma_sky': sigma,
