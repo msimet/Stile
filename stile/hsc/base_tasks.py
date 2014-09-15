@@ -485,8 +485,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dsigma_dixx = 0.25/sigma
             dsigma_diyy = 0.25/sigma
             sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
-            w = numpy.maximum(g1_err,g2_err)
-            w = 1./(0.36**2+w**2)
+            w = 1./(0.51**2+g1_err**2+g2_err**2)
         else:
             g1_err = None
             g2_err = None
