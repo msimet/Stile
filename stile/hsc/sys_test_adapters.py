@@ -156,9 +156,8 @@ class BaseSysTestAdapter(object):
         return self.sys_test(*data, **kwargs)
 
 class ShapeSysTestAdapter(BaseSysTestAdapter):
-    shape_fields = ['g1', 'g2', 'sigma', 'g1_err', 'g2_err', 'sigma_err',
-                    'psf_g1', 'psf_g2', 'psf_sigma', 'psf_g1_err',  'psf_g2_err', 'psf_sigma_err', 
-                    'w']
+    shape_fields = ['g1', 'g2', 'g1_err', 'g2_err',
+                    'psf_g1', 'psf_g2', 'psf_g1_err',  'psf_g2_err']
                     
     def getRequiredColumns(self):
         reqs = self.sys_test.required_quantities
