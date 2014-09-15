@@ -383,6 +383,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             wcs = calib.getWcs()
         # First pull the quantities from the catalog that we'll need.  This first version in the try
         # block is faster if it works, and the time cost if it fails is small, so we try it first...
+        nobj = len(data)
         try:
             if sky_coords:
                 localTransform = wcs.linearizePixelToSky(data.getCentroid())
@@ -501,25 +502,31 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g2 = None
             psf_sigma = None
             extra_mask = None
+        fake_g1 = None if g1 is None else numpy.zeros(len(g1))
+        fake_g2 = None if g2 is None else numpy.zeros(len(g2))
+        fake_g1_err = None if g1_err is None else numpy.zeros(len(g1_err))
+        fake_g2_err = None if g2_err is None else numpy.zeros(len(g2_err))
+        fake_psf_g1 = None if psf_g1 is None else numpy.zeros(len(psf_g1))
+        fake_psf_g2 = None if psf_g2 is None else numpy.zeros(len(psf_g2))
+        
         if sky_coords:
             # convert degree to arcsec
             if sigma is not None: sigma *= 3600.
             if sigma_err is not None: sigma_err *= 3600.
             if psf_sigma is not None: psf_sigma *= 3600.
-            return ({'g1': numpy.zeros(len(g1)), 'g2': numpy.zeros(len(g2)), 
-                     'g1_err': numpy.zeros(len(g1_err)), 'g2_err': numpy.zeros(len(g2_err)), 
-                     'psf_g1': numpy.zeros(len(psf_g1)), 'psf_g2': numpy.zeros(len(psf_g1)),
+            
+            return ({'g1': fake_g1, 'g2': fake_g2, 'g1_err': fake_g1_err, 'g2_err': fake_g2_err, 
+                     'psf_g1': fake_psf_g1, 'psf_g2': fake_psf_g2,
                      'g1_sky': g1, 'g2_sky': g2, 'sigma': sigma, 'g1_err_sky': g1_err, 
                      'g2_err_sky': g2_err, 'sigma_err': sigma_err, 'w': w, 
                      'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2, 'psf_sigma': psf_sigma},
                      extra_mask)
         else:
-            return ({'g1': numpy.zeros(len(g1)), 'g2': numpy.zeros(len(g2)), 
-                     'g1_err': numpy.zeros(len(g1_err)), 'g2_err': numpy.zeros(len(g2_err)), 
-                     'psf_g1': numpy.zeros(len(psf_g1)), 'psf_g2': numpy.zeros(len(psf_g1)), 
+            return ({'g1': fake_g1, 'g2': fake_g2, 'g1_err': fake_g1_err, 'g2_err': fake_g2_err, 
+                     'psf_g1': fake_psf_g1, 'psf_g2': fake_psf_g2,
                      'g1_chip': g1, 'g2_chip': g2, 'sigma': sigma, 'g1_err_chip': g1_err, 
-                     'g2_err_chip': g2_err, 'sigma_err': sigma_err, 'w': w, 'psf_g1_chip': psf_g1,
-                     'psf_g2_chip': psf_g2, 'psf_sigma': psf_sigma},
+                     'g2_err_chip': g2_err, 'sigma_err': sigma_err, 'w': w, 
+                     'psf_g1_chip': psf_g1, 'psf_g2_chip': psf_g2, 'psf_sigma': psf_sigma},
                      extra_mask)
 
     def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):
