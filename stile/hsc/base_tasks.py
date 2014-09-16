@@ -514,7 +514,6 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if sigma is not None: sigma *= 3600.
             if sigma_err is not None: sigma_err *= 3600.
             if psf_sigma is not None: psf_sigma *= 3600.
-            
             return ({'g1': fake_g1, 'g2': fake_g2, 'g1_err': fake_g1_err, 'g2_err': fake_g2_err, 
                      'psf_g1': fake_psf_g1, 'psf_g2': fake_psf_g2,
                      'g1_sky': g1, 'g2_sky': g2, 'sigma': sigma, 'g1_err_sky': g1_err, 
@@ -522,6 +521,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                      'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2, 'psf_sigma': psf_sigma},
                      extra_mask)
         else:
+            # convert pixel to arcsec
+            if sigma is not None: sigma *= 0.167
+            if sigma_err is not None: sigma_err *= 0.167
+            if psf_sigma is not None: psf_sigma *= 0.167
             return ({'g1': fake_g1, 'g2': fake_g2, 'g1_err': fake_g1_err, 'g2_err': fake_g2_err, 
                      'psf_g1': fake_psf_g1, 'psf_g2': fake_psf_g2,
                      'g1_chip': g1, 'g2_chip': g2, 'sigma': sigma, 'g1_err_chip': g1_err, 

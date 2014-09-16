@@ -714,8 +714,8 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
                  xlim = None, ylim = None):
         return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
                                 linewidth = linewidth, scale = scale, figsize = figsize,
-                                xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]',
+                                xlabel = r'$x$ [arcsec]', ylabel = r'$y$ [arcsec]',
+                                size_label = r'$\sigma$ [arcsec]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
 class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
@@ -728,8 +728,8 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
                  xlim = None, ylim = None):
         return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
                                 array['psf_sigma'], linewidth = linewidth, scale = scale,
-                                figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                figsize = figsize, xlabel = r'$x$ [arcsec]', ylabel = r'$y$ [arcsec]',
+                                size_label = r'$\sigma$ [arcsec]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
     
 class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
@@ -743,8 +743,8 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
         return self.whiskerPlot(array['x'], array['y'], array['g1'] - array['psf_g1'],
                                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
                                 linewidth = linewidth, scale = scale,
-                                figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                figsize = figsize, xlabel = r'$x$ [arcsec]', ylabel = r'$y$ [arcsec]',
+                                size_label = r'$\sigma$ [arcsec]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
 class ScatterPlotSysTest(SysTest):
