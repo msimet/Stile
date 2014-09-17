@@ -121,7 +121,7 @@ def Parser():
                    help="Level of verbosity",
                    dest='verbose')
     p.add_argument('--num_threads',
-                   help='Number of threads (TreeCorr) or multprocessing.Pool processors '+
+                   help='Number of threads (TreeCorr) or multiprocessing.Pool processors '+
                         '(Stile) to use; default is to automatically determine',
                    dest='num_threads')
     p.add_argument('--split_method',
