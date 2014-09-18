@@ -471,7 +471,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         if do_shape:
             g1 = (ixx-iyy)/(ixx+iyy)
             g2 = 2.*ixy/(ixx+iyy)
-            sigma = numpy.sqrt(0.5*(ixx+iyy))
+            sigma = (ixx*iyy - ixy**2)**0.25
         else:
             g1 = None
             g2 = None
@@ -484,10 +484,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             dg2_diyy = -2.*ixy/(ixx+iyy)**2
             dg2_dixy = 2./(ixx+iyy)
             g2_err = numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy +
-                               2. * dg2_dixy**2 * cov_ixy)
-            dsigma_dixx = 0.25/sigma
-            dsigma_diyy = 0.25/sigma
-            sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy)
+                                dg2_dixy**2 * cov_ixy)
+            dsigma_dixx = 0.25/sigma**3*iyy
+            dsigma_diyy = 0.25/sigma**3*ixx
+            dsigma_dixy = -0.5/sigma**3*ixy
+            sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy +
+                                   dsigma_dixy**2 * cov_ixy)
             w = 1./(0.51**2+g1_err**2+g2_err**2)
         else:
             g1_err = None
@@ -497,7 +499,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         if do_psf:
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
-            psf_sigma = numpy.sqrt(0.5*(psf_ixx+psf_iyy))
+            psf_sigma = (psf_ixx*psf_iyy - psf_ixy**2)**0.25
             extra_mask = numpy.array([src.get('flux.psf.flags')==0 for src in data])
         else:
             psf_g1 = None
@@ -527,10 +529,6 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                      'psf_g1_sky': psf_g1, 'psf_g2_sky': psf_g2, 'psf_sigma_sky': psf_sigma},
                      extra_mask)
         else:
-            # convert pixel to arcsec
-            if sigma is not None: sigma *= 0.167
-            if sigma_err is not None: sigma_err *= 0.167
-            if psf_sigma is not None: psf_sigma *= 0.167
             return ({'g1': fake_g1, 'g2': fake_g2, 'g1_err': fake_g1_err, 'g2_err': fake_g2_err, 
                      'sigma': fake_sigma, 'psf_g1': fake_psf_g1, 'psf_g2': fake_psf_g2, 
                      'psf_sigma': fake_psf_sigma,
