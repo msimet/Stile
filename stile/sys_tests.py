@@ -999,9 +999,9 @@ class ScatterPlotSysTest(SysTest):
             y_med = numpy.array([numpy.median(y[ccds == ccd]) for ccd in set(ccds)])
             y_med_std = numpy.array([numpy.sqrt(numpy.pi/2.)*numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
                                      for ccd in set(ccds)])
+            return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
-            return x_med, y_med, y_med_std
 
 class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
