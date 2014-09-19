@@ -241,7 +241,7 @@ class CorrelationFunctionSysTest(SysTest):
 
         # First, pull out the TreeCorr-relevant parameters from the stile_args dict, and add
         # anything passed as a kwarg to that dict.
-        if random and len(random) or (random2 and len(random2)):
+        if (random and len(random)) or (random2 and len(random2)):
             treecorr_kwargs[correlation_function_type+'_statistic'] = \
                 treecorr_kwargs.get(correlation_function_type+'_statistic','compensated')
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
@@ -348,8 +348,7 @@ class CorrelationFunctionSysTest(SysTest):
             func.write(output_file)
         results = stile.ReadTreeCorrResultsFile(output_file)
         os.close(handle)
-        if os.path.isfile(output_file):
-            os.remove(output_file)
+        os.remove(output_file)
         return results
 
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
