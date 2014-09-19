@@ -97,7 +97,7 @@ def Parser():
     p.add_argument('--sep_units',
                    help="Units for the max_sep/min_sep/bin_size arguments for the TreeCorr "+
                         "correlation functions",
-                   dest='max_sep')
+                   dest='sep_units')
     p.add_argument('--bin_slop',
                    help="A parameter relating to accuracy of the TreeCorr bins--changing is not "+
                         "recommended",
