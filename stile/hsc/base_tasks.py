@@ -391,7 +391,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 localTransform = wcs.linearizePixelToSky(data.getCentroid())
                 localLinearTranform = localTransform.getLinear()
             if do_shape or do_err:
-                moments = data.get('shape.sdss')
+                key = data.schema.find("shape.sdss").key
+                moments = data.get(key)
                 if sky_coords:
                     moments = moments.transform(localLinearTransform)
                 ixx = moments.getIxx()
@@ -400,7 +401,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # Get covariance of moments. We ignore off-diagonal components because
             # they are not implemented in the LSST pipeline yet.
             if do_err:
-                covariances = data.get('shape.sdss.err')
+                key = data.schema.find("shape.sdss.err").key
+                covariances = data.get(key)
                 if sky_coords:
                     cov_ixx = numpy.zeros(covariances[:,0,0].shape)
                     cov_iyy = numpy.zeros(covariances[:,0,0].shape)
@@ -421,7 +423,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     cov_iyy = covariances[:,1,1]
                     cov_ixy = covariances[:,2,2]
             if do_psf:
-                psf_moments = data.get('shape.sdss.psf')
+                key = data.schema.find("shape.sdss.psf").key
+                psf_moments = data.get(key)
                 if sky_coords:
                     psf_moments = psf_moments.transform(localLinearTransform)
                 psf_ixx = psf_moments.getIxx()
@@ -434,7 +437,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                     for src in data]
             if do_shape or do_err:
-                moments = [src.get('shape.sdss') for src in data]
+                key = data.schema.find("shape.sdss").key
+                moments = [src.get(key) for src in data]
                 if sky_coords:
                     moments = [moment.transform(lt) for moment, lt in
                                       zip(moments, localLinearTransform)]
@@ -442,7 +446,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixy = numpy.array([mom.getIxy() for mom in moments])
                 iyy = numpy.array([mom.getIyy() for mom in moments])
             if do_err:
-                covariances = numpy.array([src.get('shape.sdss.err') for src in data])
+                key = data.schema.find("shape.sdss.err").key
+                covariances = numpy.array([src.get(key) for src in data])
                 if sky_coords:
                     cov_ixx = numpy.zeros(covariances[:,0,0].shape)
                     cov_iyy = numpy.zeros(covariances[:,0,0].shape)
@@ -460,7 +465,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     cov_iyy = covariances[:,1,1]
                     cov_ixy = covariances[:,2,2]
             if do_psf:
-                psf_moments = [src.get('shape.sdss.psf') for src in data]
+                key = data.schema.find("shape.sdss.psf").key
+                psf_moments = [src.get(key) for src in data]
                 if sky_coords:
                     psf_moments = [moment.transform(lt) for moment, lt in
                                       zip(psf_moments, localLinearTransform)]
