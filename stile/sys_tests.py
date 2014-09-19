@@ -74,24 +74,24 @@ class PlotDetails(object):
     A container class to hold details about field names, titles for legends, and y-axis labels for
     plots of correlation functions.
     """
-    def __init__(self, t_field=None, t_title=None, b_field=None, b_title=None,
-                 t_im_field=None, t_im_title=None, b_im_field=None, b_im_title=None,
+    def __init__(self, t_field=None, t_title=None, x_field=None, x_title=None,
+                 t_im_field=None, t_im_title=None, x_im_field=None, x_im_title=None,
                  datarandom_t_field=None, datarandom_t_title=None,
-                 datarandom_b_field=None, datarandom_b_title=None,
+                 datarandom_x_field=None, datarandom_x_title=None,
                  sigma_field=None, y_title=None):
         self.t_field = t_field  # Field of t-mode/+-mode shear correlation functions
         self.t_title = t_title  # Legend title for previous line
-        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions
-        self.b_title = b_title  # Legend title for previous line
+        self.x_field = x_field  # Field of b-mode/x-mode shear correlation functions
+        self.x_title = x_title  # Legend title for previous line
         self.t_im_field = t_im_field  # Imaginary part of t-mode/+-mode
         self.t_im_title = t_im_title  # Legend title for previous line
-        self.b_im_field = b_im_field  # Imaginary part of b-mode/x-mode
-        self.b_im_title = b_im_title  # Legend title for previous line
+        self.x_im_field = x_im_field  # Imaginary part of b-mode/x-mode
+        self.x_im_title = x_im_title  # Legend title for previous line
         self.datarandom_t_field = datarandom_t_field  # If data or randoms are available separately,
                                                       # this +'d' or +'r' is the t-mode field name
         self.datarandom_t_title = datarandom_t_title  # Legend title for previous line
-        self.datarandom_b_field = datarandom_b_field  # As above, for b-mode
-        self.datarandom_b_title = datarandom_b_title  # Legend title for previous line
+        self.datarandom_x_field = datarandom_x_field  # As above, for b-mode
+        self.datarandom_x_title = datarandom_x_title  # Legend title for previous line
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
@@ -130,30 +130,30 @@ class CorrelationFunctionSysTest(SysTest):
     plot_details = [PlotDetails(t_field='omega', t_title='$\omega$',
                                 sigma_field='sig_omega', y_title="$\omega$"),  # n2
         PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$',
-                    b_field='<gamX>', b_title=r'$\langle \gamma_X \rangle$',
+                    x_field='<gamX>', x_title=r'$\langle \gamma_X \rangle$',
                     datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
-                    datarandom_b_field='gamX_', datarandom_b_title='$\gamma_{X',
+                    datarandom_x_field='gamX_', datarandom_x_title='$\gamma_{X',
                     sigma_field='sigma', y_title="$\gamma$"),  # ng
-        PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
+        PlotDetails(t_field='xi+', t_title=r'$\xi_+$', x_field='xi-', x_title=r'$\xi_-$',
                     t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$',
-                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$',
+                    x_im_field='xi-_im', x_im_title=r'$\xi_{-,im}$',
                     sigma_field='sigma_xi', y_title=r"$\xi$"),  # gg
         PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
                     sigma_field='sigma', y_title="$\kappa$"),  # nk
         PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
-                    b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
+                    x_field='<kgamX>', x_title=r'$\langle \kappa \gamma_X\rangle$',
                     datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
-                    datarandom_b_field='kgamX_', datarandom_b_title=r'$\kappa \gamma_{X',
+                    datarandom_x_field='kgamX_', datarandom_x_title=r'$\kappa \gamma_{X',
                     sigma_field='sigma', y_title="$\kappa\gamma$"),  # kg
         PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$',
-                    b_field='<Mx^2>', b_title=r'$\langle M_x^2\rangle$',
+                    x_field='<Mx^2>', x_title=r'$\langle M_x^2\rangle$',
                     t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$',
-                    b_im_field='<Mmx>(b)', b_im_title=r'$\langle MM_x \rangle(b)$',
+                    x_im_field='<Mmx>(b)', x_im_title=r'$\langle MM_x \rangle(b)$',
                     sigma_field='sig_map', y_title="$M_{ap}^2$"),  # m2
         PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$',
-                    b_field='<NMx>', b_title=r'$\langle NM_{x} \rangle$',
+                    x_field='<NMx>', x_title=r'$\langle NM_{x} \rangle$',
                     sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
         ]
 
@@ -402,7 +402,7 @@ class CorrelationFunctionSysTest(SysTest):
         if pd.datarandom_t_field:
             plot_data_only &= pd.datarandom_t_field+'d' in fields
             plot_random_only &= pd.datarandom_t_field+'r' in fields
-        if plot_bmode and pd.b_field and pd.t_im_field:
+        if plot_bmode and pd.x_field and pd.t_im_field:
             nrows = 2
         elif pd.datarandom_t_field:
             nrows = 1 + plot_data_only + plot_random_only
@@ -413,9 +413,9 @@ class CorrelationFunctionSysTest(SysTest):
         ax = fig.add_subplot(nrows, 1, 1)
         ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0],
                     label=pd.t_title)
-        if pd.b_title and plot_bmode:
-            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1],
-                        label=pd.b_title)
+        if pd.x_title and plot_bmode:
+            ax.errorbar(data[r], data[pd.x_field], yerr=data[pd.sigma_field], color=colors[1],
+                        label=pd.x_title)
         elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
@@ -424,13 +424,13 @@ class CorrelationFunctionSysTest(SysTest):
         ax.set_xlim(xlim)
         ax.set_ylabel(pd.y_title)
         ax.legend()
-        if pd.b_field and plot_bmode and pd.t_im_field:
+        if pd.x_field and plot_bmode and pd.t_im_field:
             # Both yb and y_im: plot (y, yb) on one plot and (y_im, yb_im) on the other.
             ax = fig.add_subplot(nrows, 1, 2)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0],
                         label=pd.t_im_title)
-            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1],
-                        label=pd.b_im_title)
+            ax.errorbar(data[r], data[pd.x_im_field], yerr=data[pd.sigma_field], color=colors[1],
+                        label=pd.x_im_title)
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
@@ -441,9 +441,9 @@ class CorrelationFunctionSysTest(SysTest):
             ax = fig.add_subplot(nrows, 1, 2)
             ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'d}$')
-            if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field],
-                        color=colors[1], label=pd.datarandom_b_title+'d}$')
+            if plot_bmode and pd.datarandom_x_field:
+                ax.errorbar(data[r], data[pd.datarandom_x_field+'d'], yerr=data[pd.sigma_field],
+                        color=colors[1], label=pd.datarandom_x_title+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
@@ -453,9 +453,9 @@ class CorrelationFunctionSysTest(SysTest):
             ax = fig.add_subplot(nrows, 1, nrows)
             ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
-            if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field],
-                        color=colors[1], label=pd.datarandom_b_title+'r}$')
+            if plot_bmode and pd.datarandom_x_field:
+                ax.errorbar(data[r], data[pd.datarandom_x_field+'r'], yerr=data[pd.sigma_field],
+                        color=colors[1], label=pd.datarandom_x_title+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
