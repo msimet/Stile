@@ -10,36 +10,31 @@ def Parser():
     import argparse
     p = argparse.Parser()
     p.add_argument('--file_type',
-                   help="File type (ASCII or FITS) -- only allowed by certain DataHandlers",
+                   help="File type (ASCII or FITS)",
                    dest='file_type')
     p.add_argument('--delimiter',
-                   help="ASCII file column delimiter -- only allowed by certain DataHandlers",
-                   dest='comment_marker')
+                   help="ASCII file column delimiter",
+                   dest='delimiter')
     p.add_argument('--comment_marker',
-                   help="ASCII file comment-line marker -- only allowed by certain DataHandlers",
+                   help="ASCII file comment-line marker",
                    dest='comment_marker')
     p.add_argument('--first_row',
-                   help="First row of the file(s) to be considered -- only allowed by certain "+
-                        "DataHandlers",
+                   help="First row of the file(s) to be considered",
                    dest='first_row')
     p.add_argument('--last_row',
-                   help="Last row of the file(s) to be considered -- only allowed by certain "+
-                        "DataHandlers",
+                   help="Last row of the file(s) to be considered",
                    dest='last_row')
-    p.add_argument('--comment_marker',
-                   help="ASCII file comment-line marker -- only allowed by certain DataHandlers",
-                   dest='comment_marker')
     p.add_argument('--x_col',
-                   help="Number of the x-position column -- only allowed by certain DataHandlers",
+                   help="Number of the x-position column",
                    dest='x_col')
     p.add_argument('--y_col',
-                   help="Number of the y-position column -- only allowed by certain DataHandlers",
+                   help="Number of the y-position column",
                    dest='y_col')
     p.add_argument('--ra_col',
-                   help="Number of the ra column -- only allowed by certain DataHandlers",
+                   help="Number of the ra column",
                    dest='ra_col')
     p.add_argument('--dec_col',
-                   help="Number of the dec column -- only allowed by certain DataHandlers",
+                   help="Number of the dec column",
                    dest='dec_col')
     p.add_argument('--x_units',
                    help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only allowed "+
@@ -58,17 +53,16 @@ def Parser():
                         "allowed by certain DataHandlers",
                    dest='dec_units')
     p.add_argument('--g1_col',
-                   help="Number of the g1 column -- only allowed by certain DataHandlers",
+                   help="Number of the g1 column",
                    dest='g1_col')
     p.add_argument('--g2_col',
-                   help="Number of the g2 column -- only allowed by certain DataHandlers",
+                   help="Number of the g2 column",
                    dest='g2_col')
     p.add_argument('--k_col',
-                   help="Number of the kappa [scalar] column -- only allowed by certain "+
-                        "DataHandlers",
+                   help="Number of the kappa [scalar] column",
                    dest='k_col')
     p.add_argument('--w_col',
-                   help="Number of the weight column -- only allowed by certain DataHandlers",
+                   help="Number of the weight column",
                    dest='w_col')
     p.add_argument('--flip_g1',
                    help="Flip the sign of g1 (default: False)",
