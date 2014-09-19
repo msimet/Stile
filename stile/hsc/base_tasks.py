@@ -774,6 +774,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             # to make sure it's propagated through to the sys_tests.
             sys_test_data.cols_list = [tuple(list(cols)+['CCD']) for cols in sys_test_data.cols_list]
             sys_data_list.append(sys_test_data)
+        for sys_data in sys_data_list:
+            for cols in sys_data.cols_list:
+                for c in cols:
+                    if '_sky' in c or '_chip' in c:
+                        cols.append('_'.join(c.split('_')[:-1]))
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
             for mask_list, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
