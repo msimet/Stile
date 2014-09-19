@@ -213,7 +213,7 @@ class BinFunction:
     def __init__(self, function, n_bins=None, returns_bools=False):
         self.function = function
 
-        if n_bins is None:  # Dunno why somebody'd do 0 bins, but it's fine, I guess...
+        if n_bins is None:
             try:
                 self.n_bins = function.n_bins
             except:
