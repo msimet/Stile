@@ -24,7 +24,8 @@ def MaskGalaxy(data, config):
     except LsstCppException:
         # But sometimes we've already masked the array--this will work in that case (but is slower
         # than above if the above is possible).
-        return numpy.array([src['classification.extendedness']==1 for src in data])
+        key = data.schema.find('classification.extendedness').key
+        return numpy.array([src[key]==1 for src in data])
 
 def MaskStar(data, config):
     """
@@ -34,7 +35,8 @@ def MaskStar(data, config):
     try:
         return data['classification.extendedness']==0
     except LsstCppException:
-        return numpy.array([src['classification.extendedness']==0 for src in data])
+        key = data.schema.find('classification.extendedness').key
+        return numpy.array([src[key]==0 for src in data])
 
 def MaskBrightStar(data, config):
     """
@@ -56,7 +58,8 @@ def MaskPSFStar(data, config):
     try:
         return data['calib.psf.used']==True
     except LsstCppException:
-        return numpy.array([src.get('calib.psf.used')==True for src in data])
+        key = data.schema.find('calib.psf.used').key
+        return numpy.array([src.get(key)==True for src in data])
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,

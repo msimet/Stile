@@ -352,8 +352,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
-        masks = [numpy.array([src.get(flag)==False for src in data])
-                 for flag in self.config.shape_flags]
+        masks = list()
+        for flag in self.config.shape_flags:
+            key = data.schema.find(flag).key
+            masks.append(numpy.array([src.get(key)==False for src in data]))
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -506,7 +508,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
             psf_sigma = (psf_ixx*psf_iyy - psf_ixy**2)**0.25
-            extra_mask = numpy.array([src.get('flux.psf.flags')==0 for src in data])
+            key = data.schema.find('flux.psf.flags').key
+            extra_mask = numpy.array([src.get(key)==0 for src in data])
         else:
             psf_g1 = None
             psf_g2 = None
@@ -575,9 +578,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             else:
                 return [src.getY() for src in data], None
         elif col=="mag_err":
+            key = data.schema.find('flux.psf.flags').key
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
                                                     for src in data]),
-                    numpy.array([src.get('flux.psf.flags')==0 for src in data]))
+                    numpy.array([src.get(key)==0 for src in data]))
         elif col=="mag":
             # From Steve Bickerton's helpful HSC butler documentation
             if calib_type=="fcr":
@@ -587,8 +591,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
+            key = data.schema.find('flux.psf.flags').key
             return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
-                    numpy.array([src.get('flux.psf.flags')==0 for src in data]))
+                    numpy.array([src.get(key)==0 for src in data]))
         elif col=="w":
             # Use uniform weights for now if we don't use shapes ("w" will be removed from the
             # list of columns if shapes are computed).
