@@ -763,7 +763,7 @@ class HistogramSysTest(SysTest):
     This function is directly copied from the astroML library
     (astroMl/density_estimation/histtool.py)
     """
-    def scotts_bin_width(data, return_bins=False):
+    def scotts_bin_width(self, data, return_bins=False):
         r"""Return the optimal histogram bin width using Scott's rule:
 
         Parameters
@@ -818,7 +818,7 @@ class HistogramSysTest(SysTest):
     This function is directly copied from the astroML library
     (astroMl/density_estimation/histtool.py)
     """
-    def freedman_bin_width(data, return_bins=False):
+    def freedman_bin_width(self, data, return_bins=False):
         r"""Return the optimal histogram bin width using the Freedman-Diaconis
             rule
 
@@ -877,14 +877,14 @@ class HistogramSysTest(SysTest):
     """
     Generate the histogram
     """
-    def HistoPlot( self, data, style, nbins = 50, range = None,
-                   figsize = None, normed = 0, histtype = 'stepfilled',
-                   xlabel = None, ylabel = None,
+    def HistoPlot( self, data_list, style=3, nbins = 50, weights = None,
+                   limits = None, figsize = None, normed = False,
+                   histtype = 'step', xlabel = None, ylabel = None,
                    xlim = None, ylim = None, hide_x = False, hide_y = False,
-                   cumulative = False, align = 'mid', rwidth = None,
-                   log = False, color = None, alpha = None,
+                   cumulative = False, align = 'mid', rwidth = 0.9,
+                   log = False, color = 'k', alpha = 1.0,
                    text = None, text_x = 0.90, text_y = 0.90, fontsize = 12,
-                   linewidth = 1.8, vlines = None, vcolor = 'black' ):
+                   linewidth = 2.0, vlines = None, vcolor = 'k' ):
 
         """
         Draw a histogram and return a `matplotlib.figure.Figure` object.
@@ -899,7 +899,9 @@ class HistogramSysTest(SysTest):
         __call__ of the child class and return the `matplotlib.figure.Figure`
         that HistoPlot returns.
 
-        @param data          The 1-Dimension NumPy array for the histogram
+        @param data_list     The 1-Dimension NumPy array or a list of Numpy array
+                             for plotting histogram
+
         @param style         Different selections of Histogram bin size:
                style = 1 :   Using the Scott's rule to decide the bin size
                style = 2 :   Using the Freedman-Diaconis rule to decide the bin
@@ -908,7 +910,8 @@ class HistogramSysTest(SysTest):
 
         @param nbins         The number of bins if style = 3 is selected.
                              [Default: nbins = 50]
-        @param range         The [min, max] limits to trim the data before the
+        @param weights       An array of weights
+        @param limits        The [min, max] limits to trim the data before the
                              histogram is made
                              [Default: range = None]
         @param normed        Whether the normalized histogram is shown
@@ -951,58 +954,185 @@ class HistogramSysTest(SysTest):
         @param text
         @param text_x
         @param text_y
-        @param vlines
-        @param vcolor
+        @param fontsize
+        @param vlines        Locations to plot vertical lines to indicate interesting
+                             values
+                             [Default: None]
+        @param vcolor        Color or a list of color for vertical lines to plot
+                             [Default: 'k']
 
         @returns a matplotlib.figure.Figure object.
         """
 
+        ## Define the plot
         hist = plt.figure( figsize=figsize )
-        ax   = hist.add_subplot( 1,1,1 )
+        ax   = hist.add_subplot( 1, 1, 1 )
 
-        # mask data with NaN
-        sel  = numpy.logical_and.reduce( [numpy.isnan( data ) == False ] )
-        data = data[ sel ]
-        data = numpy.asarray(data)
+        for ii in range( len( data_list ) ):
 
-        if (range is not None ):
-            data = data[( data >= range[0]) & ( data <= range[1] ) ]
+            if type( data_list[0] ) is list or type( data_list[0] ) is numpy.ndarray:
+                multihist = True
+                data = data_list[ ii ]
+            else:
+                multihist = False
+                data = data_list
 
-        if ( style is 1 ):
-            "Use the Scott rule"
-            dx, bins = self.scotts_bin_width( data, True )
-        elif ( style is 2 ):
-            "Use the Freedman rule"
-            dx, bins = self.freedman_bin_width( data, True )
-        elif ( style is 3 ):
-            bins = nbins
-        elif isinstance( style, str):
-            raise ValueError("Unrecognized histogram style: '%s'" % style )
+            # mask data with NaN
+            sel  = numpy.logical_and.reduce( [ numpy.isnan( data ) == False ] )
+            data = data[ sel ]
+            data = numpy.asarray( data )
 
-        counts, edges, patches = ax.hist( data, bins,
-                                        histtype = histtype,
-                                        color = color,
-                                        normed = normed,
-                                        cumulative = cumulative,
-                                        alpha = alpha,
-                                        rwidth = rwidth,
-                                        log = log,
-                                        align = align,
-                                        linewidth = linewidth
-                                        )
-        if histtype is 'stepfilled':
+            # trim the data if necessary
+            if ( limits is not None ):
+                data = data[ ( data >= limits[0] ) & ( data <= limits[1] ) ]
+
+            # decide which bin style to use
+            if type( style ) is list and multihist:
+                if len( style ) == len( data_list ):
+                    style_use = style[ ii ]
+                else:
+                    style_use = style[ 0 ]
+            elif type( style ) is list:
+                style_use = style[ 0 ]
+            else:
+                style_use = style
+
+            # now support constant bin size, Scott rule, and Freedman rule
+            if ( style_use in [ 1, 2, 3 ] ):
+                if ( style_use is 1 ):
+                    "Use the Scott rule"
+                    dx, bins = self.scotts_bin_width( data, True )
+                elif ( style_use is 2 ):
+                    "Use the Freedman rule"
+                    dx, bins = self.freedman_bin_width( data, True )
+                elif ( style_use is 3 ):
+                    bins = nbins
+            else:
+                print "Unrecognized code for bin style, use default instead!"
+                bins = nbins
+
+            # decide if weight is presented
+            if weights is not None and multihist:
+                if ( len( weights ) == len( data_list ) ):
+                    weight_use = weights[ ii ]
+                else:
+                    weight_use = None
+            elif weights is not None:
+                if ( len( weights ) == len( data ) ):
+                    weight_use = weights
+                else:
+                    weight_use = None
+            else:
+                weight_use = None
+
+            # decide which histtype to use
+            if type( histtype ) is list and multihist:
+                if len( histtype ) == len( data_list ):
+                    hist_use = histtype[ ii ]
+                else:
+                    hist_use = histtype[ 0 ]
+            elif type( histtype ) is list:
+                hist_use = histtype[ 0 ]
+            else:
+                hist_use = histtype
+
+            # the color of the histogram
+            if type( color ) is list and multihist:
+                if len( color ) == len( data_list ):
+                    color_use = color[ ii ]
+                else:
+                    color_use = color[ 0 ]
+            elif type( color ) is list:
+                color_use = color[ 0 ]
+            else:
+                color_use = color
+
+            if type( alpha ) is list and multihist:
+                if len( alpha ) == len( data_list ):
+                    alpha_use = alpha[ ii ]
+                else:
+                    alpha_use = alpha[ 0 ]
+            elif type( alpha ) is list:
+                alpha_use = alpha[ 0 ]
+            else:
+                alpha_use = alpha
+
+            if type( rwidth ) is list and multihist:
+                if len( rwidth ) == len( data_list ):
+                    rwidth_use = rwidth[ ii ]
+                else:
+                    rwidth_use = rwidth[ 0 ]
+            elif type( rwidth ) is list:
+                rwidth_use = rwidth[ 0 ]
+            else:
+                rwidth_use = rwidth
+
+            if type( linewidth ) is list and multihist:
+                if len( linewidth ) == len( data_list ):
+                    lwidth_use = linewidth[ ii ]
+                else:
+                    lwidth_use = linewidth[ 0 ]
+            elif type( linewidth ) is list:
+                lwidth_use = linewidth[ 0 ]
+            else:
+                lwidth_use = linewidth
+
+            # make the histogram
             counts, edges, patches = ax.hist( data, bins,
-                                            histtype = 'step',
-                                            color = 'black',
+                                            weights = weight_use,
+                                            histtype = hist_use,
+                                            color = color_use,
                                             normed = normed,
                                             cumulative = cumulative,
-                                            alpha = 1.0,
-                                            rwidth = rwidth,
+                                            alpha = alpha_use,
+                                            rwidth = rwidth_use,
                                             log = log,
                                             align = align,
-                                            linewidth = 1.8
+                                            linewidth = lwidth_use
                                             )
 
+            # outline the filled region
+            if hist_use is 'stepfilled':
+                counts, edges, patches = ax.hist( data, bins,
+                                                weights = weight_use,
+                                                histtype = 'step',
+                                                color = 'k',
+                                                normed = normed,
+                                                cumulative = cumulative,
+                                                alpha = 1.0,
+                                                rwidth = rwidth_use,
+                                                log = log,
+                                                align = align,
+                                                linewidth = 1.0
+                                                )
+
+            ymin, ymax = ax.get_ylim()
+
+            if not multihist:
+                break
+
+
+        # add the text when necessary
+        if text is not None:
+            ax.text( text_x, text_y, text, transform=ax.transAxes,
+                    ha='right', va='top', fontsize=fontsize )
+
+        # add vertical lines when necessary
+        if vlines is not None:
+            for jj in range( len( vlines ) ):
+                vline_use = vlines[ jj ]
+
+                if type( vcolor ) == list:
+                    if len( vcolor ) == len( vlines ):
+                        vcolor_use = vcolor[ jj ]
+                    else:
+                        vcolor_use = vcolor[ 0 ]
+                else:
+                    vcolor_use = vcolor
+
+                ax.vlines( vline_use, ymin, ymax, colors=vcolor_use,
+                           linestyle='dashed',
+                           linewidth=1.8)
 
         if xlabel is not None:
             ax.set_xlabel( xlabel )
@@ -1019,13 +1149,5 @@ class HistogramSysTest(SysTest):
         if hide_y:
             ax.yaxis.set_major_formatter( plt.NullFormatter() )
 
-        if text is not None:
-            ax.text( text_x, text_y, text, transform=ax.transAxes,
-                    ha='right', va='top', fontsize = fontsize )
-
-        ymin, ymax = ax.get_ylim()
-        if vlines is not None:
-            ax.vlines( vlines, ymin, ymax, colors=vcolor, linestyle='dashed',
-                       linewidth = 1.8)
-
         return hist
+
