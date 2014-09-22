@@ -702,7 +702,6 @@ class WhiskerPlotSysTest(SysTest):
             ax.set_xlim(*xlim)
         if ylim is not None:
             ax.set_ylim(*ylim)
-
         return fig
 
 class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
@@ -1150,4 +1149,380 @@ class HistogramSysTest(SysTest):
             ax.yaxis.set_major_formatter( plt.NullFormatter() )
 
         return hist
+
+class ScatterPlotSysTest(SysTest):
+    short_name = 'scatterplot'
+    """
+    A base class for Stile systematics tests that generate scatter plots. This implements the class 
+    method scatterPlot. Every child class of ScatterPlotSysTest should use
+    ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
+    ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
+    """
+    def scatterPlot(self, x, y, yerr=None, z=None, xlabel=None, ylabel=None, zlabel=None, color = ""
+                    , lim=None, equal_axis=False, linear_regression=False, reference_line = None):
+        """
+        Draw a scatter plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling appearance of a plot, which is
+        explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
+        __call__ of the child class and return `matplotlib.figure.Figure` that scatterPlot returns.
+        @param x               The tuple, list, or NumPy array for x-axis.
+        @param y               The tuple, list, or NumPy array for y-axis.
+        @param yerr            The tuple, list, or Numpy array for error of the y values.
+                               [default: None, meaning do not plot an error]
+        @param z               The tuple, list, or Numpy array for an additional quantitiy
+                               which appears as colors of scattered points.
+                               [default: None, meaning there is no additional quantity]
+        @param xlabel          The label of x-axis.
+                               [default: None, meaning do not show a label of x-axis]
+        @param ylabel          The label of y-axis.
+                               [default: None, meaning do not show a label of y-axis]
+        @param zlabel          The label of z values which appears at the side of color bar.
+                               [default: None, meaning do not show a label of z values]
+        @param color           The color of scattered points. This color is also applied to linear
+                               regression if argument `linear_regression` is True. This parameter is 
+                               ignored when z is not None. In this case, the color of linear 
+                               regression is set to blue.
+                               [default: None, meaning follow a matplotlib's default color]
+        @param lim             The limit of axis. This can be specified explicitly by
+                               using tuples such as ((xmin, xmax), (ymin, ymax)).
+                               If one passes float p, it calculate p%-percentile around median
+                               for each of x-axis and y-axis.
+                               [default: None, meaning do not set any limits]
+        @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
+                               [default: False]
+        @linear_regression     If True, perform linear regression for x and y and plot a regression
+                               line. If yerr is not None, perform the linear regression with
+                               incorporating the error into the standard chi^2 and plot
+                               a regression line with a 1-sigma allowed region.
+                               [default: False]
+        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y is
+                               drawn. If reference_line == 'zero', y=0 id drawn. A user-specific
+                               function can be used by passing an object which has an attribute
+                               '__call__' and returns a 1-d Numpy array.
+        @returns                a matplotlib.figure.Figure object
+        """
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+
+        # mask data with nan. Emit a warning if an array has nan in it.
+        x_isnan = numpy.isnan(x)
+        y_isnan = numpy.isnan(y)
+        import warnings
+        if numpy.sum(x_isnan) != 0:
+            warnings.warn('There are %s nans in x, out of %s.' % (numpy.sum(x_isnan), len(x_isnan)))
+        if numpy.sum(y_isnan) != 0:
+            warnings.warn('There are %s nans in y, out of %s.' % (numpy.sum(y_isnan), len(y_isnan)))
+        sel = numpy.logical_and(numpy.invert(x_isnan), numpy.invert(y_isnan))
+        if yerr is not None:
+            yerr_isnan = numpy.isnan(yerr)
+            if numpy.sum(yerr_isnan) != 0:
+                warnings.warn('There are %s nans in yerr, out of %s.'
+                             % (numpy.sum(yerr_isnan), len(yerr_isnan)))
+            sel = numpy.logical_and(sel, numpy.invert(yerr_isnan))
+        if z is not None:
+            z_isnan = numpy.isnan(z)
+            if numpy.sum(z_isnan) != 0:
+                warnings.warn('There are %s nans in z, out of %s.'
+                             % (numpy.sum(z_isnan), len(z_isnan)))
+            sel = numpy.logical_and(sel, numpy.invert(z_isnan))
+        x = x[sel]
+        y = y[sel]
+        yerr = yerr[sel] if yerr is not None else None
+        z = z[sel] if z is not None else None
+
+        # load axis limits if argument lim is ((xmin, xmax), (ymin, ymax))
+        if isinstance(lim, tuple):
+            xlim = lim[0]
+            ylim = lim[1]
+
+        # calculate n-sigma limits around mean if lim is float
+        elif isinstance(lim, float):
+            p = lim
+            xlim = (numpy.percentile(x, 50.-0.5*p), numpy.percentile(x, 50.+0.5*p))
+            ylim = (numpy.percentile(y, 50.-0.5*p), numpy.percentile(y, 50.+0.5*p))
+        # in other cases (except for the default value None), raise an exception
+        elif lim is not None:
+            raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
+                            '`float` to indicate p%-percentile around median.')
+        else:
+            # Even if lim = None, we want to set limits. Limits set by matplotlib looks uneven probably because it seems to pick round numbers for the endpoints (eg -0.2 and 0.2).
+            xlim = (numpy.min(x)-0.05*(numpy.max(x)-numpy.min(x)),
+                    numpy.max(x)+0.05*(numpy.max(x)-numpy.min(x)))
+            # We apply the same thing to y. However, when y has error, setting the limit may cut out error, so we just leave it.
+            if yerr is None:
+                ylim = (numpy.min(y)-0.05*(numpy.max(y)-numpy.min(y)),
+                        numpy.max(y)+0.05*(numpy.max(y)-numpy.min(y)))
+            else:
+                ylim = None
+
+        # plot
+        if z is None:
+            if yerr is None:
+                p = ax.plot(x, y, ".%s" % color)
+            else:
+                p = ax.errorbar(x, y, yerr, fmt=".%s" % color)
+            # store color for latter use
+            used_color = p[0].get_color()
+        else:
+            if yerr is not None:
+                plt.errorbar(x, y, yerr=yerr, linestyle="None", color = "k", zorder=0)
+            plt.scatter(x, y, c=z, zorder=1)
+            cb = plt.colorbar()
+            used_color = "b"
+
+        # make axes ticks equal to each other if specified
+        if equal_axis:
+            ax.axis("equal")
+
+        # set axis limits if specified
+        if xlim is not None:
+            ax.set_xlim(*xlim)
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+
+        # set up x value for linear regression or a reference line
+        if linear_regression or reference_line is not None:
+            # set x limits of a regression line.
+            # If equal_axis is False, just use x limits set to axis.
+            if not equal_axis:
+                xlimtmp = ax.get_xlim()
+            # If equal_axis is True, x limits may not reflect an actual limit of a plot,e.g., if 
+            # y limits are wider than x limits, an actual limit along the x-axis becomes wider
+            # than what we specified although a value tied to a matplotlib.axes object remains
+            # the same, which can result in a regression line truncated in smaller range along
+            # x-axis if we simply use ax.get_xlim() to the regression line. To avoid this,
+            # take a wider range between x limits and y limits, and set this range to 
+            # the x limit of a regression line.
+            else:
+                d = numpy.max([ax.get_xlim()[1] - ax.get_xlim()[0], 
+                               ax.get_ylim()[1] - ax.get_ylim()[0]])
+                xlimtmp = [numpy.average(x)-0.5*d, numpy.average(x)+0.5*d]
+            xtmp = numpy.linspace(*xlimtmp)
+
+        # perform linear regression if specified
+        if linear_regression:
+            if yerr is None:
+                m, c = self.linearRegression(x, y)
+                ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
+            else:
+                m, c, cov_m, cov_c, cov_mc = self.linearRegression(x, y, err = yerr)
+                ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
+                y = m*xtmp+c
+                # calculate yerr using the covariance
+                yerr = numpy.sqrt(xtmp**2*cov_m + 2.*xtmp*cov_mc + cov_c)
+                ax.fill_between(xtmp, y-yerr, y+yerr, facecolor = used_color,
+                                edgecolor = used_color, alpha =0.5)
+                ax.annotate(r"$m=%.4f\pm%.4f$" %(m, numpy.sqrt(cov_m))+"\n"+
+                            r"$c=%.4f\pm%.4f$" %(c, numpy.sqrt(cov_c)), xy=(0.75, 0.05),
+                            xycoords='axes fraction')
+
+        # draw a reference line
+        if reference_line is not None:
+            if isinstance(reference_line, str):
+                if reference_line == "one-to-one":
+                    ax.plot(xtmp, xtmp, "--k")
+                elif reference_line == "zero":
+                    ax.plot(xtmp, numpy.zeros(xtmp.shape), "--k")
+            elif hasattr(reference_line, '__call__'):
+                y = reference_line(xtmp)
+                if len(numpy.array(y).shape) != 1 or len(y) != len(xtmp):
+                    raise TypeError('an object for reference_line should return a 1-d array whose'
+                                    'size is the same as input')
+                ax.plot(xtmp, y, "--k")
+            else:
+                raise TypeError("reference_line should be str 'one-to-one' or 'zero',"
+                                "or an object which has atttibute '__call__'.")
+
+        # set axis labels if specified
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+        if zlabel is not None:
+            cb.set_label(zlabel)
+
+        fig.tight_layout()
+
+        return fig
+
+    def linearRegression(self, x, y, err = None):
+        """
+        Perform linear regression (y=mx+c). If error is given, it returns covariance.
+        @param x               NumPy array for x.
+        @param y               NumPy array for y.
+        @param err             Numpy array for y error.
+                               [default: None, meaning do not consider y error]
+        @returns               m, c. If err is not None, m, c, cov_m, cov_c, cov_mc.
+        """
+
+        e = numpy.ones(x.shape) if err is None else err
+        S = numpy.sum(1./e**2)
+        Sx = numpy.sum(x/e**2)
+        Sy = numpy.sum(y/e**2)
+        Sxx = numpy.sum(x**2/e**2)
+        Sxy = numpy.sum(x*y/e**2)
+        Delta = S*Sxx - Sx**2
+        m = (S*Sxy-Sx*Sy)/Delta
+        c = (Sxx*Sy-Sx*Sxy)/Delta
+        if err is None:
+            return m, c
+        else:
+            cov_m = S/Delta
+            cov_c = Sxx/Delta
+            cov_mc = -Sx/Delta
+            return m, c, cov_m, cov_c, cov_mc
+
+    def getStatisticsPerCCD(self, ccds, x, y, yerr = None, stat = "mean"):
+        """
+        Calculate average for x and y for each CCD.
+        @param ccd             NumPy array for CCD, an array in which each element indicates CCD ID
+                               of each data point.
+        @param x               NumPy array for x.
+        @param y               NumPy array for y.
+        @param err             Numpy array for y error.
+                               [default: None, meaning do not consider y error]
+        @returns               x_ave, y_ave, y_ave_std.
+        """
+        if stat == "mean":
+            x_ave = numpy.array([numpy.average(x[ccds == ccd]) for ccd in set(ccds)])
+            if yerr is None:
+                y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
+                y_ave_std = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+                                         for ccd in set(ccds)])
+                return x_ave, y_ave, y_ave_std
+            # calculate y and its std under the inverse variance weight if yerr is given
+            else:
+                y_ave = numpy.array([numpy.sum(y[ccds == ccd]/yerr[ccds == ccd]**2)/
+                                     numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
+                y_ave_std = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
+                                         for ccd in set(ccds)])
+                return x_ave, y_ave, y_ave_std
+        elif stat == "median":
+            x_med = numpy.array([numpy.median(x[ccds == ccd]) for ccd in set(ccds)])
+            y_med = numpy.array([numpy.median(y[ccds == ccd]) for ccd in set(ccds)])
+            y_med_std = numpy.array([numpy.sqrt(numpy.pi/2.)*numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+                                     for ccd in set(ccds)])
+            return x_med, y_med, y_med_std
+        else:
+            raise ValueError('stat should be mean or median.')
+
+class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_star_vs_psf_g1'
+    long_name = 'Make a scatter plot of star g1 vs psf g1'
+    objects_list = ['star PSF']
+    required_quantities = [('g1', 'g1_err', 'psf_g1')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
+            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
+                                                          array['g1'], yerr = array['g1_err'],
+                                                          stat = per_ccd_stat)
+        else:
+            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
+        return self.scatterPlot(psf_g1, g1, yerr=g1_err,
+                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
+
+class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_star_vs_psf_g2'
+    long_name = 'Make a scatter plot of star g2 vs psf g2'
+    objects_list = ['star PSF']
+    required_quantities = [('g2', 'g2_err', 'psf_g2')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
+            psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
+                                                          array['g2'], yerr = array['g2_err'],
+                                                          stat = per_ccd_stat)
+        else:
+            psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
+        return self.scatterPlot(psf_g2, g2, yerr=g2_err,
+                                xlabel=r'$g^{\rm PSF}_2$', ylabel=r'$g^{\rm star}_2$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
+
+class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_star_vs_psf_sigma'
+    long_name = 'Make a scatter plot of star sigma vs psf sigma'
+    objects_list = ['star PSF']
+    required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
+            psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
+                                                                   array['sigma'],
+                                                                   yerr = array['sigma_err'],
+                                                                   stat = per_ccd_stat)
+        else:
+            psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
+        return self.scatterPlot(psf_sigma, sigma, yerr=sigma_err,
+                                xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
+                                ylabel=r'$\sigma^{\rm star}$ [arcsec]',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='one-to-one')
+
+class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_vs_psf_g1'
+    long_name = 'Make a scatter plot of residual g1 vs psf g1'
+    objects_list = ['star PSF']
+    required_quantities = [('g1', 'g1_err', 'psf_g1')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
+            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
+                                                          array['g1'], yerr = array['g1_err'],
+                                                          stat = per_ccd_stat)
+        else:
+            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
+        return self.scatterPlot(psf_g1, g1-psf_g1, yerr=g1_err,
+                                xlabel=r'$g^{\rm PSF}_1$',
+                                ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='zero')
+
+class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_vs_psf_g2'
+    long_name = 'Make a scatter plot of residual g2 vs psf g2'
+    objects_list = ['star PSF']
+    required_quantities = [('g2', 'g2_err', 'psf_g2')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
+            psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
+                                                          array['g2'], yerr = array['g2_err'],
+                                                          stat = per_ccd_stat)
+        else:
+            psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
+        return self.scatterPlot(psf_g2, g2-psf_g2, yerr=g2_err,
+                                xlabel=r'$g^{\rm PSF}_2$',
+                                ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line='zero')
+
+class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_vs_psf_sigma'
+    long_name = 'Make a scatter plot of residual sigma vs psf sigma'
+    objects_list = ['star PSF']
+    required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        if per_ccd_stat:
+            psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
+                                                                   array['sigma'],
+                                                                   yerr = array['sigma_err'],
+                                                                   stat = per_ccd_stat)
+        else:
+            psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
+        return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
+                                xlabel=r'$\sigma^{\rm PSF}$  [arcsec]',
+                                ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$  [arcsec]',
+                                color=color, lim=lim, equal_axis=False, 
+                                linear_regression=True, reference_line='zero')
 
