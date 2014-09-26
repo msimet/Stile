@@ -278,7 +278,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # coaddition routines, while "calexp" is the original calibrated image. The
         # datasetExists() call will fail if no tract is defined, hence the try-except block.
         try:
-            if dataRef.datasetExists("fcr_md"):
+            if dataRef.datasetExists("fcr_md", immediate=True):
                 if shape_cols:
                     calib_data = dataRef.get("calexp", immedinate = True)  # only used for WCS
                 calib_metadata = dataRef.get("fcr_md", immedinate = True)
@@ -788,10 +788,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         if column in extra_col_dict:
                             newcol = extra_col_dict[column][mask]
                         elif column in catalog.schema:
+                            key = catalog.schema.find(column).key
                             try:
-                                newcol = catalog[column][mask]
+                                newcol = catalog.get(key)[mask]
                             except LsstCppException:
-                                newcol = numpy.array([src[column] for src in catalog])[mask]
+                                newcol = numpy.array([src.get(key) for src in catalog])[mask]
                         # The new_catalog dict has values which are lists of the quantity we want,
                         # one per dataRef.
                         if column in new_catalog:
