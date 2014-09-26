@@ -280,23 +280,23 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         try:
             if dataRef.datasetExists("fcr_md"):
                 if shape_cols:
-                    calib_data = dataRef.get("calexp")  # only used for WCS
-                calib_metadata = dataRef.get("fcr_md")
+                    calib_data = dataRef.get("calexp", immedinate = True)  # only used for WCS
+                calib_metadata = dataRef.get("fcr_md", immedinate = True)
                 calib_type = "fcr"
             else:
                 if shape_cols:
-                    calib_data = dataRef.get("calexp")
-                calib_metadata = dataRef.get("calexp_md")
+                    calib_data = dataRef.get("calexp", immedinate = True)
+                calib_metadata = dataRef.get("calexp_md", immedinate = True)
                 calib_type = "calexp"
         except:
             if shape_cols:
-                calib_data = dataRef.get("calexp")
-            calib_metadata = dataRef.get("calexp_md")
+                calib_data = dataRef.get("calexp", immedinate = True)
+            calib_metadata = dataRef.get("calexp_md", immedinate = True)
             calib_type = "calexp"
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 = dataRef.get("calexp").getDetector().getPositionFromPixel(
+        xy0 = dataRef.get("calexp", immedinate = True).getDetector().getPositionFromPixel(
             afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD'
             ) and ('x' in raw_cols or 'y' in raw_cols) else None
 
