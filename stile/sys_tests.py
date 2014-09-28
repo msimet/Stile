@@ -224,9 +224,9 @@ class CorrelationFunctionSysTest(SysTest):
         Landy-Szalay estimator, while 'simple' is just (data/random - 1).  For the other kinds, 
         'compensated' means the random-shear or random-kappa correlation function is subtracted 
         from the data correlation function,  while 'simple' merely returns the data correlation 
-        function.  Again, the TreeCorr documentation contains more information.  The statistic 
-        will be ignored if it is passed for any other correlation function type.  The default is 
-        to use 'compensated' if randoms are present and 'simple' otherwise.
+        function.  Again, the TreeCorr documentation contains more information.  The '*_statistic'
+        kwarg will be ignored if it is passed for any other correlation function type.  The 
+        default is to use 'compensated' if randoms are present and 'simple' otherwise.
 
         This function accepts all (self-consistent) sets of data, data2, random, and random2.
         Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
