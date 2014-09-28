@@ -754,7 +754,7 @@ class HistogramSysTest(SysTest):
     short_name = 'histogram'
 
     """
-    A base class for Stile systematics tests that generate histogram
+    A base class for Stile systematics tests that generate histograms.
     """
 
     """
@@ -876,14 +876,14 @@ class HistogramSysTest(SysTest):
     """
     Generate the histogram
     """
-    def HistoPlot( self, data_list, style=3, nbins = 50, weights = None,
-                   limits = None, figsize = None, normed = False,
-                   histtype = 'step', xlabel = None, ylabel = None,
-                   xlim = None, ylim = None, hide_x = False, hide_y = False,
-                   cumulative = False, align = 'mid', rwidth = 0.9,
-                   log = False, color = 'k', alpha = 1.0,
-                   text = None, text_x = 0.90, text_y = 0.90, fontsize = 12,
-                   linewidth = 2.0, vlines = None, vcolor = 'k' ):
+    def HistoPlot(self, data_list, style=3, nbins = 50, weights = None,
+                  limits = None, figsize = None, normed = False,
+                  histtype = 'step', xlabel = None, ylabel = None,
+                  xlim = None, ylim = None, hide_x = False, hide_y = False,
+                  cumulative = False, align = 'mid', rwidth = 0.9,
+                  log = False, color = 'k', alpha = 1.0,
+                  text = None, text_x = 0.90, text_y = 0.90, fontsize = 12,
+                  linewidth = 2.0, vlines = None, vcolor = 'k' ):
 
         """
         Draw a histogram and return a `matplotlib.figure.Figure` object.
@@ -898,55 +898,55 @@ class HistogramSysTest(SysTest):
         __call__ of the child class and return the `matplotlib.figure.Figure`
         that HistoPlot returns.
 
-        @param data_list     The 1-Dimension NumPy array or a list of Numpy array
-                             for plotting histogram
+        @param data_list     The 1-Dimension NumPy array or a list of Numpy arrays
+                             for plotting histograms.
 
         @param style         Different selections of Histogram bin size:
-               style = 1 :   Using the Scott's rule to decide the bin size
+               style = 1 :   Using the Scott's rule to decide the bin size.
                style = 2 :   Using the Freedman-Diaconis rule to decide the bin
-                             size
-               style = 3 :   Manually select a fixed number of bins
+                             size.
+               style = 3 :   Manually select a fixed number of bins.
+                             [default: style=3]
 
         @param nbins         The number of bins if style = 3 is selected.
                              [Default: nbins = 50]
-        @param weights       An array of weights
+        @param weights       An array of weights.
         @param limits        The [min, max] limits to trim the data before the
-                             histogram is made
-                             [Default: range = None]
-        @param normed        Whether the normalized histogram is shown
+                             histogram is made.
+                             [Default: limits = None]
+        @param normed        Whether the normalized histogram is shown.
                              [Default: normed = False]
-        @param cumulative    Whether the cumulative histogram is shown
+        @param cumulative    Whether the cumulative histogram is shown.
                              [Default: cumulative = False]
         @param histtype      The type of histogram to show:
-               histtype = 'bar'        : Tradition bar-type histogram
-               histtype = 'step'       : Unfilled lineplot-type histogram
-               histtype = 'stepfilled' : Filled lineplot-type histogram
+               histtype = 'bar'        : Tradition bar-type histogram.
+               histtype = 'step'       : Unfilled lineplot-type histogram.
+               histtype = 'stepfilled' : Filled lineplot-type histogram.
                              [Default: histtype = 'stepfilled']
         @param align         Where the bars are centered relative to bin edges
-                             = 'left', 'mid', or 'right'
+                             = 'left', 'mid', or 'right'.
                              [Default: align = 'mid' ]
         @param rwidth        The relative width of the bars as a fraction of the
                              bin width. Ignored for histtype = 'step' or
-                             'stepfilled'
+                             'stepfilled'.
                              [Default = None]
-        @param log           If True, the histogram axis will be set to a log scale
+        @param log           If True, the histogram axis will be set to a log scale.
                              [Default = False]
-        @param color         Color of the histogram
+        @param color         Color of the histogram.
                              [Default = None]
-        @param figsize       Size of a figure (x, y) in units of inches.
+        @param figsize       Size of a figure (x, y) in units of inches..
                              [Default: None, meaning use the default value of matplotlib]
         @param xlabel        The x-axis label.
                              [Default: None, meaning do not show a label for the x-axis]
         @param ylabel        The y-axis label.
                              [Default: None, meaning do not show a label for the y-axis]
-                             [Default: None, meaning do not show a size label]
         @param xlim          Limits of x-axis (min, max).
                              [Default: None, meaning do not set any limits for x]
         @param ylim          Limits of y-axis (min, max).
                              [Default: None, meaning do not set any limits for y]
-        @param hide_x        Whether hide the labels for x-axis
+        @param hide_x        Whether hide the labels for x-axis.
                              [Default: hide_x = False]
-        @param hide_y        Whether hide the labels for y-axis
+        @param hide_y        Whether hide the labels for y-axis.
                              [Default: hide_y = False]
         @param alpha
         @param linewidth
@@ -955,9 +955,9 @@ class HistogramSysTest(SysTest):
         @param text_y
         @param fontsize
         @param vlines        Locations to plot vertical lines to indicate interesting
-                             values
+                             values.
                              [Default: None]
-        @param vcolor        Color or a list of color for vertical lines to plot
+        @param vcolor        Color or a list of color for vertical lines to plot.
                              [Default: 'k']
 
         @returns a matplotlib.figure.Figure object.
