@@ -24,18 +24,6 @@ def Parser():
     p.add_argument('--last_row',
                    help="Last row of the file(s) to be considered",
                    dest='last_row')
-    p.add_argument('--x_col',
-                   help="Number of the x-position column",
-                   dest='x_col')
-    p.add_argument('--y_col',
-                   help="Number of the y-position column",
-                   dest='y_col')
-    p.add_argument('--ra_col',
-                   help="Number of the ra column",
-                   dest='ra_col')
-    p.add_argument('--dec_col',
-                   help="Number of the dec column",
-                   dest='dec_col')
     p.add_argument('--x_units',
                    help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only allowed "+
                         "by certain DataHandlers",
@@ -52,18 +40,6 @@ def Parser():
                    help="dec-column units (radians, hours, degrees, arcmin, arcsec) -- only "+
                         "allowed by certain DataHandlers",
                    dest='dec_units')
-    p.add_argument('--g1_col',
-                   help="Number of the g1 column",
-                   dest='g1_col')
-    p.add_argument('--g2_col',
-                   help="Number of the g2 column",
-                   dest='g2_col')
-    p.add_argument('--k_col',
-                   help="Number of the kappa [scalar] column",
-                   dest='k_col')
-    p.add_argument('--w_col',
-                   help="Number of the weight column",
-                   dest='w_col')
     p.add_argument('--flip_g1',
                    help="Flip the sign of g1 (default: False)",
                    dest='flip_g1', default=False)
