@@ -46,18 +46,6 @@ def Parser():
     p.add_argument('--flip_g2',
                    help="Flip the sign of g2 (default: False)",
                    dest='flip_g2', default=False)
-    p.add_argument('--project',
-                   help="TreeCorr argument: use a tangent-plane projection instead of curved-sky "+
-                        "(this is a negligible performance improvement, and not recommended)",
-                   dest='project')
-    p.add_argument('--project_ra',
-                   help="TreeCorr argument: the RA of the tangent point for projection, used in "+
-                        "conjunction with --project, and not recommended",
-                   dest='project_ra')
-    p.add_argument('--project_dec',
-                   help="TreeCorr argument: the dec of the tangent point for projection, used in "+
-                        "conjunction with --project, and not recommended",
-                   dest='project_dec')
     p.add_argument('--min_sep',
                    help="Minimum separation for the TreeCorr correlation functions",
                    dest='min_sep')
@@ -78,15 +66,6 @@ def Parser():
                    help="A parameter relating to accuracy of the TreeCorr bins--changing is not "+
                         "recommended",
                    dest='bin_slop')
-    p.add_argument('--precision',
-                   help="Number of digits after (scientific notation) decimal point in TreeCorr "+
-                        "(default: 3)",
-                   dest='precision')
-    p.add_argument('--m2_uform',
-                   help="Set to 'Schneider' to use the Schneider rather than the Crittenden forms "+
-                        "of the aperture mass statistic in TreeCorr (see TreeCorr Read.me for "+
-                        "more info)",
-                   dest='m2_uform')
     p.add_argument('-v', '--verbose',
                    help="Level of verbosity",
                    dest='verbose')
