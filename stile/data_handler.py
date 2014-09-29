@@ -33,10 +33,10 @@ class DataHandler:
       """
     def __init__(self):
         raise NotImplementedError()
-    
+
     def listData(self, object_types, epoch, extent, data_format, required_fields=None):
         raise NotImplementedError()
-    
+
     def getData(self, ident, object_types=None, epoch=None, extent=None, data_format=None,
                 bin_list=None):
         """
@@ -46,7 +46,7 @@ class DataHandler:
         
         If it's a tuple (file_name, field_schema), the assumption is that it can be read by a simple
         FITS or ASCII reader.  The format will be determined from the file extension.
-        """ 
+        """
         raise NotImplementedError()
 
     def getOutputPath(self, extension='.dat', multi_file=False, *args):
@@ -60,12 +60,11 @@ class DataHandler:
                           allowed, this argument also prevents Stile from writing over outputs from 
                           the same systematics test during the same run.
         @returns A path to an output file meeting the input specifications.
-        """ 
+        """
         #TODO: no-clobbering case
         sys_test_string = '_'.join(args)
         if multi_file:
-            nfiles = glob.glob(os.path.join(self.output_path,sys_test_string)+'*'+extension)
+            nfiles = glob.glob(os.path.join(self.output_path, sys_test_string)+'*'+extension)
             return os.path.join(self.output_path, sys_test_string+'_'+str(nfiles)+extension)
         else:
             return os.path.join(self.output_path, sys_test_string+extension)
-

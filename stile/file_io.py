@@ -50,7 +50,7 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
                      fields.
     @returns         The contents of the requested HDU.
     """
-    return stile_utils.FormatArray(ReadFITSImage(file_name,hdu),fields=fields)
+    return stile_utils.FormatArray(ReadFITSImage(file_name, hdu), fields=fields)
 
 def ReadASCIITable(file_name, **kwargs):
     """
@@ -68,18 +68,17 @@ def ReadASCIITable(file_name, **kwargs):
         fields = kwargs.pop('fields')
     else:
         fields = None
-    d = numpy.genfromtxt(file_name,dtype=None,**kwargs)
-    return stile_utils.FormatArray(d,fields=fields)
+    d = numpy.genfromtxt(file_name, dtype=None, **kwargs)
+    return stile_utils.FormatArray(d, fields=fields)
 
-    
 # numpy.savetxt uses a completely different format specification language than the dtypes, so
 # this dict and the function _format_str take a formatted NumPy array and return something
 # that savetxt understands.  I've left the default field width (18 characters) for all
 # fields except the string-like ones, which have their own default widths, and the object-like
-# ones, which tend to have width ~1 when their string representations are longer--right now I set 
+# ones, which tend to have width ~1 when their string representations are longer--right now I set
 # that to 60.
 _fmt_dict = {'?': 'u', 'B': 'c', 'I': 'u', 'H': 'u', 'L': 'u', 'Q': 'u', 'b': 'c', 'd': 'g',
-             'g': 'g', 'f': 'g', 'i': 'd', 'h': 'd', 'l': 'd', 'q': 'd'} 
+             'g': 'g', 'f': 'g', 'i': 'd', 'h': 'd', 'l': 'd', 'q': 'd'}
 
 def _format_str(dtype):
     if dtype.names:
@@ -92,7 +91,7 @@ def _format_str(dtype):
         elif char=='O':
             # Objects tend to have width-1 even if their string representations don't.
             return '%-60s'
-        elif char=='B' or char=='G' or char=='F': # complex
+        elif char=='B' or char=='G' or char=='F':  # complex
             return '%18g+%18gi'
         else:
             return '%18'+_fmt_dict[char]
@@ -113,7 +112,7 @@ def _handleFields(data_array, fields):
             fields = list(fields)
         data = data[fields]
     elif isinstance(fields, dict):
-        # Make a list that's only as long as it needs to be to cover the fields dict; populate it 
+        # Make a list that's only as long as it needs to be to cover the fields dict; populate it
         # with the keys of `fields`, and then fill in any blank spaces with the unused fields from
         # the original column descriptors.
         old_fields = [name for name in data.dtype.names if name not in fields]
@@ -130,7 +129,7 @@ def _handleFields(data_array, fields):
     else:
         raise ValueError("Fields description not understood: "+str(fields))
     return data
-            
+
 def WriteASCIITable(file_name, data_array, fields=None):
     """
     Given a `file_name` and a `data_array`, write the `data_array` to the `file_name` as an ASCII
@@ -148,8 +147,8 @@ def WriteASCIITable(file_name, data_array, fields=None):
     hold properly, and you should probably use a FITS file writer or replace the space with 
     underscores or another character.
     """
-    data = _handleFields(data_array,fields)
-    numpy.savetxt(file_name,data,fmt=_format_str(data.dtype))
+    data = _handleFields(data_array, fields)
+    numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
 
 # And, of course, PyFITS *also* uses a different format specification character set.
 _fits_dict = {'b': 'L',  # boolean
@@ -161,9 +160,9 @@ _fits_dict = {'b': 'L',  # boolean
 def _coerceFitsFormat(fmt):
     if 'S' in fmt.str or 'a' in fmt.str or 'U' in fmt.str:
         return 'A'+fmt.str.split('S')[1]
-    elif fmt.str[1] in _fits_dict: # first character is probably a byte-order flag
+    elif fmt.str[1] in _fits_dict:  # first character is probably a byte-order flag
         return _fits_dict[fmt.str[1]]
-    elif fmt.str[0] in _fits_dict: # or just in case it wasn't
+    elif fmt.str[0] in _fits_dict:  # or just in case it wasn't
         return _fits_dict[fmt.str[0]]
     raise ValueError("Format cannot be used for a FITS file: %s"%fmt.str)
 
@@ -193,7 +192,7 @@ def WriteFITSTable(file_name, data_array, fields=None):
     hdulist.append(table)
     hdulist.verify()
     hdulist.writeto(file_name)
-    
+
 def WriteTable(file_name, data_array, fields=None):
     """
     Pick a type of file (ASCII or FITS) and write to it.  If the `file_name` has an extention, it
@@ -216,9 +215,9 @@ def WriteTable(file_name, data_array, fields=None):
     ext = os.path.splitext(file_name)[1]
     if not ext:
         if has_fits:
-            WriteFITSTable(file_name,data_array,fields)
+            WriteFITSTable(file_name, data_array, fields)
         else:
-            WriteASCIITable(file_name,data_array,fields)
+            WriteASCIITable(file_name, data_array, fields)
     else:
         ext = ext.lower()
         if ext=='.fit' or ext=='.fits':
