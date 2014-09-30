@@ -9,6 +9,9 @@ import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
 import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
+import lsst.afw.cameraGeom as cameraGeom
+import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from lsst.pex.exceptions import LsstCppException
@@ -279,26 +282,27 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # datasetExists() call will fail if no tract is defined, hence the try-except block.
         try:
             if dataRef.datasetExists("fcr_md", immediate=True):
-                if shape_cols:
-                    calib_data = dataRef.get("calexp", immedinate = True)  # only used for WCS
                 calib_metadata = dataRef.get("fcr_md", immedinate = True)
                 calib_type = "fcr"
-            else:
                 if shape_cols:
-                    calib_data = dataRef.get("calexp", immedinate = True)
+                    calib_metadata_shape = dataRef.get("calexp_md", immedinate = True)
+            else:
                 calib_metadata = dataRef.get("calexp_md", immedinate = True)
                 calib_type = "calexp"
+                if shape_cols:
+                    calib_metadata_shape = calib_metadata
         except:
-            if shape_cols:
-                calib_data = dataRef.get("calexp", immedinate = True)
             calib_metadata = dataRef.get("calexp_md", immedinate = True)
             calib_type = "calexp"
+            if shape_cols:
+                calib_metadata_shape = calib_metadata
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 = dataRef.get("calexp", immedinate = True).getDetector().getPositionFromPixel(
-            afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD'
-            ) and ('x' in raw_cols or 'y' in raw_cols) else None
+        xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
+               dataRef.dataId.get('ccd'))
+               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key(
+               'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
 
         if shape_cols:
             for col in shape_cols:
@@ -324,7 +328,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 for do_quantity, sky_coords in [(do_sky_coords, True), (do_chip_coords, False)]:
                     if do_quantity:
                         shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask],
-                            calib_data, do_shape=do_shape, do_err=do_err, do_psf=do_psf,
+                            calib_metadata_shape, do_shape=do_shape, do_err=do_err, do_psf=do_psf,
                             do_psf_err=do_psf_err, sky_coords=sky_coords)
                         if extra_mask is not None:
                             mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
@@ -384,7 +388,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                 which rows had valid measurements.
         """
         if sky_coords:
-            wcs = calib.getWcs()
+            wcs = afwImage.makeWcs(calib)
         # First pull the quantities from the catalog that we'll need.  This first version in the try
         # block is faster if it works, and the time cost if it fails is small, so we try it first...
         nobj = len(data)
