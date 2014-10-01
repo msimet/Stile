@@ -10,6 +10,7 @@ import lsst.pipe.base
 import lsst.meas.mosaic
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
+import lsst.afw.table as afwTable
 import lsst.afw.cameraGeom as cameraGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.meas.mosaic.mosaicTask import MosaicTask
@@ -114,7 +115,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def run(self, dataRef):
         # Pull the source catalog from the butler corresponding to the particular CCD in the
         # dataRef.
-        catalog = dataRef.get("src", immediate=True)
+        catalog = dataRef.get("src", immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
 
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, ccd) identifier for filename.
@@ -712,7 +713,8 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # run (!) even before you get to the collation step.  So, we duplicate some code here in
         # the name of runtime, at the expense of some complexity in terms of nested lists of things.
         # Some of this code is annotated more clearly in the CCD* version of this class.
-        catalogs = [dataRef.get("src", immediate=True) for dataRef in dataRefList]
+        catalogs = [dataRef.get("src", immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+                    for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
