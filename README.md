@@ -16,7 +16,7 @@ To run Stile, you must have:
 
 We also recommend:
 
- - [corr2](http://code.google.com/p/mjarvis/), Mike Jarvis's 2-point correlation function code.  All of our correlation function tests involve calls to corr2.  At the moment, corr2 needs to be in your path (i.e. you can call it with a simple "corr2" from the command line).
+ - [TreeCorr](http://github.com/rmjarvis/TreeCorr), Mike Jarvis's 2-point correlation function code.  All of our correlation function tests involve calls to this package. 
  - PyFITS/Astropy to handle FITS tables and images.  Stile can run on ASCII tables, but is much slower.
  - matplotlib to generate plots.
 
@@ -31,6 +31,7 @@ Right now, Stile can:
  - Generate an average shear signal around a set of points (if you've installed corr2), given two catalogs that you specify in a particular way, and plot the results (if you have matplotlib).
  - Perform a number of basic statistics measurements and print the results.
  - Perform any of the above tests for data with different binning schemes applied, using a simple method of specifying the bins.
+ - Interface with sufficiently recent versions of the HSC pipeline.
  
 -------------------------------------
 
@@ -44,6 +45,5 @@ Over the upcoming months, we plan to add:
  - A larger suite of example code.
  - More robust documentation of both the code and the tests.
  - Installation scripts.
- - A module to interface with the LSST/HSC pipeline directly.
  - Tests on images, and the utilities to make those tests easier.
  

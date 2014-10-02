@@ -58,7 +58,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
-    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.005', 'max_sep': '0.2',
@@ -103,7 +103,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     # lsst magic
     ConfigClass = CCDSingleEpochStileConfig
     _DefaultName = "CCDSingleEpochStile"
-    # necessary basic parameters for corr2 to run
+    # necessary basic parameters for treecorr to run
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
@@ -120,7 +120,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
         # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
         src_filename = (dataRef.get("src_filename", immediate=True)[0]).replace('_parent/','')
-        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        dir = os.path.join(src_filename.split('output')[0], "stile_output")
         if os.path.exists(dir) == False:
             os.makedirs(dir)
         filename_chip = "-%07d-%03d" % (dataRef.dataId["visit"], dataRef.dataId["ccd"])
@@ -654,7 +654,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear"])
-    corr2_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control corr2",
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.05', 'max_sep': '1',
@@ -688,7 +688,6 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     canMultiprocess = False
     ConfigClass = VisitSingleEpochStileConfig
     _DefaultName = "VisitSingleEpochStile"
-    # necessary basic parameters for corr2 to run
 
     def run(self, visit, dataRefList):
         # It seems like it would make more sense to put all of this in a separate function and run
@@ -712,7 +711,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # [ccds] becomes 0..2^4..5^8^10.
         src_filename = (dataRefList[0].get("src_filename",
                                            immediate=True)[0]).replace('_parent/','')
-        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+        dir = os.path.join(src_filename.split('output')[0], "stile_output")
         if os.path.exists(dir) == False:
             os.makedirs(dir)
         ccds = [dataRef.dataId['ccd'] for dataRef in dataRefList]
