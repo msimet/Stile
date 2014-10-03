@@ -15,6 +15,7 @@ from lsst.pipe.tasks.coaddBase import ExistingCoaddDataIdContainer
 from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
+import re
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
@@ -863,7 +864,9 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
         # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
         src_filename = (dataRef.get("deepCoadd_src_filename", immediate=True)[0]).replace('_parent/','')
-        dir = os.path.join(src_filename.split('output')[0],"stile_output")
+	t_filename = re.split('(HSC-.)',src_filename)[:2]
+	t_filename.append('stile_output')
+        dir = os.path.join(*t_filename)
         if os.path.exists(dir) == False:
             os.makedirs(dir)
         return "-%07d-%5s" % (dataRef.dataId["tract"], dataRef.dataId["patch"])
@@ -872,8 +875,8 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd_src", help="data ID, with raw CCD keys")
-#	                       ContainerClass=ExistingCoaddDataIdContainer)
+        parser.add_id_argument("--id", "deepCoadd", help="data ID, with raw CCD keys",
+	                       ContainerClass=ExistingCoaddDataIdContainer)
         parser.description = parser_description
         return parser
 
