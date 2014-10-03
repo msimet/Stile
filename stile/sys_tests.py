@@ -3,6 +3,8 @@ Contains the class definitions of the Stile systematics tests.
 """
 import numpy
 import stile
+import treecorr
+from treecorr.corr2 import corr2_valid_params
 try:
     import matplotlib
     # We should decide which backend to use (this line allows running matplotlib even on sessions
@@ -16,7 +18,7 @@ except ImportError:
 # Silly class so we can call savefig() on something returned from a plot() class that doesn't
 # actually do anything.
 class PlotNone(object):
-    def savefig(self,filename):
+    def savefig(self, filename):
         pass
 
 class SysTest:
@@ -44,18 +46,10 @@ class SysTest:
              'psf_g1', 'psf_g2', 'psf_sigma'] # PSF shear and size at the object location
 
     It should define the following methods:
-        __call__(self, ...) = run the SysTest. There are two typical call signatures for SysTests:
-            __call__(self,data[,data2],**kwargs): run a test on a set of data, or a test involving
-                two data sets data and data2.
-            __call__(self,stile_args_dict,data=None,data2=None,random=None,random2=None,**kwargs):
-                the call signature for the CorrelationFunctionSysTests, which leave the data as
-                kwargs because the CorrelationFunctionSysTests() can also take filenames as kwargs
-                from the function corr2_utils.MakeCorr2FileKwargs(), rather than ingesting the data
-                directly, though they can also ingest the data directly as well.
-
-        In both cases, the kwargs should be able to handle a "bin_list=" kwarg which will bin the
-        data accordingly--see the classes defined in binning.py for more.
-
+        __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+            Run a test on a set of data, or a test involving two data sets data and data2, with
+            optional corresponding randoms random and random2.  Keyword args can be in a dict passed
+            to `config` or as explicit kwargs.  Explicit kwargs should override `config` arguments.
     """
     short_name = ''
     long_name = ''
@@ -70,7 +64,7 @@ class SysTest:
         doesn't do anything.  plot() should be overridden by child classes to actually generate
         plots if desired.
         """
-        if hasattr(results,'savefig'):
+        if hasattr(results, 'savefig'):
             return results
         else:
             return PlotNone()
@@ -80,160 +74,314 @@ class PlotDetails(object):
     A container class to hold details about field names, titles for legends, and y-axis labels for
     plots of correlation functions.
     """
-    def __init__(self, t_field=None, t_title=None, b_field=None, b_title=None,
-                 t_im_field=None, t_im_title=None, b_im_field=None, b_im_title=None,
+    def __init__(self, t_field=None, t_title=None, x_field=None, x_title=None,
+                 t_im_field=None, t_im_title=None, x_im_field=None, x_im_title=None,
                  datarandom_t_field=None, datarandom_t_title=None,
-                 datarandom_b_field=None, datarandom_b_title=None,
+                 datarandom_x_field=None, datarandom_x_title=None,
                  sigma_field=None, y_title=None):
         self.t_field = t_field  # Field of t-mode/+-mode shear correlation functions
         self.t_title = t_title  # Legend title for previous line
-        self.b_field = b_field  # Field of b-mode/x-mode shear correlation functions
-        self.b_title = b_title  # Legend title for previous line
+        self.x_field = x_field  # Field of b-mode/x-mode shear correlation functions
+        self.x_title = x_title  # Legend title for previous line
         self.t_im_field = t_im_field  # Imaginary part of t-mode/+-mode
         self.t_im_title = t_im_title  # Legend title for previous line
-        self.b_im_field = b_im_field  # Imaginary part of b-mode/x-mode
-        self.b_im_title = b_im_title  # Legend title for previous line
+        self.x_im_field = x_im_field  # Imaginary part of b-mode/x-mode
+        self.x_im_title = x_im_title  # Legend title for previous line
         self.datarandom_t_field = datarandom_t_field  # If data or randoms are available separately,
                                                       # this +'d' or +'r' is the t-mode field name
         self.datarandom_t_title = datarandom_t_title  # Legend title for previous line
-        self.datarandom_b_field = datarandom_b_field  # As above, for b-mode
-        self.datarandom_b_title = datarandom_b_title  # Legend title for previous line
+        self.datarandom_x_field = datarandom_x_field  # As above, for b-mode
+        self.datarandom_x_title = datarandom_x_title  # Legend title for previous line
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
+if treecorr.version<'3.1':        
+    treecorr_func_dict = {'gg': treecorr.G2Correlation,
+                          'm2': treecorr.G2Correlation,
+                          'ng': treecorr.NGCorrelation,
+                          'nm': treecorr.NGCorrelation,
+                          'norm': treecorr.NGCorrelation,
+                          'nn': treecorr.N2Correlation,
+                          'kk': treecorr.K2Correlation,
+                          'nk': treecorr.NKCorrelation,
+                          'kg': treecorr.KGCorrelation}
+else:
+    treecorr_func_dict = {'gg': treecorr.GGCorrelation,
+                          'm2': treecorr.GGCorrelation,
+                          'ng': treecorr.NGCorrelation,
+                          'nm': treecorr.NGCorrelation,
+                          'norm': treecorr.NGCorrelation,
+                          'nn': treecorr.NNCorrelation,
+                          'kk': treecorr.KKCorrelation,
+                          'nk': treecorr.NKCorrelation,
+                          'kg': treecorr.KGCorrelation}
 
 class CorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-    class method getCF(), which runs corr2 (via a call to the subprocess module) on a given set of
-    data.  Exact arguments to this method should be created by child classes of
-    CorrelationFunctionSysTest; see the docstring for CorrelationFunctionSysTest.getCF() for
-    information on how to write further tests using it.
+    class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact
+    arguments to this method should be created by child classes of CorrelationFunctionSysTest; see
+    the docstring for CorrelationFunctionSysTest.getCF() for information on how to write further
+    tests using it.
     """
     short_name = 'corrfunc'
+    # Set the details (such as field names and titles) for all the possible plots generated by
+    # TreeCorr
+    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$',
+                                sigma_field='sig_omega', y_title="$\omega$"),  # n2
+        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$',
+                    x_field='<gamX>', x_title=r'$\langle \gamma_X \rangle$',
+                    datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
+                    datarandom_x_field='gamX_', datarandom_x_title='$\gamma_{X',
+                    sigma_field='sigma', y_title="$\gamma$"),  # ng
+        PlotDetails(t_field='xi+', t_title=r'$\xi_+$', x_field='xi-', x_title=r'$\xi_-$',
+                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$',
+                    x_im_field='xi-_im', x_im_title=r'$\xi_{-,im}$',
+                    sigma_field='sigma_xi', y_title=r"$\xi$"),  # gg
+        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
+                    datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
+                    sigma_field='sigma', y_title="$\kappa$"),  # nk
+        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
+        PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
+                    x_field='<kgamX>', x_title=r'$\langle \kappa \gamma_X\rangle$',
+                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
+                    datarandom_x_field='kgamX_', datarandom_x_title=r'$\kappa \gamma_{X',
+                    sigma_field='sigma', y_title="$\kappa\gamma$"),  # kg
+        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$',
+                    x_field='<Mx^2>', x_title=r'$\langle M_x^2\rangle$',
+                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$',
+                    x_im_field='<Mmx>(b)', x_im_title=r'$\langle MM_x \rangle(b)$',
+                    sigma_field='sig_map', y_title="$M_{ap}^2$"),  # m2
+        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$',
+                    x_field='<NMx>', x_title=r'$\langle NM_{x} \rangle$',
+                    sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
+        ]
 
-    def getCF(self, stile_args, correlation_function_type, data=None, data2=None,
-                                     random=None, random2=None, save_config=False, **kwargs):
+    def makeCatalog(self, data, config=None, use_as_k=None, use_chip_coords=False):
+        if data is None or isinstance(data, treecorr.Catalog):
+            return data
+        catalog_kwargs = {}
+        fields = data.dtype.names
+        if 'ra' in fields and 'dec' in fields:
+            if not use_chip_coords:
+                catalog_kwargs['ra'] = data['ra']
+                catalog_kwargs['dec'] = data['dec']
+            elif 'x' in fields and 'y' in fields:
+                catalog_kwargs['x'] = data['x']
+                catalog_kwargs['y'] = data['y']
+            else:
+                raise ValueError('Chip coordinates requested, but "x" and "y" fields not found '
+                                 'in data')
+        elif 'x' in fields and 'y' in fields:
+            catalog_kwargs['x'] = data['x']
+            catalog_kwargs['y'] = data['y']
+        else:
+            raise ValueError("Data must contain (ra,dec) or (x,y) in order to do correlation "
+                             "function tests.")
+        if 'g1' in fields and 'g2' in fields:
+            catalog_kwargs['g1'] = data['g1']
+            catalog_kwargs['g2'] = data['g2']
+        if use_as_k:
+            if use_as_k in fields:
+                catalog_kwargs['k'] = data[use_as_k]
+        elif 'k' in fields:
+            catalog_kwargs['k'] = data['k']
+        # Quirk of length-1 formatted arrays: the fields will be floats, not
+        # arrays, which would break the Catalog init.
+        try:
+            len(data)
+        except:
+            if not hasattr(data, 'len') and isinstance(data, numpy.ndarray):
+                for key in catalog_kwargs:
+                    catalog_kwargs[key] = numpy.array([catalog_kwargs[key]])
+        catalog_kwargs['config'] = config
+        return treecorr.Catalog(**catalog_kwargs)
+
+    def getCF(self, correlation_function_type, data, data2=None,
+                    random=None, random2=None, use_as_k = None, use_chip_coords=False,
+                    config=None, **kwargs):
         """
-        Sets up and calls corr2 on the given set of data.  The data files and random files can
-        be contained already in stile_args['corr2_kwargs'] or **kwargs, in which case passing None
-        to the `data` and `random` kwargs is fine; otherwise they should be properly populated.
+        Sets up and calls treecorr on the given set of data.
 
         The user needs to specify the type of correlation function requested.  The available types
         are:
-            'n2': a 2-point correlation function
+            'nn': a 2-point correlation function
             'ng': a point-shear correlation function (eg galaxy-galaxy lensing)
-            'g2': a shear-shear correlation function (eg cosmic shear)
+            'gg': a shear-shear correlation function (eg cosmic shear)
             'nk': a point-scalar [such as convergence, hence k meaning "kappa"] correlation function
-            'k2': a scalar-scalar correlation function
+            'kk': a scalar-scalar correlation function
             'kg': a scalar-shear correlation function
             'm2': an aperture mass measurement
             'nm': an <N aperture mass> measurement
             'norm': 'nm' properly normalized by the average values of n and aperture mass to return
                     something like a correlation coefficient.
-        More details can be found in the Read.me for corr2.
+        More details can be found in the Readme.md for TreeCorr.
+
+        Additionally, for the 'nn', 'ng', 'nk', 'nm' and 'norm' options, the user can pass a kwarg 
+        nn_statistic = 'compensated' or nn_statistic = 'true' (or similarly for 'ng' and 'nk'; 
+        note that the 'nm' type checks the 'ng_statistic' kwarg and the 'norm' type checks the
+        'nn_statistic' kwarg!).  For 'nn' and 'norm' correlation functions, 'compensated' is the 
+        Landy-Szalay estimator, while 'simple' is just (data/random - 1).  For the other kinds, 
+        'compensated' means the random-shear or random-kappa correlation function is subtracted 
+        from the data correlation function,  while 'simple' merely returns the data correlation 
+        function.  Again, the TreeCorr documentation contains more information.  The '*_statistic'
+        kwarg will be ignored if it is passed for any other correlation function type.  The 
+        default is to use 'compensated' if randoms are present and 'simple' otherwise.
 
         This function accepts all (self-consistent) sets of data, data2, random, and random2.
         Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
-        program returns an autocorrelation.  "Random" keys are necessary for the 'n2' form of the
+        program returns an autocorrelation.  "Random" keys are necessary for the 'nn' form of the
         correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
 
-        Note: by default, the corr2 configuration files are written to the temp directory called by
-        tempfile.mkstemp().  If you need to examine the corr2 config files, you can pass
-        `save_config=True` and they will be written (as temp files probably beginning with "tmp")
-        to your working directory, which shouldn't be automatically cleaned up.
-
         @param stile_args    The dict containing the parameters that control Stile's behavior
-        @param correlation_function_type The type of correlation function ('n2','ng','g2','nk','k2',
-                             'kg','m2','nm','norm') to request from corr2--see above.
-        @param data, data2, random, random2: data sets in the format requested by
-                             corr2_utils.MakeCorr2FileKwargs().
-        @param kwargs        Any other corr2 parameters to be written to the corr2 param file (will
-                             silently supercede anything in stile_args).
-        @returns             a numpy array of the corr2 outputs.
+        @param correlation_function_type The type of correlation function ('nn', 'ng', 'gg', 'nk',
+                             'k2', 'kg', 'm2', 'nm', 'norm') to request from TreeCorr--see above.
+        @param data, data2, random, random2: NumPy arrays of data with fields using the field name
+                             strings given in the stile.fieldNames dict.
+        @param kwargs        Any other TreeCorr parameters (will silently supercede anything in
+                             stile_args).
+        @returns             a numpy array of the TreeCorr outputs.
         """
-        #TODO: know what kinds of data this needs and make sure it has it
         import tempfile
-        import subprocess
         import os
-        import copy
-        handles = []
 
-        # First, pull out the corr2-relevant parameters from the stile_args dict, and add anything
-        # passed as a kwarg to that dict.
-        corr2_kwargs = stile.corr2_utils.AddCorr2Dict(stile_args)
-        corr2_kwargs.update(kwargs)
-        # Now, pass the data and random arguments to MakeCorr2FileKwargs.  This will write to disk
-        # any data that's currently contained in memory for Stile, as well as making sure that all
-        # the files are in the same format--corr2 expects ra (etc) to be in the same column in
-        # every file. Then it returns a bunch of (key,value) pairs that we can use to write a corr2
-        # config file: the file names plus the format parameters (such as `ra_col`, `dec_col`,
-        # etc).  Empty data sets return nothing, and if all data sets are empty, the return value
-        # is an empty dict.  It's possible the user already ran MakeCorr2FileKwargs and the results
-        # have been passed as kwargs to this function.  We don't explicitly check for that, but as
-        # long as the user doesn't pass anything to `data`, `data2`, `random`, or `random2`, no
-        # conflicts will arise.
-        corr2_file_kwargs = stile.MakeCorr2FileKwargs(data, data2, random, random2)
-        corr2_kwargs.update(corr2_file_kwargs)
+        if not correlation_function_type in treecorr_func_dict:
+            raise ValueError('Unknown correlation function type: %s'%correlation_function_type)
 
-        # make sure the set of non-None data sets makes sense
-        if not ('file_list' in corr2_kwargs or 'file_name' in corr2_kwargs):
-            raise ValueError("stile_args['corr2_kwargs'] or **kwargs must contain a file kwarg")
-        if ('rand_list2' in corr2_kwargs or 'rand_name2' in corr2_kwargs) and not (
-            'file_name2' in corr2_kwargs or 'file_list2' in corr2_kwargs):
-            raise ValueError('Given random file for file 2, but there is no file 2')
-
-        if save_config:
-            handle, config_file = tempfile.mkstemp(dir='.')
-        else:
-            handle, config_file = tempfile.mkstemp()
-        handles.append(handle)
         handle, output_file = tempfile.mkstemp()
-        handles.append(handle)
 
-        corr2_kwargs[correlation_function_type+'_file_name'] = output_file
+        # First, pull out the TreeCorr-relevant parameters from the stile_args dict, and add
+        # anything passed as a kwarg to that dict.
+        if (random and len(random)) or (random2 and len(random2)):
+            treecorr_kwargs[correlation_function_type+'_statistic'] = \
+                treecorr_kwargs.get(correlation_function_type+'_statistic','compensated')
+        treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
+        treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
+        treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
+        
+        if data is None:
+            raise ValueError('Must include a data array!')
+        if correlation_function_type=='nn':
+            if random is None or ((data2 is not None or random2 is not None) and not 
+                                  (data2 is not None and random2 is not None)):
+                raise ValueError('Incorrect data types for correlation function: must have '
+                                   'data and random, and random2 if data2.')
+        elif correlation_function_type in ['gg', 'm2', 'kk']:
+            if random or random2:
+                print "Warning: randoms ignored for this correlation function type"
+        elif correlation_function_type in ['ng', 'nm', 'nk']:
+            if data2 is None:
+                raise ValueError('Must include data2 for this correlation function type')
+            if random2 is not None:
+                print "Warning: random2 ignored for this correlation function type"
+        elif correlation_function_type=='norm':
+            if data2 is None:
+                raise ValueError('Must include data2 for this correlation function type')
+            if random is None:
+                raise ValueError('Must include random for this correlation function type')
+            if random2 is None:
+                print "Warning: random2 ignored for this correlation function type"
+        elif correlation_function_type=='kg':
+            if data2 is None:
+                raise ValueError('Must include data2 for this correlation function type')
+            if random is not None or random2 is not None:
+                print "Warning: randoms ignored for this correlation function type"
+                
+        data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k,
+                                      use_chip_coords = use_chip_coords)
+        data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k,
+                                        use_chip_coords = use_chip_coords)
+        random = self.makeCatalog(random, config=treecorr_kwargs, use_as_k = use_as_k,
+                                          use_chip_coords = use_chip_coords)
+        random2 = self.makeCatalog(random2, config=treecorr_kwargs, use_as_k = use_as_k,
+                                            use_chip_coords = use_chip_coords)
 
-        stile.WriteCorr2ConfigurationFile(config_file, corr2_kwargs)
+        treecorr_kwargs[correlation_function_type+'_file_name'] = output_file
 
-        #TODO: don't hard-code the name of corr2!
-        subprocess.check_call(['corr2', config_file])
+        func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+        func.process(data, data2)
+        if correlation_function_type in ['ng', 'nm', 'nk']:
+            comp_stat = {'ng': 'ng', 'nm': 'ng', 'nk': 'nk'}  # which _statistic kwarg to check
+            if treecorr_kwargs.get(comp_stat[correlation_function_type]+'_statistic',
+               self.compensateDefault(data,data2,random,random2)) ==  'compensated':
+                func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+                func_random.process(random, data2)
+            else:
+                func_random = None
+        elif correlation_function_type=='norm':
+            func_gg = treecorr_func_dict['gg'](treecorr_kwargs)
+            func_gg.process(data2)
+            func_dd = treecorr_func_dict['nn'](treecorr_kwargs)
+            func_dd.process(data)
+            func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+            func_rr.process(data)
+            if treecorr_kwargs.get('nn_statistic', 
+               self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
+                func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                func_dr.process(data,random)
+            else:
+                func_dr = None
+        elif correlation_function_type=='nn':
+            func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+            if len(random2):
+                func_random.process(random, random2)
+            else:
+                func_random.process(random)
+            if not len(data2):
+                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+                func_rr.process(data,random)
+                if treecorr_kwargs.get(['nn_statistic'],
+                   self.compensateDefault(data,data2,random,random2,both=True)) ==  'compensated':
+                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                    func_dr.process(data,random)
+                    func_rd = None
+                else:
+                    func_dr = None
+                    func_rd = None
+            else:
+                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+                func_rr.process(random,random2)
+                if treecorr_kwargs.get(['nn_statistic'],
+                   self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
+                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                    func_dr.process(data,random2)
+                    func_rd = treecorr_func_dict['nn'](treecorr_kwargs)
+                    func_rd.process(random,data2)
+        else:
+            func_random = None
+        if correlation_function_type=='m2':
+            func.writeMapSq(output_file)
+        elif correlation_function_type=='nm':
+            func.writeNMap(output_file, func_random)
+        elif correlation_function_type=='norm':
+            func.writeNorm(output_file, func_gg, func_dd, func_rr, func_dr, func_rg)
+        elif correlation_function_type=='nn':
+            func.write(output_file, func_rr, func_dr, func_rd)
+        elif func_random:
+            func.write(output_file,func_random)
+        else:
+            func.write(output_file)
+        results = stile.ReadTreeCorrResultsFile(output_file)
+        os.close(handle)
+        os.remove(output_file)
+        return results
 
-        return_value = stile.ReadCorr2ResultsFile(output_file)
-        for handle in handles:
-            os.close(handle)
-        return return_value
-
-    # Set the details (such as field names and titles) for all the possible plots generated by corr2
-    plot_details = [PlotDetails(t_field='omega', t_title='$\omega$',
-                                sigma_field='sig_omega', y_title="$\omega$"),  # n2
-        PlotDetails(t_field='<gamT>', t_title=r'$\langle \gamma_T \rangle$',
-                    b_field='<gamX>', b_title=r'$\langle \gamma_X \rangle$',
-                    datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
-                    datarandom_b_field='gamX_', datarandom_b_title='$\gamma_{X',
-                    sigma_field='sig', y_title="$\gamma$"),  #ng
-        PlotDetails(t_field='xi+', t_title=r'$\xi_+$', b_field='xi-', b_title=r'$\xi_-$',
-                    t_im_field='xi+_im', t_im_title=r'$\xi_{+,im}$',
-                    b_im_field='xi-_im', b_im_title=r'$\xi_{-,im}$',
-                    sigma_field='sig_xi', y_title=r"$\xi$"),  #g2
-        PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
-                    datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
-                    sigma_field='sig', y_title="$\kappa$"),  # nk
-        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sig_xi', y_title=r"$\xi$"),  # k2
-        PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
-                    b_field='<kgamX>', b_title=r'$\langle \kappa \gamma_X\rangle$',
-                    datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
-                    datarandom_b_field='kgamX_', datarandom_b_title=r'$\kappa \gamma_{X',
-                    sigma_field='sig', y_title="$\kappa\gamma$"),  # kg
-        PlotDetails(t_field='<Map^2>', t_title=r'$\langle M_{ap}^2 \rangle$',
-                    b_field='<Mx^2>', b_title=r'$\langle M_x^2\rangle$',
-                    t_im_field='<MMx>(a)', t_im_title=r'$\langle MM_x \rangle(a)$',
-                    b_im_field='<Mmx>(b)', b_im_title=r'$\langle MM_x \rangle(b)$',
-                    sigma_field='sig_map', y_title="$M_{ap}^2$"),  # m2
-        PlotDetails(t_field='<NMap>', t_title=r'$\langle NM_{ap} \rangle$',
-                    b_field='<NMx>', b_title=r'$\langle NM_{x} \rangle$',
-                    sigma_field='sig_nmap', y_title="$NM_{ap}$")  # nm or norm
-        ]
-
+    def compensateDefault(self, data, data2, random, random2, both=False):
+        """
+        Figure out if a compensated statistic can be used from the data present.  Keyword "both"
+        indicates that both data sets if present must have randoms; the default, False, means only the first data set must have a random.
+        """
+        if not random or (random and not len(random)):  # No random
+            return 'simple'
+        elif both and data2 and len(data2): # Second data set exists and must have a random
+            if random2 and len(random2):
+                return 'compensated'
+            else:
+                return 'simple'
+        else:  # There's a random, and we can ignore 'both' since this is an autocorrelation
+            return 'compensated'
+            
+        
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
@@ -285,21 +433,20 @@ class CorrelationFunctionSysTest(SysTest):
         if pd.datarandom_t_field:
             plot_data_only &= pd.datarandom_t_field+'d' in fields
             plot_random_only &= pd.datarandom_t_field+'r' in fields
-        if plot_bmode and pd.b_field and pd.t_im_field:
+        if plot_bmode and pd.x_field and pd.t_im_field:
             nrows = 2
         elif pd.datarandom_t_field:
             nrows = 1 + plot_data_only + plot_random_only
         else:
             nrows = 1
-
         # Plot the first thing
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
         ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0],
                     label=pd.t_title)
-        if pd.b_title and plot_bmode:
-            ax.errorbar(data[r], data[pd.b_field], yerr=data[pd.sigma_field], color=colors[1],
-                        label=pd.b_title)
+        if pd.x_title and plot_bmode:
+            ax.errorbar(data[r], data[pd.x_field], yerr=data[pd.sigma_field], color=colors[1],
+                        label=pd.x_title)
         elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
@@ -308,13 +455,13 @@ class CorrelationFunctionSysTest(SysTest):
         ax.set_xlim(xlim)
         ax.set_ylabel(pd.y_title)
         ax.legend()
-        if pd.b_field and plot_bmode and pd.t_im_field:
-            # Both yb and y_im: plot (y,yb) on one plot and (y_im,yb_im) on the other.
+        if pd.x_field and plot_bmode and pd.t_im_field:
+            # Both yb and y_im: plot (y, yb) on one plot and (y_im, yb_im) on the other.
             ax = fig.add_subplot(nrows, 1, 2)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0],
                         label=pd.t_im_title)
-            ax.errorbar(data[r], data[pd.b_im_field], yerr=data[pd.sigma_field], color=colors[1],
-                        label=pd.b_im_title)
+            ax.errorbar(data[r], data[pd.x_im_field], yerr=data[pd.sigma_field], color=colors[1],
+                        label=pd.x_im_title)
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
@@ -325,9 +472,9 @@ class CorrelationFunctionSysTest(SysTest):
             ax = fig.add_subplot(nrows, 1, 2)
             ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'d}$')
-            if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'d'], yerr=data[pd.sigma_field],
-                        color=colors[1], label=pd.datarandom_b_title+'d}$')
+            if plot_bmode and pd.datarandom_x_field:
+                ax.errorbar(data[r], data[pd.datarandom_x_field+'d'], yerr=data[pd.sigma_field],
+                        color=colors[1], label=pd.datarandom_x_title+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
@@ -337,9 +484,9 @@ class CorrelationFunctionSysTest(SysTest):
             ax = fig.add_subplot(nrows, 1, nrows)
             ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
-            if plot_bmode and pd.datarandom_b_field:
-                ax.errorbar(data[r], data[pd.datarandom_b_field+'r'], yerr=data[pd.sigma_field],
-                        color=colors[1], label=pd.datarandom_b_title+'r}$')
+            if plot_bmode and pd.datarandom_x_field:
+                ax.errorbar(data[r], data[pd.datarandom_x_field+'r'], yerr=data[pd.sigma_field],
+                        color=colors[1], label=pd.datarandom_x_title+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
             ax.set_xlim(xlim)
@@ -358,8 +505,8 @@ class GalaxyShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['galaxy lens', 'galaxy']
     required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
 class BrightStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -370,8 +517,8 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star bright', 'galaxy']
     required_quantities = [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'ng', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
 class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     """
@@ -382,8 +529,8 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'galaxy', 'star random', 'galaxy random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
 class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     """
@@ -394,8 +541,8 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'galaxy']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w'), ('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
 class StarXStarShearSysTest(CorrelationFunctionSysTest):
     """
@@ -406,8 +553,8 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     objects_list = ['star']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'w')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'g2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -418,8 +565,8 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     objects_list = ['galaxy', 'galaxy random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
 class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -430,8 +577,8 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
     objects_list = ['star', 'star random']
     required_quantities = [('ra', 'dec'), ('ra', 'dec')]
 
-    def __call__(self, stile_args, data=None, data2=None, random=None, random2=None, **kwargs):
-        return self.getCF(stile_args, 'n2', data, data2, random, random2, **kwargs)
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
 
 class StatSysTest(SysTest):

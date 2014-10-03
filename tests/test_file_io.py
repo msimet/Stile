@@ -98,8 +98,8 @@ class TestFileIO(unittest.TestCase):
         # ReadASCIITable is a wrapper for numpy.genfromtxt() that turns things into formatted
         # arrays if necessary, so we don't really need to test much of the functionality--just make 
         # sure that both natively formatted arrays (table_with_string) and natively raw arrays 
-        # (corr2_output) are both returned as formatted arrays.
-        results = stile.ReadASCIITable('test_data/corr2_output.dat',comments='#')
+        # (treecorr_output) are both returned as formatted arrays.
+        results = stile.ReadASCIITable('test_data/TreeCorr_output.dat',comments='#')
         numpy.testing.assert_equal(results,self.table1)
         results = stile.ReadASCIITable('test_data/table_with_string.dat')
         numpy.testing.assert_equal(results,self.table2_withstring)
