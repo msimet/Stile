@@ -24,18 +24,6 @@ def Parser():
     p.add_argument('--last_row',
                    help="Last row of the file(s) to be considered",
                    dest='last_row')
-    p.add_argument('--x_col',
-                   help="Number of the x-position column",
-                   dest='x_col')
-    p.add_argument('--y_col',
-                   help="Number of the y-position column",
-                   dest='y_col')
-    p.add_argument('--ra_col',
-                   help="Number of the ra column",
-                   dest='ra_col')
-    p.add_argument('--dec_col',
-                   help="Number of the dec column",
-                   dest='dec_col')
     p.add_argument('--x_units',
                    help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only allowed "+
                         "by certain DataHandlers",
@@ -52,36 +40,12 @@ def Parser():
                    help="dec-column units (radians, hours, degrees, arcmin, arcsec) -- only "+
                         "allowed by certain DataHandlers",
                    dest='dec_units')
-    p.add_argument('--g1_col',
-                   help="Number of the g1 column",
-                   dest='g1_col')
-    p.add_argument('--g2_col',
-                   help="Number of the g2 column",
-                   dest='g2_col')
-    p.add_argument('--k_col',
-                   help="Number of the kappa [scalar] column",
-                   dest='k_col')
-    p.add_argument('--w_col',
-                   help="Number of the weight column",
-                   dest='w_col')
     p.add_argument('--flip_g1',
                    help="Flip the sign of g1 (default: False)",
                    dest='flip_g1', default=False)
     p.add_argument('--flip_g2',
                    help="Flip the sign of g2 (default: False)",
                    dest='flip_g2', default=False)
-    p.add_argument('--project',
-                   help="TreeCorr argument: use a tangent-plane projection instead of curved-sky "+
-                        "(this is a negligible performance improvement, and not recommended)",
-                   dest='project')
-    p.add_argument('--project_ra',
-                   help="TreeCorr argument: the RA of the tangent point for projection, used in "+
-                        "conjunction with --project, and not recommended",
-                   dest='project_ra')
-    p.add_argument('--project_dec',
-                   help="TreeCorr argument: the dec of the tangent point for projection, used in "+
-                        "conjunction with --project, and not recommended",
-                   dest='project_dec')
     p.add_argument('--min_sep',
                    help="Minimum separation for the TreeCorr correlation functions",
                    dest='min_sep')
@@ -102,15 +66,6 @@ def Parser():
                    help="A parameter relating to accuracy of the TreeCorr bins--changing is not "+
                         "recommended",
                    dest='bin_slop')
-    p.add_argument('--precision',
-                   help="Number of digits after (scientific notation) decimal point in TreeCorr "+
-                        "(default: 3)",
-                   dest='precision')
-    p.add_argument('--m2_uform',
-                   help="Set to 'Schneider' to use the Schneider rather than the Crittenden forms "+
-                        "of the aperture mass statistic in TreeCorr (see TreeCorr Read.me for "+
-                        "more info)",
-                   dest='m2_uform')
     p.add_argument('-v', '--verbose',
                    help="Level of verbosity",
                    dest='verbose')

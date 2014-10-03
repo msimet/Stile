@@ -217,6 +217,17 @@ class CorrelationFunctionSysTest(SysTest):
                     something like a correlation coefficient.
         More details can be found in the Readme.md for TreeCorr.
 
+        Additionally, for the 'nn', 'ng', 'nk', 'nm' and 'norm' options, the user can pass a kwarg 
+        nn_statistic = 'compensated' or nn_statistic = 'true' (or similarly for 'ng' and 'nk'; 
+        note that the 'nm' type checks the 'ng_statistic' kwarg and the 'norm' type checks the
+        'nn_statistic' kwarg!).  For 'nn' and 'norm' correlation functions, 'compensated' is the 
+        Landy-Szalay estimator, while 'simple' is just (data/random - 1).  For the other kinds, 
+        'compensated' means the random-shear or random-kappa correlation function is subtracted 
+        from the data correlation function,  while 'simple' merely returns the data correlation 
+        function.  Again, the TreeCorr documentation contains more information.  The '*_statistic'
+        kwarg will be ignored if it is passed for any other correlation function type.  The 
+        default is to use 'compensated' if randoms are present and 'simple' otherwise.
+
         This function accepts all (self-consistent) sets of data, data2, random, and random2.
         Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
         program returns an autocorrelation.  "Random" keys are necessary for the 'nn' form of the
@@ -290,7 +301,9 @@ class CorrelationFunctionSysTest(SysTest):
         func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
         func.process(data, data2)
         if correlation_function_type in ['ng', 'nm', 'nk']:
-            if random is not None:
+            comp_stat = {'ng': 'ng', 'nm': 'ng', 'nk': 'nk'}  # which _statistic kwarg to check
+            if treecorr_kwargs.get(comp_stat[correlation_function_type]+'_statistic',
+               self.compensateDefault(data,data2,random,random2)) ==  'compensated':
                 func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
                 func_random.process(random, data2)
             else:
@@ -302,8 +315,8 @@ class CorrelationFunctionSysTest(SysTest):
             func_dd.process(data)
             func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
             func_rr.process(data)
-            # think about defaults here
-            if treecorr_kwargs['nn_statistic'] == 'compensated':
+            if treecorr_kwargs.get('nn_statistic', 
+               self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
                 func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_dr.process(data,random)
             else:
@@ -317,7 +330,8 @@ class CorrelationFunctionSysTest(SysTest):
             if not len(data2):
                 func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_rr.process(data,random)
-                if treecorr_kwargs['nn_statistic'] == 'compensated':
+                if treecorr_kwargs.get(['nn_statistic'],
+                   self.compensateDefault(data,data2,random,random2,both=True)) ==  'compensated':
                     func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                     func_dr.process(data,random)
                     func_rd = None
@@ -327,7 +341,8 @@ class CorrelationFunctionSysTest(SysTest):
             else:
                 func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_rr.process(random,random2)
-                if treecorr_kwargs['nn_statistic'] == 'compensated':
+                if treecorr_kwargs.get(['nn_statistic'],
+                   self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
                     func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                     func_dr.process(data,random2)
                     func_rd = treecorr_func_dict['nn'](treecorr_kwargs)
@@ -351,6 +366,22 @@ class CorrelationFunctionSysTest(SysTest):
         os.remove(output_file)
         return results
 
+    def compensateDefault(self, data, data2, random, random2, both=False):
+        """
+        Figure out if a compensated statistic can be used from the data present.  Keyword "both"
+        indicates that both data sets if present must have randoms; the default, False, means only the first data set must have a random.
+        """
+        if not random or (random and not len(random)):  # No random
+            return 'simple'
+        elif both and data2 and len(data2): # Second data set exists and must have a random
+            if random2 and len(random2):
+                return 'compensated'
+            else:
+                return 'simple'
+        else:  # There's a random, and we can ignore 'both' since this is an autocorrelation
+            return 'compensated'
+            
+        
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
