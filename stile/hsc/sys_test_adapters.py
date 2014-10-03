@@ -79,8 +79,8 @@ class BaseSysTestAdapter(object):
     attribute `sys_test` that is a SysTest object; an attribute `name` that we can use to generate
     output filenames; a function __call__() that will run the test; a function `getMasks()` that
     returns a set of masks (one for each object type--such as "star" or "galaxy"--that is expected
-    for the test) if given a source catalog and config object; and a function getRequiredColumns() 
-    that returns a list of tuples of required quantities (such as "ra" or "g1"), one tuple 
+    for the test) if given a source catalog and config object; and a function getRequiredColumns()
+    that returns a list of tuples of required quantities (such as "ra" or "g1"), one tuple
     corresponding to each mask returned from getMasks().
 
     (More complete lists of the exact expected names for object types and required columns can be
@@ -137,7 +137,7 @@ class BaseSysTestAdapter(object):
         the list matching the data from the corresponding element of the list returned by
         getMasks().  For example, if the masks returned were a star mask and a galaxy mask, and we
         wanted to know the shear signal around galaxies, this should return
-        >>> [('ra','dec'),('ra','dec','g1','g2','w')]
+        >>> [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
         since we need to know the positions of the stars and the positions, shears, and weights of
         the galaxies.
 
@@ -186,7 +186,7 @@ class ShapeSysTestAdapter(BaseSysTestAdapter):
         
 class GalaxyShearAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the GalaxyShearSysTest.  See the documentation for that class or 
+    Adapter for the GalaxyShearSysTest.  See the documentation for that class or
     BaseSysTestAdapter for more information.
     """
     def __init__(self, config):
@@ -195,6 +195,12 @@ class GalaxyShearAdapter(ShapeSysTestAdapter):
         self.sys_test = sys_tests.GalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 
 class BrightStarShearAdapter(ShapeSysTestAdapter):
@@ -208,6 +214,12 @@ class BrightStarShearAdapter(ShapeSysTestAdapter):
         self.sys_test = sys_tests.BrightStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(task_config.treecorr_kwargs, *data, **kwargs)
 
 class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
     """
@@ -220,6 +232,12 @@ class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
         self.sys_test = sys_tests.StarXGalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class StarXStarShearAdapter(ShapeSysTestAdapter):
     """
@@ -232,6 +250,12 @@ class StarXStarShearAdapter(ShapeSysTestAdapter):
         self.sys_test = sys_tests.StarXStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class StatsPSFFluxAdapter(ShapeSysTestAdapter):
     """

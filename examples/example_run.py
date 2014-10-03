@@ -1,8 +1,4 @@
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as P
 import sys
-import os
 sys.path.append('..')
 import stile
 import dummy
@@ -14,25 +10,17 @@ def main():
                 stile.BinStep('dec',low=-1,high=1,step=1)]
     sys_test = stile.GalaxyShearSysTest()
     
-    stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
-                                    'dec_units': 'degrees',
-                                    'min_sep': 0.05,
-                                    'max_sep': 1,
-                                    'sep_units': 'degrees',
-                                    'nbins': 20
-                                    } }
+    stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees',
+                  'min_sep': 0.05, 'max_sep': 1, 'sep_units': 'degrees', 'nbins': 20}
     data_ids = dh.listData(object_types = ['galaxy lens','galaxy'], epoch='single',
-                           extent='field',data_format='table')
+                           extent='field', data_format='table')
     
     # do a test without binning
     data = dh.getData(data_ids[0],'galaxy lens','single','field','table')
     data2 = dh.getData(data_ids[1],'galaxy','single','field','table')
     
-    # convert all files to files on disk if they aren't already
-    corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
-    
     # run the test
-    results = sys_test(stile_args,**corr2_kwargs)
+    results = sys_test(data, data2=data2, config=stile_args)
     
     fig = sys_test.plot(results)
     fig.savefig(sys_test.short_name+'.png')
@@ -51,9 +39,7 @@ def main():
         bins_name = '-'.join([bl.short_name for bl in bin_list])
         data2 = dh.getData(data_ids[1],'galaxy','single','field','table',bin_list=bin_list)
         
-        corr2_kwargs = stile.MakeCorr2FileKwargs(data,data2)
-        
-        results = sys_test(stile_args,**corr2_kwargs)
+        results = sys_test(data, data2=data2, config=stile_args)
         stile.WriteASCIITable('realshear-'+bins_name+'.dat',results)
         fig = sys_test.plot(results)
         fig.savefig(sys_test.short_name+bins_name+'.png')
