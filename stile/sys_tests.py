@@ -1157,17 +1157,32 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
+        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        self.array = dict()
+        if self.per_ccd_stat:
+            self.array["CCD"] = list(set(array["CCD"]))
+            self.array["psf_g1"], self.array["g1"], self.array["g1_err"] = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
                                                           array['g1'], yerr = array['g1_err'],
                                                           stat = per_ccd_stat)
         else:
-            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
-        return self.scatterPlot(psf_g1, g1, yerr=g1_err,
+            self.array["psf_g1"], self.array["g1"], self.array["g1_err"] = array['psf_g1'], array['g1'], array['g1_err']
+        return self.scatterPlot(self.array["psf_g1"], self.array["g1"], yerr = self.array["g1_err"],
                                 xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='one-to-one')
+
+    def write(self, filename):
+        cols = ["CCD"] if self.per_ccd_stat else []
+        cols += list(self.required_quantities[0])
+        with open(filename, 'w') as f:
+            f.write("# " + " ".join(cols) + "\n")
+            for i in range(len(self.array[cols[0]])):
+                for j, col in enumerate(cols):
+                    f.write(str(self.array[col][i]))
+                    if j != len(cols)-1:
+                        f.write(" ")
+                    else:
+                        f.write("\n")
 
 class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'

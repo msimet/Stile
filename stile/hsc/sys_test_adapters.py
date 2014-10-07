@@ -325,7 +325,7 @@ class ScatterPlotStarVsPSFG1Adapter(ShapeSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self, task_config,*data, **kwargs):
+    def __call__(self, task_config, *data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:

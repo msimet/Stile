@@ -196,6 +196,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
             if hasattr(results, 'savefig'):
                 results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
+            if hasattr(sys_test.sys_test, 'write'):
+                sys_test.sys_test.write(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.dat'))
 
     def removeFlaggedObjects(self, catalog):
         """
@@ -788,8 +790,16 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(self.config, *new_catalogs)
-            fig = sys_test.sys_test.plot(results)
-            fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            # If there's anything fancy to do with plotting the results, do that.
+            if hasattr(sys_test.sys_test, 'plot'):
+                fig = sys_test.sys_test.plot(results)
+                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            if hasattr(results, 'savefig'):
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            if hasattr(sys_test.sys_test, 'write'):
+                sys_test.sys_test.write(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.dat'))
+#            fig = sys_test.sys_test.plot(results)
+#            fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
     def makeArray(self, catalog_dict):
         """
