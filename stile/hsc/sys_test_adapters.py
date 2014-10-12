@@ -200,6 +200,7 @@ class GalaxyShearAdapter(ShapeSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
+        new_data = [self.fixArray(d) for d in data]
         return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 
@@ -219,6 +220,7 @@ class BrightStarShearAdapter(ShapeSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
+        new_data = [self.fixArray(d) for d in data]
         return self.sys_test(task_config.treecorr_kwargs, *data, **kwargs)
 
 class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
@@ -237,6 +239,7 @@ class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
+        new_data = [self.fixArray(d) for d in data]
         return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class StarXStarShearAdapter(ShapeSysTestAdapter):
@@ -255,6 +258,7 @@ class StarXStarShearAdapter(ShapeSysTestAdapter):
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
+        new_data = [self.fixArray(d) for d in data]
         return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 class StatsPSFFluxAdapter(ShapeSysTestAdapter):
