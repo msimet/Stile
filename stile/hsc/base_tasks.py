@@ -194,7 +194,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 new_catalogs.append(self.makeArray(new_catalog))
             # run the test!
             results = sys_test(self.config, *new_catalogs)
-            # If there's anything fancy to do with plotting the results, do that.
+            # If there's anything fancy to do with the results, do that.
+            if isinstance(results,numpy.ndarray):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip+'.dat', results, print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
