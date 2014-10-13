@@ -153,7 +153,7 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     data = _handleFields(data_array, fields)
     if print_header:
         numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
-                      comment=', '.join(data.dtype.names))
+                      header=', '.join(data.dtype.names))
     else:
         numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
 
