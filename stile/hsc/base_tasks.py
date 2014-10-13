@@ -18,6 +18,7 @@ from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
+import stile
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
@@ -197,7 +198,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # If there's anything fancy to do with the results, do that.
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chip+'.dat', results, print_header=True)
+                      sys_test_data.sys_test_name+filename_chip+'.dat'), results, print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
@@ -809,6 +810,9 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(self.config, *new_catalogs)
+            if isinstance(results,numpy.ndarray):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips+'.dat'), results, print_header=True)
             fig = sys_test.sys_test.plot(results)
             fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
