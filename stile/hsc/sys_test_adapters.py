@@ -45,9 +45,10 @@ def MaskBrightStar(data, config):
     sample.
     """
     star_mask = MaskStar(data, config)
-    bright_mask = (numpy.array([src['flux.psf']/src['flux.psf.err'] for src in data]) >
+    key_psf = data.schema.find('flux.psf').key
+    key_psf_err = data.schema.find('flux.psf.err').key
+    bright_mask = (numpy.array([src[key_psf]/src[key_psf_err] for src in data]) >
                    config.bright_star_sn_cutoff)
-
     return numpy.logical_and(star_mask, bright_mask)
 
 def MaskPSFStar(data, config):
