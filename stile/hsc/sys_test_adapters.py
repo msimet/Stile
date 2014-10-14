@@ -44,7 +44,7 @@ def MaskBrightStar(data, config):
     correspond to bright stars.  Right now this is set to be the upper 10% of stars in a given
     sample.
     """
-    star_mask = MaskStar(data)
+    star_mask = MaskStar(data, config)
     bright_mask = (numpy.array([src['flux.psf']/src['flux.psf.err'] for src in data]) >
                    config.bright_star_sn_cutoff)
 
