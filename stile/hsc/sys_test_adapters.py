@@ -41,8 +41,8 @@ def MaskStar(data, config):
 def MaskBrightStar(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
-    correspond to bright stars.  Right now this is set to be the upper 10% of stars in a given
-    sample.
+    correspond to bright stars according to a given S/N cutoff set by
+    `config.bright_star_sn_cutoff`.
     """
     star_mask = MaskStar(data, config)
     bright_mask = (numpy.array([src['flux.psf']/src['flux.psf.err'] for src in data]) >
