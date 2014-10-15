@@ -764,6 +764,7 @@ class WhiskerPlotSysTest(SysTest):
     WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
     WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
     """
+
     def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, scale = None,
                     keylength = 0.05, figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
@@ -860,11 +861,19 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
 
     def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
                  xlim = None, ylim = None):
+        if 'CCD' in array.dtype.names:
+            fields = list(self.required_quantities[0]) + ['CCD']
+        else:
+            fields = list(self.required_quantities[0])
+        self.data = numpy.rec.fromarrays([array[field] for field in fields], names = fields)
         return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
                                 linewidth = linewidth, scale = scale, figsize = figsize,
                                 xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
+
+    def getData(self):
+        return self.data
 
 class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_psf'
@@ -874,11 +883,20 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
 
     def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
                  xlim = None, ylim = None):
+        if 'CCD' in array.dtype.names:
+            fields = list(self.required_quantities[0]) + ['CCD']
+        else:
+            fields = list(self.required_quantities[0])
+        self.data = numpy.rec.fromarrays([array[field] for field in fields], names = fields)
         return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
                                 array['psf_sigma'], linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
+
+    def getData(self):
+        return self.data
+
     
 class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
@@ -888,12 +906,21 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
 
     def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
                  xlim = None, ylim = None):
+        data = [array['x'], array['y'], array['g1'] - array['psf_g1'], array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma']]
+        fields = ['x', 'y', 'g1-psf_g1', 'g2-psf_g2', 'sigma-psf_sigma']
+        if 'CCD' in array.dtype.names:
+            data += [array['CCD']]
+            fields += ['CCD']
+        self.data = numpy.rec.fromarrays(data, names = fields)
         return self.whiskerPlot(array['x'], array['y'], array['g1'] - array['psf_g1'],
                                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
                                 linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
+
+    def getData(self):
+        return self.data
 
 class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
