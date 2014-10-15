@@ -676,7 +676,12 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear"])
+                             "StarXGalaxyShear", "StarXStarShear",
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
