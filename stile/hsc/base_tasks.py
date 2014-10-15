@@ -199,13 +199,14 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
                       sys_test_data.sys_test_name+filename_chip+'.dat'), results, print_header=True)
+            if hasattr(sys_test.sys_test, 'getData'):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip+'.dat'), sys_test.sys_test.getData(), print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
             if hasattr(results, 'savefig'):
                 results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
-            if hasattr(sys_test.sys_test, 'write'):
-                sys_test.sys_test.write(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.dat'))
 
     def removeFlaggedObjects(self, catalog):
         """
@@ -815,6 +816,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
                       sys_test_data.sys_test_name+filename_chips+'.dat'), results, print_header=True)
+            if hasattr(sys_test.sys_test, 'getData'):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips+'.dat'), sys_test.sys_test.getData(), print_header=True)
+            if hasattr(results, 'savefig'):
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
             fig = sys_test.sys_test.plot(results)
             fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
