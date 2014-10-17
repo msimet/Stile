@@ -287,17 +287,17 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # datasetExists() call will fail if no tract is defined, hence the try-except block.
         try:
             if dataRef.datasetExists("fcr_md", immediate=True):
-                calib_metadata = dataRef.get("fcr_md", immedinate = True)
+                calib_metadata = dataRef.get("fcr_md", immediate = True)
                 calib_type = "fcr"
                 if shape_cols:
-                    calib_metadata_shape = dataRef.get("calexp_md", immedinate = True)
+                    calib_metadata_shape = dataRef.get("calexp_md", immediate = True)
             else:
-                calib_metadata = dataRef.get("calexp_md", immedinate = True)
+                calib_metadata = dataRef.get("calexp_md", immediate = True)
                 calib_type = "calexp"
                 if shape_cols:
                     calib_metadata_shape = calib_metadata
         except:
-            calib_metadata = dataRef.get("calexp_md", immedinate = True)
+            calib_metadata = dataRef.get("calexp_md", immediate = True)
             calib_type = "calexp"
             if shape_cols:
                 calib_metadata_shape = calib_metadata
