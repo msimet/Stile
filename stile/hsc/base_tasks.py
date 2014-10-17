@@ -109,7 +109,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-	self.catalog_type = 'src'
+        self.catalog_type = 'src'
 
     def getFilenameBase(self,dataRef):
         # Hironao's dirty fix for getting a directory for saving results and plots
@@ -200,7 +200,6 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # If there's anything fancy to do with plotting the results, do that.
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                print dir, sys_test_data.sys_test_name+filename_chip+'.png'
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
             if hasattr(results, 'savefig'):
                 results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
@@ -703,19 +702,9 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     canMultiprocess = False
     ConfigClass = VisitSingleEpochStileConfig
     _DefaultName = "VisitSingleEpochStile"
+    item_type='ccd'
 
-    def run(self, visit, dataRefList):
-        # It seems like it would make more sense to put all of this in a separate function and run
-        # it once per catalog, then collate the results at the end (just before running the test).
-        # Turns out that, compared to the current implementation, that takes 2-3 times as long to
-        # run (!) even before you get to the collation step.  So, we duplicate some code here in
-        # the name of runtime, at the expense of some complexity in terms of nested lists of things.
-        # Some of this code is annotated more clearly in the CCD* version of this class.
-        catalogs = [dataRef.get("src", immediate=True) for dataRef in dataRefList]
-        catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
-        sys_data_list = []
-        extra_col_dicts = [{} for catalog in catalogs]
-
+    def getFilenameBase(self, dataRef):
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, chip) identifier for filename.
         # This part will be updated by Jim on branch "#20".
@@ -739,12 +728,26 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                 ccd_str += "..%03d" % ccd
             elif not(ccd - 1 in ccds) and not(ccd+1 in ccds):
                 ccd_str += "^%03d" % ccd
-        filename_chips = "-%07d-%s" % (dataRefList[0].dataId["visit"], ccd_str)
+        return dir, "-%07d-%s" % (dataRefList[0].dataId["visit"], ccd_str)
+
+    def run(self, visit, dataRefList):
+        # It seems like it would make more sense to put all of this in a separate function and run
+        # it once per catalog, then collate the results at the end (just before running the test).
+        # Turns out that, compared to the current implementation, that takes 2-3 times as long to
+        # run (!) even before you get to the collation step.  So, we duplicate some code here in
+        # the name of runtime, at the expense of some complexity in terms of nested lists of things.
+        # Some of this code is annotated more clearly in the CCD* version of this class.
+        catalogs = [dataRef.get(self.catalog_type, immediate=True) for dataRef in dataRefList]
+        catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
+        sys_data_list = []
+        extra_col_dicts = [{} for catalog in catalogs]
+
+        dir, filename_chips = self.getFilenameBase(dataRef)
 
         # Some tests need to know which data came from which CCD
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
-            extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=int)
-            extra_col_dict['CCD'].fill(dataRef.dataId['ccd'])
+            extra_col_dict[self.item_type] = numpy.zeros(len(catalog), dtype=int)
+            extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
@@ -861,26 +864,25 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     )
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
-    """Like CCDSingleEpochStileTask, but we use a different argument parser that doesn't require
-    an available coadd to run on the CCD level."""
+    """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
     _DefaultName = "PatchSingleEpochStile"
     ConfigClass = PatchSingleEpochStileConfig
     
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-	self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = 'deepCoadd_src'
 
     def getFilenameBase(self,dataRef):
         # Hironao's dirty fix for getting a directory for saving results and plots
-        # and a (visit, ccd) identifier for filename.
+        # and a (tract,patch) identifier for filename.
         # This part will be updated by Jim on branch "#20".
         # The directory is 
         # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
-        # The filename includes a (visit, ccd) identifier -%(visit)07d-%(ccd)03d.
+        # The filename includes a (tract,patch) identifier -%(tract)07d-%(patch)s.
         src_filename = (dataRef.get("deepCoadd_src_filename", immediate=True)[0]).replace('_parent/','')
-	t_filename = re.split('(HSC-.)',src_filename)[:2]
-	t_filename.append('stile_output')
+        t_filename = re.split('(HSC-.)',src_filename)[:2]
+        t_filename.append('stile_output')
         dir = os.path.join(*t_filename)
         if os.path.exists(dir) == False:
             os.makedirs(dir)
@@ -890,8 +892,8 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd", help="data ID, with raw CCD keys",
-	                       ContainerClass=ExistingCoaddDataIdContainer)
+        parser.add_id_argument("--id", "deepCoadd", help="data ID, with patch/tract information",
+                               ContainerClass=ExistingCoaddDataIdContainer)
         parser.description = parser_description
         return parser
 
@@ -904,3 +906,94 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
         return calib_type, calib_data, calib_metadata
 
 
+
+class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
+    sys_tests = adapter_registry.makeField("tests to run", multi=True,
+                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                             "StarXGalaxyShear", "StarXStarShear",
+                             #"WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             #"ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             ])
+    coaddName = lsst.pex.config.Field(
+        doc = "coadd name: typically one of deep or goodSeeing",
+        dtype = str,
+        default = "deep",
+    )
+
+class TractSingleEpochStileTask(VisitSingleEpochStileTask):
+    """Like CCDSingleEpochStileTask, but we use a different argument parser that doesn't require
+    an available coadd to run on the CCD level."""
+    _DefaultName = "TractSingleEpochStile"
+    ConfigClass = TractSingleEpochStileConfig
+    self.item_type = 'tract'
+    
+    def __init__(self, **kwargs):
+        lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
+        self.sys_tests = self.config.sys_tests.apply()
+        self.catalog_type = 'deepCoadd_src'
+
+    def getFilenameBase(self,dataRef):
+        # Hironao + Melanie's dirty fix for getting a directory for saving results and plots
+        # and a (tract, patch) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is 
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(tract)07d/%(filter)s/stile_output.
+        # The filename includes a (tract, patch) identifier -%(tract)07d-%(patch)s.
+        src_filename = (dataRef.get("deepCoadd_src_filename", immediate=True)[0]).replace('_parent/','')
+        t_filename = re.split('(HSC-.)',src_filename)[:2]
+        t_filename.append('stile_output')
+        dir = os.path.join(*t_filename)
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+
+        patches = [dataRef.dataId['patch'].split(',') for dataRef in dataRefList]
+        patches = [(int(p[0]), int(p[1])) for p in patches]
+        patches.sort()
+        min_x = min([p[0] for p in patches])
+        max_x = max([p[0] for p in patches])
+        min_y = min([p[1] for p in patches])
+        max_y = max([p[1] for p in patches])
+        patches_str = ''
+        while patches:
+            curr_patch = patches[0]
+            for i in range(n_patches,0,-1):
+                for j_x in range(max_x-min_x, 0, -1):
+                    if (curr_patch[0]+j_x,curr_patch[1]) in patches:
+                       break
+                for j_y in range(max_y-min_y, 1, -1):
+                    if numpy.all(numpy.array([(curr_patch[0]+i_x, curr_patch[1]+j_y) in patches
+                                              for i_x in range(j_x+1)])):
+                        break
+                if j_x>=0 or j_y>=0:
+                    if patches_str:
+                        patches_str += '^'
+                    patches_str += '(%i,%i)..(%i,%i)' % (curr_patch[0], curr_patch[1],
+                                                         curr_patch[0]+j_x, curr_patch[1]+j_y)
+                    for i_x in range(j_x+1):
+                        for i_y in range(j_y+1):
+                            patches.remove((curr_patch[0]+i_x, curr_patch[1]+i_y))
+                else:
+                    if patches_str:
+                        patches_str += '^'
+                    patches_str += '(%i,%i)'% curr_patch
+                    patches.remove(curr_patch)
+        return dir, "-%07d-%s" % (dataRefList[0].dataId["tract"], patches_str)
+        
+
+    @classmethod
+    def _makeArgumentParser(cls):
+        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", "deepCoadd", help="data ID, with patch/tract information",
+                               ContainerClass=ExistingCoaddDataIdContainer)
+        parser.description = parser_description
+        return parser
+
+    def getCalibData(self, dataRef, shape_cols):
+        calib_data = None
+        if shape_cols:
+            calib_data = dataRef.get("deepCoadd_calexp", immediate=True)
+        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate=True)
+        calib_type = "calexp"  # This is just so computeShapes knows the format
+        return calib_type, calib_data, calib_metadata
