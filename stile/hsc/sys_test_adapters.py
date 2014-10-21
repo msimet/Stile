@@ -24,7 +24,8 @@ def MaskGalaxy(data, config):
     except LsstCppException:
         # But sometimes we've already masked the array--this will work in that case (but is slower
         # than above if the above is possible).
-        return numpy.array([src['classification.extendedness']==1 for src in data])
+        key = data.schema.find('classification.extendedness').key
+        return numpy.array([src[key]==1 for src in data])
 
 def MaskStar(data, config):
     """
@@ -34,18 +35,20 @@ def MaskStar(data, config):
     try:
         return data['classification.extendedness']==0
     except LsstCppException:
-        return numpy.array([src['classification.extendedness']==0 for src in data])
+        key = data.schema.find('classification.extendedness').key
+        return numpy.array([src[key]==0 for src in data])
 
 def MaskBrightStar(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
-    correspond to bright stars.  Right now this is set to be the upper 10% of stars in a given
-    sample.
+    correspond to bright stars according to a given S/N cutoff set by
+    `config.bright_star_sn_cutoff`.
     """
-    star_mask = MaskStar(data)
-    bright_mask = (numpy.array([src['flux.psf']/src['flux.psf.err'] for src in data]) >
+    star_mask = MaskStar(data, config)
+    key_psf = data.schema.find('flux.psf').key
+    key_psf_err = data.schema.find('flux.psf.err').key
+    bright_mask = (numpy.array([src[key_psf]/src[key_psf_err] for src in data]) >
                    config.bright_star_sn_cutoff)
-
     return numpy.logical_and(star_mask, bright_mask)
 
 def MaskPSFStar(data, config):
@@ -56,7 +59,8 @@ def MaskPSFStar(data, config):
     try:
         return data['calib.psf.used']==True
     except LsstCppException:
-        return numpy.array([src.get('calib.psf.used')==True for src in data])
+        key = data.schema.find('calib.psf.used').key
+        return numpy.array([src.get(key)==True for src in data])
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,
