@@ -1027,13 +1027,15 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
             curr_patch = patches[0]
             j_x = 0
             j_y = 0  # To guard against cases where the next loops don't happen
-            for j_x in range(max_x-min_x, 0, -1):
-                if (curr_patch[0]+j_x,curr_patch[1]) in patches:
+            for j_x in range(0, max_x-min_x+1):
+                if (curr_patch[0]+j_x,curr_patch[1]) not in patches:
                    break
-            for j_y in range(max_y-min_y, 0, -1):
-                if numpy.all(numpy.array([(curr_patch[0]+i_x, curr_patch[1]+j_y) in patches
+            j_x -= 1
+            for j_y in range(0, max_y-min_y+1):
+                if not numpy.all(numpy.array([(curr_patch[0]+i_x, curr_patch[1]+j_y) in patches
                                           for i_x in range(j_x+1)])):
                     break
+            j_y -= 1
             if j_x>0 or j_y>0:
                 if patches_str:
                     patches_str += '^'
