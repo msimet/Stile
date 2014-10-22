@@ -130,7 +130,7 @@ def _handleFields(data_array, fields):
         raise ValueError("Fields description not understood: "+str(fields))
     return data
 
-def WriteASCIITable(file_name, data_array, fields=None):
+def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     """
     Given a `file_name` and a `data_array`, write the `data_array` to the `file_name` as an ASCII
     file.  If fields is not None, this will rearrange a NumPy formatted array to the field
@@ -146,9 +146,21 @@ def WriteASCIITable(file_name, data_array, fields=None):
     be truncated to 60.  If you have strings which contain spaces, the column descriptions won't 
     hold properly, and you should probably use a FITS file writer or replace the space with 
     underscores or another character.
+    
+    Setting the keyword `print_header` to True will cause the file to have a header line starting 
+    with a hash sign and then containing a comma-separated list of the fields.
     """
     data = _handleFields(data_array, fields)
-    numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
+    if print_header:
+        if hasattr(data,'dtype') and hasattr(data.dtype,'names') and data.dtype.names:
+            numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
+                        header=', '.join(data.dtype.names))
+        else:
+            import warnings
+            warnings.warn('No named data type, so requested header cannot be printed.')
+            numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
+    else:
+        numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
 
 # And, of course, PyFITS *also* uses a different format specification character set.
 _fits_dict = {'b': 'L',  # boolean
