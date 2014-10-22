@@ -16,7 +16,6 @@ from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
 import re
-import sys
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
@@ -737,7 +736,6 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # run (!) even before you get to the collation step.  So, we duplicate some code here in
         # the name of runtime, at the expense of some complexity in terms of nested lists of things.
         # Some of this code is annotated more clearly in the CCD* version of this class.
-	sys.stdout.flush()
         catalogs = [dataRef.get(self.catalog_type, immediate=True) for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
@@ -750,7 +748,6 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=int)
             extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
         for sys_test in self.sys_tests:
-	    sys.stdout.flush()
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
@@ -990,8 +987,8 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
         patches_str = ''
         while patches:
             curr_patch = patches[0]
-	    j_x = 0
-	    j_y = 0  # To guard against cases where the next loops don't happen
+            j_x = 0
+            j_y = 0  # To guard against cases where the next loops don't happen
             for j_x in range(max_x-min_x, 0, -1):
                 if (curr_patch[0]+j_x,curr_patch[1]) in patches:
                    break
@@ -1012,7 +1009,6 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
                     patches_str += '^'
                 patches_str += '(%i,%i)'% curr_patch
                 patches.remove(curr_patch)
-	sys.stdout.flush()
         return dir, "-%07d-%s" % (dataRefList[0].dataId["tract"], patches_str)
         
 
