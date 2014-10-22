@@ -117,6 +117,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         self.catalog_type = 'src'
 
     def getFilenameBase(self,dataRef):
+        """
+        Get the basic strings needed for an output filename in the HSC directory structure.
+        """
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, ccd) identifier for filename.
         # This part will be updated by Jim on branch "#20".
@@ -724,7 +727,10 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     item_type='ccd'
 
     def getFilenameBase(self, dataRefList):
-        # Hironao's dirty fix for getting a directory for saving results and plots
+        """
+        Get the basic strings needed for an output filename in the HSC directory structure.
+        """
+    # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, chip) identifier for filename.
         # This part will be updated by Jim on branch "#20".
         # The directory is
@@ -898,6 +904,9 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
         self.catalog_type = 'deepCoadd_src'
 
     def getFilenameBase(self,dataRef):
+        """
+        Get the basic strings needed for an output filename in the HSC directory structure.
+        """
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (tract,patch) identifier for filename.
         # This part will be updated by Jim on branch "#20".
@@ -990,6 +999,9 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
         self.catalog_type = 'deepCoadd_src'
 
     def getFilenameBase(self,dataRefList):
+        """
+        Get the basic strings needed for an output filename in the HSC directory structure.
+        """
         # Hironao + Melanie's dirty fix for getting a directory for saving results and plots
         # and a (tract, patch) identifier for filename.
         # This part will be updated by Jim on branch "#20".
