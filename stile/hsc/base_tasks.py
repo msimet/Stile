@@ -136,7 +136,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def run(self, dataRef):
         # Pull the source catalog from the butler corresponding to the particular CCD in the
         # dataRef.
-        catalog = dataRef.get("src", immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+        catalog = dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
 
         dir, filename_chip = self.getFilenameBase(dataRef)
 
