@@ -9,11 +9,16 @@ import lsst.pex.config
 import lsst.pipe.base
 import lsst.meas.mosaic
 import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
+import lsst.afw.table as afwTable
+import lsst.afw.cameraGeom as cameraGeom
+import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.meas.mosaic.mosaicTask import MosaicTask
 from lsst.pipe.tasks.dataIds import PerTractCcdDataIdContainer
 from lsst.pex.exceptions import LsstCppException
 from .sys_test_adapters import adapter_registry
 import numpy
+import stile
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
@@ -111,7 +116,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def run(self, dataRef):
         # Pull the source catalog from the butler corresponding to the particular CCD in the
         # dataRef.
-        catalog = dataRef.get("src", immediate=True)
+        catalog = dataRef.get("src", immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
 
         # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, ccd) identifier for filename.
@@ -190,7 +195,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 new_catalogs.append(self.makeArray(new_catalog))
             # run the test!
             results = sys_test(self.config, *new_catalogs)
-            # If there's anything fancy to do with plotting the results, do that.
+            # If there's anything fancy to do with the results, do that.
+            if isinstance(results,numpy.ndarray):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip+'.dat'), results, print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
@@ -278,27 +286,28 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # coaddition routines, while "calexp" is the original calibrated image. The
         # datasetExists() call will fail if no tract is defined, hence the try-except block.
         try:
-            if dataRef.datasetExists("fcr_md"):
-                if shape_cols:
-                    calib_data = dataRef.get("calexp")  # only used for WCS
-                calib_metadata = dataRef.get("fcr_md")
+            if dataRef.datasetExists("fcr_md", immediate=True):
+                calib_metadata = dataRef.get("fcr_md", immediate = True)
                 calib_type = "fcr"
-            else:
                 if shape_cols:
-                    calib_data = dataRef.get("calexp")
-                calib_metadata = dataRef.get("calexp_md")
+                    calib_metadata_shape = dataRef.get("calexp_md", immediate = True)
+            else:
+                calib_metadata = dataRef.get("calexp_md", immediate = True)
                 calib_type = "calexp"
+                if shape_cols:
+                    calib_metadata_shape = calib_metadata
         except:
-            if shape_cols:
-                calib_data = dataRef.get("calexp")
-            calib_metadata = dataRef.get("calexp_md")
+            calib_metadata = dataRef.get("calexp_md", immediate = True)
             calib_type = "calexp"
+            if shape_cols:
+                calib_metadata_shape = calib_metadata
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 = dataRef.get("calexp").getDetector().getPositionFromPixel(
-            afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key('CCD'
-            ) and ('x' in raw_cols or 'y' in raw_cols) else None
+        xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
+               dataRef.dataId.get('ccd'))
+               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key(
+               'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
 
         if shape_cols:
             for col in shape_cols:
@@ -324,7 +333,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 for do_quantity, sky_coords in [(do_sky_coords, True), (do_chip_coords, False)]:
                     if do_quantity:
                         shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask],
-                            calib_data, do_shape=do_shape, do_err=do_err, do_psf=do_psf,
+                            calib_metadata_shape, do_shape=do_shape, do_err=do_err, do_psf=do_psf,
                             do_psf_err=do_psf_err, sky_coords=sky_coords)
                         if extra_mask is not None:
                             mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
@@ -352,8 +361,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
-        masks = [numpy.array([src.get(flag)==False for src in data])
-                 for flag in self.config.shape_flags]
+        masks = list()
+        for flag in self.config.shape_flags:
+            key = data.schema.find(flag).key
+            masks.append(numpy.array([src.get(key)==False for src in data]))
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -382,7 +393,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                 which rows had valid measurements.
         """
         if sky_coords:
-            wcs = calib.getWcs()
+            wcs = afwImage.makeWcs(calib)
         # First pull the quantities from the catalog that we'll need.  This first version in the try
         # block is faster if it works, and the time cost if it fails is small, so we try it first...
         nobj = len(data)
@@ -391,7 +402,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 localTransform = wcs.linearizePixelToSky(data.getCentroid())
                 localLinearTranform = localTransform.getLinear()
             if do_shape or do_err:
-                moments = data.get('shape.sdss')
+                key = data.schema.find("shape.sdss").key
+                moments = data.get(key)
                 if sky_coords:
                     moments = moments.transform(localLinearTransform)
                 ixx = moments.getIxx()
@@ -400,7 +412,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # Get covariance of moments. We ignore off-diagonal components because
             # they are not implemented in the LSST pipeline yet.
             if do_err:
-                covariances = data.get('shape.sdss.err')
+                key = data.schema.find("shape.sdss.err").key
+                covariances = data.get(key)
                 if sky_coords:
                     cov_ixx = numpy.zeros(covariances[:,0,0].shape)
                     cov_iyy = numpy.zeros(covariances[:,0,0].shape)
@@ -421,7 +434,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     cov_iyy = covariances[:,1,1]
                     cov_ixy = covariances[:,2,2]
             if do_psf:
-                psf_moments = data.get('shape.sdss.psf')
+                key = data.schema.find("shape.sdss.psf").key
+                psf_moments = data.get(key)
                 if sky_coords:
                     psf_moments = psf_moments.transform(localLinearTransform)
                 psf_ixx = psf_moments.getIxx()
@@ -434,7 +448,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                     for src in data]
             if do_shape or do_err:
-                moments = [src.get('shape.sdss') for src in data]
+                key = data.schema.find("shape.sdss").key
+                moments = [src.get(key) for src in data]
                 if sky_coords:
                     moments = [moment.transform(lt) for moment, lt in
                                       zip(moments, localLinearTransform)]
@@ -442,7 +457,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 ixy = numpy.array([mom.getIxy() for mom in moments])
                 iyy = numpy.array([mom.getIyy() for mom in moments])
             if do_err:
-                covariances = numpy.array([src.get('shape.sdss.err') for src in data])
+                key = data.schema.find("shape.sdss.err").key
+                covariances = numpy.array([src.get(key) for src in data])
                 if sky_coords:
                     cov_ixx = numpy.zeros(covariances[:,0,0].shape)
                     cov_iyy = numpy.zeros(covariances[:,0,0].shape)
@@ -460,7 +476,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     cov_iyy = covariances[:,1,1]
                     cov_ixy = covariances[:,2,2]
             if do_psf:
-                psf_moments = [src.get('shape.sdss.psf') for src in data]
+                key = data.schema.find("shape.sdss.psf").key
+                psf_moments = [src.get(key) for src in data]
                 if sky_coords:
                     psf_moments = [moment.transform(lt) for moment, lt in
                                       zip(psf_moments, localLinearTransform)]
@@ -500,7 +517,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             psf_g1 = (psf_ixx-psf_iyy)/(psf_ixx+psf_iyy)
             psf_g2 = 2.*psf_ixy/(psf_ixx+psf_iyy)
             psf_sigma = (psf_ixx*psf_iyy - psf_ixy**2)**0.25
-            extra_mask = numpy.array([src.get('flux.psf.flags')==0 for src in data])
+            key = data.schema.find('flux.psf.flags').key
+            extra_mask = numpy.array([src.get(key)==0 for src in data])
         else:
             psf_g1 = None
             psf_g2 = None
@@ -569,9 +587,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             else:
                 return [src.getY() for src in data], None
         elif col=="mag_err":
+            key = data.schema.find('flux.psf.flags').key
             return (2.5/numpy.log(10)*numpy.array([src.getPsfFluxErr()/src.getPsfFlux()
                                                     for src in data]),
-                    numpy.array([src.get('flux.psf.flags')==0 for src in data]))
+                    numpy.array([src.get(key)==0 for src in data]))
         elif col=="mag":
             # From Steve Bickerton's helpful HSC butler documentation
             if calib_type=="fcr":
@@ -581,8 +600,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
+            key = data.schema.find('flux.psf.flags').key
             return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
-                    numpy.array([src.get('flux.psf.flags')==0 for src in data]))
+                    numpy.array([src.get(key)==0 for src in data]))
         elif col=="w":
             # Use uniform weights for now if we don't use shapes ("w" will be removed from the
             # list of columns if shapes are computed).
@@ -696,7 +716,8 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # run (!) even before you get to the collation step.  So, we duplicate some code here in
         # the name of runtime, at the expense of some complexity in terms of nested lists of things.
         # Some of this code is annotated more clearly in the CCD* version of this class.
-        catalogs = [dataRef.get("src", immediate=True) for dataRef in dataRefList]
+        catalogs = [dataRef.get("src", immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+                    for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
@@ -776,10 +797,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         if column in extra_col_dict:
                             newcol = extra_col_dict[column][mask]
                         elif column in catalog.schema:
+                            key = catalog.schema.find(column).key
                             try:
-                                newcol = catalog[column][mask]
+                                newcol = catalog.get(key)[mask]
                             except LsstCppException:
-                                newcol = numpy.array([src[column] for src in catalog])[mask]
+                                newcol = numpy.array([src.get(key) for src in catalog])[mask]
                         # The new_catalog dict has values which are lists of the quantity we want,
                         # one per dataRef.
                         if column in new_catalog:
@@ -788,6 +810,9 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(self.config, *new_catalogs)
+            if isinstance(results,numpy.ndarray):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips+'.dat'), results, print_header=True)
             fig = sys_test.sys_test.plot(results)
             fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
