@@ -1033,14 +1033,14 @@ class HistogramSysTest(SysTest):
     """
     Generate the histogram
     """
-    def HistoPlot(self, data_list, binning_style='manual', nbins = 50,
-                  weights = None, limits = None, figsize = None, normed = False,
-                  histtype = 'step', xlabel = None, ylabel = None,
-                  xlim = None, ylim = None, hide_x = False, hide_y = False,
-                  cumulative = False, align = 'mid', rwidth = 0.9,
-                  log = False, color = 'k', alpha = 1.0,
-                  text = None, text_x = 0.90, text_y = 0.90, fontsize = 12,
-                  linewidth = 2.0, vlines = None, vcolor = 'k' ):
+    def HistoPlot(self, data_list, binning_style='manual', nbins=50,
+                  weights=None, limits=None, figsize=None, normed=False,
+                  histtype='step', xlabel=None, ylabel=None,
+                  xlim=None, ylim=None, hide_x=False, hide_y=False,
+                  cumulative=False, align='mid', rwidth=0.9,
+                  log=False, color='k', alpha=1.0,
+                  text=None, text_x=0.90, text_y=0.90, fontsize=12,
+                  linewidth=2.0, vlines=None, vcolor='k' ):
 
         """
         Draw a histogram and return a `matplotlib.figure.Figure` object.
