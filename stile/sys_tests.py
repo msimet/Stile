@@ -95,7 +95,7 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-if treecorr.version<'3.1':        
+if treecorr.version<'3.1':
     treecorr_func_dict = {'gg': treecorr.G2Correlation,
                           'm2': treecorr.G2Correlation,
                           'ng': treecorr.NGCorrelation,
@@ -217,15 +217,15 @@ class CorrelationFunctionSysTest(SysTest):
                     something like a correlation coefficient.
         More details can be found in the Readme.md for TreeCorr.
 
-        Additionally, for the 'nn', 'ng', 'nk', 'nm' and 'norm' options, the user can pass a kwarg 
-        nn_statistic = 'compensated' or nn_statistic = 'true' (or similarly for 'ng' and 'nk'; 
+        Additionally, for the 'nn', 'ng', 'nk', 'nm' and 'norm' options, the user can pass a kwarg
+        nn_statistic = 'compensated' or nn_statistic = 'true' (or similarly for 'ng' and 'nk';
         note that the 'nm' type checks the 'ng_statistic' kwarg and the 'norm' type checks the
-        'nn_statistic' kwarg!).  For 'nn' and 'norm' correlation functions, 'compensated' is the 
-        Landy-Szalay estimator, while 'simple' is just (data/random - 1).  For the other kinds, 
-        'compensated' means the random-shear or random-kappa correlation function is subtracted 
-        from the data correlation function,  while 'simple' merely returns the data correlation 
+        'nn_statistic' kwarg!).  For 'nn' and 'norm' correlation functions, 'compensated' is the
+        Landy-Szalay estimator, while 'simple' is just (data/random - 1).  For the other kinds,
+        'compensated' means the random-shear or random-kappa correlation function is subtracted
+        from the data correlation function,  while 'simple' merely returns the data correlation
         function.  Again, the TreeCorr documentation contains more information.  The '*_statistic'
-        kwarg will be ignored if it is passed for any other correlation function type.  The 
+        kwarg will be ignored if it is passed for any other correlation function type.  The
         default is to use 'compensated' if randoms are present and 'simple' otherwise.
 
         This function accepts all (self-consistent) sets of data, data2, random, and random2.
@@ -258,11 +258,11 @@ class CorrelationFunctionSysTest(SysTest):
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
-        
+
         if data is None:
             raise ValueError('Must include a data array!')
         if correlation_function_type=='nn':
-            if random is None or ((data2 is not None or random2 is not None) and not 
+            if random is None or ((data2 is not None or random2 is not None) and not
                                   (data2 is not None and random2 is not None)):
                 raise ValueError('Incorrect data types for correlation function: must have '
                                    'data and random, and random2 if data2.')
@@ -286,7 +286,7 @@ class CorrelationFunctionSysTest(SysTest):
                 raise ValueError('Must include data2 for this correlation function type')
             if random is not None or random2 is not None:
                 print "Warning: randoms ignored for this correlation function type"
-                
+
         data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k,
                                       use_chip_coords = use_chip_coords)
         data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k,
@@ -315,7 +315,7 @@ class CorrelationFunctionSysTest(SysTest):
             func_dd.process(data)
             func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
             func_rr.process(data)
-            if treecorr_kwargs.get('nn_statistic', 
+            if treecorr_kwargs.get('nn_statistic',
                self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
                 func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_dr.process(data,random)
@@ -380,8 +380,8 @@ class CorrelationFunctionSysTest(SysTest):
                 return 'simple'
         else:  # There's a random, and we can ignore 'both' since this is an autocorrelation
             return 'compensated'
-            
-        
+
+
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
@@ -894,8 +894,6 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
-###############################################################################
-# Histogram by Song Huang (2014-08-30)
 class HistogramSysTest(SysTest):
 
     short_name = 'histogram'
@@ -909,6 +907,18 @@ class HistogramSysTest(SysTest):
     This function is directly copied from the astroML library
     (astroMl/density_estimation/histtool.py)
     """
+    def get_param_value(self, param, ii, data_dim, multihist=False):
+        if type(param) is list and multihist:
+            if len(param) == data_dim:
+                param_use = param[ii]
+            else:
+                param_use = param[0]
+        elif type(param) is list:
+            param_use = param[0]
+        else:
+            param_use = param
+        return param_use
+
     def scotts_bin_width(self, data, return_bins=False):
         r"""Return the optimal histogram bin width using Scott's rule:
 
@@ -1023,8 +1033,8 @@ class HistogramSysTest(SysTest):
     """
     Generate the histogram
     """
-    def HistoPlot(self, data_list, style=3, nbins = 50, weights = None,
-                  limits = None, figsize = None, normed = False,
+    def HistoPlot(self, data_list, binning_style='manual', nbins = 50,
+                  weights = None, limits = None, figsize = None, normed = False,
                   histtype = 'step', xlabel = None, ylabel = None,
                   xlim = None, ylim = None, hide_x = False, hide_y = False,
                   cumulative = False, align = 'mid', rwidth = 0.9,
@@ -1034,9 +1044,6 @@ class HistogramSysTest(SysTest):
 
         """
         Draw a histogram and return a `matplotlib.figure.Figure` object.
-
-        This section strongly depends on the above WhiskerPlotSysTest section,
-        since I am still very new to Python
 
         This method has a bunch of options for controlling the appearance of
         the histogram, which are explained below.
@@ -1048,14 +1055,14 @@ class HistogramSysTest(SysTest):
         @param data_list     The 1-Dimension NumPy array or a list of Numpy arrays
                              for plotting histograms.
 
-        @param style         Different selections of Histogram bin size:
-               style = 1 :   Using the Scott's rule to decide the bin size.
-               style = 2 :   Using the Freedman-Diaconis rule to decide the bin
+        @param binning_style Different selections of Histogram bin size:
+               = 'scott' :   Using the Scott's rule to decide the bin size.
+               = 'freedman': Using the Freedman-Diaconis rule to decide the bin
                              size.
-               style = 3 :   Manually select a fixed number of bins.
-                             [default: style=3]
+               = 'manual' :  Manually select a fixed number of bins.
+                             [default: binning_style='manual']
 
-        @param nbins         The number of bins if style = 3 is selected.
+        @param nbins         The number of bins if binning_style = 3 is selected.
                              [Default: nbins = 50]
         @param weights       An array of weights.
         @param limits        The [min, max] limits to trim the data before the
@@ -1095,12 +1102,18 @@ class HistogramSysTest(SysTest):
                              [Default: hide_x = False]
         @param hide_y        Whether hide the labels for y-axis.
                              [Default: hide_y = False]
-        @param alpha
-        @param linewidth
-        @param text
-        @param text_x
-        @param text_y
-        @param fontsize
+        @param alpha         0.0 transparent through 1.0 opaque
+                             [Default: alpha = 1.0]
+        @param linewidth     With of the vertical lines
+                             [Default: linewidth = 2.0]
+        @param text          Text to put on the figure
+                             [Default: None]
+        @param text_x        The X-coordinate of the text on the plot
+                             [Default: text_x = 0.9]
+        @param text_y        The Y-coordinate of the test on the plot
+                             [Default: text_y = 0.9]
+        @param fontsize      Font size of the text
+                             [Default: fontsize = 12]
         @param vlines        Locations to plot vertical lines to indicate interesting
                              values.
                              [Default: None]
@@ -1111,145 +1124,108 @@ class HistogramSysTest(SysTest):
         """
 
         ## Define the plot
-        hist = plt.figure( figsize=figsize )
-        ax   = hist.add_subplot( 1, 1, 1 )
+        hist = plt.figure(figsize=figsize)
+        ax   = hist.add_subplot(1, 1, 1)
 
-        for ii in range( len( data_list ) ):
+        data_dim = len(data_list)
+        for ii in range(data_dim):
 
-            if type( data_list[0] ) is list or type( data_list[0] ) is numpy.ndarray:
+            if type(data_list[0]) is list or type(data_list[0]) is numpy.ndarray:
                 multihist = True
-                data = data_list[ ii ]
+                data = data_list[ii]
             else:
                 multihist = False
                 data = data_list
 
             # mask data with NaN
-            sel  = numpy.logical_and.reduce( [ numpy.isnan( data ) == False ] )
-            data = data[ sel ]
-            data = numpy.asarray( data )
+            data = data[numpy.isnan(data) == False]
+            data = numpy.asarray(data)
 
             # trim the data if necessary
-            if ( limits is not None ):
-                data = data[ ( data >= limits[0] ) & ( data <= limits[1] ) ]
+            if limits is not None:
+                data = data[(data >= limits[0]) & (data <= limits[1])]
 
             # decide which bin style to use
-            if type( style ) is list and multihist:
-                if len( style ) == len( data_list ):
-                    style_use = style[ ii ]
-                else:
-                    style_use = style[ 0 ]
-            elif type( style ) is list:
-                style_use = style[ 0 ]
-            else:
-                style_use = style
+            style_use = self.get_param_value(self, binning_style, ii, data_dim,
+                                             multihist=multihist)
 
             # now support constant bin size, Scott rule, and Freedman rule
-            if ( style_use in [ 1, 2, 3 ] ):
-                if ( style_use is 1 ):
+            if style_use in ['scott', 'freedman', 'manual']:
+                if (style_use is 1):
                     "Use the Scott rule"
-                    dx, bins = self.scotts_bin_width( data, True )
-                elif ( style_use is 2 ):
+                    dx, bins = self.scotts_bin_width(data, True)
+                elif style_use is 2:
                     "Use the Freedman rule"
-                    dx, bins = self.freedman_bin_width( data, True )
-                elif ( style_use is 3 ):
+                    dx, bins = self.freedman_bin_width(data, True)
+                elif style_use is 3:
                     bins = nbins
             else:
-                print "Unrecognized code for bin style, use default instead!"
+                print "Unrecognized code for binning style, use default instead!"
                 bins = nbins
 
             # decide if weight is presented
             if weights is not None and multihist:
-                if ( len( weights ) == len( data_list ) ):
-                    weight_use = weights[ ii ]
+                if len(weights) == data_dim:
+                    weight_use = weights[ii]
                 else:
+                    import warnings
+                    warnings.warn("Inconsistent shape between data and weights! No weight is used!")
                     weight_use = None
             elif weights is not None:
-                if ( len( weights ) == len( data ) ):
+                if len(weights) == len(data):
                     weight_use = weights
                 else:
+                    import warnings
+                    warnings.warn("Inconsistent shape between data and weights! No weight is used!")
                     weight_use = None
             else:
+                import warnings
+                warnings.warn("The format of given weights can not be understand! No weight is used!")
                 weight_use = None
 
             # decide which histtype to use
-            if type( histtype ) is list and multihist:
-                if len( histtype ) == len( data_list ):
-                    hist_use = histtype[ ii ]
-                else:
-                    hist_use = histtype[ 0 ]
-            elif type( histtype ) is list:
-                hist_use = histtype[ 0 ]
-            else:
-                hist_use = histtype
-
+            hist_use = self.get_param_value(self, histtype, ii, data_dim,
+                                            multihist=multihist)
             # the color of the histogram
-            if type( color ) is list and multihist:
-                if len( color ) == len( data_list ):
-                    color_use = color[ ii ]
-                else:
-                    color_use = color[ 0 ]
-            elif type( color ) is list:
-                color_use = color[ 0 ]
-            else:
-                color_use = color
-
-            if type( alpha ) is list and multihist:
-                if len( alpha ) == len( data_list ):
-                    alpha_use = alpha[ ii ]
-                else:
-                    alpha_use = alpha[ 0 ]
-            elif type( alpha ) is list:
-                alpha_use = alpha[ 0 ]
-            else:
-                alpha_use = alpha
-
-            if type( rwidth ) is list and multihist:
-                if len( rwidth ) == len( data_list ):
-                    rwidth_use = rwidth[ ii ]
-                else:
-                    rwidth_use = rwidth[ 0 ]
-            elif type( rwidth ) is list:
-                rwidth_use = rwidth[ 0 ]
-            else:
-                rwidth_use = rwidth
-
-            if type( linewidth ) is list and multihist:
-                if len( linewidth ) == len( data_list ):
-                    lwidth_use = linewidth[ ii ]
-                else:
-                    lwidth_use = linewidth[ 0 ]
-            elif type( linewidth ) is list:
-                lwidth_use = linewidth[ 0 ]
-            else:
-                lwidth_use = linewidth
+            color_use = self.get_param_value(self, color, ii, data_dim,
+                                             multihist=multihist)
+            # the transparency of the histogram
+            alpha_use = self.get_param_value(self, alpha, ii, data_dim,
+                                             multihist=multihist)
+            # the relative width of the bar
+            rwidth_use = self.get_param_value(self, rwidth, ii, data_dim,
+                                              multihist=multihist)
+            # the width of the vertical line
+            lwidth_use = self.get_param_value(self, linewidth, ii, data_dim,
+                                              multihist=multihist)
 
             # make the histogram
-            counts, edges, patches = ax.hist( data, bins,
-                                            weights = weight_use,
-                                            histtype = hist_use,
-                                            color = color_use,
-                                            normed = normed,
-                                            cumulative = cumulative,
-                                            alpha = alpha_use,
-                                            rwidth = rwidth_use,
-                                            log = log,
-                                            align = align,
-                                            linewidth = lwidth_use
+            counts, edges, patches = ax.hist(data, bins,
+                                             weights = weight_use,
+                                             histtype = hist_use,
+                                             color = color_use,
+                                             normed = normed,
+                                             cumulative = cumulative,
+                                             alpha = alpha_use,
+                                             rwidth = rwidth_use,
+                                             log = log,
+                                             align = align,
+                                             linewidth = lwidth_use
                                             )
 
             # outline the filled region
             if hist_use is 'stepfilled':
-                counts, edges, patches = ax.hist( data, bins,
-                                                weights = weight_use,
-                                                histtype = 'step',
-                                                color = 'k',
-                                                normed = normed,
-                                                cumulative = cumulative,
-                                                alpha = 1.0,
-                                                rwidth = rwidth_use,
-                                                log = log,
-                                                align = align,
-                                                linewidth = 1.0
+                counts, edges, patches = ax.hist(data, bins,
+                                                 weights = weight_use,
+                                                 histtype = 'step',
+                                                 color = 'k',
+                                                 normed = normed,
+                                                 cumulative = cumulative,
+                                                 alpha = 1.0,
+                                                 rwidth = rwidth_use,
+                                                 log = log,
+                                                 align = align,
+                                                 linewidth = 1.0
                                                 )
 
             ymin, ymax = ax.get_ylim()
@@ -1257,50 +1233,50 @@ class HistogramSysTest(SysTest):
             if not multihist:
                 break
 
-
         # add the text when necessary
         if text is not None:
-            ax.text( text_x, text_y, text, transform=ax.transAxes,
-                    ha='right', va='top', fontsize=fontsize )
+            ax.text(text_x, text_y, text, transform=ax.transAxes,
+                    ha='right', va='top', fontsize=fontsize)
 
         # add vertical lines when necessary
-        if vlines is not None:
-            for jj in range( len( vlines ) ):
-                vline_use = vlines[ jj ]
+        if vlines is not None and not hasattr(vlines, '__iter__'):
+            for jj in range(len(vlines)):
+                vline_use = vlines[jj]
 
-                if type( vcolor ) == list:
-                    if len( vcolor ) == len( vlines ):
-                        vcolor_use = vcolor[ jj ]
+                if type(vcolor) == list:
+                    if len(vcolor) == len(vlines):
+                        vcolor_use = vcolor[jj]
                     else:
-                        vcolor_use = vcolor[ 0 ]
+                        vcolor_use = vcolor[0]
                 else:
                     vcolor_use = vcolor
 
-                ax.vlines( vline_use, ymin, ymax, colors=vcolor_use,
-                           linestyle='dashed',
-                           linewidth=1.8)
+                ax.vlines(vline_use, ymin, ymax, colors=vcolor_use,
+                          linestyle='dashed',
+                          linewidth=1.8)
 
         if xlabel is not None:
-            ax.set_xlabel( xlabel )
+            ax.set_xlabel(xlabel)
         if ylabel is not None:
-            ax.set_ylabel( ylabel )
+            ax.set_ylabel(ylabel)
 
         if xlim is not None:
-            ax.set_xlim( *xlim )
+            ax.set_xlim(*xlim)
         if ylim is not None:
-            ax.set_ylim( *ylim )
+            ax.set_ylim(*ylim)
 
         if hide_x:
-            ax.xaxis.set_major_formatter( plt.NullFormatter() )
+            ax.xaxis.set_major_formatter(plt.NullFormatter())
         if hide_y:
-            ax.yaxis.set_major_formatter( plt.NullFormatter() )
+            ax.yaxis.set_major_formatter(plt.NullFormatter())
 
         return hist
+
 
 class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     """
-    A base class for Stile systematics tests that generate scatter plots. This implements the class 
+    A base class for Stile systematics tests that generate scatter plots. This implements the class
     method scatterPlot. Every child class of ScatterPlotSysTest should use
     ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
     ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
@@ -1326,8 +1302,8 @@ class ScatterPlotSysTest(SysTest):
         @param zlabel          The label of z values which appears at the side of color bar.
                                [default: None, meaning do not show a label of z values]
         @param color           The color of scattered points. This color is also applied to linear
-                               regression if argument `linear_regression` is True. This parameter is 
-                               ignored when z is not None. In this case, the color of linear 
+                               regression if argument `linear_regression` is True. This parameter is
+                               ignored when z is not None. In this case, the color of linear
                                regression is set to blue.
                                [default: None, meaning follow a matplotlib's default color]
         @param lim             The limit of axis. This can be specified explicitly by
@@ -1433,15 +1409,15 @@ class ScatterPlotSysTest(SysTest):
             # If equal_axis is False, just use x limits set to axis.
             if not equal_axis:
                 xlimtmp = ax.get_xlim()
-            # If equal_axis is True, x limits may not reflect an actual limit of a plot,e.g., if 
+            # If equal_axis is True, x limits may not reflect an actual limit of a plot,e.g., if
             # y limits are wider than x limits, an actual limit along the x-axis becomes wider
             # than what we specified although a value tied to a matplotlib.axes object remains
             # the same, which can result in a regression line truncated in smaller range along
             # x-axis if we simply use ax.get_xlim() to the regression line. To avoid this,
-            # take a wider range between x limits and y limits, and set this range to 
+            # take a wider range between x limits and y limits, and set this range to
             # the x limit of a regression line.
             else:
-                d = numpy.max([ax.get_xlim()[1] - ax.get_xlim()[0], 
+                d = numpy.max([ax.get_xlim()[1] - ax.get_xlim()[0],
                                ax.get_ylim()[1] - ax.get_ylim()[0]])
                 xlimtmp = [numpy.average(x)-0.5*d, numpy.average(x)+0.5*d]
             xtmp = numpy.linspace(*xlimtmp)
@@ -1670,6 +1646,6 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
         return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
                                 xlabel=r'$\sigma^{\rm PSF}$  [arcsec]',
                                 ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$  [arcsec]',
-                                color=color, lim=lim, equal_axis=False, 
+                                color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='zero')
 
