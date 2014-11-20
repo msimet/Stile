@@ -411,96 +411,46 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         if sky_coords:
             wcs = afwImage.makeWcs(calib)
-        # First pull the quantities from the catalog that we'll need.  This first version in the try
-        # block is faster if it works, and the time cost if it fails is small, so we try it first...
-        nobj = len(data)
-        try:
+            localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
+                                for src in data]
+        if do_shape or do_err:
+            key = data.schema.find("shape.sdss").key
+            moments = [src.get(key) for src in data]
             if sky_coords:
-                localTransform = wcs.linearizePixelToSky(data.getCentroid())
-                localLinearTranform = localTransform.getLinear()
-            if do_shape or do_err:
-                key = data.schema.find("shape.sdss").key
-                moments = data.get(key)
-                if sky_coords:
-                    moments = moments.transform(localLinearTransform)
-                ixx = moments.getIxx()
-                ixy = moments.getIxy()
-                iyy = moments.getIyy()
-            # Get covariance of moments. We ignore off-diagonal components because
-            # they are not implemented in the LSST pipeline yet.
-            if do_err:
-                key = data.schema.find("shape.sdss.err").key
-                covariances = data.get(key)
-                if sky_coords:
-                    cov_ixx = numpy.zeros(covariances[:,0,0].shape)
-                    cov_iyy = numpy.zeros(covariances[:,0,0].shape)
-                    cov_ixy = numpy.zeros(covariances[:,0,0].shape)
-                    # We need this loop because localLinearTransform is 1-d array of
-                    # lsst.afw.geom.geomLib.LinearTransform so that we cannot specify
-                    # an array of (i,j) component as localLinearTransform[:,i,j].
-                    for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
-                        cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
-                                      (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
-                        cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
-                                      (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
-                        cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
-                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
-                                      (lt[0,1]*lt[1,1])**2*cov[1,1])
-                else:
-                    cov_ixx = covariances[:,0,0]
-                    cov_iyy = covariances[:,1,1]
-                    cov_ixy = covariances[:,2,2]
-            if do_psf:
-                key = data.schema.find("shape.sdss.psf").key
-                psf_moments = data.get(key)
-                if sky_coords:
-                    psf_moments = psf_moments.transform(localLinearTransform)
-                psf_ixx = psf_moments.getIxx()
-                psf_iyy = psf_moments.getIyy()
-                psf_ixy = psf_moments.getIxy()
-        # ...but probably in most cases we'll have to iterate like this since the catalog is
-        # already masked, which breaks the direct calls above.
-        except LsstCppException:
+                moments = [moment.transform(lt) for moment, lt in
+                                  zip(moments, localLinearTransform)]
+            ixx = numpy.array([mom.getIxx() for mom in moments])
+            ixy = numpy.array([mom.getIxy() for mom in moments])
+            iyy = numpy.array([mom.getIyy() for mom in moments])
+        if do_err:
+            key = data.schema.find("shape.sdss.err").key
+            covariances = numpy.array([src.get(key) for src in data])
             if sky_coords:
-                localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
-                                    for src in data]
-            if do_shape or do_err:
-                key = data.schema.find("shape.sdss").key
-                moments = [src.get(key) for src in data]
-                if sky_coords:
-                    moments = [moment.transform(lt) for moment, lt in
-                                      zip(moments, localLinearTransform)]
-                ixx = numpy.array([mom.getIxx() for mom in moments])
-                ixy = numpy.array([mom.getIxy() for mom in moments])
-                iyy = numpy.array([mom.getIyy() for mom in moments])
-            if do_err:
-                key = data.schema.find("shape.sdss.err").key
-                covariances = numpy.array([src.get(key) for src in data])
-                if sky_coords:
-                    cov_ixx = numpy.zeros(covariances[:,0,0].shape)
-                    cov_iyy = numpy.zeros(covariances[:,0,0].shape)
-                    cov_ixy = numpy.zeros(covariances[:,0,0].shape)
-                    for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
-                        cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
-                                      (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
-                        cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
-                                      (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
-                        cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
-                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
-                                      (lt[0,1]*lt[1,1])**2*cov[1,1])
-                else:
-                    cov_ixx = covariances[:,0,0]
-                    cov_iyy = covariances[:,1,1]
-                    cov_ixy = covariances[:,2,2]
-            if do_psf:
-                key = data.schema.find("shape.sdss.psf").key
-                psf_moments = [src.get(key) for src in data]
-                if sky_coords:
-                    psf_moments = [moment.transform(lt) for moment, lt in
-                                      zip(psf_moments, localLinearTransform)]
-                psf_ixx = numpy.array([mom.getIxx() for mom in psf_moments])
-                psf_ixy = numpy.array([mom.getIxy() for mom in psf_moments])
-                psf_iyy = numpy.array([mom.getIyy() for mom in psf_moments])
+                cov_ixx = numpy.zeros(covariances[:,0,0].shape)
+                cov_iyy = numpy.zeros(covariances[:,0,0].shape)
+                cov_ixy = numpy.zeros(covariances[:,0,0].shape)
+                for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
+                    cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
+                                  (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
+                    cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
+                                  (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
+                    cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
+                                  (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
+                                  (lt[0,1]*lt[1,1])**2*cov[1,1])
+            else:
+                cov_ixx = covariances[:,0,0]
+                cov_iyy = covariances[:,1,1]
+                cov_ixy = covariances[:,2,2]
+        if do_psf:
+            key = data.schema.find("shape.sdss.psf").key
+            psf_moments = [src.get(key) for src in data]
+            if sky_coords:
+                psf_moments = [moment.transform(lt) for moment, lt in
+                                  zip(psf_moments, localLinearTransform)]
+            psf_ixx = numpy.array([mom.getIxx() for mom in psf_moments])
+            psf_ixy = numpy.array([mom.getIxy() for mom in psf_moments])
+            psf_iyy = numpy.array([mom.getIyy() for mom in psf_moments])
+
         # Now, combine the moment measurements into the actual quantities we want.
         if do_shape:
             g1 = (ixx-iyy)/(ixx+iyy)
