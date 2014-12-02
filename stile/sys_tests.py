@@ -557,6 +557,21 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
+class StarPSFResidXStarPSFResidShearSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto-correlation of star shapes.
+    """
+    short_name = 'starpsfresid_x_starpsfresid_shear'
+    long_name = 'Auto-correlation of star shapes'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w')]
+
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_data = data.copy()
+        new_data['g1'] = new_data['g1'] - new_data['psf_g1']
+        new_data['g2'] = new_data['g2'] - new_data['psf_g2']
+        return self.getCF('gg', new_data, data2, random, random2, config=config, **kwargs)
+
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
     Compute the galaxy position autocorrelations.
