@@ -846,11 +846,19 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear",
-                             #"WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
-                             #"ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
-                             #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [7., 5.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [None, None])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [None, None])
+    whiskerplot_scale = lsst.pex.config.Field(dtype=float,
+        doc="length of whisker per inch", default = 0.4)
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,

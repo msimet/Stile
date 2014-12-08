@@ -59,7 +59,10 @@ def MaskPSFStar(data, config):
     try:
         return data['calib.psf.used']==True
     except LsstCppException:
-        key = data.schema.find('calib.psf.used').key
+        try:
+            key = data.schema.find('calib.psf.used').key
+        except KeyError:
+            key = data.schema.find('calib.psf.used.any').key
         return numpy.array([src.get(key)==True for src in data])
 
 # Map the object type strings onto the above functions.
