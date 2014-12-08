@@ -152,8 +152,13 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     """
     data = _handleFields(data_array, fields)
     if print_header:
-        numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
-                      header=', '.join(data.dtype.names))
+        if hasattr(data,'dtype') and hasattr(data.dtype,'names') and data.dtype.names:
+            numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
+                        header=', '.join(data.dtype.names))
+        else:
+            import warnings
+            warnings.warn('No named data type, so requested header cannot be printed.')
+            numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
     else:
         numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
 
