@@ -557,12 +557,12 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarPSFResidXStarPSFResidShearSysTest(CorrelationFunctionSysTest):
+class Rho1SysTest(CorrelationFunctionSysTest):
     """
-    Compute the auto-correlation of star shapes.
+    Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
     """
-    short_name = 'starpsfresid_x_starpsfresid_shear'
-    long_name = 'Auto-correlation of star shapes'
+    short_name = 'rho1'
+    long_name = 'Rho1 statistics (Auto-correlation of star-PSF shapes)'
     objects_list = ['star PSF']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w')]
 
@@ -570,7 +570,25 @@ class StarPSFResidXStarPSFResidShearSysTest(CorrelationFunctionSysTest):
         new_data = data.copy()
         new_data['g1'] = new_data['g1'] - new_data['psf_g1']
         new_data['g2'] = new_data['g2'] - new_data['psf_g2']
-        return self.getCF('gg', new_data, data2, random, random2, config=config, **kwargs)
+        if data2 is not None:
+            new_data2 = data2.copy()
+            new_data2['g1'] = new_data2['g1'] - new_data2['psf_g1']
+            new_data2['g2'] = new_data2['g2'] - new_data2['psf_g2']
+        else:
+            new_data2 = data2
+        if random is not None:
+            new_random = random.copy()
+            new_random['g1'] = new_random['g1'] - new_random['psf_g1']
+            new_random['g2'] = new_random['g2'] - new_random['psf_g2']
+        else:
+            new_random = random
+        if random2 is not None:
+            new_random2 = random2.copy()
+            new_random2['g1'] = new_random2['g1'] - new_random2['psf_g1']
+            new_random2['g2'] = new_random2['g2'] - new_random2['psf_g2']
+        else:
+            new_random2 = random2
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2, config=config, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """

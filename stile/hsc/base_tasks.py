@@ -57,7 +57,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear", "StarPSFResidXStarPSFResidShear",
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -676,7 +676,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear", "StarPSFResidXStarPSFResidShear",
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
