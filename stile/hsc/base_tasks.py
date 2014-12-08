@@ -982,8 +982,8 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
         return parser
 
     def getCalibData(self, dataRef, shape_cols):
-        calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
+	calib_metadata_shape = None
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
