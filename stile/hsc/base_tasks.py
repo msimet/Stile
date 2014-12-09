@@ -300,10 +300,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
-               dataRef.dataId.get('ccd'))
-               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key(
-               'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
+        if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
+            'CCD')and ('x' in raw_cols or 'y' in raw_cols):
+            xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
+                    dataRef.dataId.get('ccd'))
+                                           ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm()
+        else:
+            xy0 = None
 
         if shape_cols:
             for col in shape_cols:
@@ -662,8 +665,9 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc="y limit for whisker plot", default = [-20000., 20000.])
     whiskerplot_scale = lsst.pex.config.Field(dtype=float,
         doc="length of whisker per inch", default = 0.4)
-    scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype=str, default='median',
-                                                     doc="scatter points in scatter plot #er ccd?")
+    scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype = str,
+                                                     default='median',
+                                                     doc="Which statistics (median, mean, or None) to be performed in CCDs.")
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -845,7 +849,7 @@ class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
 class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear",
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -913,20 +917,29 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 
 
 
-class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
+class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear",
-                             #"WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
-                             #"ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
-                             #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
     )
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [12., 10.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [None, None])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [None, None])
+    whiskerplot_scale = lsst.pex.config.Field(dtype=float,
+        doc="length of whisker per inch", default = 0.4)
+
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile tract tasks.  Most of this code (incl this docstring)
@@ -963,7 +976,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     to the filename and calibration data information as we did for the Patch-level Task."""
     RunnerClass = StileTractRunner
     _DefaultName = "TractSingleEpochStile"
-    ConfigClass = PatchSingleEpochStileConfig
+    ConfigClass = TractSingleEpochStileConfig
     item_type = 'tract'  # Key to populate a fake 'CCD' column for the tests that will use it
     
     def __init__(self, **kwargs):
@@ -1035,7 +1048,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
 
     def getCalibData(self, dataRef, shape_cols):
 	calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
