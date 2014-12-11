@@ -897,7 +897,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 
 
 
-class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
+class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear",
@@ -935,9 +935,6 @@ class StileTractRunner(lsst.pipe.base.TaskRunner):
     def __call__(self, args):
         task = self.TaskClass(config=self.config, log=self.log)
         result = task.run(*args)
-
-class TractSingleEpochStileConfig(PatchSingleEpochStileConfig):
-    pass
 
 class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     """Like VisitSingleEpochStileTask, but with individual elements being patches instead of 
