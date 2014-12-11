@@ -848,12 +848,7 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
     flags_keep_true = ['detect.is-primary']
-    coaddName = lsst.pex.config.Field(
-        doc = "coadd name: typically one of deep or goodSeeing",
-        dtype = str,
-        default = "deep",
-    )
-
+    
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
     _DefaultName = "PatchSingleEpochStile"
@@ -911,12 +906,7 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
-    coaddName = lsst.pex.config.Field(
-        doc = "coadd name: typically one of deep or goodSeeing",
-        dtype = str,
-        default = "deep",
-    )
-
+    
 class StileTractRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile tract tasks.  Most of this code (incl this docstring)
     pulled from measMosaic.
