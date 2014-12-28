@@ -665,6 +665,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc="length of whisker per inch", default = 0.4)
     scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype=str, default='median',
                                                      doc="scatter points in scatter plot #er ccd?")
+    ccd_type = int
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -732,7 +733,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
 
         # Some tests need to know which data came from which CCD
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
-            extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=int)
+            extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=self.config.ccd_type)
             extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
@@ -916,6 +917,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
         dtype = str,
         default = "deep",
     )
+    ccd_type = 'S7' # NumPy string dtype, 7 characters long 
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile tract tasks.  Most of this code (incl this docstring)
