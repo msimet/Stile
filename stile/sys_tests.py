@@ -117,7 +117,46 @@ else:
                           'nk': treecorr.NKCorrelation,
                           'kg': treecorr.KGCorrelation}
 
-class CorrelationFunctionSysTest(SysTest):
+def CorrelationFunctionSysTest(type=None):
+    """
+    Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg 
+    given.  Options are:
+        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
+          type objects
+        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
+          type objects'
+        - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
+        - StarXStarShear: auto-correlation of the shapes of 'star' type objects
+        - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
+        - StarDensity Correlation: position autocorrelation of 'star' type objects
+        - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
+          multiple types of correlation functions (see the documentation for 
+          BaseCorrelationFunctionSysTest for more details).  Note that this kind of instance has a 
+          slightly different call signature than the other methods, with the correlation function
+          type given first, and that it lacks many of the convenience variables the other 
+          CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+    """
+    if type is None:
+        return BaseCorrelationFunctionSysTest()
+    elif type=='GalaxyShear':
+        return GalaxyShearSysTest()
+    elif type=='BrightStarShear':
+        return BrightStarShearSysTest()
+    elif type=='StarXGalaxyDensity':
+        return StarXGalaxyDensitySysTest()
+    elif type=='StarXGalaxyShear':
+        return StarXGalaxyShearSysTest()
+    elif type=='StarXStarShear':
+        return StarXStarShearSysTest()
+    elif type=='GalaxyDensityCorrelation':
+        return GalaxyDensityCorrelationSysTest()
+    elif type=='StarDensityCorrelation':
+        return StarDensityCorrelation()
+    else:
+        raise ArgumentError('Unknown correlation function type %s given to type kwarg'%type)
+    
+                          
+class BaseCorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact
@@ -499,8 +538,11 @@ class CorrelationFunctionSysTest(SysTest):
         ax.set_xlabel(r)
         return fig
 
+    def __call__(self, *args, **kwargs):
+        return self.getCF(*args, **kwargs)
+        
 
-class GalaxyShearSysTest(CorrelationFunctionSysTest):
+class GalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of real galaxies.
     """
@@ -512,7 +554,7 @@ class GalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
-class BrightStarShearSysTest(CorrelationFunctionSysTest):
+class BrightStarShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of bright stars.
     """
@@ -524,7 +566,7 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
-class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
+class StarXGalaxyDensitySysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the number density of galaxies around stars.
     """
@@ -536,7 +578,7 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
-class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
+class StarXGalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the cross-correlation of galaxy and star shapes.
     """
@@ -548,7 +590,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarShearSysTest(CorrelationFunctionSysTest):
+class StarXStarShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of star shapes.
     """
@@ -560,7 +602,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
+class StarXStarSizeResidualSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto correlation of star-PSF size residuals.
     """
@@ -617,7 +659,7 @@ class Rho1SysTest(CorrelationFunctionSysTest):
         return self.getCF('gg', new_data, new_data2, new_random, new_random2,
                           config=config, **kwargs)
 
-class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
+class GalaxyDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the galaxy position autocorrelations.
     """
@@ -629,7 +671,7 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
-class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
+class StarDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the star position autocorrelations.
     """
