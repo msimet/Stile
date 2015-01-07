@@ -392,6 +392,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                           psf_sigma_err).
         @param sky_coords If True, compute the moments in ra, dec coordinates; else compute in
                           native coordinates (x, y for CCD).
+        @param mask_type  The object type corresponding to the data in `data` [Default: None]
         @returns          A tuple consisting of:
                               - A dict whose keys are column names ('g1', 'psf_sigma', etc) and
                                 whose values are a NumPy array of those quantities
@@ -572,6 +573,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                           coadds where available, else "calexp").
         @param xy0        Offset of a CCD
                           [Default: None, meaning do not add any offset.]
+        @param mask_type  The object type corresponding to the data in `data` [Default: None]
         @returns          A 2-element tuple.  The first element is a list or NumPy array of the
                           quantity indicated by `col`. The second is either None (if no further
                           masking is needed) or a NumPy array of boolean values indicating where the
