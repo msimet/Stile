@@ -112,10 +112,12 @@ class BaseSysTestAdapter(object):
         """
         if objects_list==None:
             if hasattr(self.sys_test, 'objects_list'):
-                objects_list = self.sys_test.objects_list
+                self.objects_list = self.sys_test.objects_list
             else:
                 raise ValueError('No objects_list given, and self.sys_test does not have an '
                                    'attribute objects_list')
+        else:
+            self.objects_list = objects_list
         # mask_dict (defined above) maps string object types onto masking functions.
         self.mask_funcs = [mask_dict[obj_type] for obj_type in objects_list]
 
@@ -129,7 +131,8 @@ class BaseSysTestAdapter(object):
                      to index the data, returning only the rows that meet the requirements of the
                      mask.
         """
-        return [mask_func(data, config) for mask_func in self.mask_funcs]
+        return [(obj, mask_func(data, config)) 
+                for obj, mask_func in zip(self.objects_list, self.mask_funcs)]
 
 
     def getRequiredColumns(self):
@@ -274,6 +277,7 @@ class StatsPSFFluxAdapter(ShapeSysTestAdapter):
         self.sys_test = sys_tests.StatSysTest(field='flux.psf')
         self.name = self.sys_test.short_name+'flux.psf'
         self.mask_funcs = [mask_dict[obj_type] for obj_type in ['galaxy']]
+        self.objects_list = ['galaxy']
 
     def getRequiredColumns(self):
         return (('flux.psf',),)
