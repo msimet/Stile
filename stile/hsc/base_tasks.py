@@ -410,7 +410,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 localLinearTranform = localTransform.getLinear()
             if do_shape or do_err:
                 if 'galaxy' in mask_type:  # For any galaxy type, use shape.hsm
-                    key = data.schema.find("shape.hsm").key
+                    key = data.schema.find("shape.hsm.regauss.moments").key
                 else:
                     key = data.schema.find("shape.sdss").key
                 moments = data.get(key)
@@ -458,7 +458,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                     for src in data]
             if do_shape or do_err:
-                key = data.schema.find("shape.sdss").key
+                if 'galaxy' in mask_type:  # For any galaxy type, use shape.hsm
+                    key = data.schema.find("shape.hsm.regauss.moments").key
+                else:
+                    key = data.schema.find("shape.sdss").key
                 moments = [src.get(key) for src in data]
                 if sky_coords:
                     moments = [moment.transform(lt) for moment, lt in
