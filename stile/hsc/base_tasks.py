@@ -163,7 +163,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                  'g1_chip', 'g1_err_chip', 'g2_chip', 'g2_err_chip',
                                  'sigma_sky', 'sigma_chip', 'sigma_err_sky', 'sigma_err_chip', 
                                  'w']]):
-                    shape_masks.append(self._computeShapeMask(catalog), mask_type)
+                    shape_masks.append(self._computeShapeMask(catalog, mask_type))
                 else:
                     shape_masks.append(True)
             sys_test_data.mask_tuple_list = [(mask_type, numpy.logical_and(mask, shape_mask))
@@ -363,7 +363,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                         mask_tuple[1][nan_and_col_mask] = numpy.logical_and(extra_mask, 
                                                                    mask_tuple[1][nan_and_col_mask])
 
-    def _computeShapeMask(self, data):
+    def _computeShapeMask(self, data, mask_type):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """

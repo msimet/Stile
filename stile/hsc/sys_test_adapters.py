@@ -119,7 +119,7 @@ class BaseSysTestAdapter(object):
         else:
             self.objects_list = objects_list
         # mask_dict (defined above) maps string object types onto masking functions.
-        self.mask_funcs = [mask_dict[obj_type] for obj_type in objects_list]
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.objects_list]
 
 
     def getMasks(self, data, config):
