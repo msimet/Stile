@@ -52,7 +52,7 @@ class SysTestData(object):
     """
     def __init__(self):
         self.sys_test_name = None
-        self.mask_list = None
+        self.mask_tuple_list = None
         self.cols_list = None
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
@@ -153,10 +153,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
-            # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            sys_test_data.mask_list = sys_test.getMasks(catalog, self.config)
+            # Masks expects: a tuple of tuples, with each tuple having a mask name and a mask, 
+            # and one tuple for each required data set for the sys_test
+            sys_test_data.mask_tuple_list = sys_test.getMasks(catalog, self.config)
             # cols expects: an iterable of iterables, describing for each required data set
-            # the set of extra required columns. len(mask_list) should be equal to len(cols_list).
+            # the set of extra required columns. len(mask_tuple_list) should be equal to 
+            # len(cols_list).
             sys_test_data.cols_list = sys_test.getRequiredColumns()
             # Generally, we will be updating the masks as we go to take care of the more granular
             # flags such as flux measurement errors.  However, the number of possible flags for
@@ -165,20 +167,21 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # corresponding to data sets where we need shape quantities, and "and" those into the
             # base mask, rather than doing it every time we ask for a shape quantity.
             shape_masks = []
-            for cols_list in sys_test_data.cols_list:
+            for (mask_type, mask), cols_list in zip(sys_test_data.mask_tuple_list, 
+                                                    sys_test_data.cols_list):
                 if any([key in cols_list for key in
                                 ['g1_sky', 'g1_err_sky', 'g2_sky', 'g2_err_sky',
                                  'g1_chip', 'g1_err_chip', 'g2_chip', 'g2_err_chip',
                                  'sigma_sky', 'sigma_chip', 'sigma_err_sky', 'sigma_err_chip', 
                                  'w']]):
-                    shape_masks.append(self._computeShapeMask(catalog))
+                    shape_masks.append(self._computeShapeMask(catalog, mask_type))
                 else:
                     shape_masks.append(True)
-            sys_test_data.mask_list = [numpy.logical_and(mask, shape_mask)
-                for mask, shape_mask in zip(sys_test_data.mask_list, shape_masks)]
+            sys_test_data.mask_tuple_list = [(mask_type, numpy.logical_and(mask, shape_mask))
+               for (mask_type, mask), shape_mask in zip(sys_test_data.mask_tuple_list, shape_masks)]
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.
-            for (mask, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
+            for (mask, cols) in zip(sys_test_data.mask_tuple_list, sys_test_data.cols_list):
                 self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             sys_data_list.append(sys_test_data)
         # Right now, we have a source catalog, plus a dict of other computed quantities.  Step
@@ -192,7 +195,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                         cols.append('_'.join(c.split('_')[:-1]))
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
-            for mask, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
+            for (mask_type, mask), cols in zip(sys_test_data.mask_tuple_list, 
+                                               sys_test_data.cols_list):
                 new_catalog = {}
                 for column in cols:
                     if column in extra_col_dict:
@@ -260,17 +264,18 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             data[key] = catalog_dict[key]
         return data
 
-    def generateColumns(self, dataRef, catalog, mask, raw_cols, extra_col_dict):
+    def generateColumns(self, dataRef, catalog, mask_tuple, raw_cols, extra_col_dict):
         """
         Generate required columns which are not already in the data array,  and update
-        `extra_col_dict` to include them.  Also update "mask" to exclude any objects which have
-        specific failures for the requested quantities, such as flux measurement failures for
-        flux/magnitude measurements.
+        `extra_col_dict` to include them.  Also update the mask (mask_tuple[1]) to exclude any 
+        objects which have specific failures for the requested quantities, such as flux measurement
+        failures for flux/magnitude measurements.
 
         @param dataRef        A dataRef that is the source of the following data
         @param catalog        A source catalog from the LSST pipeline.
-        @param mask           The mask indicating which rows to generate columns for.  `mask` is
-                              updated by this function.
+        @param mask_tuple     A 2-item tuple, with the mask name/type in the first element, and the
+                              mask indicating which rows to generate columns for in the second 
+                              element.  `mask_tuple[1]` is updated by this function.
         @param cols           An iterable of strings indicating which quantities are needed.
         @param extra_col_dict A dict whose keys are quantity names and whose values are
                               NumPy arrays of those quantities.  "nan" is used to indicate
@@ -323,7 +328,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # Now, figure out the rows where we need to compute at least one of these quantities
             nan_masks = [numpy.isnan(extra_col_dict[col]) for col in shape_cols]
             nan_mask = numpy.logical_or.reduce(nan_masks)
-            nan_and_col_mask = numpy.logical_and(nan_mask, mask)
+            nan_and_col_mask = numpy.logical_and(nan_mask, mask_tuple[1])
             # We will have to transform to sky coordinates if the locations are in (ra,dec).  But
             # we may also need the quantities in chip coordinates.
             do_sky_coords = True if numpy.any(['_sky' in col for col in raw_cols]) else False
@@ -336,10 +341,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     if do_quantity:
                         shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask],
                             calib_metadata_shape, do_shape=do_shape, do_err=do_err, do_psf=do_psf,
-                            do_psf_err=do_psf_err, sky_coords=sky_coords)
+                            do_psf_err=do_psf_err, sky_coords=sky_coords, mask_type=mask_tuple[0])
                         if extra_mask is not None:
-                            mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
-                                                                       extra_mask)
+                            mask_tuple[1][nan_and_col_mask] = numpy.logical_and(extra_mask,
+                                                                   mask_tuple[1][nan_and_col_mask])
                         for col in shapes_dict:
                             if shapes_dict[col] is not None and col in extra_col_dict:
                                 extra_col_dict[col][nan_and_col_mask] = shapes_dict[col]
@@ -350,14 +355,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     extra_col_dict[col] = numpy.zeros(len(catalog))
                     extra_col_dict[col].fill('nan')
                 nan_mask = numpy.isnan(extra_col_dict[col])
-                nan_and_col_mask = numpy.logical_and(nan_mask, mask)
+                nan_and_col_mask = numpy.logical_and(nan_mask, mask_tuple[1])
                 if any(nan_and_col_mask>0):
                     # "extra_mask" is the new mask with the quantity-specific flags
                     extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
-                        col, catalog[nan_and_col_mask], calib_metadata, calib_type, xy0)
+                        col, catalog[nan_and_col_mask], calib_metadata, calib_type, xy0, 
+                        mask_type=mask_tuple[0])
                     if extra_mask is not None:
-                        mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
-                                                                   extra_mask)
+                        mask_tuple[1][nan_and_col_mask] = numpy.logical_and(extra_mask, 
+                                                                   mask_tuple[1][nan_and_col_mask])
 
     def getCalibData(self, dataRef, shape_cols):
         # "fcr_md" is the more granular calibration generated by the
@@ -383,7 +389,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         return calib_type, calib_metadata, calib_metadata_shape
 
-    def _computeShapeMask(self, data):
+    def _computeShapeMask(self, data, mask_type):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
@@ -397,7 +403,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         return mask
 
     def computeShapes(self, data, calib, do_shape=True, do_err=True, do_psf=True, do_psf_err=True,
-                            sky_coords=True):
+                            sky_coords=True, mask_type=None):
         """
         Compute the shapes for the given `data`, an LSST source catalog, with the associated
         `calib` calibrated exposure metadata ('calexp_md' or 'fcr_md', either works).
@@ -412,6 +418,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                           psf_sigma_err).
         @param sky_coords If True, compute the moments in ra, dec coordinates; else compute in
                           native coordinates (x, y for CCD).
+        @param mask_type  The object type corresponding to the data in `data` [Default: None]
         @returns          A tuple consisting of:
                               - A dict whose keys are column names ('g1', 'psf_sigma', etc) and
                                 whose values are a NumPy array of those quantities
@@ -423,7 +430,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                 for src in data]
         if do_shape or do_err:
-            key = data.schema.find("shape.sdss").key
+            if 'galaxy' in mask_type:  # For any galaxy type, use shape.hsm
+                key = data.schema.find("shape.hsm.regauss.moments").key
+            else:
+                key = data.schema.find("shape.sdss").key
             moments = [src.get(key) for src in data]
             if sky_coords:
                 moments = [moment.transform(lt) for moment, lt in
@@ -531,7 +541,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                      'psf_g1_chip': psf_g1, 'psf_g2_chip': psf_g2, 'psf_sigma_chip': psf_sigma},
                      extra_mask)
 
-    def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):
+    def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None, mask_type=None):
         """
         Compute the quantity `col` for the given `data`.
 
@@ -542,6 +552,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                           coadds where available, else "calexp").
         @param xy0        Offset of a CCD
                           [Default: None, meaning do not add any offset.]
+        @param mask_type  The object type corresponding to the data in `data` [Default: None]
         @returns          A 2-element tuple.  The first element is a list or NumPy array of the
                           quantity indicated by `col`. The second is either None (if no further
                           masking is needed) or a NumPy array of boolean values indicating where the
@@ -738,30 +749,33 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
-            # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            temp_mask_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
+            # Masks expects: a tuple of tuples, with each tuple having a mask name and a mask, 
+            # and one tuple for each required data set for the sys_test
+            temp_mask_tuple_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
             shape_masks = []
-            for cols_list in sys_test_data.cols_list:
+            for mask, cols_list in zip(temp_mask_tuple_list, sys_test_data.cols_list):
                 if any([key in cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
                                                      'sigma', 'sigma_err']]):
-                    shape_masks.append([self._computeShapeMask(catalog) for catalog in catalogs])
+                    shape_masks.append([self._computeShapeMask(catalog, type=mask[0]) 
+                                        for catalog in catalogs])
                 else:
                     shape_masks.append([True]*len(catalogs))
-            # Now, temp_mask_list is ordered such that there is one list per catalog, and the
+            # Now, temp_mask_tuple_list is ordered such that there is one list per catalog, and the
             # list for each catalog iterates through the sys tests.  But shape_mask is ordered such
             # that there is one list per sys test, and the list for each sys test iterates through
             # the catalogs!  That's actually the form we want.  So this next line A) combines the
             # new shape masks with the old flag masks, and B) switches the nesting of the mask list
             # to be the ordering we expect.
-            sys_test_data.mask_list = [[numpy.logical_and(mask[i], shape_mask)
-                        for mask, shape_mask in zip(temp_mask_list, shape_masks[i])]
-                        for i in range(len(temp_mask_list[0]))]
-            for (mask_list, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
-                for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_list, catalogs,
-                                                                  extra_col_dicts):
+            sys_test_data.mask_tuple_list = [[(mask_type, numpy.logical_and(mask[i], shape_mask))
+                    for (mask_type, mask), shape_mask in zip(temp_mask_tuple_list, shape_masks[i])]
+                    for i in range(len(temp_mask_tuple_list[0]))]
+            for (mask_tuple_list, cols) in zip(sys_test_data.mask_tuple_list, 
+                                               sys_test_data.cols_list):
+                for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_tuple_list, 
+                                                                  catalogs, extra_col_dicts):
                     self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             # Some tests need to know which data came from which CCD, so we add a column for that here
             # to make sure it's propagated through to the sys_tests.
@@ -774,10 +788,12 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         cols.append('_'.join(c.split('_')[:-1]))
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
-            for mask_list, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
+            for mask_tuple_list, cols in zip(sys_test_data.mask_tuple_list, 
+                                             sys_test_data.cols_list):
                 new_catalog = {}
                 for column in cols:
-                    for catalog, extra_col_dict, mask in zip(catalogs, extra_col_dicts, mask_list):
+                    for catalog, extra_col_dict, (mask_type, mask) in zip(catalogs, extra_col_dicts,
+                                                                          mask_tuple_list):
                         if column in extra_col_dict:
                             newcol = extra_col_dict[column][mask]
                         elif column in catalog.schema:
