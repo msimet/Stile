@@ -124,17 +124,17 @@ def CorrelationFunctionSysTest(type=None):
         - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
           type objects
         - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
-          type objects'
+          type objects
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
-        - StarXStarShear: auto-correlation of the shapes of 'star' type objects
+        - StarXStarShear: autocorrelation of the shapes of 'star' type objects
         - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
         - StarDensity Correlation: position autocorrelation of 'star' type objects
         - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
-          multiple types of correlation functions (see the documentation for 
-          BaseCorrelationFunctionSysTest for more details).  Note that this kind of instance has a 
-          slightly different call signature than the other methods, with the correlation function
-          type given first, and that it lacks many of the convenience variables the other 
-          CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+          multiple types of correlation functions.  See the documentation for 
+          BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
+          slightly different call signature than the other methods (with the correlation function
+          type given as the first argument) and that it lacks many of the convenience variables the
+          other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
     """
     if type is None:
         return BaseCorrelationFunctionSysTest()
