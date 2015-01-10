@@ -797,7 +797,29 @@ class StatSysTest(SysTest):
         # Return.
         return result
 
-class WhiskerPlotSysTest(SysTest):
+def WhiskerPlotSysTest(type=None):        
+    """
+    Initialize an instance of a BaseWhiskerPlotSysTest class, based on the 'type' kwarg given.
+    Options are:
+        - Star: whisker plot of shapes of PSF stars
+        - PSF: whisker plot of PSF shapes at the location of PSF stars
+        - Residual: whisker plot of (star shape-PSF shape)
+        - None: an empty BaseWhiskerPlotSysTest class instance, which can be used for multiple types
+          of whisker plots.  See the documentation for BaseWhiskerPlotSysTest (especially the method
+          whiskerPlot) for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the other
+          CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+    """
+    if type=='Star':
+        return WhiskerPlotStarSysTest()
+    elif type=='PSF':
+        return WhiskerPlotPSFSysTest()
+    elif type=='Residual':
+        return WhiskerPlotResidualSysTest()
+    else:
+        return BaseWhiskerPlotSysTest()
+        
+class BaseWhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     """
     A base class for Stile systematics tests that generate whisker plots. This implements the class
@@ -892,8 +914,10 @@ class WhiskerPlotSysTest(SysTest):
         if ylim is not None:
             ax.set_ylim(*ylim)
         return fig
+    def __call__(self, *args, **kwargs):
+        return self.whiskerPlot(*args, **kwargs)
 
-class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
+class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
     objects_list = ['star PSF']
@@ -907,7 +931,7 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
                                 size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
-class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
+class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_psf'
     long_name = 'Make a Whisker plot of PSFs'
     objects_list = ['star PSF']
@@ -921,7 +945,7 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
                                 size_label = r'$\sigma$ [pixel]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
     
-class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
+class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
     long_name = 'Make a Whisker plot of residuals'
     objects_list = ['star PSF']
