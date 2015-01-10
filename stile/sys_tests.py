@@ -1045,13 +1045,44 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
                                 size_label=r'$\sigma$ [pixel]',
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
-class ScatterPlotSysTest(SysTest):
+def ScatterPlotSysTest(type=None):                                
+    """
+    Initialize an instance of a BaseScatterPlotSysTest class, based on the 'type' kwarg given.
+    Options are:
+        - StarVsPSFG1: star vs PSF g1
+        - StarVsPSFG2: star vs PSF g2
+        - StarVsPSFSigma: star vs PSF sigma
+        - ResidualVsPSFG1: (star - PSF) g1 vs PSF g1
+        - ResidualVsPSFG2: (star - PSF) g1 vs PSF g2
+        - ResidualVsPSFSigma: (star - PSF) g1 vs PSF sigma
+        - None: an empty BaseScatterPlotSysTest class instance, which can be used for multiple types
+          of scatter plots.  See the documentation for BaseScatterPlotSysTest (especially the method
+          scatterPlot) for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the other
+          ScatterPlots have, such as self.objects_list and self.required_quantities.
+    """
+    if type=='StarVsPSFG1':
+        return ScatterPlotStarVsPSFG1SysTest()
+    elif type=='StarVsPSFG2':
+        return ScatterPlotStarVsPSFG2SysTest()
+    elif type=='StarVsPSFSigma':
+        return ScatterPlotStarVsPSFSigmaSysTest()
+    elif type=='ResidualVsPSFG1':
+        return ScatterPlotResidualVsPSFG1SysTest()
+    elif type=='ResidualVsPSFG2':
+        return ScatterPlotResidualVsPSFG2SysTest()
+    elif type=='ResidualVsPSFSigma':
+        return ScatterPlotResidualVsPSFSigmaSysTest()
+    else:
+        return BaseScatterPlotSysTest()
+
+class BaseScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     """
-    A base class for Stile systematics tests that generate scatter plots. This implements the class
-    method scatterPlot. Every child class of ScatterPlotSysTest should use
-    ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
-    ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
+    A base class for Stile systematics tests that generate scatter plots. This implements the class 
+    method scatterPlot. Every child class of BaseScatterPlotSysTest should use
+    BaseScatterPlotSysTest.scatterPlot through __call__. See the docstring for
+    BaseScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
     """
 
     def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual=False,
@@ -1425,9 +1456,10 @@ class ScatterPlotSysTest(SysTest):
                 return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
+    def __call__(self, *args, **kwargs):
+        return self.scatterPlot(*args, **kwargs)
 
-
-class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
     long_name = 'Make a scatter plot of star g1 vs psf g1'
     objects_list = ['star PSF']
@@ -1442,7 +1474,7 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
                                     reference_line='one-to-one')
 
 
-class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
     long_name = 'Make a scatter plot of star g2 vs psf g2'
     objects_list = ['star PSF']
@@ -1457,7 +1489,7 @@ class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
                                     reference_line='one-to-one')
 
 
-class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_sigma'
     long_name = 'Make a scatter plot of star sigma vs psf sigma'
     objects_list = ['star PSF']
@@ -1473,7 +1505,7 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='one-to-one')
 
 
-class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g1'
     long_name = 'Make a scatter plot of residual g1 vs psf g1'
     objects_list = ['star PSF']
@@ -1488,7 +1520,7 @@ class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g2'
     long_name = 'Make a scatter plot of residual g2 vs psf g2'
     objects_list = ['star PSF']
@@ -1503,7 +1535,7 @@ class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_sigma'
     long_name = 'Make a scatter plot of residual sigma vs psf sigma'
     objects_list = ['star PSF']
