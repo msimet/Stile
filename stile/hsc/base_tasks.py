@@ -58,7 +58,7 @@ class SysTestData(object):
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                    default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
@@ -645,7 +645,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     # Set the default systematics tests for the visit level.  Some keys (eg "flags", "shape_flags")
     # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                    default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
@@ -725,8 +725,16 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # run (!) even before you get to the collation step.  So, we duplicate some code here in
         # the name of runtime, at the expense of some complexity in terms of nested lists of things.
         # Some of this code is annotated more clearly in the CCD* version of this class.
-        catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
-                    for dataRef in dataRefList]
+
+        # temporary fix for a patch that exists in 
+        catalogs = list()
+        for dataRef in dataRefList:
+            try:
+                catalogs.append(dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS))
+            except RuntimeError as e:
+                print e, ', skip this patch'
+        #catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+        #            for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
@@ -868,6 +876,16 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
         dtype = str,
         default = "deep",
     )
+    # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
+    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                   'deblend.parent-too-big', 'deblend.skipped',
+                   'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
+                   'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                   'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
+                   'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
@@ -919,13 +937,18 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 
 class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                    default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.05', 'max_sep': '1',
+                                 'sep_units': 'degrees', 'nbins': '20'})
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
@@ -939,6 +962,15 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc="y limit for whisker plot", default = [None, None])
     whiskerplot_scale = lsst.pex.config.Field(dtype=float,
         doc="length of whisker per inch", default = 0.4)
+    # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
+    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                   'deblend.parent-too-big', 'deblend.skipped',
+                   'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
+                   'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                   'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
+                   'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
 
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
