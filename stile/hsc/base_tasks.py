@@ -912,6 +912,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
