@@ -948,11 +948,16 @@ class StileTractRunner(lsst.pipe.base.TaskRunner):
     def __call__(self, args):
         task = self.TaskClass(config=self.config, log=self.log)
         result = task.run(*args)
-
+        
 class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     """Like VisitSingleEpochStileTask, but with individual elements being patches instead of 
     CCDs.  Since the code layout is different, we inherit from Visit, and then make the changes
-    to the filename and calibration data information as we did for the Patch-level Task."""
+    to the filename and calibration data information as we did for the Patch-level Task.
+    
+    The patch names, which are strings, are sent to the various SysTests as a fake 'CCD'
+    column in the data array (in analogy to the real 'CCD' column created by 
+    VisitSingleEpochStileTask), so we can use the existing architecture to split by patch 
+    instead of CCD."""
     RunnerClass = StileTractRunner
     _DefaultName = "TractSingleEpochStile"
     ConfigClass = TractSingleEpochStileConfig
