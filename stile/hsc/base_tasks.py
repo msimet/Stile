@@ -83,10 +83,14 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Generate a list of flag columns to be used in the ._computeShapeMask() method for objects
     # where we have shape information
     shape_flags = lsst.pex.config.ListField(dtype=str,
-        doc="Flags that indicate failures for shape measurements",
+        doc="Flags that indicate failures for SDSS-type shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
                    'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted',
                    'shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
+    # And another list, but for "galaxy" types (where we use HSM regauss shapes)
+    shape_flags_hsm = lsst.pex.config.ListField(dtype=str,
+        doc="Flags that indicate failures for HSM-type shape measurements",
+        default = ['shape.hsm.regauss.flags'])
     bright_star_sn_cutoff = 50
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [7., 10.])
@@ -394,9 +398,14 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
         masks = list()
-        for flag in self.config.shape_flags:
-            key = data.schema.find(flag).key
-            masks.append(numpy.array([src.get(key)==False for src in data]))
+        if 'galaxy' in mask_type:
+            for flag in self.config.shape_flags_shm:
+                key = data.schema.find(flag).key
+                masks.append(numpy.array([src.get(key)==False for src in data]))
+        else:
+            for flag in self.config.shape_flags:
+                key = data.schema.find(flag).key
+                masks.append(numpy.array([src.get(key)==False for src in data]))
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
@@ -442,24 +451,28 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             ixy = numpy.array([mom.getIxy() for mom in moments])
             iyy = numpy.array([mom.getIyy() for mom in moments])
         if do_err:
-            key = data.schema.find("shape.sdss.err").key
-            covariances = numpy.array([src.get(key) for src in data])
-            if sky_coords:
-                cov_ixx = numpy.zeros(covariances[:,0,0].shape)
-                cov_iyy = numpy.zeros(covariances[:,0,0].shape)
-                cov_ixy = numpy.zeros(covariances[:,0,0].shape)
-                for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
-                    cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
-                                  (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
-                    cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
-                                  (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
-                    cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
-                                  (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
-                                  (lt[0,1]*lt[1,1])**2*cov[1,1])
+            if 'galaxy' in mask_type:
+                key = data.schema.find('shape.hsm.regauss.err')
+                errs = numpy.array([src.get(key) for src in data])
             else:
-                cov_ixx = covariances[:,0,0]
-                cov_iyy = covariances[:,1,1]
-                cov_ixy = covariances[:,2,2]
+                key = data.schema.find("shape.sdss.err").key
+                covariances = numpy.array([src.get(key) for src in data])
+                if sky_coords:
+                    cov_ixx = numpy.zeros(covariances[:,0,0].shape)
+                    cov_iyy = numpy.zeros(covariances[:,0,0].shape)
+                    cov_ixy = numpy.zeros(covariances[:,0,0].shape)
+                    for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
+                        cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
+                                      (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
+                        cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
+                                      (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
+                        cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
+                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
+                                      (lt[0,1]*lt[1,1])**2*cov[1,1])
+                else:
+                    cov_ixx = covariances[:,0,0]
+                    cov_iyy = covariances[:,1,1]
+                    cov_ixy = covariances[:,2,2]
         if do_psf:
             key = data.schema.find("shape.sdss.psf").key
             psf_moments = [src.get(key) for src in data]
@@ -480,19 +493,23 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             g2 = None
             sigma = None
         if do_err:
-            dg1_dixx = 2.*iyy/(ixx+iyy)**2
-            dg1_diyy = -2.*ixx/(ixx+iyy)**2
-            g1_err = numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy)
-            dg2_dixx = -2.*ixy/(ixx+iyy)**2
-            dg2_diyy = -2.*ixy/(ixx+iyy)**2
-            dg2_dixy = 2./(ixx+iyy)
-            g2_err = numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy +
-                                dg2_dixy**2 * cov_ixy)
-            dsigma_dixx = 0.25/sigma**3*iyy
-            dsigma_diyy = 0.25/sigma**3*ixx
-            dsigma_dixy = -0.5/sigma**3*ixy
-            sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy +
-                                   dsigma_dixy**2 * cov_ixy)
+            if 'galaxy' in mask_type:
+                g1_err = err
+                g2_err = err
+            else:
+                dg1_dixx = 2.*iyy/(ixx+iyy)**2
+                dg1_diyy = -2.*ixx/(ixx+iyy)**2
+                g1_err = numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy)
+                dg2_dixx = -2.*ixy/(ixx+iyy)**2
+                dg2_diyy = -2.*ixy/(ixx+iyy)**2
+                dg2_dixy = 2./(ixx+iyy)
+                g2_err = numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy +
+                                    dg2_dixy**2 * cov_ixy)
+                dsigma_dixx = 0.25/sigma**3*iyy
+                dsigma_diyy = 0.25/sigma**3*ixx
+                dsigma_dixy = -0.5/sigma**3*ixy
+                sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy +
+                                       dsigma_dixy**2 * cov_ixy)
             w = 1./(0.51**2+g1_err**2+g2_err**2)
         else:
             g1_err = None
