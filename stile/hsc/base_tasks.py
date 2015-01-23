@@ -236,18 +236,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @returns       The source catalog, masked to the rows which don't have any of our defined
                        flags set.
         """
+	masks = []
         if self.config.flags_keep_false:
-            masks = [catalog[flag]==False for flag in self.config.flags_keep_false]
-            mask = masks[0]
-            for new_mask in masks[1:]:
-                mask = numpy.logical_and(mask, new_mask)
-            catalog = catalog[mask]
+            masks += [catalog[flag]==False for flag in self.config.flags_keep_false]
         if self.config.flags_keep_true:
-            try:
-                masks = [catalog[flag]==True for flag in self.config.flags_keep_true]
-            except LsstCppException: # Since the catalog is no longer contiguous if masked above
-                flags = [catalog.schema.find(flag).key for flag in self.config.flags_keep_true]
-                masks = [numpy.array([c.get(flag)==True for c in catalog]) for flag in flags]
+            masks += [catalog[flag]==True for flag in self.config.flags_keep_true]
+	if masks:
             mask = masks[0]
             for new_mask in masks[1:]:
                 mask = numpy.logical_and(mask, new_mask)
@@ -952,6 +946,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
@@ -987,11 +982,16 @@ class StileTractRunner(lsst.pipe.base.TaskRunner):
     def __call__(self, args):
         task = self.TaskClass(config=self.config, log=self.log)
         result = task.run(*args)
-
+        
 class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     """Like VisitSingleEpochStileTask, but with individual elements being patches instead of 
     CCDs.  Since the code layout is different, we inherit from Visit, and then make the changes
-    to the filename and calibration data information as we did for the Patch-level Task."""
+    to the filename and calibration data information as we did for the Patch-level Task.
+    
+    The patch names, which are strings, are sent to the various SysTests as a fake 'CCD'
+    column in the data array (in analogy to the real 'CCD' column created by 
+    VisitSingleEpochStileTask), so we can use the existing architecture to split by patch 
+    instead of CCD."""
     RunnerClass = StileTractRunner
     _DefaultName = "TractSingleEpochStile"
     ConfigClass = TractSingleEpochStileConfig

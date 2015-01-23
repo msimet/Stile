@@ -276,8 +276,16 @@ class StatsPSFFluxAdapter(ShapeSysTestAdapter):
         self.config = config
         self.sys_test = sys_tests.StatSysTest(field='flux.psf')
         self.name = self.sys_test.short_name+'flux.psf'
-        self.mask_funcs = [mask_dict[obj_type] for obj_type in ['galaxy']]
-        self.objects_list = ['galaxy']
+        self.mask_funcs = [self.MaskPSFFlux]
+
+    def MaskPSFFlux(self, data, config):
+        base_mask = mask_dict['galaxy'](data, config)
+        try:
+            additional_mask = data['flux.psf.flags']==0
+        except LsstCppException:
+            key = data.schema.find('flux.psf.flags').key
+            additional_mask = numpy.array([src.get(key)==False for src in data])
+        return numpy.logical_and(base_mask, additional_mask)
 
     def getRequiredColumns(self):
         return (('flux.psf',),)
