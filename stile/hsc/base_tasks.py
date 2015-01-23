@@ -243,7 +243,11 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                 mask = numpy.logical_and(mask, new_mask)
             catalog = catalog[mask]
         if self.config.flags_keep_true:
-            masks = [catalog[flag]==True for flag in self.config.flags_keep_true]
+            try:
+                masks = [catalog[flag]==True for flag in self.config.flags_keep_true]
+            except LsstCppException: # Since the catalog is no longer contiguous if masked above
+                flags = [catalog.schema.find(flag).key for flag in self.config.flags_keep_true]
+                masks = [numpy.array([c.get(flag)==True for c in catalog]) for flag in flags]
             mask = masks[0]
             for new_mask in masks[1:]:
                 mask = numpy.logical_and(mask, new_mask)
@@ -399,7 +403,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         """
         masks = list()
         if 'galaxy' in mask_type:
-            for flag in self.config.shape_flags_shm:
+            for flag in self.config.shape_flags_hsm:
                 key = data.schema.find(flag).key
                 masks.append(numpy.array([src.get(key)==False for src in data]))
         else:
@@ -452,8 +456,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             iyy = numpy.array([mom.getIyy() for mom in moments])
         if do_err:
             if 'galaxy' in mask_type:
-                key = data.schema.find('shape.hsm.regauss.err')
+                key = data.schema.find('shape.hsm.regauss.err').key
                 errs = numpy.array([src.get(key) for src in data])
+                sigma_errs = numpy.array(errs.shape)
+                sigma_errs.fill(1.)
             else:
                 key = data.schema.find("shape.sdss.err").key
                 covariances = numpy.array([src.get(key) for src in data])
@@ -494,8 +500,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             sigma = None
         if do_err:
             if 'galaxy' in mask_type:
-                g1_err = err
-                g2_err = err
+                g1_err = errs
+                g2_err = errs
+                sigma_err = sigma_errs
             else:
                 dg1_dixx = 2.*iyy/(ixx+iyy)**2
                 dg1_diyy = -2.*ixx/(ixx+iyy)**2
