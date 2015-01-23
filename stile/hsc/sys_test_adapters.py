@@ -93,7 +93,11 @@ class BaseSysTestAdapter(object):
        can then apply to the data to generate masks. Called with no arguments, it will attempt to
        read `self.sys_test.objects_list` for the list of objects (and will raise an error if that
        does not exist).
-     - a function getMasks() that will apply the masks in self.mask_funcs to the data.
+     - a function getMasks() that will apply the masks in self.mask_funcs to the data.  It also
+       requires a corresponding self.objects_list with the same length as self.mask_funcs,
+       containing a list of the object types that are in self.mask_funcs (this is used to 
+       distinguish stars, where we want raw shapes, from galaxies, where we want PSF-corrected
+       shapes).
      - a function getRequiredColumns() that will return the list of required columns from
        self.sys_test.required_quantities if it exists, and raise an error otherwise.
     Of course, any of these can be overridden if desired.
@@ -277,6 +281,7 @@ class StatsPSFFluxAdapter(ShapeSysTestAdapter):
         self.sys_test = sys_tests.StatSysTest(field='flux.psf')
         self.name = self.sys_test.short_name+'flux.psf'
         self.mask_funcs = [self.MaskPSFFlux]
+        self.objects_list = ['galaxy']
 
     def MaskPSFFlux(self, data, config):
         base_mask = mask_dict['galaxy'](data, config)
