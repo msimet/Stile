@@ -228,14 +228,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @returns       The source catalog, masked to the rows which don't have any of our defined
                        flags set.
         """
+	masks = []
         if self.config.flags_keep_false:
-            masks = [catalog[flag]==False for flag in self.config.flags_keep_false]
-            mask = masks[0]
-            for new_mask in masks[1:]:
-                mask = numpy.logical_and(mask, new_mask)
-            catalog = catalog[mask]
+            masks += [catalog[flag]==False for flag in self.config.flags_keep_false]
         if self.config.flags_keep_true:
-            masks = [catalog[flag]==True for flag in self.config.flags_keep_true]
+            masks += [catalog[flag]==True for flag in self.config.flags_keep_true]
+	if masks:
             mask = masks[0]
             for new_mask in masks[1:]:
                 mask = numpy.logical_and(mask, new_mask)
