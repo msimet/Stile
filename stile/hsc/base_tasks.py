@@ -773,22 +773,22 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
-            shape_masks = []
-            for mask, cols_list in zip(temp_mask_tuple_list, sys_test_data.cols_list):
-                if any([key in cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
-                                                     'sigma', 'sigma_err']]):
-                    shape_masks.append([self._computeShapeMask(catalog, type=mask[0]) 
-                                        for catalog in catalogs])
-                else:
-                    shape_masks.append([True]*len(catalogs))
-            # Now, temp_mask_tuple_list is ordered such that there is one list per catalog, and the
-            # list for each catalog iterates through the sys tests.  But shape_mask is ordered such
-            # that there is one list per sys test, and the list for each sys test iterates through
-            # the catalogs!  That's actually the form we want.  So this next line A) combines the
-            # new shape masks with the old flag masks, and B) switches the nesting of the mask list
-            # to be the ordering we expect.
-            sys_test_data.mask_tuple_list = [[(mask_type, numpy.logical_and(mask[i], shape_mask))
-                    for (mask_type, mask), shape_mask in zip(temp_mask_tuple_list, shape_masks[i])]
+            if any([key in sys_test_data.cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
+                                                 'sigma', 'sigma_err']]):
+                shape_masks = [[self._computeShapeMask(catalog, type=mask[0]) 
+                                        for mask in mask_tuple_list]
+					for catalog, mask_tuple_list in zip(catalogs, temp_mask_tuple_list)]
+            else:
+                shape_masks = [[[True]*len(catalog) for mask in mask_tuple_list]
+					for catalog, mask_tuple_list in zip(catalogs, temp_mask_tuple_list)]
+            # Now, temp_mask_tuple_list and shape_mask is ordered such that there is one list per catalog, 
+	    # and the list for each catalog iterates through the sys tests.  But we actually want one list per 
+	    # sys test, and the list for each sys test to iterate through the catalogs!  So this next line A) 
+	    # combines the new shape masks with the old flag masks, and B) switches the nesting of the mask 
+	    # list to be the ordering we expect.
+            sys_test_data.mask_tuple_list = [[(mask_tuple_list[i][0], 
+	                                       numpy.logical_and(mask_tuple_list[i][1], shape_mask_list[i]))
+                    for mask_tuple_list, shape_mask_list in zip(temp_mask_tuple_list, shape_masks)]
                     for i in range(len(temp_mask_tuple_list[0]))]
             for (mask_tuple_list, cols) in zip(sys_test_data.mask_tuple_list, 
                                                sys_test_data.cols_list):
@@ -882,6 +882,11 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.0005', 'max_sep': '0.02',
+                                 'sep_units': 'degrees', 'nbins': '20'})
     flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
