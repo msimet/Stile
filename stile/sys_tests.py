@@ -150,9 +150,9 @@ def CorrelationFunctionSysTest(type=None):
     elif type=='GalaxyDensityCorrelation':
         return GalaxyDensityCorrelationSysTest()
     elif type=='StarDensityCorrelation':
-        return StarDensityCorrelation()
+        return StarDensityCorrelationSysTest()
     else:
-        raise ArgumentError('Unknown correlation function type %s given to type kwarg'%type)
+        raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
     
                           
 class BaseCorrelationFunctionSysTest(SysTest):
@@ -819,7 +819,7 @@ def WhiskerPlotSysTest(type=None):
     elif type is None:
         return BaseWhiskerPlotSysTest()
     else:
-        raise ArgumentError('Unknown whisker plot type %s given to type kwarg'%type)
+        raise ValueError('Unknown whisker plot type %s given to type kwarg'%type)
         
 class BaseWhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
@@ -993,7 +993,7 @@ def ScatterPlotSysTest(type=None):
     elif type is None:
         return BaseScatterPlotSysTest()
     else:
-        raise ArgumentError('Unknown scatter plot type %s given to type kwarg'%type)
+        raise ValueError('Unknown scatter plot type %s given to type kwarg'%type)
 
 class BaseScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
