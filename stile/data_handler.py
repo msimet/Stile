@@ -177,12 +177,16 @@ class ConfigDataHandler(DataHandler):
         return_val = self._formatFileList(return_list)
         return return_val, n
 
-    def _recurseDict(self,files,**kwargs):
+    def _recurseDict(self,files, require_format_args=True, **kwargs):
         """
         Recurse through a dictionary of dictionaries (of dictionaries...) contained in the first 
         arg, called here "files" although it can be any kind of object.  The kwargs are keys from
         a higher level of the dict which should be included in all lower-level items unless 
         overridden by the lower levels explicitly.  Return a list of dicts.
+        
+        Set require_format_args to False if the argument "files" doesn't need to have a complete 
+        list of all format keys for each element, eg if this is being used to define tests instead
+        of files.
         """
         format_keys = ['epoch','extent','data_format','object_type']
 
@@ -194,7 +198,8 @@ class ConfigDataHandler(DataHandler):
                 for file in files:
                     file['group'] = file.get('group', default=False)
                 return files
-            elif all([format_key in kwargs for format_key in format_keys]):
+            elif (all([format_key in kwargs for format_key in format_keys]) or 
+                  require_format_args is False):
                 if kwargs.get('epoch')=='multiepoch':
                     # Multiepoch files come in a set, so we can't turn them into single items the
                     # way we do with coadds & single epoch files.
@@ -279,7 +284,8 @@ class ConfigDataHandler(DataHandler):
         # If there are keys left, it might be a single dict describing one file; check for that.
         if files:
             if any([format_key in files for format_key in format_keys]) and 'name' in files:
-                if all([format_key in files or format_key in kwargs for format_key in format_keys]):
+                if (all([format_key in files or format_key in kwargs for format_key in format_keys])
+                    or require_format_args==False):
                     pass_kwargs.update(files)
                     return_list+=[pass_kwargs]
                 else:
