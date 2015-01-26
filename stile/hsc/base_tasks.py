@@ -773,9 +773,9 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
-            if any([key in sys_test_data.cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
-                                                 'sigma', 'sigma_err']]):
-                shape_masks = [[self._computeShapeMask(catalog, type=mask[0]) 
+            if any([key in c for cols_list in sys_test_data.cols_list for c in cols_list 
+	                     for key in ['g1', 'g2', 'sigma']]):
+                shape_masks = [[self._computeShapeMask(catalog, mask_type=mask[0]) 
                                         for mask in mask_tuple_list]
 					for catalog, mask_tuple_list in zip(catalogs, temp_mask_tuple_list)]
             else:
