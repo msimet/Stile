@@ -82,6 +82,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     flags_keep_true = []
     # Generate a list of flag columns to be used in the ._computeShapeMask() method for objects
     # where we have shape information
+    do_hsm = lsst.pex.config.Field(dtype=bool, default=False, doc="Use HSM shapes for galaxies?")
     shape_flags = lsst.pex.config.ListField(dtype=str,
         doc="Flags that indicate failures for SDSS-type shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
@@ -396,7 +397,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
         masks = list()
-        if 'galaxy' in mask_type:
+        if 'galaxy' in mask_type and self.config.do_hsm:
             for flag in self.config.shape_flags_hsm:
                 key = data.schema.find(flag).key
                 masks.append(numpy.array([src.get(key)==False for src in data]))
@@ -437,8 +438,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                 for src in data]
         if do_shape or do_err:
-            if 'galaxy' in mask_type:  # For any galaxy type, use shape.hsm
-                key = data.schema.find("shape.hsm.regauss.moments").key
+            if 'galaxy' in mask_type and self.config.do_hsm:  # For any galaxy type, use shape.hsm 
+                key = data.schema.find("shape.hsm.regauss.moments").key  #if available
             else:
                 key = data.schema.find("shape.sdss").key
             moments = [src.get(key) for src in data]
@@ -449,7 +450,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             ixy = numpy.array([mom.getIxy() for mom in moments])
             iyy = numpy.array([mom.getIyy() for mom in moments])
         if do_err:
-            if 'galaxy' in mask_type:
+            if 'galaxy' in mask_type and self.config.do_hsm:
                 key = data.schema.find('shape.hsm.regauss.err').key
                 errs = numpy.array([src.get(key) for src in data])
                 sigma_errs = numpy.array(errs.shape)
@@ -493,7 +494,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             g2 = None
             sigma = None
         if do_err:
-            if 'galaxy' in mask_type:
+            if 'galaxy' in mask_type and self.config.do_hsm:
                 g1_err = errs
                 g2_err = errs
                 sigma_err = sigma_errs
@@ -882,6 +883,7 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
@@ -951,6 +953,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
