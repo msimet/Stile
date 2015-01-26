@@ -72,16 +72,19 @@ class DataHandler:
             return os.path.join(self.output_path, sys_test_string+extension)
 
 class ConfigDataHandler(DataHandler):        
-    def __init__(self,stile_args):
+    def __init__(self, stile_args):
         if 'config_file' in stile_args:
             config = self.loadConfig('config_file')
             config.update(stile_args)
             stile_args = config
         self.data_files = self.parseFiles(stile_args)
         self.stile_args = stile_args
-        pass
-
+        
     def loadConfig(self,files):
+        """
+        Read in a config file or a list of config files.  If a list, condense into one config dict,
+        with later config files taking precedence over earlier config files.
+        """
         try:
             import yaml as config_reader
             has_yaml=True
@@ -109,8 +112,8 @@ class ConfigDataHandler(DataHandler):
         Process the arguments from the config file/command line that tell Stile which data files
         to use and how to use them.
         """
-        # Get the 'group' and 'wildcard' keys, which indicate whether to try to match star & galaxy
-        # etc files or to expand wildcards in filenames
+        # Get the 'group' and 'wildcard' keys at the file level, which indicate whether to try to 
+        # match star & galaxy etc files or to expand wildcards in filenames.
         group = stile_utils.PopAndCheckFormat(stile_args,'group',bool,default=True)
         wildcard = stile_utils.PopAndCheckFormat(stile_args,'wildcard',bool,default=False)
         keys = sorted(stile_args.keys())
@@ -155,6 +158,8 @@ class ConfigDataHandler(DataHandler):
                         'Got %s of type %s instead.'%(file,type(file)))
                 # We don't group lists unless specifically instructed, so set that keyword
                 file['group'] = file.get('group',False) 
+        # Now run through the list of dicts that we've created, check all the formats are right,
+        # and expand any wildcards.
         for item in files:
             # Check for proper formatting and all relevant keywords, plus expand wildcards if 
             # requested
@@ -167,22 +172,30 @@ class ConfigDataHandler(DataHandler):
                 raise ValueError('Got file item %s missing one of the required format keywords %s'%
                                     (item,format_keys))
             item['name'] = self._expandWildcard(item)
-        # Clean up formatting
+        # Clean up formatting and group these files, if applicable
         return_list, n = self._group(files,start_n)
         return_val = self._formatFileList(return_list)
         return return_val, n
 
     def _recurseDict(self,files,**kwargs):
+        """
+        Recurse through a dictionary of dictionaries (of dictionaries...) contained in the first 
+        arg, called here "files" although it can be any kind of object.  The kwargs are keys from
+        a higher level of the dict which should be included in all lower-level items unless 
+        overridden by the lower levels explicitly.  Return a list of dicts.
+        """
         format_keys = ['epoch','extent','data_format','object_type']
 
         # First things first: if this is a list, we've recursed through all the levels of the dict.
         # The kwargs contain the format keys from all the superior levels, so we'll update with
         # the things contained in this list and return a list of dicts that isn't nested any more.
         if isinstance(files,list):
-            if all([format_key in kwargs for format_key in format_keys]):
-                if not kwargs: # This means it's a top-level list of dicts and shouldn't be grouped
-                    pass_kwargs = {'group': False}
-                elif kwargs.get('epoch')=='multiepoch':
+            if not kwargs: # This means it's a top-level list of dicts and shouldn't be grouped
+                for file in files:
+                    file['group'] = file.get('group', default=False)
+                return files
+            elif all([format_key in kwargs for format_key in format_keys]):
+                if kwargs.get('epoch')=='multiepoch':
                     # Multiepoch files come in a set, so we can't turn them into single items the
                     # way we do with coadds & single epoch files.
                     if isinstance(files,dict):
@@ -217,7 +230,7 @@ class ConfigDataHandler(DataHandler):
                                           files+'. Should be an iterable, or an iterable of '+
                                          'iterables.')
                 else:
-                    # This one's easier, just recurse if the file list is iterable or else return
+                    # This one's easier, just loop through if the file list is iterable or else return
                     # the item.
                     return_list = []
                     for file in files:
@@ -231,11 +244,14 @@ class ConfigDataHandler(DataHandler):
             else:
                 raise ValueError('File description does not include all format keywords: %s, %s'%(files,kwargs))
             
-        # We didn't hit the previous "if" statement, so this is a dict.  Check for the non-format-
-        # related keywords and add them...
+        # We didn't hit the previous "if" statement, so this is a dict.  
         return_list = []
-        
         pass_kwargs = copy.deepcopy(kwargs)
+
+        # First check for the variables that control how we interpret the items in a given format.
+        # We can't just pass_kwargs[key] = PopAndCheckFormat because we want to distinguish cases 
+        # where we are explicitly given False (which can override higher-level Trues) and cases
+        # where we would input False by default (which can't override).
         if 'group' in files:
             pass_kwargs['group'] = stile_utils.PopAndCheckFormat(files,'group',bool)
         if 'wildcard' in files:
@@ -249,23 +265,23 @@ class ConfigDataHandler(DataHandler):
         
         # Now, if there are format keywords, recurse through them, removing the keys as we go.
         keys = files.keys()
-        for name, default in zip(format_keys,
+        for format_name, default_vals in zip(format_keys,
                                  [stile_utils.epochs,stile_utils.extents,
                                   stile_utils.data_formats,stile_utils.object_types]):
-            if any([key in default for key in keys]):
-                if key in kwargs:
+            if any([key in default_vals for key in keys]):  # any() so users have the ability to
+                if format_name in kwargs:                   # arbitrarily define eg extents 
                     raise ValueError("Duplicate definition of %s: already have %s, "
-                                     "requesting %s"%(name,current_val,keys))
+                                     "requesting %s"%(format_name,kwargs[format_name],keys))
                 for key in keys:
                     new_files = files.pop(key)
-                    pass_kwargs[name] = key
+                    pass_kwargs[format_name] = key
                     return_list += self._recurseDict(new_files,**pass_kwargs)
         # If there are keys left, it might be a single dict describing one file; check for that.
         if files:
             if any([format_key in files for format_key in format_keys]) and 'name' in files:
                 if all([format_key in files or format_key in kwargs for format_key in format_keys]):
                     pass_kwargs.update(files)
-                    return_list+=[files]
+                    return_list+=[pass_kwargs]
                 else:
                     raise ValueError('File description does not include all format keywords: %s'%files)
             else:
@@ -273,14 +289,17 @@ class ConfigDataHandler(DataHandler):
         return return_list
         
     def _expandWildcard(self,item):
+        #  Expand wildcards in a file list
         if isinstance(item,list):
             return_list = [self._expandWildcardHelper(i) for i in item]
         else:
-            return_list = self._expandWildcardHelper(item)
+            return_list = [self._expandWildcardHelper(item)]
         return [r for r in return_list if r] # filter empty entries
     
     def _expandWildcardHelper(self,item,wildcard=False,is_multiepoch=False):
+        # Expand wildcards for an individual file item.
         if isinstance(item,dict):
+            # If it's a dict, pull out the "name" attribute, and check if we want to do wildcarding.
             names = item['name']
             wildcard = item.pop('wildcard',wildcard)
             if 'epoch' in item:
@@ -288,6 +307,7 @@ class ConfigDataHandler(DataHandler):
         else:
             names = item
         if not wildcard:
+            # Easy: just return what we have in a user-friendly format.
             if is_multiepoch:
                 if isinstance(names,list):
                     return names
@@ -297,6 +317,8 @@ class ConfigDataHandler(DataHandler):
                 return stile_utils.flatten(names)
         else:
             if is_multiepoch:
+                # We have to be a bit careful about expanding wildcards in the multiepoch case,
+                # since we need to keep sets of files together.
                 if not hasattr(names,'__iter__'):
                     return sorted(glob.glob(names))
                 elif any([hasattr(n,'__iter__') for n in names]):
@@ -307,10 +329,16 @@ class ConfigDataHandler(DataHandler):
                 return stile_utils.flatten([self._expandWildcardHelper(n,wildcard,is_multiepoch) for n in names])
             else:
                 return glob.glob(names)
-                    
-                
         
     def _group(self,list,n):
+        """
+        For a given list of dicts `list`, build up a list of all the files with the same format but
+        different object types.  If the length of the file list for each object type with a given
+        format is the same as the file list for the other object types with that format, and the
+        `group` keyword is not given or is True, then group those together as files that should be
+        analyzed together when we need multiple object types.  Return a list of files with the new
+        group kwargs, plus a number "n" of groups which have been made.
+        """
         format_dict = stile_utils.EmptyFormatDict(type=dict)
         return_list = []
         for l in list:
@@ -319,6 +347,8 @@ class ConfigDataHandler(DataHandler):
                     raise TypeError('Outputs from _parseFileHelper should always be lists of dicts.  This is a bug.')
                 if not 'group' in l or l['group'] is True:
                     format_obj = stile_utils.Format(epoch=l['epoch'],extent=l['extent'],data_format=l['data_format'])
+                    if not format_obj in format_dict: # In case of user-defined formats
+                        format_dict[format_obj.str] = {}
                     if not l['object_type'] in format_dict[format_obj.str]:
                         format_dict[format_obj.str][l['object_type']] = []
                     this_dict = format_dict[format_obj.str][l['object_type']]
@@ -335,6 +365,8 @@ class ConfigDataHandler(DataHandler):
                     return_list.append(l)
         for key in format_dict:
             if format_dict[key]:
+                # Check if there are multiple object_types for this format and, if so, if the file 
+                # lists are the same length
                 len_files_list = [len(format_dict[key][object_type]) for object_type in format_dict[key]]
                 if len(len_files_list)>1 and len(set(len_files_list))==1:
                     for object_type in format_dict[key]:
@@ -348,6 +380,17 @@ class ConfigDataHandler(DataHandler):
         return return_list, n
     
     def _formatFileList(self,list):
+        """
+        Turn a list of dicts back into a dict whose keys are the string versions of the format_obj 
+        objects corresponding to the formats in each item of the original list and whose values are
+        themselves dicts, with keys being the object types and values being a list of dicts
+        containing all the other information about each file.  E.g.,
+        {'multiepoch-CCD-catalog': {
+            'galaxy': [file1_dict, file2_dict, ...],
+            'star': [file3_dict, file4_dict, ...]
+            }
+        }
+        """
         return_dict = {}
         for item in list:
             format_obj = stile_utils.Format(epoch=item.pop('epoch'),extent=item.pop('extent'),data_format=item.pop('data_format'))
@@ -357,6 +400,7 @@ class ConfigDataHandler(DataHandler):
             if format_obj.epoch=="multiepoch":
                 return_dict[format_obj.str][object_type].append(item)
             else:
+                # If there name argument is a list of names, then turn it into one dict per name.
                 names = stile_utils.flatten(item.pop('name'))
                 for name in names:
                     new_dict = copy.deepcopy(item)
@@ -368,6 +412,10 @@ class ConfigDataHandler(DataHandler):
         return return_dict
     
     def _fixGroupings(self,list_of_dicts):
+        """
+        Take a list of dicts as output by self._formatFileList() and merge them into one dict.
+        Return that dict and a dict describing the groups (as output by self._getGroups()).
+        """
         list_of_dicts = stile_utils.flatten(list_of_dicts)
         files = list_of_dicts.pop(0)
         for dict in list_of_dicts:
@@ -381,8 +429,12 @@ class ConfigDataHandler(DataHandler):
                 del_list = []
                 for i,item1 in enumerate(files[key][obj_type]):
                     if 'group' in item1 and isinstance(item1['group'],bool):
+                        # If "group" is true but no group has been assigned, delete the 'group' key
                         del item1['group']
                     for j,item2 in enumerate(files[key][obj_type][i+1:]):
+                        # Now cycle through the file list.  If there are two items which are the same except for the 'group' key,
+                        # make the 'group' key of the first item a list containing all the group IDs from both, then mark the other 
+                        # instance of the same item for deletion (but don't delete it yet since we're in the middle of a loop).
                         if 'group' in item2 and isinstance(item2['group'],bool):
                             del item2['group']
                         if not (j+i+1 in del_list) and (item1.keys()==item2.keys() or 
@@ -397,15 +449,40 @@ class ConfigDataHandler(DataHandler):
         return files, self._getGroups(files)
         
     def _merge(self,dict1,dict2):
+        """
+        Merge two dicts into one, concatenating rather than replacing any keys that are in both 
+        dicts.
+        """
         for key in dict1:
             if key in dict2:
-                dict1[key] += dict2[key]
+                if isinstance(dict1[key], list):
+                    if isinstance(dict2[key], list):
+                        dict1[key] += dict2[key]
+                    else:
+                        dict1[key] += [dict2[key]]
+                else:
+                    if isinstance(dict2[key], list):
+                        dict1[key] = [dict1[key]] + dict2[key]
+                    else:
+                        dict1[key] = [dict1[key], dict2[key]]
         for key in dict2:
             if key not in dict1:
                 dict1[key] = dict2[key]
         return dict1
                 
     def _getGroups(self,file_dict):
+        """
+        Make a dict corresponding to file_dict (an output of self._fixGroupings() above) with the
+        following structure:
+        {group_name: 
+            {format_key:
+                {object_type_1: index into the corresponding list in file_dict,
+                 object_type_2: index into the corresponding list in file_dict, ...
+                }
+            }
+        }
+                
+        """
         groups = {}
         for key in file_dict.keys():
             groups[key] = {}
@@ -427,6 +504,7 @@ class ConfigDataHandler(DataHandler):
                                 raise RuntimeError("Multiple files with same object type indicated for group %s: %s, %s"%(
                                     group_name, reverse_groups[group_name][key][obj_type], file_dict[key][obj_type][i]))
                             reverse_groups[group_name][key][obj_type] = i
+        # Now eliminate any duplicate groups
         del_list = []
         keys = reverse_groups.keys()
         for i,group in enumerate(keys):
@@ -440,6 +518,9 @@ class ConfigDataHandler(DataHandler):
         return reverse_groups
 
     def _removeGroup(self,file_dict,group):
+        """
+        Remove a group name from every file descriptor it's part of.
+        """
         for key in file_dict:
             for obj_type in file_dict[key]:
                 for file in file_dict[key][obj_type]:
@@ -484,6 +565,11 @@ class ConfigDataHandler(DataHandler):
 
         
     def queryFile(self,file_name):
+        """
+        Return a description of every place the named file occurs in the dict of file descriptors.
+        Useful to figure out where a file is going if you're having trouble telling how the 
+        parser is understanding your config file.
+        """
         return_list = []
         for format in self.files:
             for object_type in self.files[format]:
