@@ -60,6 +60,7 @@ class TestFileIO(unittest.TestCase):
         self.fits_float_image = numpy.array([[1.0,2.1],[3.4,1.6]])
 
     def test_ReadFITSImage(self):
+        """Test the ability to read in a FITS image."""
         if stile.file_io.has_fits:
             # Test that it read in the contents correctly, basically
             numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_int.fits'),
@@ -71,6 +72,7 @@ class TestFileIO(unittest.TestCase):
             self.assertRaises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
                                             
     def test_ReadFITSTable(self):
+        """Test the ability to read in a FITS table."""
         if stile.file_io.has_fits:
             # First, test that it's reading in the files correctly.  (The helper.FormatSame 
             # thing is to deal with the fact that assert_equal [and assert_array_equal] don't think 
@@ -92,11 +94,12 @@ class TestFileIO(unittest.TestCase):
             self.assertRaises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
 
     def test_ReadASCIITable(self):
+        """Test the ability to read in an ASCII table."""
         # ReadASCIITable is a wrapper for numpy.genfromtxt() that turns things into formatted
         # arrays if necessary, so we don't really need to test much of the functionality--just make 
         # sure that both natively formatted arrays (table_with_string) and natively raw arrays 
-        # (corr2_output) are both returned as formatted arrays.
-        results = stile.ReadASCIITable('test_data/corr2_output.dat',comments='#')
+        # (treecorr_output) are both returned as formatted arrays.
+        results = stile.ReadASCIITable('test_data/TreeCorr_output.dat',comments='#')
         numpy.testing.assert_equal(results,self.table1)
         results = stile.ReadASCIITable('test_data/table_with_string.dat')
         numpy.testing.assert_equal(results,self.table2_withstring)
@@ -104,6 +107,7 @@ class TestFileIO(unittest.TestCase):
         numpy.testing.assert_equal(results,self.table2_withstring)
         
     def test_WriteASCIITable(self):
+        """Test the ability to write an ASCII table."""
         # Must be done after test_read_ASCII_table() since it uses the read_ASCII_table function!
         handle, filename = tempfile.mkstemp()
         stile.file_io.WriteASCIITable(filename,self.table1)
@@ -134,6 +138,7 @@ class TestFileIO(unittest.TestCase):
             os.close(handle)
 
     def test_WriteFITSTable(self):
+        """Test the ability to write a FITS table."""
         if stile.file_io.has_fits:
             # First check that WriteFITSTable writes a FITS table of the right sort...
             handle, filename = tempfile.mkstemp()

@@ -84,6 +84,7 @@ class TestStats(unittest.TestCase):
         self.assertRaises(RuntimeError,foo,x,ignore_bad=True)
 
     def test_statsystest_catalogs(self):
+        """Test the StatSysTest functionality working directly from catalogs."""
         test_len = 10
 
         schema = [("item1", float), ("item2", float)]

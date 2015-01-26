@@ -37,13 +37,11 @@ class DummyDataHandler(stile.DataHandler):
         if not epoch=='single':
             raise ValueError('Only single-epoch data provided by DummyDataHandler')
         if id==self.lens_file_name or id==self.source_file_name:
-            if not bin_list:
-                return (id,self.fields)
-            else:
-                data = stile.FormatArray(self.read_method(id),fields=self.fields)
+            data = stile.FormatArray(self.read_method(id),fields=self.fields)
+            if bin_list:
                 for bin in bin_list:
                     data = bin(data)
-                return data
+            return data
         else:
             raise ValueError('Unknown data ID')
     
