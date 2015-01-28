@@ -543,8 +543,27 @@ class ConfigDataHandler(DataHandler):
         Add the given (key,value) pair to all the lowest-level dicts in file_list if the key is not
         already present.  To be used for global-level keys AFTER all the individual file descriptors
         have been read in (ie this won't override anything that's already in the file dicts).
+        
+        The "value" can be a dict with the desired argument in "name" and specific directions for
+        which formats/object types to apply to in the other key/value pairs.  For example, one could
+        pass:
+            key='file_reader'
+            value={'name': 'ASCII', 'extent': 'CCD'}
+        and then ONLY the lowest-level dicts whose extent is 'CCD' would be changed (again, only if
+        there is no existing 'file_reader' key: this method never overrides already-existing keys).
+        
+        @param key              The key to be added
+        @param value            The value of that key (plus optional limits, see above)
+        @param file_dicts       A list of file_dicts in nested format
+        @param format_keys      Only change these format keys! (list of strings, default: [])
+        @param object_type_key  Only change this object type key! (string, default: None)
+        @returns                The original file_dicts, with added keys as requested.
+        
+        Note that the end user generally shouldn't pass format_keys or object_type_key arguments:
+        those kwargs are intended for use by this function itself in recursive calls.
         """
-        if not isinstance(value,dict) or value.keys()==['name']:
+        # If there are no remaining restrictions to process:
+        if not isinstance(value,dict) or value.keys()==['name']:  
             if isinstance(value,dict):
                 value = value.pop('name')
             for file_dict in file_dicts:
@@ -552,6 +571,7 @@ class ConfigDataHandler(DataHandler):
                     for object_type in file_dict[format]:
                         for file in file_dict[format][object_type]:
                             if not key in file or not file[key]:
+                                # If no restrictions are present, or if this file meets the restrictions:
                                 if (not format_keys or (format_keys and all([format_key in format for format_key in format_keys]))) and (not object_type_key or object_type==object_type_key):
                                     file[key] = value
         else:
@@ -572,8 +592,6 @@ class ConfigDataHandler(DataHandler):
                         new_format_keys = stile_utils.flatten([format_keys,value_key])
                         self.addKwarg(key,new_value,file_dicts,format_keys=new_format_keys,object_type_key=object_type_key)
         return file_dicts
-
->>>>>>> parent of de22660... Fix ConfigDataHandler.addKwarg method (#14)
 
         
     def queryFile(self,file_name):
