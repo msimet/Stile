@@ -594,6 +594,14 @@ class ConfigDataHandler(DataHandler):
         return file_dicts
 
         
+    def _checkAndCoerceFormat(self, epoch, extent, data_format): 
+        """check for proper formatting of the epoch/extent/data_format kwargs and turn them into a string so we can use them as dict keys"""
+        if not isinstance(epoch, stile_utils.Format) and (not hasattr(epoch,'__str__') or (extent and not hasattr(extent,'__str__')) or (data_format and not hasattr(data_format,'__str__'))):
+            raise ValueError('epoch (and extent and data_format) must be printable as strings; given %s %s %s'%(epoch,extent,data_format))
+        if extent or data_format:
+            epoch = stile_utils.Format(epoch=epoch, extent=extent, data_format=data_format).str
+        return epoch
+
     def queryFile(self,file_name):
         """
         Return a description of every place the named file occurs in the dict of file descriptors.
@@ -615,12 +623,97 @@ class ConfigDataHandler(DataHandler):
         return '\n'.join(return_list)
                 
     def listFileTypes(self):
-        return [['pair','single','pointing','table']]
-    def listData(self,pair_or_single,epoch,extent,data_format,random=False):
-        pass
-    def getData(self,id,pair_or_single,epoch,extent,data_format,
-                      random=False,bin_list=None,force=False):
-        pass
-    
-                
+        """
+        Return a list of format strings describing the epoch, extent, and data format of available files
+        """
+        return [format for format in self.data_files]
+
+    def listObjects(self, epoch, extent=None, data_format=None):    
+        """
+        Return a list of object types available for the given format.  The format can be given as a string "{epoch}-{extent}-{data format}" or as three arguments, epoch, extent, data_format.
+        """
+        epoch = self._checkAndCoerceFormat(epoch, extent, data_format)
+        if epoch in self.data_files:
+            return [obj for obj in self.data_files[epoch]]
+        else:
+            return []
+            
+    def listData(self, object_type, epoch, extent=None, data_format=None):
+        """
+        Return a list of data files for the given object_type (or object_types, see below) and data format.
+        
+        The object_type argument can be a single type, in which case all data files meeting the format and object_type criteria are returned in a list.  The object_type argument can also be a list/tuple of object types; in that case, if there are pairs (triplets, etc) of files which should be analyzed together given those types, the returned value will be a list of lists, where the innermost list is a set of files to be analyzed together (with the order of the list corresponding to the order of items in the object_type) and the overall list is the set of such sets of files.
+        
+        Note that "multiepoch" formats will include a LIST of files instead of a single file in all cases where a single file is described above (so e.g. a list of object types will retrieve a list of lists of lists instead of just a list of lists).
+        
+        The format can be given as a string "{epoch}-{extent}-{data format}" or as three arguments, epoch, extent, data_format.
+        """
+        epoch = self._checkAndCoerceFormat(epoch, extent, data_format)
+        if not hasattr(object_type,'__hash__') or (hasattr(object_type,'__iter__') and not all([hasattr(obj,'__hash__') for obj in object_type])):
+            raise ValueError('object_type argument must be able to be used as a dictionary key, or be an iterable all of whose elements can be used as dictionary keys: given %s'%object_type)
+        if not hasattr(object_type, '__iter__'):
+            if epoch in self.data_files and object in self.data_files[epoch]:
+                return [file for file in self.data_files[epoch][object_type]]
+            else:
+                return []
+        elif isinstance(object_type, list):
+            groups_list = []
+            for group in self.groups:
+                if epoch in self.groups[group] and all([obj in self.groups[group][epoch] for obj in object_type]):
+                    groups_list.append(group)
+            return [[self.groups[group][epoch][obj] for obj in object_type] for group in groups_list]
+            
+    def getData(self, data_id, object_type, epoch, extent=None, data_format=None, bin_list=None):
+        """
+        Return the data corresponding to 'data_id' for the given object_type and data format.
+        
+        The format can be given as a string "{epoch}-{extent}-{data format}" or as three arguments, epoch, extent, data_format.  For the ConfigDataHandler, the 'object_type', 'epoch' and 'extent' arguments are ignored; only the 'data_format' and 'data_id' kwargs (or the data format pulled from a format string) are considered.  The other arguments are kept for compatibility of call signatures.
+        
+        A list of Bin objects can be passed with the kwarg 'bin_list'.  These bins are "and"ed, not looped through!  This is not generally recommended for this ConfigDataHandler since data is not cached--it's better to bin the data at another stage, keeping the whole array in memory between binnings.  (Some of this caching is done by Python or your OS, but if you have many files it may not work.)  
+        """
+        epoch = self._checkAndCoerceFormat(epoch, extent, data_format)
+        if not data_format:
+            data_format = epoch.split('-')[-1]
+        data_format=data_format.lower()
+        if not hasattr(object_type,'__hash__') or (hasattr(object_type,'__iter__') and not all([hasattr(obj,'__hash__') for obj in object_type])):
+            raise ValueError('object_type argument must be able to be used as a dictionary key, or be an iterable all of whose elements can be used as dictionary keys: given %s'%object_type)
+            
+        if isinstance(data_id, str):
+            data_id = {'name': data_id}
+        if 'fields' in data_id:
+            fields = data_id['fields']
+        else:
+            fields=None
+        if 'file_reader' in data_id:
+            if d['file_reader']=='ASCII': 
+                data = stile.ReadASCIITable(data_id['name'], fields=fields)
+            elif d['file_reader']=='FITS':
+                if data_format=='catalog':
+                    data = stile.ReadFITSTable(data_id['name'], fields=fields)
+                elif data_format=='image':
+                    data = stile.ReadFITSImage(data_id['name'])
+                else:
+                    raise RuntimeError('Data format must be either "catalog" or "image", given %s'%data_format)
+        elif 'catalog' in format:
+            data = stile.ReadTable(data_id['name'], fields=fields)
+        elif 'image' in format:
+            data = stile.ReadImage(data_id['name'])
+        else:
+            raise RuntimeError('Data format must be either "catalog" or "image", given %s'%data_format)
+        if data_id['flag_field']:
+            flag = data_id['flag_field']
+            if isinstance(flag,str):
+                data = data[data[flag]==False]
+            elif isinstance(flag, list):
+                for f in flag:
+                    data = data[data[f]==False]
+            elif isinstance(flag,dict):
+                for key in flag:
+                    data = data[data[key]==flag[key]]
+            else:
+                raise ValueError('flag_field kwarg must be a string, list, or dict; given %s'%flag)
+        if bin_list:
+            for bin in bin_list:
+                data = bin(data)
+        return data
         
