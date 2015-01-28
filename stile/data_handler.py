@@ -299,7 +299,7 @@ class ConfigDataHandler(DataHandler):
         if isinstance(item,list):
             return_list = [self._expandWildcardHelper(i) for i in item]
         else:
-            return_list = [self._expandWildcardHelper(item)]
+            return_list = self._expandWildcardHelper(item)
         return [r for r in return_list if r] # filter empty entries
     
     def _expandWildcardHelper(self,item,wildcard=False,is_multiepoch=False):
@@ -353,7 +353,7 @@ class ConfigDataHandler(DataHandler):
                     raise TypeError('Outputs from _parseFileHelper should always be lists of dicts.  This is a bug.')
                 if not 'group' in l or l['group'] is True:
                     format_obj = stile_utils.Format(epoch=l['epoch'],extent=l['extent'],data_format=l['data_format'])
-                    if not format_obj in format_dict: # In case of user-defined formats
+                    if not format_obj.str in format_dict: # In case of user-defined formats
                         format_dict[format_obj.str] = {}
                     if not l['object_type'] in format_dict[format_obj.str]:
                         format_dict[format_obj.str][l['object_type']] = []
@@ -544,16 +544,12 @@ class ConfigDataHandler(DataHandler):
         already present.  To be used for global-level keys AFTER all the individual file descriptors
         have been read in (ie this won't override anything that's already in the file dicts).
         """
-        for file in file_list:
-            if isinstance(file,dict):
-                if key not in file:
-                    file[key] = value
-            elif hasattr(file, '__iter__'):
-                for f in file:
-                    if key not in f:
-                        f[key] = value
-            else:
-                raise ValueError('file_list should be a list of dicts or list of list of dicts')
+        for file_dict in file_list:
+            for format in file_dict:
+                for obj_type in file_dict[format]:
+                    for file in file_dict[format][obj_type]:
+                        if key not in file:
+                            file[key] = value
         return file_list
         
 
