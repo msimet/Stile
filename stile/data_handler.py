@@ -16,11 +16,10 @@ class DataHandler:
       - List some data given a set of requirements (DataHandler.listData()).  The requirements 
         generally follow the form:
          -- object_types: a list of strings such as "star", "PSF star", "galaxy" or "galaxy random" 
-              describing the objects that are needed for the tests.
-         -- epoch: whether this is a single/summary catalog, or a multiepoch time series. (Coadded 
-              catalogs with no per-epoch information count as a single/summary catalog!)
-         -- extent: "CCD", "field", "patch" or "tract".  This can be ignored if you don't mind 
-              running some extra inappropriate tests!  "CCD" should be a CCD-type dataset, "field" a 
+              describing the objects that are needed for the sys_tests.
+         -- epoch: whether this is a single/coadd (ie no time-series information) catalog, or a 
+              multiepoch time series. 
+         -- extent: "CCD", "field", "patch" or "tract".  "CCD" should be a CCD-type dataset, "field" a 
               single pointing/field-of-view, "patch" an intermediate-size area, and "tract" a large 
               area.  (These terms have specific meanings in the LSST pipeline, but are used for 
               convenience here.)
@@ -651,7 +650,7 @@ class ConfigDataHandler(DataHandler):
                 if item_key in item: # in case it was popped in a call earlier in this loop, or in a recursive call
                     if item_key=='extent' or item_key=='data_format' or item_key=='epoch':
                         new_value = item.pop(item_key)
-                        self.addKwarg(item, test_dict, format_keys=stile_utils.flatten([format_keys,new_value]))
+                        self.addItem(item, test_dict, format_keys=stile_utils.flatten([format_keys,new_value]))
         return test_dict
         
     def _checkAndCoerceFormat(self, epoch, extent, data_format): 
