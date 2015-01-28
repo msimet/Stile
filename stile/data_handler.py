@@ -78,6 +78,7 @@ class ConfigDataHandler(DataHandler):
             config.update(stile_args)
             stile_args = config
         self.parseFiles(stile_args)
+        self.parseTests(stile_args)
         self.stile_args = stile_args
         
     def loadConfig(self,files):
@@ -106,6 +107,32 @@ class ConfigDataHandler(DataHandler):
             for config_item in config_list[1:]:
                 config.update(config_item)
         return config
+    
+    def parseTests(self,stile_args):
+        """
+        Process the arguments from the config file/command line that tell Stile which tests to do.  
+        Needs to be done after parseFiles, since it uses the dictionary built up by parseFiles
+        as a base for the test dictionary.
+        """
+        self.tests = {}
+        for format in self.files: 
+            self.tests[format] = []
+        keys = sorted(stile_args.keys())
+        for key in keys:
+            # Pull out the test arguments and process them
+            if key[:4]=='test':
+                test_obj = stile_args.pop(key)
+                if isinstance(test_obj, dict) and not 'name' in test_obj:
+                    # This is a nested dict, so recurse it, then add to the test dict
+                    test_list = self._recurseDict(test_obj)
+                    for test in test_list:
+                        self.addItem(test, self.tests)
+                elif isinstance(test_obj, dict):
+                    # otherwise, add directly
+                    self.addItem(test_obj, self.tests)
+                else:
+                    raise ValueError('Test items in config file must be dicts')
+        return self.tests # Return for checking purposes, mainly
     
     def parseFiles(self,stile_args):
         """
@@ -562,6 +589,7 @@ class ConfigDataHandler(DataHandler):
         Note that the end user generally shouldn't pass format_keys or object_type_key arguments:
         those kwargs are intended for use by this function itself in recursive calls.
         """
+        # Note to coders: this is very similar to addItem below and any bugs found here might also appear there
         # If there are no remaining restrictions to process:
         if not isinstance(value,dict) or value.keys()==['name']:  
             if isinstance(value,dict):
@@ -593,6 +621,38 @@ class ConfigDataHandler(DataHandler):
                         self.addKwarg(key,new_value,file_dicts,format_keys=new_format_keys,object_type_key=object_type_key)
         return file_dicts
 
+    def addItem(self,item,test_dict,format_keys=[]):
+        """
+        Add the given item pair to all the lists of tests in test_dict.  
+        
+        The "item" can be a dict with specific directions for which formats to test in the key/value pairs.  For example, one could
+        pass:
+            item={'name': 'CorrelationFunction', 'type': 'GalaxyShear', 'extent': 'CCD'}
+        and then ONLY the lists of tests whose extent is 'CCD' would be changed.
+        
+        @param item             The item to be added
+        @param test_dict        A dict of tests to be done (in {format: list_of_tests} format)
+        @param format_keys      Only change these format keys! (list of strings, default: [])
+        @returns                The original test_dict, with added tests as requested.
+        
+        Note that the end user generally shouldn't pass the format_keys argument: that kwarg is 
+        intended for use by this function itself in recursive calls.
+        """
+        # Note to coders: this is very similar to addKwarg above and any bugs found here might also appear there
+        # If there are no remaining restrictions to process:
+        item_keys = item.keys()
+        if not ('extent' in item_keys or 'epoch' in item_keys or 'data_format' in item_keys):
+            for format in test_dict:
+                # If no restrictions are present, or if this file meets the restrictions:
+                if (not format_keys or (format_keys and all([format_key in format for format_key in format_keys]))):
+                    test_dict[format].append(item)
+        else:
+            for item_key in item_keys:
+                if item_key in item: # in case it was popped in a call earlier in this loop, or in a recursive call
+                    if item_key=='extent' or item_key=='data_format' or item_key=='epoch':
+                        new_value = item.pop(item_key)
+                        self.addKwarg(item, test_dict, format_keys=stile_utils.flatten([format_keys,new_value]))
+        return test_dict
         
     def _checkAndCoerceFormat(self, epoch, extent, data_format): 
         """check for proper formatting of the epoch/extent/data_format kwargs and turn them into a string so we can use them as dict keys"""
