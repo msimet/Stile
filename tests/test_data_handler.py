@@ -8,6 +8,15 @@ from stile import stile_utils
 import unittest
 import copy
 
+class Set(object):
+    def __init__(self, config, expected_files, format, object, not_found_format, not_found_object):
+        self.config = config
+        self.expected_files = expected_files
+        self.format = format
+        self.object = object
+        self.not_found_format = not_found_format
+        self.not_found_object = not_found_object
+
 class TestDataHandler(unittest.TestCase):
     def setUp(self):
         # An empty "files" keyword will make the DataHandler fail, so do this and don't bother checking the outputs till the end.
@@ -315,18 +324,6 @@ class TestDataHandler(unittest.TestCase):
                                            {'name': ['g3-0.dat','g3-1.dat']}]
                            } }
         self.expected_groups9 = {}
-#        expected_results = {stile_utils.Format(epoch='single',extent='CCD',data_format='catalog').str: {
-#                                'galaxy': [{'name': 'g1-0.dat', 'file_reader': 'ASCII'},
-#                                           {'name': 'g1-1.dat', 'file_reader': 'ASCII'},
-#                                           {'name': 'g2-0.dat'},
-#                                           {'name': 'g2-1.dat'},
-#                                           {'name': 'g3-0.dat'},
-#                                           {'name': 'g3-1.dat'}]},
-#                            stile_utils.Format(epoch='multiepoch',extent='CCD',data_format='catalog').str: {
-#                                'galaxy': [{'name': ['g1-0.dat','g1-1.dat'], 'file_reader': 'ASCII'},
-#                                           {'name': ['g2-0.dat','g2-1.dat']},
-#                                           {'name': ['g3-0.dat','g3-1.dat']}]} 
-#                           }
 
         # list0: list-form
         self.list0 = [
@@ -470,6 +467,48 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(results,expected_results)
         self.assertEqual(groups,expected_groups)
 
-        
+    def test_lists(self):
+        """
+        Test the ConfigDataHandler methods listFileTypes(), listObjects(), and listData(), which allow us to query the available data contained
+        within the ConfigDataHandler.
+        """
+        # Set up a list of tuples: first item is the string to be appended to error messages; second is a Set object (defined above).
+        # The Set object contains:
+        # - A ConfigDataHandler object
+        # - The expected self.files argument of the ConfigDataHandler
+        # - A format key expected to be found in self.files
+        # - An object key expected to be found in self.files[format]
+        # - A format key NOT expected to be found in self.files
+        # - An obejct key NOT expected to be found in self.files[format]
+        test_sets = []
+        test_sets.append(("(dict0)", Set(stile.ConfigDataHandler({'files': self.dict0}), self.expected_files0, 'single-CCD-catalog', 'galaxy', 'multiepoch-CCD-catalog', 'galaxy lens')))
+        test_sets.append(("(dict1)", Set(stile.ConfigDataHandler({'files': self.dict1}), self.expected_files1, 'single-CCD-catalog', 'star', 'single-field-catalog', 'star bright')))
+        test_sets.append(("(dict2)", Set(stile.ConfigDataHandler({'files': self.dict2}), self.expected_files2, 'single-CCD-catalog', 'galaxy', 'single-CCD-image', 'galaxy random')))
+        test_sets.append(("(dict3)", Set(stile.ConfigDataHandler({'files': self.dict3}), self.expected_files3, 'single-CCD-image', 'galaxy', 'single-field-image', 'galaxy random')))
+        test_sets.append(("(dict4 field)", Set(stile.ConfigDataHandler({'files': self.dict4}), self.expected_files4, 'single-field-catalog', 'star', 'multiepoch-CCD-catalog', 'galaxy random')))
+        test_sets.append(("(dict4 CCD)", Set(test_sets[-1][1].config, self.expected_files4, 'single-CCD-catalog', 'star', 'single-field-image', 'galaxy lens')))
+        test_sets.append(("(dict5)", Set(stile.ConfigDataHandler({'files': self.dict5}), self.expected_files5, 'single-CCD-image', 'galaxy', 'single-field-catalog', 'galaxy random')))
+        # 6,7,8 are basically duplicates of earlier tests, just with different groupings, already tested
+        test_sets.append(("(dict9 single)", Set(stile.ConfigDataHandler({'files': self.dict9}), self.expected_files9, 'single-CCD-catalog', 'galaxy', 'single-CCD-image', 'star')))
+        test_sets.append(("(dict9 multiepoch)", Set(test_sets[-1][1].config, self.expected_files9, 'multiepoch-CCD-catalog', 'galaxy', 'multiepoch-CCD-image', 'star')))
+        test_sets.append(("(list0)", Set(stile.ConfigDataHandler({'files': self.list0}), self.expected_files_list0, 'single-field-catalog', 'star', 'single-CCD-image', 'galaxy random')))
+
+        # Now, loop through those defined test sets, checking that we get the expected formats and objects, and NOT the formats and objects we
+        # don't expect
+        for name, test_set in test_sets:
+            results = test_set.config.listFileTypes()
+            self.assertEqual(set(results), set(test_set.expected_files.keys()), msg='Failed to retrieve proper formats with listFileTypes '+name)
+            results = test_set.config.listObjects(test_set.format)
+            self.assertEqual(set(results), set(test_set.expected_files[test_set.format].keys()), msg='Failed to retrieve proper lists of objects with listObjects '+name)
+            results = test_set.config.listData(test_set.object, test_set.format)
+            self.assertEqual(results, test_set.expected_files[test_set.format][test_set.object], msg='Failed to retrieve proper list of files with listData '+name)
+            results = test_set.config.listObjects(test_set.not_found_format)
+            self.assertEqual(results, [], msg='Found a non-empty set for incorrect format in listObjects '+name)
+            results = test_set.config.listData(test_set.object, test_set.not_found_format)
+            self.assertEqual(results, [], msg='Found a non-empty set for incorrect format in listData '+name)
+            results = test_set.config.listData(test_set.not_found_object, test_set.format)
+            self.assertEqual(results, [], msg='Found a non-empty set for incorrect object in listData '+name)
+
+            
 if __name__=='__main__':
     unittest.main()
