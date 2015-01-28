@@ -77,7 +77,7 @@ class ConfigDataHandler(DataHandler):
             config = self.loadConfig('config_file')
             config.update(stile_args)
             stile_args = config
-        self.data_files = self.parseFiles(stile_args)
+        self.parseFiles(stile_args)
         self.stile_args = stile_args
         
     def loadConfig(self,files):
@@ -626,15 +626,15 @@ class ConfigDataHandler(DataHandler):
         """
         Return a list of format strings describing the epoch, extent, and data format of available files
         """
-        return [format for format in self.data_files]
+        return [format for format in self.files]
 
     def listObjects(self, epoch, extent=None, data_format=None):    
         """
         Return a list of object types available for the given format.  The format can be given as a string "{epoch}-{extent}-{data format}" or as three arguments, epoch, extent, data_format.
         """
         epoch = self._checkAndCoerceFormat(epoch, extent, data_format)
-        if epoch in self.data_files:
-            return [obj for obj in self.data_files[epoch]]
+        if epoch in self.files:
+            return [obj for obj in self.files[epoch]]
         else:
             return []
             
@@ -652,8 +652,8 @@ class ConfigDataHandler(DataHandler):
         if not hasattr(object_type,'__hash__') or (hasattr(object_type,'__iter__') and not all([hasattr(obj,'__hash__') for obj in object_type])):
             raise ValueError('object_type argument must be able to be used as a dictionary key, or be an iterable all of whose elements can be used as dictionary keys: given %s'%object_type)
         if not hasattr(object_type, '__iter__'):
-            if epoch in self.data_files and object in self.data_files[epoch]:
-                return [file for file in self.data_files[epoch][object_type]]
+            if epoch in self.files and object_type in self.files[epoch]:
+                return [file for file in self.files[epoch][object_type]]
             else:
                 return []
         elif isinstance(object_type, list):
