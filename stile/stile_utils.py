@@ -213,7 +213,7 @@ def PopAndCheckFormat(dict,key,type,default=None):
     it's the right format, and raise a sensible error if it isn't.
     @param dict     A dict
     @param key      A key which may or may not be in the dict
-    @param type     What type you expect the result to be
+    @param type     What type you expect the result to be (can be a list of types)
     @param default  What default value to return if the key isn't in the dict (default: None)
     @returns        The value of the key if it was in the dict, else default
     """
