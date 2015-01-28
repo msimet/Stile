@@ -8,7 +8,7 @@ from stile import stile_utils
 import unittest
 import copy
 
-class TestBinning(unittest.TestCase):
+class TestDataHandler(unittest.TestCase):
     def setUp(self):
         # An empty "files" keyword will make the DataHandler fail, so do this and don't bother checking the outputs till the end.
         self.testConfigDataHandler = stile.ConfigDataHandler({'files': {'extent': 'CCD', 'epoch': 'single', 'data_format': 'catalog',
@@ -420,7 +420,6 @@ class TestBinning(unittest.TestCase):
         self.assertEqual(groups,expected_groups)
         # Finally, check that queryFile still works with multiple same file names in the same format & object type
         results = self.testConfigDataHandler.queryFile('g1.dat')
-        print results
         self.assertEqual(results,'1 - format: single-CCD-catalog, object type: galaxy, group: _stile_group_0\n2 - format: single-CCD-catalog, object type: galaxy, file_reader: ASCII')
         # And check that it handles extra keys correctly as well
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),'file_6':copy.deepcopy(self.dict6),'file_reader':'ASCII'})
