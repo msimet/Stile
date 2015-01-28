@@ -256,3 +256,14 @@ def ReadTable(file_name, **kwargs):
         return ReadFITSTable(file_name, **kwargs)
     else:
         return ReadASCIITable(file_name, **kwargs)
+
+def ReadImage(file_name, **kwargs):
+    """
+    If a FITS handler is defined, assume this is a FITS image and read it.  All other cases will
+    currently return a NotImplementedError.    
+    """
+    try:
+        return ReadFITSImage(file_name, **kwargs)
+    except:
+        raise NotImplementedError('Cannot read non-FITS images, or no FITS handler defined, '+
+                                  'for filename %s'%file_name)
