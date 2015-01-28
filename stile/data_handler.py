@@ -12,11 +12,9 @@ class DataHandler:
     A class which contains information about the data set Stile is to be run on.  This is used for
     the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).  
     
-    The class needs to be able to do two things:
-      - List some data given a set of requirements (DataHandler.listData()).  The requirements 
-        generally follow the form:
-         -- object_types: a list of strings such as "star", "PSF star", "galaxy" or "galaxy random" 
-              describing the objects that are needed for the sys_tests.
+    The class needs to be able to do four things:
+     1. List all the formats for which it has data (DataHandler.listFileTypes()).  A "format" 
+        consists of an epoch, an extent, and a data format as follows:
          -- epoch: whether this is a single/coadd (ie no time-series information) catalog, or a 
               multiepoch time series. 
          -- extent: "CCD", "field", "patch" or "tract".  "CCD" should be a CCD-type dataset, "field" a 
@@ -25,7 +23,24 @@ class DataHandler:
               convenience here.)
          -- data_format: "image" or "catalog."  Right now no image-level tests are implemented but we
               request this kwarg for future development.
-      - Take each element of the data list from DataHandler.listData() and retrieve it for use 
+        These can be given as three kwargs, or a single hyphen-spliced string.  That is, the call 
+        signature can be:
+            DataHandler.listFileTypes('single', 'field', 'catalog')
+            DataHandler.listFileTypes('single-field-catalog')
+        If you don't want to keep track of the order, you can create a stile.Format object in your
+        calling function:
+            stile.Format(epoch='single', extent='field', data_format='catalog')
+        and use that object as the argument for all these functions instead.
+     2. List all the object types for a given format (DataHandler.listObjects()).  Formats are as
+        defined above; the object type is a string, and should at least be able to handle all the
+        object types given in stile_utils.object_types.
+     3. List some data given a format and an object type or object types(DataHandler.listData()).
+        The format and object_type are as defined above, except that here an object type may be
+        a list of strings rather than a single string; if a list, then the returned data should 
+        consist of pairs/triplets/etc of data files that should be analyzed together.  For example,
+        if the object_types argument is ['star', 'galaxy'], the returned list of data might consist
+        of pairs of star and galaxy catalogs from the same CCD.
+      - Take an element of the data list from DataHandler.listData() and retrieve it for use 
         (DataHandler.getData()), optionally with bins defined.  (Bins can also be defined on a test-
         by-test basis, depending on which format makes the most sense for your data setup.)
 
@@ -77,7 +92,7 @@ class ConfigDataHandler(DataHandler):
             config.update(stile_args)
             stile_args = config
         self.parseFiles(stile_args)
-        self.parseTests(stile_args)
+        self.parseSysTests(stile_args)
         self.stile_args = stile_args
         
     def loadConfig(self,files):
@@ -107,31 +122,31 @@ class ConfigDataHandler(DataHandler):
                 config.update(config_item)
         return config
     
-    def parseTests(self,stile_args):
+    def parseSysTests(self,stile_args):
         """
         Process the arguments from the config file/command line that tell Stile which tests to do.  
         Needs to be done after parseFiles, since it uses the dictionary built up by parseFiles
         as a base for the test dictionary.
         """
-        self.tests = {}
+        self.sys_tests = {}
         for format in self.files: 
-            self.tests[format] = []
+            self.sys_tests[format] = []
         keys = sorted(stile_args.keys())
         for key in keys:
-            # Pull out the test arguments and process them
-            if key[:4]=='test':
-                test_obj = stile_args.pop(key)
-                if isinstance(test_obj, dict) and not 'name' in test_obj:
-                    # This is a nested dict, so recurse it, then add to the test dict
-                    test_list = self._recurseDict(test_obj)
-                    for test in test_list:
-                        self.addItem(test, self.tests)
-                elif isinstance(test_obj, dict):
+            # Pull out the sys_test arguments and process them
+            if key[:8]=='sys_test':
+                sys_test_obj = stile_args.pop(key)
+                if isinstance(sys_test_obj, dict) and not 'name' in sys_test_obj:
+                    # This is a nested dict, so recurse it, then add to the sys_test dict
+                    sys_test_list = self._recurseDict(sys_test_obj)
+                    for sys_test in sys_test_list:
+                        self.addItem(sys_test, self.sys_tests)
+                elif isinstance(sys_test_obj, dict):
                     # otherwise, add directly
-                    self.addItem(test_obj, self.tests)
+                    self.addItem(sys_test_obj, self.sys_tests)
                 else:
-                    raise ValueError('Test items in config file must be dicts')
-        return self.tests # Return for checking purposes, mainly
+                    raise ValueError('Sys_test items in config file must be dicts')
+        return self.sys_tests # Return for checking purposes, mainly
     
     def parseFiles(self,stile_args):
         """
@@ -211,8 +226,8 @@ class ConfigDataHandler(DataHandler):
         overridden by the lower levels explicitly.  Return a list of dicts.
         
         Set require_format_args to False if the argument "files" doesn't need to have a complete 
-        list of all format keys for each element, eg if this is being used to define tests instead
-        of files.
+        list of all format keys for each element, eg if this is being used to define sys_tests 
+        instead of files.
         """
         format_keys = ['epoch','extent','data_format','object_type']
 
@@ -620,19 +635,19 @@ class ConfigDataHandler(DataHandler):
                         self.addKwarg(key,new_value,file_dicts,format_keys=new_format_keys,object_type_key=object_type_key)
         return file_dicts
 
-    def addItem(self,item,test_dict,format_keys=[]):
+    def addItem(self,item,sys_test_dict,format_keys=[]):
         """
-        Add the given item pair to all the lists of tests in test_dict.  
+        Add the given item pair to all the lists of sys_tests in sys_test_dict.  
         
-        The "item" can be a dict with specific directions for which formats to test in the key/value pairs.  For example, one could
+        The "item" can be a dict with specific directions for which formats to sys_test in the key/value pairs.  For example, one could
         pass:
             item={'name': 'CorrelationFunction', 'type': 'GalaxyShear', 'extent': 'CCD'}
-        and then ONLY the lists of tests whose extent is 'CCD' would be changed.
+        and then ONLY the lists of sys_tests whose extent is 'CCD' would be changed.
         
         @param item             The item to be added
-        @param test_dict        A dict of tests to be done (in {format: list_of_tests} format)
+        @param sys_test_dict    A dict of sys_tests to be done (in {format: list_of_sys_tests} format)
         @param format_keys      Only change these format keys! (list of strings, default: [])
-        @returns                The original test_dict, with added tests as requested.
+        @returns                The original sys_test_dict, with added sys_tests as requested.
         
         Note that the end user generally shouldn't pass the format_keys argument: that kwarg is 
         intended for use by this function itself in recursive calls.
@@ -641,17 +656,17 @@ class ConfigDataHandler(DataHandler):
         # If there are no remaining restrictions to process:
         item_keys = item.keys()
         if not ('extent' in item_keys or 'epoch' in item_keys or 'data_format' in item_keys):
-            for format in test_dict:
+            for format in sys_test_dict:
                 # If no restrictions are present, or if this file meets the restrictions:
                 if (not format_keys or (format_keys and all([format_key in format for format_key in format_keys]))):
-                    test_dict[format].append(item)
+                    sys_test_dict[format].append(item)
         else:
             for item_key in item_keys:
                 if item_key in item: # in case it was popped in a call earlier in this loop, or in a recursive call
                     if item_key=='extent' or item_key=='data_format' or item_key=='epoch':
                         new_value = item.pop(item_key)
-                        self.addItem(item, test_dict, format_keys=stile_utils.flatten([format_keys,new_value]))
-        return test_dict
+                        self.addItem(item, sys_test_dict, format_keys=stile_utils.flatten([format_keys,new_value]))
+        return sys_test_dict
         
     def _checkAndCoerceFormat(self, epoch, extent, data_format): 
         """check for proper formatting of the epoch/extent/data_format kwargs and turn them into a string so we can use them as dict keys"""
