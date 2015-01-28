@@ -538,20 +538,42 @@ class ConfigDataHandler(DataHandler):
                             if file['group']==group:
                                 file['group'] = True
         
-    def addKwarg(self,key,value,file_list):
+    def addKwarg(self,key,value,file_dicts,format_keys=[],object_type_key=None):
         """
         Add the given (key,value) pair to all the lowest-level dicts in file_list if the key is not
         already present.  To be used for global-level keys AFTER all the individual file descriptors
         have been read in (ie this won't override anything that's already in the file dicts).
         """
-        for file_dict in file_list:
-            for format in file_dict:
-                for obj_type in file_dict[format]:
-                    for file in file_dict[format][obj_type]:
-                        if key not in file:
-                            file[key] = value
-        return file_list
-        
+        if not isinstance(value,dict) or value.keys()==['name']:
+            if isinstance(value,dict):
+                value = value.pop('name')
+            for file_dict in file_dicts:
+                for format in file_dict:
+                    for object_type in file_dict[format]:
+                        for file in file_dict[format][object_type]:
+                            if not key in file or not file[key]:
+                                if (not format_keys or (format_keys and all([format_key in format for format_key in format_keys]))) and (not object_type_key or object_type==object_type_key):
+                                    file[key] = value
+        else:
+            object_types = [object_type for file_dict in file_dicts for format in file_dict for object_type in file_dict[format]]
+            value_keys = value.keys()
+            for value_key in value_keys:
+                if value_key in value: # in case it was popped in a call earlier in this loop
+                    new_value = value.pop(value_key)
+                    if value_key=='extent' or value_key=='data_format' or value_key=='epoch':
+                        self.addKwarg(key,value,file_dicts,format_keys=stile_utils.flatten([format_keys,new_value]),object_type_key=object_type_key)
+                    elif value_key=='object_type':
+                        self.addKwarg(key,value,file_dicts,format_keys=format_keys,object_type_key=new_value)
+                    elif value_key in object_types:
+                        self.addKwarg(key,new_value,file_dicts,format_keys=format_keys,object_type_key=value_key)
+                    elif value_key=='name':
+                        self.addKwarg(key,new_value,file_dicts,format_keys=format_keys,object_type_key=object_type_key)
+                    else:
+                        new_format_keys = stile_utils.flatten([format_keys,value_key])
+                        self.addKwarg(key,new_value,file_dicts,format_keys=new_format_keys,object_type_key=object_type_key)
+        return file_dicts
+
+>>>>>>> parent of de22660... Fix ConfigDataHandler.addKwarg method (#14)
 
         
     def queryFile(self,file_name):
