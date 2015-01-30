@@ -741,7 +741,8 @@ class ConfigDataHandler(DataHandler):
             for group in self.groups:
                 if epoch in self.groups[group] and all([obj in self.groups[group][epoch] for obj in object_type]):
                     groups_list.append(group)
-            return [[self.groups[group][epoch][obj] for obj in object_type] for group in groups_list]
+            # The "groups" are indices into the self.files list, so do this funny nested dict thing to get the real files and not their indices
+            return [[self.files[epoch][obj][self.groups[group][epoch][obj]] for obj in object_type] for group in groups_list]
             
     def getData(self, data_id, object_type, epoch, extent=None, data_format=None, bin_list=None):
         """

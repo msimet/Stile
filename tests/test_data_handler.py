@@ -418,7 +418,7 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(groups,self.expected_groups2)
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict3))
         self.assertEqual(results,self.expected_files3)
-        results, groups = self.testConfigDataHandler.parseFiles({'file99':copy.deepcopy(self.dict3)})
+        results, groups = self.testConfigDataHandler.parseFiles({'file99':copy.deepcopy(self.dict3), 'notfile': self.dict2}) # make sure it ignores notfile
         self.assertEqual(results,self.expected_files3)
         self.assertEqual(groups,self.expected_groups3)
         # try queryFile with multiple files
@@ -553,7 +553,31 @@ class TestDataHandler(unittest.TestCase):
             self.assertEqual(results, [], msg='Found a non-empty set for incorrect format in listData '+name)
             results = test_set.config.listData(test_set.not_found_object, test_set.format)
             self.assertEqual(results, [], msg='Found a non-empty set for incorrect object in listData '+name)
+        # And a quick test of multiobject "obj_type" lists
+        test_set = test_sets[0][1]
+        results = test_set.config.listData(['galaxy','star'], test_set.format)
+        expected_results = zip(test_set.expected_files[test_set.format]['galaxy'], test_set.expected_files[test_set.format]['star'])
+        expected_results = [list(e) for e in expected_results]  # because listData gives lists, not tuples as zip does
+        # Now, because the group names are hashed and might not be in the same order, we can't test for pure equality...
+        self.assertEqual(len(results), len(expected_results))
+        self.assertTrue(all([r in expected_results for r in results]))
+        
+        config = stile.ConfigDataHandler({'file': self.dict7})
+        results = config.listData(['galaxy', 'star'], 'single-CCD-catalog')
+        expected_results = [[{'name': 'g2.dat', 'group': 1}, {'name': 's3.dat', 'group': 1}],
+                            [{'name': 'g1.dat', 'group': 2}, {'name': 's2.dat', 'group': 2}],
+                            [{'name': 'g3.dat', 'group': 3}, {'name': 's1.dat', 'group': 3}]]
+        self.assertEqual(len(results), len(expected_results))
+        self.assertTrue(all([r in expected_results for r in results]))
 
+        config = stile.ConfigDataHandler({'file': self.dict8})
+        results = config.listData(['galaxy', 'star'], 'single-CCD-catalog')
+        expected_results = [[{'name': 'g1.dat', 'file_reader': 'ASCII', 'group': '_stile_group_0'}, {'name': 's1.dat', 'group': '_stile_group_0'}],
+                            [{'name': 'g3.dat', 'group': '_stile_group_1'}, {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'}]]
+        self.assertEqual(len(results), len(expected_results))
+        self.assertTrue(all([r in expected_results for r in results]))
+        
+        
     def test_systests(self):
         # We will use self.dict0 (simple), self.dict3 (more complicated), self.dict9 (only 1 object type per level) as our base file dicts for the sys_test cases.
         config_0 = stile.ConfigDataHandler({'files': self.dict0})
