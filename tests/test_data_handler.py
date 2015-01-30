@@ -335,7 +335,52 @@ class TestDataHandler(unittest.TestCase):
                                 'star':   [{'name': 'sg1.dat', 'flag_col': 'is_star'}]
                             }}
         self.expected_groups_list0 = {}
-                
+
+        # sys tests 0: list form, complete description
+        self.sys_tests_0 = [{'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+            {'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+            {'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog', 'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+            {'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog', 'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]
+        # sys tests 1: list form, incomplete description
+        self.sys_tests_1 = [{'epoch': 'single', 'data_format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+            {'extent': 'CCD', 'data_format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+            {'extent': 'CCD', 'data_format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'StarXStarShear'},
+            {'data_format': 'catalog', 'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+            {'data_format': 'image', 'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}] # This last one doesn't really make sense, but as a test
+        # sys tests 2: nested form, complete description
+        self.sys_tests_2 = {'single': {
+            'CCD': {
+                'catalog': [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+                            {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+                            {'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+                            {'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}] } } }
+        # sys tests 3: nested form, incomplete description.
+        # Note that due to processing requirements we can't do these all as one dict
+        self.sys_tests_3a = {
+            'catalog': [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'}], 
+            'image': [{'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]}
+        self.sys_tests_3b = {
+            'CCD': {
+                'catalog': [{'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+                            {'name': 'CorrelationFunctionSysTest', 'type': 'StarXStarShear'},]}}
+        self.sys_tests_3c = {
+            'single': [{'data_format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'}]}
+        # sys tests 4: nested form, complete description, more complex
+        self.sys_tests_4 = {'single': {
+            'CCD': {
+                'catalog': [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+                            {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'}],
+                'image':   [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+                            {'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}] } } }
+        # sys tests 5: nested form, with multiepoch since that processing is slightly different
+        self.sys_tests_5 = {'multiepoch': {
+            'CCD': {
+                'catalog': [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+                            {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'}],
+                'image':   [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+                            {'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}] } } }
+        
+            
     def test_parseFileHelper(self):
         # First make sure the file list is built correctly
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict0))
@@ -509,6 +554,110 @@ class TestDataHandler(unittest.TestCase):
             results = test_set.config.listData(test_set.not_found_object, test_set.format)
             self.assertEqual(results, [], msg='Found a non-empty set for incorrect object in listData '+name)
 
-            
+    def test_systests(self):
+        # We will use self.dict0 (simple), self.dict3 (more complicated), self.dict9 (only 1 object type per level) as our base file dicts for the sys_test cases.
+        config_0 = stile.ConfigDataHandler({'files': self.dict0})
+        config_3 = stile.ConfigDataHandler({'files': self.dict3})
+        config_9 = stile.ConfigDataHandler({'files': self.dict9})
+        
+        results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
+        expected_results = {'single-CCD-catalog': 
+            [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+             {'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+             {'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]}
+        self.assertEqual(results, expected_results)
+        results = config_9.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
+        expected_results['multiepoch-CCD-catalog'] = []
+        self.assertEqual(results, expected_results)
+        del expected_results['multiepoch-CCD-catalog']
+        results = config_3.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
+        expected_results['single-CCD-image'] = []
+        expected_results['single-field-catalog'] = []
+        self.assertEqual(results, expected_results)
+        
+        results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
+        expected_results = {'single-CCD-catalog': 
+            [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'StarXStarShear'},
+             {'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'}]} # The last item of sys_tests_1 is an 'image' so shouldn't appear
+        self.assertEqual(results, expected_results)
+        results = config_9.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
+        expected_results['multiepoch-CCD-catalog'] = [{'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+            {'name': 'CorrelationFunctionSysTest', 'type': 'StarXStarShear'},
+            {'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'}]
+        self.assertEqual(results, expected_results)
+        results = config_3.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
+        del expected_results['multiepoch-CCD-catalog']
+        expected_results['single-CCD-image'] = [{'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]
+        expected_results['single-field-catalog'] = [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+            {'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'}]
+        self.assertEqual(results, expected_results)
+
+        results = config_0.parseSysTests({'sys_test_2': copy.deepcopy(self.sys_tests_2)})
+        expected_results = {'single-CCD-catalog': 
+            [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+             {'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+             {'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]}
+        self.assertEqual(results, expected_results)
+        results = config_9.parseSysTests({'sys_test_2': copy.deepcopy(self.sys_tests_2)})
+        expected_results['multiepoch-CCD-catalog'] = []
+        self.assertEqual(results, expected_results)
+        del expected_results['multiepoch-CCD-catalog']
+        results = config_3.parseSysTests({'sys_test_2': copy.deepcopy(self.sys_tests_2)})
+        expected_results['single-CCD-image'] = []
+        expected_results['single-field-catalog'] = []
+        self.assertEqual(results, expected_results)
+        
+        results = config_0.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a), 'sys_test_2': copy.deepcopy(self.sys_tests_3b), 'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
+        expected_results = {'single-CCD-catalog': 
+            [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'StarXStarShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'}]}
+        self.assertEqual(results, expected_results)
+        results = config_9.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a), 'sys_test_2': copy.deepcopy(self.sys_tests_3b), 'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
+        expected_results['multiepoch-CCD-catalog'] = [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+            {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+            {'name': 'CorrelationFunctionSysTest', 'type': 'StarXStarShear'}] 
+        self.assertEqual(results, expected_results)
+        del expected_results['multiepoch-CCD-catalog']
+        results = config_3.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a), 'sys_test_2': copy.deepcopy(self.sys_tests_3b), 'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
+        expected_results['single-CCD-image'] = [{'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]
+        expected_results['single-field-catalog'] = [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+            {'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'}]
+        self.assertEqual(results, expected_results)
+        
+        results = config_0.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_4)})
+        expected_results = {'single-CCD-catalog': 
+            [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+             {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'}]}
+        self.assertEqual(results, expected_results)
+        results = config_9.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_4)})
+        expected_results['multiepoch-CCD-catalog'] = []
+        self.assertEqual(results, expected_results)
+        del expected_results['multiepoch-CCD-catalog']
+        results = config_3.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_4)})
+        expected_results['single-CCD-image'] = [{'name': 'ScatterPlotSysTest', 'type': 'StarVsPSFG1'},
+                            {'name': 'StatSysTest', 'field': 'g1', 'object': 'galaxy'}]
+        expected_results['single-field-catalog'] = []
+        self.assertEqual(results, expected_results)        
+        
+        results = config_0.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
+        expected_results = {'single-CCD-catalog': []}
+        self.assertEqual(results, expected_results)
+        results = config_9.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
+        expected_results['multiepoch-CCD-catalog'] = [{'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
+                            {'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'}]
+        self.assertEqual(results, expected_results)
+        del expected_results['multiepoch-CCD-catalog']
+        results = config_3.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
+        expected_results['single-CCD-image'] = []
+        expected_results['single-field-catalog'] = []
+        self.assertEqual(results, expected_results)        
+        
+        
 if __name__=='__main__':
     unittest.main()

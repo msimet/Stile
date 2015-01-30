@@ -138,14 +138,20 @@ class ConfigDataHandler(DataHandler):
                 sys_test_obj = stile_args.pop(key)
                 if isinstance(sys_test_obj, dict) and not 'name' in sys_test_obj:
                     # This is a nested dict, so recurse it, then add to the sys_test dict
-                    sys_test_list = self._recurseDict(sys_test_obj)
+                    sys_test_list = self._recurseDict(sys_test_obj, require_format_args=False)
                     for sys_test in sys_test_list:
                         self.addItem(sys_test, self.sys_tests)
                 elif isinstance(sys_test_obj, dict):
                     # otherwise, add directly
                     self.addItem(sys_test_obj, self.sys_tests)
+                elif hasattr(sys_test_obj, '__iter__'):
+                    for sys_test in sys_test_obj:
+                        if isinstance(sys_test,dict):
+                            self.addItem(sys_test, self.sys_tests)
+                        else:
+                            raise ValueError('Sys_test items in config file which are lists must contain only dicts')
                 else:
-                    raise ValueError('Sys_test items in config file must be dicts')
+                    raise ValueError('Sys_test items in config file must be dicts or lists of dicts')
         return self.sys_tests # Return for checking purposes, mainly
     
     def parseFiles(self,stile_args):
@@ -321,7 +327,7 @@ class ConfigDataHandler(DataHandler):
                 for key in keys:
                     new_files = files.pop(key)
                     pass_kwargs[format_name] = key
-                    return_list += self._recurseDict(new_files,**pass_kwargs)
+                    return_list += self._recurseDict(new_files, require_format_args = require_format_args, **pass_kwargs)
         # If there are keys left, it might be a single dict describing one file; check for that.
         if files:
             if any([format_key in files for format_key in format_keys]) and 'name' in files:
