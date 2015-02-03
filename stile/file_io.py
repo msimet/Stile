@@ -205,7 +205,7 @@ def WriteFITSTable(file_name, data_array, fields=None):
     hdulist.verify()
     hdulist.writeto(file_name)
 
-def WriteTable(file_name, data_array, fields=None):
+def WriteTable(file_name, data_array, fields=None, **kwargs):
     """
     Pick a type of file (ASCII or FITS) and write to it.  If the `file_name` has an extention, it
     will be used to determine the file type ('.fit' or '.fits' in any capitalization will be FITS,
@@ -227,15 +227,15 @@ def WriteTable(file_name, data_array, fields=None):
     ext = os.path.splitext(file_name)[1]
     if not ext:
         if has_fits:
-            WriteFITSTable(file_name, data_array, fields)
+            WriteFITSTable(file_name, data_array, fields, **kwargs)
         else:
-            WriteASCIITable(file_name, data_array, fields)
+            WriteASCIITable(file_name, data_array, fields, **kwargs)
     else:
         ext = ext.lower()
         if ext=='.fit' or ext=='.fits':
-            WriteFITSTable(file_name, data_array, fields)
+            WriteFITSTable(file_name, data_array, fields, **kwargs)
         else:
-            WriteASCIITable(file_name, data_array, fields)
+            WriteASCIITable(file_name, data_array, fields, **kwargs)
 
 def ReadTable(file_name, **kwargs):
     """
