@@ -898,6 +898,54 @@ class TestDataHandler(unittest.TestCase):
         expected_results['single-field-catalog'] = []
         self.assertEqual(results, expected_results)
 
+    def test_errors(self):
+        bad_test = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+                               'name': 's1.dat', 'object_type': 'star'}],
+                    'sys_tests': [{'name': 'CorrelationFunctionSysTest', 'type': 'BrightStarShear'},
+                                  'CorrelationFunctionSysTest']}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_test)
+        
+        bad_test['sys_tests'] = 'CorrelationFunctionSysTest'
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_test)
+        
+        bad_files = {'files': 's1.dat'}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_files)
+        
+        bad_files = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+                                'name': 's1.dat', 'object_type': 'star'},
+                               'g1.dat']}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_files)
+        
+        bad_formats = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+                                'name': 's1.dat'}]}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_formats)
+        bad_formats = {'files': {'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+                                'name': 's1.dat'}}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_formats)
+        bad_formats = {'files': {'coadd': {'field': {'catalog': 's1.dat'}}}}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_formats)
+        duplicate_formats = {'files': {'coadd': {'field': {'catalog': {'name': 's1.dat', 
+                             'object_type': 'star', 'epoch': 'coadd'}}}}}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, duplicate_formats)
+                                
+        bad_multiepoch = {'files': [{'epoch': 'multiepoch', 'extent': 'field', 
+                                     'data_format': 'catalog', 'name': 's1.dat'}]}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_multiepoch)
+        bad_multiepoch = {'files': {'multiepoch': {'field': {'catalog': {'star': 
+                                [['s1.dat', 's2.dat'], ['s3.dat', 's4.dat'], 's5.dat']}}}}}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_multiepoch)
+        
+        extra_kwarg = {'files': {'coadd': {'field': {'catalog': {'name': 's1.dat', 
+                             'object_type': 'star'}}, 'hello': 'goodbye'}}}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, extra_kwarg)
+
+        bad_groups = {'files': {'coadd': {'field': {'catalog': {'star': 
+                                                                {'name': 's1.dat', 'group': 1}}}},
+                                          'CCD': {'catalog': {'galaxy': 
+                                                                {'name': 'g1.dat', 'group': 1}}}}}
+        self.assertRaises(ValueError, stile.ConfigDataHandler, bad_groups)
+
+# add makeBins
 
 if __name__=='__main__':
     unittest.main()

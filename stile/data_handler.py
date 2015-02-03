@@ -189,7 +189,7 @@ class ConfigDataHandler(DataHandler):
         flag_field = stile_utils.PopAndCheckFormat(stile_args, 'flag_field', (str, list, dict),
                                                    default=[])
         if flag_field:
-            file_list = self.addKwarg('flag_field', flag_field, file_list)
+            file_list = self.addKwarg('flag_field', flag_field, file_list, append=True)
         file_reader = stile_utils.PopAndCheckFormat(stile_args, 'file_reader', (str, dict),
                                                     default='')
         if file_reader:
@@ -262,6 +262,10 @@ class ConfigDataHandler(DataHandler):
                     if isinstance(files, dict):
                         # Copy the kwargs, then update with the stuff in this dict (which should
                         # override higher levels).
+                        if any([format_key in files and format_key in kwargs for format_key in format_keys]):
+                            raise ValueError("Duplicate definition of format element for item %s"%files)
+                        elif any([format_key not in files and format_key not in kwargs for format_key in format_keys]):
+                            raise ValueError("Incomplete definition of format for item %s"%files)
                         pass_kwargs = copy.deepcopy(kwargs)
                         pass_kwargs.update(files)
                     elif isinstance(files, (list, tuple)):
@@ -272,16 +276,26 @@ class ConfigDataHandler(DataHandler):
                         if all(iterable):
                             return_list = []
                             for item in files:
+                                if isinstance(item, dict):
+                                    if any([format_key in item and format_key in kwargs for format_key in format_keys]):
+                                        raise ValueError("Duplicate definition of format element for item %s"%item)
+                                    elif isinstance(item, dict) and any([format_key not in item and format_key not in kwargs for format_key in format_keys]) and require_format_args:
+                                        raise ValueError("Incomplete definition of format for item %s"%item)
+                                else:
+                                    if not all([format_key in kwargs for format_key in format_keys]):
+                                        raise ValueError("Incomplete definition of format for item %s"%item)
                                 pass_kwargs = copy.deepcopy(kwargs)
                                 if isinstance(item, dict):
                                     pass_kwargs.update(item)
                                 else:
+                                    if not all([format_key in kwargs for format_key in format_keys]):
+                                        raise ValueError("Incomplete definition of format for item %s"%item)
                                     pass_kwargs['name'] = item
                                 return_list.append(pass_kwargs)
                             return return_list
                         elif any(iterable):
                             raise ValueError('Cannot interpret list of items for multiepoch: '+
-                                             files+'. Should be an iterable, or an iterable of '+
+                                             str(files)+'. Should be an iterable, or an iterable of '+
                                              'iterables.')
                         else:
                             pass_kwargs.update({'name': files})
@@ -297,8 +311,14 @@ class ConfigDataHandler(DataHandler):
                     for file in files:
                         pass_kwargs = copy.deepcopy(kwargs)
                         if isinstance(file, dict):
+                            if any([format_key in file and format_key in kwargs for format_key in format_keys]):
+                                raise ValueError("Duplicate definition of format element for item %s"%item)
+                            elif isinstance(file, dict) and any([format_key not in file and format_key not in kwargs for format_key in format_keys]) and require_format_args:
+                                raise ValueError("Incomplete definition of format for item %s"%file)
                             pass_kwargs.update(file)
                         else:
+                            if not all([format_key in kwargs for format_key in format_keys]):
+                                raise ValueError("Incomplete definition of format for item %s"%file)
                             pass_kwargs['name'] = file
                         return_list += [pass_kwargs]
                     return return_list
@@ -306,7 +326,13 @@ class ConfigDataHandler(DataHandler):
                 raise ValueError('File description does not include all format keywords: %s, %s'%(
                                  files, kwargs))
 
-        # We didn't hit the previous "if" statement, so this is a dict.
+        elif not isinstance(files, dict):
+            # This indicates an error, but we can be more specific about which kind of error
+            # outside of this function, so just pass the incorrect thing along for now.
+            pass_kwargs = copy.deepcopy(kwargs)
+            pass_kwargs['name'] = files
+            return pass_kwargs
+        # We didn't hit either of the previous "if" statements, so this is a dict.
         return_list = []
         pass_kwargs = copy.deepcopy(kwargs)
 
@@ -346,6 +372,8 @@ class ConfigDataHandler(DataHandler):
             if any([format_key in files for format_key in format_keys]) and 'name' in files:
                 if (all([format_key in files or format_key in kwargs for format_key in format_keys])
                     or require_format_args==False):
+                    if any([format_key in files and format_key in kwargs for format_key in format_keys]):
+                        raise ValueError("Duplicate format definition for item %s"%str(files))                        
                     pass_kwargs.update(files)
                     return_list+=[pass_kwargs]
                 else:
@@ -620,7 +648,7 @@ class ConfigDataHandler(DataHandler):
                             if file['group']==group:
                                 file['group'] = True
 
-    def addKwarg(self, key, value, file_dicts, format_keys=[], object_type_key=None):
+    def addKwarg(self, key, value, file_dicts, format_keys=[], object_type_key=None, append=False):
         """
         Add the given (key, value) pair to all the lowest-level dicts in file_list if the key is not
         already present.  To be used for global-level keys AFTER all the individual file descriptors
@@ -654,13 +682,18 @@ class ConfigDataHandler(DataHandler):
                 for format in file_dict:
                     for object_type in file_dict[format]:
                         for file in file_dict[format][object_type]:
-                            if not key in file or not file[key]:
+                            if not key in file or not file[key] or append:
                                 # If no restrictions are present, or if this file meets the
                                 # restrictions:
                                 if ((not format_keys or (format_keys and
                                      all([format_key in format for format_key in format_keys]))) and
                                     (not object_type_key or object_type==object_type_key)):
-                                    file[key] = value
+                                    if append:
+                                        if not hasattr(file[key],'append'):
+                                            file[key] = [file[key]]
+                                        file[key].append(value)
+                                    else:
+                                        file[key] = value
         else:
             object_types = [object_type for file_dict in file_dicts for format in file_dict
                             for object_type in file_dict[format]]
