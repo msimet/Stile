@@ -381,7 +381,37 @@ class TestDataHandler(unittest.TestCase):
                             }}
         self.expected_groups_list0 = {}
 
-        # sys tests 0: list form, complete description
+        # bins0: like dict0, but with binning defined for two of the files
+        self.bins0 = {'single': {
+            'CCD': {
+                'catalog': {
+                    'galaxy': [{'name': 'g1.dat', 
+                                'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                          'high': 2}]}, 
+                               'g2.dat', 'g3.dat'],
+                    'star':   [{'name': 's1.dat',
+                                'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}, 
+                               's2.dat', 's3.dat']
+            } } } }
+        self.expected_files_bins0 = {'single-CCD-catalog': {
+                                'galaxy': [{'name': 'g1.dat', 'group': '_stile_group_0', 
+                                            'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 
+                                            'low': 0, 'high': 2}]},
+                                           {'name': 'g2.dat', 'group': '_stile_group_1'},
+                                           {'name': 'g3.dat', 'group': '_stile_group_2'}],
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0', 
+                                            'bins': [{'name': 'List', 'field': 'ra', 
+                                            'endpoints': [0,1,2]}]}, 
+                                           {'name': 's2.dat', 'group': '_stile_group_1'},
+                                           {'name': 's3.dat', 'group': '_stile_group_2'}]}}
+        self.expected_groups_bins0 = {'_stile_group_0': {
+                'single-CCD-catalog': { 'star': 0, 'galaxy': 0}},
+            '_stile_group_1': {
+                'single-CCD-catalog': { 'star': 1, 'galaxy': 1}},
+            '_stile_group_2': {
+                'single-CCD-catalog': { 'star': 2, 'galaxy': 2}}}
+
+                # sys tests 0: list form, complete description
         self.sys_tests_0 = [{'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog',
                              'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear'},
             {'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog',
@@ -523,6 +553,10 @@ class TestDataHandler(unittest.TestCase):
         results, groups = self.testConfigDataHandler.parseFiles({'file':self.list0})
         self.assertEqual(results, self.expected_files_list0)
         self.assertEqual(groups, self.expected_groups_list0)
+        # bins0: with bins
+        results, groups = self.testConfigDataHandler.parseFiles({'file':self.bins0})
+        self.assertEqual(results, self.expected_files_bins0)
+        self.assertEqual(groups, self.expected_groups_bins0)
         # Now, just make sure that if you send multiple dicts through it combines them correctly
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),
                                                                 'file_6':copy.deepcopy(self.dict6)})
@@ -595,10 +629,11 @@ class TestDataHandler(unittest.TestCase):
 
     def test_lists(self):
         """
-        Test the ConfigDataHandler methods listFileTypes(), listObjects(), and listData(), which allow us to query the available data contained
-        within the ConfigDataHandler.
+        Test the ConfigDataHandler methods listFileTypes(), listObjects(), and listData(), which
+        allow us to query the available data contained within the ConfigDataHandler.
         """
-        # Set up a list of tuples: first item is the string to be appended to error messages; second is a Set object (defined above).
+        # Set up a list of tuples: first item is the string to be appended to error messages; second
+        # is a Set object (defined above).
         # The Set object contains:
         # - A ConfigDataHandler object
         # - The expected self.files argument of the ConfigDataHandler
@@ -639,8 +674,8 @@ class TestDataHandler(unittest.TestCase):
                                          self.expected_files_list0, 'single-field-catalog', 'star',
                                          'single-CCD-image', 'galaxy random')))
 
-        # Now, loop through those defined test sets, checking that we get the expected formats and objects, and NOT the formats and objects we
-        # don't expect
+        # Now, loop through those defined test sets, checking that we get the expected formats and 
+        # objects, and NOT the formats and objects we don't expect
         for name, test_set in test_sets:
             results = test_set.config.listFileTypes()
             self.assertEqual(set(results), set(test_set.expected_files.keys()),
@@ -690,6 +725,57 @@ class TestDataHandler(unittest.TestCase):
                              {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'}]]
         self.assertEqual(len(results), len(expected_results))
         self.assertTrue(all([r in expected_results for r in results]))
+        
+        config = stile.ConfigDataHandler({'file': self.bins0})
+        results = config.listData(['galaxy', 'star'], 'single-CCD-catalog')
+        expected_results = [[{'name': 'g1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                          'high': 2}]},
+                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
+                              'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
+                            [{'name': 'g1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                          'high': 2}]},
+                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
+                              'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
+                            [{'name': 'g1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                          'high': 2}]},
+                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
+                              'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
+                            [{'name': 'g1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',1,2,'name')], 
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                          'high': 2}]}, 
+                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                              'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
+                              'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
+                            [{'name': 'g2.dat', 'group': '_stile_group_1'},
+                             {'name': 's2.dat', 'group': '_stile_group_1'}],
+                            [{'name': 'g3.dat', 'group': '_stile_group_2'},
+                             {'name': 's3.dat', 'group': '_stile_group_2'}]]
+        self.assertEqual(len(results), len(expected_results))
+        from test_binning import compare_single_bin
+        for r, er in zip(results, expected_results):
+            for i in range(2):
+                self.assertTrue(('bin_list' in r[i] and 'bin_list' in er[i]) or 
+                                ('bin_list' not in r[i] and 'bin_list' not in er[i]))
+                if 'bin_list' in r[i]:
+                    self.assertEqual(len(r[i]['bin_list']), len(er[i]['bin_list']))
+                    self.assertTrue(all([compare_single_bin(rb,erb) 
+                                        for rb, erb in zip(r[i]['bin_list'], er[i]['bin_list'])]))
+                    b_l = r[i]['bin_list']
+                    del r[i]['bin_list']
+                    del er[i]['bin_list']
+                    self.assertEqual(r[i], er[i])
+                    # Not sure why we have to do this, but it seems to be necessary to pass tests
+                    r[i]['bin_list'] = b_l  
 
 
     def test_systests(self):

@@ -6,6 +6,8 @@ import os
 import glob
 import copy
 import stile_utils
+from .binning import BinStep, BinList, ExpandBinList
+from .file_io import ReadASCIITable, ReadFITSTable, ReadFITSImage, ReadTable, ReadImage
 
 class DataHandler:
     """
@@ -86,6 +88,11 @@ class DataHandler:
             return os.path.join(self.output_path, sys_test_string+extension)
 
 class ConfigDataHandler(DataHandler):
+    expected_bin_keys = {
+        'List': ['name', 'field', 'endpoints'],
+        'Step': ['name', 'field', 'low', 'high', 'step', 'n_bins', 'use_log']
+    }
+
     def __init__(self, stile_args):
         if 'config_file' in stile_args:
             config = self.loadConfig('config_file')
@@ -247,7 +254,7 @@ class ConfigDataHandler(DataHandler):
                 for file in files:
                     file['group'] = file.get('group', default=False)
                 return files
-            elif (all([format_key in kwargs for format_key in format_keys]) or
+            elif (any([format_key in kwargs for format_key in format_keys]) or
                   require_format_args is False):
                 if kwargs.get('epoch')=='multiepoch':
                     # Multiepoch files come in a set, so we can't turn them into single items the
@@ -484,6 +491,8 @@ class ConfigDataHandler(DataHandler):
         Return that dict and a dict describing the groups (as output by self._getGroups()).
         """
         list_of_dicts = stile_utils.flatten(list_of_dicts)
+        if not list_of_dicts:
+            return {}, self._getGroups({})
         files = list_of_dicts.pop(0)
         for dict in list_of_dicts:
             for key in dict.keys():
@@ -555,6 +564,8 @@ class ConfigDataHandler(DataHandler):
         }
 
         """
+        if not file_dict:
+            return {}
         groups = {}
         for key in file_dict.keys():
             groups[key] = {}
@@ -725,7 +736,81 @@ class ConfigDataHandler(DataHandler):
                              'given %s %s %s'%(epoch, extent, data_format))
         if extent or data_format:
             epoch = stile_utils.Format(epoch=epoch, extent=extent, data_format=data_format).str
+        if isinstance(epoch, stile_utils.Format):
+            epoch = epoch.str
         return epoch
+
+    def makeBins(self, bins):
+        """
+        Given a definition of a binning scheme contained in a dictionary or list of dictionaries
+        (with the type of binning defined by the "name" key, or general binning class), return
+        a list of stile.BinList or stile.BinStep objects.
+
+        @param bins  A binning scheme defined by a dict, or a list of them
+        @returns     A list of corresponding BinList or BinStep objects
+        """
+        if isinstance(bins, dict):  
+            # In case there's just one bin definition as a dict, rather than a list of them
+            bins = [bins]
+        bin_list = []
+        for bin_def in bins:
+            # Check for proper formatting
+            if not 'name' in bin_def:
+                raise ValueError('Bins are defined by a "name" argument - not found')
+            if bin_def['name'] not in self.expected_bin_keys:
+                raise ValueError('Do not understand bin type name %s'%bin_def['name'])
+            if not 'field' in bin_def:
+                raise ValueError('Must define a field for the bin to operate on; given '+
+                                 'definition %s'%str(bin_def))
+            unexpected_keys = [key for key in bin_def 
+                               if key not in self.expected_bin_keys[bin_def['name']]]
+            if unexpected_keys:
+                raise ValueError('Got unexpected key or keys %s for bin type %s'%(unexpected_keys,
+                                                                                  bin_def['name']))
+
+            # Turn the dict into a Bin* object
+            if bin_def['name']=='List':
+                if not 'endpoints' in bin_def:
+                    raise ValueError('Must define endpoints for BinList-type binning scheme')
+                bin_list.append(BinList(bin_def['field'], bin_def['endpoints']))
+            elif bin_def['name']=='Step':
+                bin_list.append(BinStep(bin_def['field'], low=bin_def.get('low',None),
+                                high=bin_def.get('high',None), step = bin_def.get('step', None),
+                                n_bins = bin_def.get('n_bins', None),
+                                use_log = bin_def.get('use_log', False)))
+        return bin_list
+
+    def _expandBins(self, item_list, multiepoch = False):
+        if isinstance(item_list, dict):
+            item_list = [item_list]
+        return_list = []
+        for item in item_list:
+            if isinstance(item, list):
+                new_list = []
+                for subitem in item:
+                    if hasattr(subitem, '__iter__'):
+                        new_list.append(self._expandBins(subitem, multiepoch = True))
+                    else:
+                        new_list.append(self._expandBins(subitem, multiepoch = False))
+                new_items = [[]]
+                while new_list:
+                    this_list = new_list.pop()
+                    new_items = [[file]+n_i for file in this_list for n_i in new_items]
+                return_list.extend(new_items)
+            elif not 'bins' in item:
+                return_list.append(item)
+            else:
+                if not 'bin_list' in item:
+                    bins = ExpandBinList(self.makeBins(item['bins']))
+                    new_items = [item.copy() for i in range(len(bins))]
+                    for new_item, bin_list in zip(new_items, bins):
+                        new_item['bin_list'] = bin_list
+                    return_list.extend(new_items)
+                else:
+                    return_list.append(item)
+        #if not multiepoch:
+        #    return_list = stile_utils.flatten(return_list)
+        return return_list
 
     def queryFile(self, file_name):
         """
@@ -787,6 +872,7 @@ class ConfigDataHandler(DataHandler):
         epoch, extent, data_format.
         """
         epoch = self._checkAndCoerceFormat(epoch, extent, data_format)
+        multiepoch = epoch.split('-')[0]=='multiepoch'
         if (not hasattr(object_type, '__hash__') or (hasattr(object_type, '__iter__') and
             not all([hasattr(obj, '__hash__') for obj in object_type]))):
             raise ValueError('object_type argument must be able to be used as a dictionary key, or'+
@@ -794,19 +880,20 @@ class ConfigDataHandler(DataHandler):
                              'given %s'%object_type)
         if not hasattr(object_type, '__iter__'):
             if epoch in self.files and object_type in self.files[epoch]:
-                return [file for file in self.files[epoch][object_type]]
+                return_list = [file for file in self.files[epoch][object_type]]
             else:
                 return []
         elif isinstance(object_type, list):
             groups_list = []
-            for group in self.groups:
+            for group in sorted(self.groups.keys()):  # Sort for unit testing purposes, mainly
                 if epoch in self.groups[group] and all([obj in self.groups[group][epoch]
                                                         for obj in object_type]):
                     groups_list.append(group)
             # The "groups" are indices into the self.files list, so do this funny nested dict thing
             # to get the real files and not their indices
-            return [[self.files[epoch][obj][self.groups[group][epoch][obj]]
-                     for obj in object_type] for group in groups_list]
+            return_list = [[self.files[epoch][obj][self.groups[group][epoch][obj]]
+                            for obj in object_type] for group in groups_list]
+        return self._expandBins(return_list, multiepoch=multiepoch)
 
     def getData(self, data_id, object_type, epoch, extent=None, data_format=None, bin_list=None):
         """
@@ -842,19 +929,19 @@ class ConfigDataHandler(DataHandler):
             fields=None
         if 'file_reader' in data_id:
             if d['file_reader']=='ASCII':
-                data = stile.ReadASCIITable(data_id['name'], fields=fields)
+                data = ReadASCIITable(data_id['name'], fields=fields)
             elif d['file_reader']=='FITS':
                 if data_format=='catalog':
-                    data = stile.ReadFITSTable(data_id['name'], fields=fields)
+                    data = ReadFITSTable(data_id['name'], fields=fields)
                 elif data_format=='image':
-                    data = stile.ReadFITSImage(data_id['name'])
+                    data = ReadFITSImage(data_id['name'])
                 else:
                     raise RuntimeError('Data format must be either "catalog" or "image", given '+
                                        '%s'%data_format)
         elif 'catalog' in format:
-            data = stile.ReadTable(data_id['name'], fields=fields)
+            data = ReadTable(data_id['name'], fields=fields)
         elif 'image' in format:
-            data = stile.ReadImage(data_id['name'])
+            data = ReadImage(data_id['name'])
         else:
             raise RuntimeError('Data format must be either "catalog" or "image", given '+
                                '%s'%data_format)
@@ -872,6 +959,9 @@ class ConfigDataHandler(DataHandler):
                 raise ValueError('flag_field kwarg must be a string, list, or dict; given %s'%flag)
         if bin_list:
             for bin in bin_list:
+                data = bin(data)
+        if 'bin_list' in data_id:
+            for bin in data_id['bin_list']:
                 data = bin(data)
         return data
 
