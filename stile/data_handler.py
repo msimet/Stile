@@ -822,7 +822,7 @@ class ConfigDataHandler(DataHandler):
         else:
             extra_args = {}
         if 'bins' in sys_test:
-            bin_list = self.makeBins(sys_test['bin_list'])
+            bin_list = self.makeBins(sys_test['bins'])
         else:
             bin_list = []
 
@@ -837,13 +837,19 @@ class ConfigDataHandler(DataHandler):
             if 'treecorr_kwargs' in sys_test:
                 extra_args.update(sys_test['treecorr_kwargs'])
         elif sys_test['name'] == 'ScatterPlot':
+            if 'type' not in sys_test:
+                raise ValueError('Must pass "type" argument for ScatterPlot systematics '+
+                                 'tests')
             # Next line for when PR #56 is merged
             # return_test = sys_tests.ScatterPlotSysTest(sys_test['type'])
             return_test = eval('sys_tests.ScatterPlot'+sys_test['type']+'SysTest()')
         elif sys_test['name'] == 'WhiskerPlot':
+            if 'type' not in sys_test:
+                raise ValueError('Must pass "type" argument for WhiskerPlot systematics '+
+                                 'tests')
             # Next line for when PR #56 is merged
             # return_test = sys_tests.WhiskerPlotSysTest(sys_test['type'])
-            return_test = eval('sys_tests.'+sys_test['type']+'SysTest()')
+            return_test = eval('sys_tests.WhiskerPlot'+sys_test['type']+'SysTest()')
         elif sys_test['name'] == 'Stat':
             if 'field' not in sys_test:
                 raise ValueError('Must pass "field" argument for Stat sys test')
