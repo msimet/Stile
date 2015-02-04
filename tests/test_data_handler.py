@@ -7,6 +7,7 @@ except ImportError:
 from stile import stile_utils
 import unittest
 import copy
+import numpy
 
 class Set(object):
     def __init__(self, config, expected_files, format, object, not_found_format, not_found_object):
@@ -416,6 +417,26 @@ class TestDataHandler(unittest.TestCase):
             '_stile_group_2': {
                 'single-CCD-catalog': { 'star': 2, 'galaxy': 2}}}
 
+        # bins1: test binning with multiepoch data sets
+        self.bins1 = {'multiepoch': {
+            'CCD': {
+                'catalog': {
+                    'galaxy': [{'name': ['g1.dat', 'g2.dat', 'g3.dat'],
+                                'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                          'high': 2}]}],
+                    'star':   [{'name': ['s1.dat', 's2.dat'],
+                                'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}]
+            } } } }
+        self.expected_files_bins1 = {'multiepoch-CCD-catalog': {
+                                'galaxy': [{'name': ['g1.dat', 'g2.dat', 'g3.dat'], 'group': '_stile_group_0', 
+                                            'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 
+                                            'low': 0, 'high': 2}]}],
+                                'star':   [{'name': ['s1.dat', 's2.dat'], 'group': '_stile_group_0', 
+                                            'bins': [{'name': 'List', 'field': 'ra', 
+                                            'endpoints': [0,1,2]}]}]}}
+        self.expected_groups_bins1 = {'_stile_group_0': {
+                'multiepoch-CCD-catalog': { 'star': 0, 'galaxy': 0}}}
+
         # sys tests 0: list form, complete description
         self.sys_tests_0 = [{'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog',
                              'name': 'CorrelationFunction', 'type': 'GalaxyShear'},
@@ -562,6 +583,10 @@ class TestDataHandler(unittest.TestCase):
         results, groups = self.testConfigDataHandler.parseFiles({'file':self.bins0})
         self.assertEqual(results, self.expected_files_bins0)
         self.assertEqual(groups, self.expected_groups_bins0)
+        # bins1: multiepoch with bins
+        results, groups = self.testConfigDataHandler.parseFiles({'file':self.bins1})
+        self.assertEqual(results, self.expected_files_bins1)
+        self.assertEqual(groups, self.expected_groups_bins1)
         # Now, just make sure that if you send multiple dicts through it combines them correctly
         results, groups = self.testConfigDataHandler.parseFiles({'file_0':copy.deepcopy(self.dict0),
                                                                 'file_6':copy.deepcopy(self.dict6)})
@@ -780,9 +805,8 @@ class TestDataHandler(unittest.TestCase):
                     del er[i]['bin_list']
                     self.assertEqual(r[i], er[i])
                     # Not sure why we have to do this, but it seems to be necessary to pass tests
-                    r[i]['bin_list'] = b_l  
-
-
+                    r[i]['bin_list'] = b_l                      
+                    
     def test_systests(self):
         # We will use self.dict0 (simple), self.dict3 (more complicated), self.dict9 (only 1 object
         # type per level) as our base file dicts for the sys_test cases.
@@ -1040,6 +1064,117 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
 
+    def test_make_bins_and_tests(self):
+        bin1 = {'name': 'Step', 'field': 'ra', 'low': 0, 'high': 7.5, 'n_bins': 8}
+        expected_bin1 = stile.BinStep(field='ra', low=0, high=7.5, n_bins=8)
+        bin2 = {'name': 'Step', 'field': 'dec', 'high': 10, 'n_bins': 13, 'step': 0.5, 'use_log': True}
+        expected_bin2 = stile.BinStep(field='dec', high=10, n_bins=13, step=0.5, use_log=True)
+        bin3 = {'name': 'Step', 'field': 'g1', 'high': -2, 'n_bins': 5}  # should fail
+        bin4 = {'name': 'List', 'field': '?!', 'endpoints': [0,1,3,5,10]}
+        expected_bin4 = stile.BinList(bin_list=[0,1,3,5,10], field='?!')
+        bin5 = {'name': 'List', 'field': 'g2', 'endpoints': [5,7,-1,8,10]}  # should fail
+        bin6 = {'name': 'List', 'endpoints': [5,7,-1,8,10]}  # should fail
+        
+        bin_obj = self.testConfigDataHandler.makeBins(bin1)
+        self.assertEqual(len(bin_obj), 1)
+        bin_obj = bin_obj[0]
+        self.assertEqual(bin_obj, expected_bin1)
+        bin_obj = self.testConfigDataHandler.makeBins(bin2)
+        self.assertEqual(len(bin_obj), 1)
+        bin_obj = bin_obj[0]
+        self.assertEqual(bin_obj, expected_bin2)
+        self.assertRaises(TypeError, self.testConfigDataHandler.makeBins, bin3)
+        bin_obj = self.testConfigDataHandler.makeBins(bin4)
+        self.assertEqual(len(bin_obj), 1)
+        bin_obj = bin_obj[0]
+        self.assertEqual(bin_obj, expected_bin4)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeBins, bin5)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeBins, bin6)
+        
+    
+        test1 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear'}
+        test2 = {'name': 'CorrelationFunction', 'type': 'BrightStarShear', 'extra_args': {'ra': 7}}  # extra args
+        test3 = {'name': 'CorrelationFunction', 'type': 'GalaxyDensity', 'bins': bin1}  # with bins
+        test4 = {'name': 'CorrelationFunction', 'type': 'StarDensity',  #both
+                 'extra_args': {'random keyword': 'random argument'}, 'bins': bin4}
+        test5 = {'name': 'CorrelationFunction', 'type': 'PlanetDensity'}  # not a real type
+        test6 = {'name': 'CorrelationFunction'}  # missing a type
+        test7 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFG2'}
+        test8 = {'name': 'ScatterPlot', 'type': 'StarVsPSFSigma', 'extra_args': {'ra': 7}}  
+        test9 = {'name': 'ScatterPlot', 'type': 'StarVsPSFG1', 'bins': bin2}
+        test10 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFSigma', 
+                 'extra_args': {'random keyword': 'random argument'}, 'bins': bin1}
+        test11 = {'name': 'ScatterPlot', 'type': 'StarVsResidualG2'}
+        test12 = {'name': 'ScatterPlot'}
+        test13 = {'name': 'WhiskerPlot', 'type': 'Residual'}
+        test14 = {'name': 'WhiskerPlot', 'type': 'Star', 'extra_args': {'ra': 7}}  # xtra arg
+        test15 = {'name': 'WhiskerPlot', 'type': 'PSF', 'bins': bin4}
+        test16 = {'name': 'WhiskerPlot', 'type': 'PSF', 
+                 'extra_args': {'random keyword': 'random argument'}, 'bins': bin2}
+        test17 = {'name': 'WhiskerPlot', 'type': 'Planet'}
+        test18 = {'name': 'WhiskerPlot'}
+        test19 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear', 'random keyword': 'random argument'}
+        test20 = {'name': 'ScatterPlot', 'type': 'StarVsPSFG1', 'random keyword': 'random argument'}
+        test21 = {'name': 'WhiskerPlot', 'type': 'Star', 'random keyword': 'random argument'}
+
+        test_obj = self.testConfigDataHandler.makeTest(test1)
+        self.assertIsInstance(test_obj['sys_test'], stile.GalaxyShearSysTest)
+        self.assertEqual(test_obj['bin_list'], [])
+        self.assertEqual(test_obj['extra_args'], {})
+        test_obj = self.testConfigDataHandler.makeTest(test2)
+        self.assertIsInstance(test_obj['sys_test'], stile.BrightStarShearSysTest)
+        self.assertEqual(test_obj['bin_list'], [])
+        self.assertEqual(test_obj['extra_args'], {'ra': 7})
+        test_obj = self.testConfigDataHandler.makeTest(test3)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.GalaxyDensitySysTest)
+        self.assertEqual(test_obj['bin_list'], [expected_bin1])
+        self.assertEqual(test_obj['extra_args'], {})
+        test_obj = self.testConfigDataHandler.makeTest(test4)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.StarDensitySysTest)
+        self.assertEqual(test_obj['bin_list'], [expected_bin4])
+        self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
+        test_obj = self.testConfigDataHandler.makeTest(test7)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotResidualVsPSFG2SysTest)
+        self.assertEqual(test_obj['bin_list'], [])
+        self.assertEqual(test_obj['extra_args'], {})
+        test_obj = self.testConfigDataHandler.makeTest(test8)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotStarVsPSFSigmaSysTest)
+        self.assertEqual(test_obj['bin_list'], [])
+        self.assertEqual(test_obj['extra_args'], {'ra': 7})
+        test_obj = self.testConfigDataHandler.makeTest(test9)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotStarVsPSFG1SysTest)
+        self.assertEqual(test_obj['bin_list'], [expected_bin2])
+        self.assertEqual(test_obj['extra_args'], {})
+        test_obj = self.testConfigDataHandler.makeTest(test10)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotResidualVsPSFSigmaSysTest)
+        self.assertEqual(test_obj['bin_list'], [expected_bin1])
+        self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
+        test_obj = self.testConfigDataHandler.makeTest(test13)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotResidualSysTest)
+        self.assertEqual(test_obj['bin_list'], [])
+        self.assertEqual(test_obj['extra_args'], {})
+        test_obj = self.testConfigDataHandler.makeTest(test14)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotStarSysTest)
+        self.assertEqual(test_obj['bin_list'], [])
+        self.assertEqual(test_obj['extra_args'], {'ra': 7})
+        test_obj = self.testConfigDataHandler.makeTest(test15)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotPSFSysTest)
+        self.assertEqual(test_obj['bin_list'], [expected_bin4])
+        self.assertEqual(test_obj['extra_args'], {})
+        test_obj = self.testConfigDataHandler.makeTest(test16)
+        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotPSFSysTest)
+        self.assertEqual(test_obj['bin_list'], [expected_bin2])
+        self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
+        self.assertRaises(AttributeError, self.testConfigDataHandler.makeTest, test5)
+        self.assertRaises(AttributeError, self.testConfigDataHandler.makeTest, test11)
+        self.assertRaises(AttributeError, self.testConfigDataHandler.makeTest, test17)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test6)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test12)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test18)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test19)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test20)
+        self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test21)
+        
     def test_errors(self):
         bad_test = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
                                'name': 's1.dat', 'object_type': 'star'}],
