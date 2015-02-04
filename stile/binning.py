@@ -36,6 +36,12 @@ class BinList:
             raise ValueError('bin_list must be monotonically increasing or decreasing. Passed '+
                              'list: %s'%bin_list)
         self.bin_list = bin_list
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return (self.bin_list==other.bin_list and self.field==other.field and 
+                self.reverse==other.reverse)
+                
     def __call__(self):
         """
         Returns a list of SingleBin objects following the definitions provided when the class was
@@ -46,6 +52,8 @@ class BinList:
         if self.reverse:
             return_list.reverse()
         return return_list
+        
+        
 
 class BinStep:
     """
@@ -132,6 +140,11 @@ class BinStep:
             self.reverse = True
         else:
             self.reverse = False
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return (self.field==other.field and self.use_log==other.use_log and self.low==other.low and
+                self.step==other.step and self.n_bins==other.n_bins and self.reverse==other.reverse)
 
     def __call__(self):
         if self.use_log:
