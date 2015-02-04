@@ -8,6 +8,7 @@ import copy
 import stile_utils
 from .binning import BinStep, BinList, ExpandBinList
 from .file_io import ReadASCIITable, ReadFITSTable, ReadFITSImage, ReadTable, ReadImage
+from . import sys_tests
 
 class DataHandler:
     """
@@ -88,6 +89,13 @@ class DataHandler:
             return os.path.join(self.output_path, sys_test_string+extension)
 
 class ConfigDataHandler(DataHandler):
+    expected_systest_keys = {
+        'CorrelationFunction': ['name', 'bins', 'type', 'treecorr_kwargs', 'extra_args'],
+        'ScatterPlot': ['name', 'bins', 'type', 'extra_args'],
+        'WhiskerPlot': ['name', 'bins', 'type', 'extra_args'],
+        'Stat': ['name', 'bins', 'field', 'object_type', 'extra_args']
+    }
+
     expected_bin_keys = {
         'List': ['name', 'field', 'endpoints'],
         'Step': ['name', 'field', 'low', 'high', 'step', 'n_bins', 'use_log']
@@ -130,14 +138,21 @@ class ConfigDataHandler(DataHandler):
         return config
 
     def parseSysTests(self, stile_args):
+        self.parseSysTestsDict(stile_args)
+        self.sys_tests = {}
+        for format in self.sys_tests_dict:
+            self.sys_tests[format] = [self.makeTest(s) for s in self.sys_tests_dict[format]]
+        return self.sys_tests
+        
+    def parseSysTestsDict(self, stile_args):
         """
         Process the arguments from the config file/command line that tell Stile which tests to do.
         Needs to be done after parseFiles, since it uses the dictionary built up by parseFiles as a
         base for the test dictionary.
         """
-        self.sys_tests = {}
+        self.sys_tests_dict = {}
         for format in self.files:
-            self.sys_tests[format] = []
+            self.sys_tests_dict[format] = []
         keys = sorted(stile_args.keys())
         for key in keys:
             # Pull out the sys_test arguments and process them
@@ -147,21 +162,21 @@ class ConfigDataHandler(DataHandler):
                     # This is a nested dict, so recurse it, then add to the sys_test dict
                     sys_test_list = self._recurseDict(sys_test_obj, require_format_args=False)
                     for sys_test in sys_test_list:
-                        self.addItem(sys_test, self.sys_tests)
+                        self.addItem(sys_test, self.sys_tests_dict)
                 elif isinstance(sys_test_obj, dict):
                     # otherwise, add directly
-                    self.addItem(sys_test_obj, self.sys_tests)
+                    self.addItem(sys_test_obj, self.sys_tests_dict)
                 elif hasattr(sys_test_obj, '__iter__'):
                     for sys_test in sys_test_obj:
                         if isinstance(sys_test, dict):
-                            self.addItem(sys_test, self.sys_tests)
+                            self.addItem(sys_test, self.sys_tests_dict)
                         else:
                             raise ValueError('Sys_test items in config file which are lists must '+
                                              'contain only dicts')
                 else:
                     raise ValueError('Sys_test items in config file must be dicts or lists of'+
                                      'dicts')
-        return self.sys_tests # Return for checking purposes, mainly
+        return self.sys_tests_dict # Return for checking purposes, mainly
 
     def parseFiles(self, stile_args):
         """
@@ -772,6 +787,71 @@ class ConfigDataHandler(DataHandler):
         if isinstance(epoch, stile_utils.Format):
             epoch = epoch.str
         return epoch
+
+    def makeTest(self, sys_test):
+        """
+        Given a definition of a SysTest contained in a dictionary (with the type of SysTest
+        defined by the "name" (general class) and "type" (specific test)), return a dictionary
+        containing the necessary information to run the test.
+
+        @param sys_test  A dictionary defining a SysTest
+        @returns         A dictionary with the following entries:
+                            - 'sys_test': a stile.SysTest object
+                            - 'bin_list': a list of stile.BinStep or stile.BinList objects to
+                              be applied to the data
+                            - 'extra_args': a dict of extra keyword arguments to be passed to
+                              calls of the returned 'sys_test'.
+        """
+        # Check inputs for proper formats and keys
+        if not isinstance(sys_test, dict):
+            raise ValueError('Sys test descriptions (from ConfigDataHandler) must be dicts--this '+
+                             'is a bug')
+        if 'name' not in sys_test:
+            raise ValueError('Sys tests are defined by a "name" argument - not found')
+        if sys_test['name'] not in self.expected_systest_keys:
+            raise ValueError('Do not understand sys test name %s'%sys_test['name'])
+        unexpected_keys = [key for key in sys_test
+                           if key not in self.expected_systest_keys[sys_test['name']]]
+        if unexpected_keys:
+            raise ValueError('Got unexpected key or keys %s for sys test type %s'%(unexpected_keys,
+                                                                                  sys_test['name']))
+
+        # Process the non-sys-test args
+        if 'extra_args' in sys_test:
+            extra_args = sys_test['extra_args']
+        else:
+            extra_args = {}
+        if 'bins' in sys_test:
+            bin_list = self.makeBins(sys_test['bin_list'])
+        else:
+            bin_list = []
+
+        # Turn the dicts into actual SysTest objects
+        if sys_test['name'] == 'CorrelationFunction':
+            if 'type' not in sys_test:
+                raise ValueError('Must pass "type" argument for CorrelationFunction systematics '+
+                                 'tests')
+            # Next line for when PR #56 is merged
+            # return_test = sys_tests.CorrelationFunctionSysTest(sys_test['type'])
+            return_test = eval('sys_tests.'+sys_test['type']+'SysTest()')
+            if 'treecorr_kwargs' in sys_test:
+                extra_args.update(sys_test['treecorr_kwargs'])
+        elif sys_test['name'] == 'ScatterPlot':
+            # Next line for when PR #56 is merged
+            # return_test = sys_tests.ScatterPlotSysTest(sys_test['type'])
+            return_test = eval('sys_tests.ScatterPlot'+sys_test['type']+'SysTest()')
+        elif sys_test['name'] == 'WhiskerPlot':
+            # Next line for when PR #56 is merged
+            # return_test = sys_tests.WhiskerPlotSysTest(sys_test['type'])
+            return_test = eval('sys_tests.'+sys_test['type']+'SysTest()')
+        elif sys_test['name'] == 'Stat':
+            if 'field' not in sys_test:
+                raise ValueError('Must pass "field" argument for Stat sys test')
+            if 'object_type' not in sys_test:
+                raise ValueError('Must pass "object_type" argument for Stat sys test')
+            return_test = sys_tests.StatSysTest(field=sys_test['field'])
+            return_test.objects_list = [sys_test['object_type']]  # for automated processing
+        return {'sys_test': return_test, 'bin_list': bin_list, 'extra_args': extra_args}
 
     def makeBins(self, bins):
         """
