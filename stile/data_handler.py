@@ -1014,6 +1014,16 @@ class ConfigDataHandler(DataHandler):
                             for obj in object_type] for group in groups_list]
         return self._expandBins(return_list, multiepoch=multiepoch)
 
+    def getMask(self, data, flag):
+        if hasattr(flag, '__iter__'):
+            return numpy.logical_and.reduce([self.getMask(data,f) for f in flag], axis=1)
+        elif isinstance(flag, str):
+            return data[flag]==False
+        elif isinstance(flag, dict):
+            return numpy.logical_and.reduce([data[key]==flag[key] for key in flag], axis=1)
+        else:
+            raise ValueError('flag_field kwarg must be a string, list, or dict; given %s'%flag)
+
     def getData(self, data_id, object_type, epoch, extent=None, data_format=None, bin_list=None):
         """
         Return the data corresponding to 'data_id' for the given object_type and data format.
@@ -1046,6 +1056,19 @@ class ConfigDataHandler(DataHandler):
             fields = data_id['fields']
         else:
             fields=None
+        
+        # For multiepoch data sets with lists in the "name" key
+        if hasattr(data_id['name'], '__iter__'):
+            if 'multiepoch' not in epoch:
+                raise RuntimeError('List of data files can only be given for multiepoch data sets')
+            name_list = data_id['name']
+            data_list = []
+            for name in name_list:
+                data_id['name'] = name
+                data_list.append(self.getData(data_id, object_type, epoch, bin_list=bin_list))
+            data_id['name'] = name_list
+            return data_list
+            
         if 'file_reader' in data_id:
             if d['file_reader']=='ASCII':
                 data = ReadASCIITable(data_id['name'], fields=fields)
@@ -1065,17 +1088,7 @@ class ConfigDataHandler(DataHandler):
             raise RuntimeError('Data format must be either "catalog" or "image", given '+
                                '%s'%data_format)
         if data_id['flag_field']:
-            flag = data_id['flag_field']
-            if isinstance(flag, str):
-                data = data[data[flag]==False]
-            elif isinstance(flag, list):
-                for f in flag:
-                    data = data[data[f]==False]
-            elif isinstance(flag, dict):
-                for key in flag:
-                    data = data[data[key]==flag[key]]
-            else:
-                raise ValueError('flag_field kwarg must be a string, list, or dict; given %s'%flag)
+            data = data[self.getMask(data, data_id['flag_field'])]
         if bin_list:
             for bin in bin_list:
                 data = bin(data)
