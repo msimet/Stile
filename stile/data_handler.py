@@ -89,13 +89,46 @@ class DataHandler:
             return os.path.join(self.output_path, sys_test_string+extension)
 
 class ConfigDataHandler(DataHandler):
+    """
+    A DataHandler to read in, parse, and prepare a set of data and sys_tests from a YAML or JSON
+    config file.  The class must be initialized with a dict or filename (or list of filenames).
+    It then generates two class attributes, .files and .sys_tests.  Each is a dict, described below.
+    It also generates a .groups attribute, a dict that matches up elements from the .files dict that
+    can be analyzed together (for eg a test that needs both stars and galaxies in the same region of
+    sky), also described below.
+    
+    This class is designed to be used with the ConfigDriver (found in driver.py) to actually run the
+    described tests.  Be aware that this function removes keys from the dict it takes as input.
+
+    The .files and .sys_tests are dicts keyed by a "format" (a string of the form 
+    "epoch-extent-dataFormat").  The values of the dict for the .files attribute are also dicts,
+    keyed by the object type, with values being lists of files (either strings or dicts giving more
+    info about how to read in the file); the values of the .sys_tests dict are just lists of tests,
+    all of them defined by a dict of the form {'sys_test': SysTest object, 'extra_args': extra
+    keyword arguments to be passed in calls to the SysTest object, 'bins': list of bins to be
+    applied to the data}.  (The 'bins' option is not currently allowed for tests that require more
+    than one data set to run.)   Or, visually:
+    self.files = {'format_1': {
+                    'object_type_1': [file_1, file_2, {dict_describing_file_3}, ...],
+                    'object_type_2': [file_4]}, ...}
+    self.sys_tests = {'format_1': 
+                        [{'sys_test': test_object_1, 'extra_args': {}, 'bins': [bin1, bin2...]}]}
+                        
+    The .groups attribute is slightly different.  It is keyed by a group name, and then proceeds
+    through format and object_type to an index into the corresponding .files[format][object_type]
+    list, as follows:
+    self.groups = {'group_1': {
+                        'format_1': {
+                            'object_1': index_1,
+                            'object_2': index_2} } }
+    """
+    # Keys we expect to get in 'test' or 'bin' dictionaries
     expected_systest_keys = {
         'CorrelationFunction': ['name', 'bins', 'type', 'treecorr_kwargs', 'extra_args'],
         'ScatterPlot': ['name', 'bins', 'type', 'extra_args'],
         'WhiskerPlot': ['name', 'bins', 'type', 'extra_args'],
         'Stat': ['name', 'bins', 'field', 'object_type', 'extra_args']
     }
-
     expected_bin_keys = {
         'List': ['name', 'field', 'endpoints'],
         'Step': ['name', 'field', 'low', 'high', 'step', 'n_bins', 'use_log']
@@ -106,6 +139,8 @@ class ConfigDataHandler(DataHandler):
             config = self.loadConfig('config_file')
             config.update(stile_args)
             stile_args = config
+        elif isinstance(stile_args, str):
+            config = self.loadConfig(stile_args)
         self.parseFiles(stile_args)
         self.parseSysTests(stile_args)
         self.stile_args = stile_args
@@ -138,6 +173,11 @@ class ConfigDataHandler(DataHandler):
         return config
 
     def parseSysTests(self, stile_args):
+        """
+        Process the arguments from the config file/command line that tell Stile which tests to do.
+        Needs to be done after parseFiles, since it uses the dictionary built up by parseFiles as a
+        base for the test dictionary.
+        """
         self.parseSysTestsDict(stile_args)
         self.sys_tests = {}
         for format in self.sys_tests_dict:
@@ -146,9 +186,9 @@ class ConfigDataHandler(DataHandler):
         
     def parseSysTestsDict(self, stile_args):
         """
-        Process the arguments from the config file/command line that tell Stile which tests to do.
-        Needs to be done after parseFiles, since it uses the dictionary built up by parseFiles as a
-        base for the test dictionary.
+        Process the arguments from the config file/command line that tell Stile which tests to do,
+        as far as a formatted dict of dicts (turning the dicts into SysTest objects is done by
+        parseSysTests, which generally calls this function).
         """
         self.sys_tests_dict = {}
         for format in self.files:
@@ -204,6 +244,9 @@ class ConfigDataHandler(DataHandler):
         flag_field = stile_utils.PopAndCheckFormat(stile_args, 'flag_field', (str, list, dict),
                                                    default=[])
         if flag_field:
+            # Flag_fields we want to add together, not just replace (so you can eg cut out all
+            # your photometric failures, then define all the "galaxy" files as needing flag=1
+            # and all your "star" files as needing flag=0 if they're in the same catalogs on disk.
             file_list = self.addKwarg('flag_field', flag_field, file_list, append=True)
         file_reader = stile_utils.PopAndCheckFormat(stile_args, 'file_reader', (str, dict),
                                                     default='')
@@ -214,7 +257,8 @@ class ConfigDataHandler(DataHandler):
         return self.files, self.groups # Return for checking purposes, mainly
 
     def _parseFileHelper(self, files, start_n=0):
-        # Recurse through all the levels of the current file arg
+        # Recurse through all the levels of the current file arg and turn a nested dict into a 
+        # list of dicts.
         if isinstance(files, dict):
             # This is a nested dict, so recurse down through it and turn it into a list of dicts
             # instead.
@@ -566,6 +610,8 @@ class ConfigDataHandler(DataHandler):
                             item1['group'] = (stile_utils.flatten(item1.get('group', []))+
                                               stile_utils.flatten(item2.get('group', [])))
                             del_list.append(j+i+1)
+                # Get rid of duplicate items; go from the back end, so you don't mess up the later
+                # indices.
                 del_list.sort()
                 del_list.reverse()
                 for j in del_list:
@@ -610,6 +656,8 @@ class ConfigDataHandler(DataHandler):
         if not file_dict:
             return {}
         groups = {}
+        # Make a dict with the indices of the files corresponding to each group like:
+        # dict[format][object_type] = [(index1, group_name1), ...]
         for key in file_dict.keys():
             groups[key] = {}
             for obj_type in file_dict[key].keys():
@@ -617,6 +665,8 @@ class ConfigDataHandler(DataHandler):
                                          for i, item in enumerate(file_dict[key][obj_type])
                                          if isinstance(item, dict) and 'group' in item]
         reverse_groups = {}
+        # Then, back this out to make a list keyed by the group name and indexing all the
+        # files in it.
         for key in groups:
             for obj_type in groups[key]:
                 for i, group_names in groups[key][obj_type]:
@@ -710,6 +760,7 @@ class ConfigDataHandler(DataHandler):
                                     else:
                                         file[key] = value
         else:
+            # In this case, strip out all the remaining dict keys in sequence and recurse.
             object_types = [object_type for file_dict in file_dicts for format in file_dict
                             for object_type in file_dict[format]]
             value_keys = value.keys()
@@ -753,7 +804,10 @@ class ConfigDataHandler(DataHandler):
         intended for use by this function itself in recursive calls.
         """
         # Note to coders: this is very similar to addKwarg above and any bugs found here might also
-        # appear there
+        # appear there.
+        # (this one is much simpler since A) we don't require all formats and B) there's a clear
+        # separation between what you're adding, and what's describing where you add it, since one
+        # is a dict and the other is a list or list item)
         # If there are no remaining restrictions to process:
         item_keys = item.keys()
         if not ('extent' in item_keys or 'epoch' in item_keys or 'data_format' in item_keys):
@@ -899,19 +953,25 @@ class ConfigDataHandler(DataHandler):
                                 use_log = bin_def.get('use_log', False)))
         return bin_list
 
-    def _expandBins(self, item_list, multiepoch = False):
+    def _expandBins(self, item_list):
+        """
+        Take a list of files including binning, and turn them into a list of separate "files"
+        with one (list of) SingleBin(s) to be applied to each.
+        """
         if isinstance(item_list, dict):
             item_list = [item_list]
         return_list = []
         for item in item_list:
             if isinstance(item, list):
+                # Recurse
                 new_list = []
                 for subitem in item:
                     if hasattr(subitem, '__iter__'):
-                        new_list.append(self._expandBins(subitem, multiepoch = True))
+                        new_list.append(self._expandBins(subitem))
                     else:
-                        new_list.append(self._expandBins(subitem, multiepoch = False))
+                        new_list.append(self._expandBins(subitem))
                 new_items = [[]]
+                # Do the ExpandBinList thing where we make a matrix of lists
                 while new_list:
                     this_list = new_list.pop()
                     new_items = [[file]+n_i for file in this_list for n_i in new_items]
@@ -919,6 +979,8 @@ class ConfigDataHandler(DataHandler):
             elif not 'bins' in item:
                 return_list.append(item)
             else:
+                # This is a single item with a Bin, so copy it N times and put the 
+                # appropriate (list of) SingleBin(s) in each one.
                 if not 'bin_list' in item:
                     bins = ExpandBinList(self.makeBins(item['bins']))
                     new_items = [item.copy() for i in range(len(bins))]
@@ -927,8 +989,6 @@ class ConfigDataHandler(DataHandler):
                     return_list.extend(new_items)
                 else:
                     return_list.append(item)
-        #if not multiepoch:
-        #    return_list = stile_utils.flatten(return_list)
         return return_list
 
     def queryFile(self, file_name):

@@ -10,6 +10,9 @@ import copy
 import numpy
 
 class Set(object):
+    """
+    Container class to hold information about format-keyed file dicts.
+    """
     def __init__(self, config, expected_files, format, object, not_found_format, not_found_object):
         self.config = config
         self.expected_files = expected_files
@@ -492,6 +495,9 @@ class TestDataHandler(unittest.TestCase):
 
 
     def test_parseFileHelper(self):
+        """
+        Test the internals of the parseFiles method.
+        """
         # First make sure the file list is built correctly
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict0))
         self.assertEqual(results, self.expected_files0)
@@ -756,6 +762,7 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(len(results), len(expected_results))
         self.assertTrue(all([r in expected_results for r in results]))
         
+        # Make sure that a properly zipped file list is returned if binning is defined
         config = stile.ConfigDataHandler({'file': self.bins0})
         results = config.listData(['galaxy', 'star'], 'single-CCD-catalog')
         expected_results = [[{'name': 'g1.dat', 'group': '_stile_group_0', 
@@ -808,6 +815,9 @@ class TestDataHandler(unittest.TestCase):
                     r[i]['bin_list'] = b_l                      
                     
     def test_systests(self):
+        """
+        Test the internals of the parseSysTests method.
+        """
         # We will use self.dict0 (simple), self.dict3 (more complicated), self.dict9 (only 1 object
         # type per level) as our base file dicts for the sys_test cases.
         config_0 = stile.ConfigDataHandler({'files': self.dict0})
@@ -1065,6 +1075,9 @@ class TestDataHandler(unittest.TestCase):
         self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
 
     def test_make_bins_and_tests(self):
+        """
+        Test the makeBins and makeTest methods for various input dicts.
+        """
         bin1 = {'name': 'Step', 'field': 'ra', 'low': 0, 'high': 7.5, 'n_bins': 8}
         expected_bin1 = stile.BinStep(field='ra', low=0, high=7.5, n_bins=8)
         bin2 = {'name': 'Step', 'field': 'dec', 'high': 10, 'n_bins': 13, 'step': 0.5, 'use_log': True}
@@ -1176,6 +1189,9 @@ class TestDataHandler(unittest.TestCase):
         self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test21)
         
     def test_errors(self):
+        """
+        Make sure that various errors are raised, if not already tested in previous methods.
+        """
         bad_test = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
                                'name': 's1.dat', 'object_type': 'star'}],
                     'sys_tests': [{'name': 'CorrelationFunction', 'type': 'BrightStarShear'},
@@ -1221,8 +1237,6 @@ class TestDataHandler(unittest.TestCase):
                                           'CCD': {'catalog': {'galaxy': 
                                                                 {'name': 'g1.dat', 'group': 1}}}}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_groups)
-
-# add makeBins
 
 if __name__=='__main__':
     unittest.main()
