@@ -1072,7 +1072,7 @@ class ConfigDataHandler(DataHandler):
             # to get the real files and not their indices
             return_list = [[self.files[epoch][obj][self.groups[group][epoch][obj]]
                             for obj in object_type] for group in groups_list]
-        return self._expandBins(return_list, multiepoch=multiepoch)
+        return self._expandBins(return_list)
 
     def getMask(self, data, flag):
         if hasattr(flag, '__iter__'):
