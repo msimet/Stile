@@ -54,7 +54,7 @@ class DataHandler:
     clobber = False
     written_files = []
     output_path = '.'
-    
+
     def __init__(self):
         raise NotImplementedError()
 
@@ -93,20 +93,25 @@ class DataHandler:
                 self.written_files[file_base] = 0
             else:
                 self.written_files[file_base] += 1
-            return os.path.join(self.output_path, sys_test_string+'_'+str(self.written_files[file_base])+extension)
-        elif self.multi_file: 
+            return os.path.join(self.output_path,
+                                sys_test_string+'_'+str(self.written_files[file_base])+extension)
+        elif self.multi_file:
             files = glob.glob(os.path.join(self.output_path, sys_test_string)+'*'+extension)
             n_underscores = self.output_path.count('_')+sys_test_string.count('_')+1
             files = [f for f in files if f.count('_')<=n_underscores]  # Ignore filenames with bins
             if files:
                 if not os.path.join(self.output_path, sys_test_string)+extension in files:
                     return os.path.join(self.output_path, sys_test_string+extension)
-                elif not os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension) in files:
-                    return os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension)
+                elif not os.path.join(self.output_path,
+                                      sys_test_string+'_'+str(len(files))+extension) in files:
+                    return os.path.join(self.output_path,
+                                        sys_test_string+'_'+str(len(files))+extension)
                 else:
                     for i in range(len(files)):
-                        if not os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension) in files:
-                            return os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension)
+                        if not os.path.join(self.output_path,
+                                            sys_test_string+'_'+str(len(files))+extension) in files:
+                            return os.path.join(self.output_path,
+                                                sys_test_string+'_'+str(len(files))+extension)
             else:
                 return os.path.join(self.output_path, sys_test_string+extension)
         else:
@@ -219,7 +224,7 @@ class ConfigDataHandler(DataHandler):
         for format in self.sys_tests_dict:
             self.sys_tests[format] = [self.makeTest(s) for s in self.sys_tests_dict[format]]
         return self.sys_tests
-        
+
     def parseSysTestsDict(self, stile_args):
         """
         Process the arguments from the config file/command line that tell Stile which tests to do,
@@ -295,7 +300,7 @@ class ConfigDataHandler(DataHandler):
         return self.files, self.groups # Return for checking purposes, mainly
 
     def _parseFileHelper(self, files, start_n=0):
-        # Recurse through all the levels of the current file arg and turn a nested dict into a 
+        # Recurse through all the levels of the current file arg and turn a nested dict into a
         # list of dicts.
         if isinstance(files, dict):
             # This is a nested dict, so recurse down through it and turn it into a list of dicts
@@ -350,16 +355,16 @@ class ConfigDataHandler(DataHandler):
         # information that was put in.  If I was writing this again I'd probably do it differently,
         # frankly, but this works so I'm not messing with it any more.
         #
-        # What happens is, if this is a dict, we pull out the kwargs that could apply to child 
+        # What happens is, if this is a dict, we pull out the kwargs that could apply to child
         # levels of the dict (such as file_reader, etc).  Then we figure out what kind of file-
         # relevant keys are in this layer of the dict.  We pop those keys out of the dict, add them
         # as kwargs to be passed to a recursive call of this function, and then execute the
         # recursive call with the value of the key, along with any kwargs which were passed to this
         # iteration of this function.  (In other words, any kwargs will override previous kwargs
-        # [except for 'flag_field' which appends], but we copy the dict to make sure it's not 
+        # [except for 'flag_field' which appends], but we copy the dict to make sure it's not
         # changed for any parallel recursive calls.)  Then, when we get all the way down to a list
         # of dicts, we add all of those kwargs to each element of the list and return that.  Whew!
-        
+
         format_keys = ['epoch', 'extent', 'data_format', 'object_type']
         # First things first: if this is a list, we've recursed through all the levels of the dict.
         # The kwargs contain the format keys from all the superior levels, so we'll update with
@@ -377,9 +382,12 @@ class ConfigDataHandler(DataHandler):
                     if isinstance(files, dict):
                         # Copy the kwargs, then update with the stuff in this dict (which should
                         # override higher levels).
-                        if any([format_key in files and format_key in kwargs for format_key in format_keys]):
-                            raise ValueError("Duplicate definition of format element for item %s"%files)
-                        elif any([format_key not in files and format_key not in kwargs for format_key in format_keys]):
+                        if any([format_key in files and format_key in kwargs
+                                for format_key in format_keys]):
+                            raise ValueError("Duplicate definition of format element for item "+
+                                             str(files))
+                        elif any([format_key not in files and format_key not in kwargs
+                                  for format_key in format_keys]):
                             raise ValueError("Incomplete definition of format for item %s"%files)
                         pass_kwargs = copy.deepcopy(kwargs)
                         pass_kwargs.update(files)
@@ -392,26 +400,36 @@ class ConfigDataHandler(DataHandler):
                             return_list = []
                             for item in files:
                                 if isinstance(item, dict):
-                                    if any([format_key in item and format_key in kwargs for format_key in format_keys]):
-                                        raise ValueError("Duplicate definition of format element for item %s"%item)
-                                    elif isinstance(item, dict) and any([format_key not in item and format_key not in kwargs for format_key in format_keys]) and require_format_args:
-                                        raise ValueError("Incomplete definition of format for item %s"%item)
+                                    if any([format_key in item and format_key in kwargs
+                                            for format_key in format_keys]):
+                                        raise ValueError("Duplicate definition of format element "+
+                                                         "for item %s"%item)
+                                    elif (isinstance(item, dict) and
+                                          any([format_key not in item and format_key not in kwargs
+                                               for format_key in format_keys]) and
+                                          require_format_args):
+                                        raise ValueError("Incomplete definition of format for "+
+                                                         "item %s"%item)
                                 else:
-                                    if not all([format_key in kwargs for format_key in format_keys]):
-                                        raise ValueError("Incomplete definition of format for item %s"%item)
+                                    if not all([format_key in kwargs
+                                                for format_key in format_keys]):
+                                        raise ValueError("Incomplete definition of format for "+
+                                                         "item %s"%item)
                                 pass_kwargs = copy.deepcopy(kwargs)
                                 if isinstance(item, dict):
                                     pass_kwargs.update(item)
                                 else:
-                                    if not all([format_key in kwargs for format_key in format_keys]):
-                                        raise ValueError("Incomplete definition of format for item %s"%item)
+                                    if not all([format_key in kwargs
+                                                for format_key in format_keys]):
+                                        raise ValueError("Incomplete definition of format for "+
+                                                         "item %s"%item)
                                     pass_kwargs['name'] = item
                                 return_list.append(pass_kwargs)
                             return return_list
                         elif any(iterable):
                             raise ValueError('Cannot interpret list of items for multiepoch: '+
-                                             str(files)+'. Should be an iterable, or an iterable of '+
-                                             'iterables.')
+                                             str(files)+'. Should be an iterable, or an iterable '+
+                                             'of iterables.')
                         else:
                             pass_kwargs.update({'name': files})
                             return [pass_kwargs]
@@ -426,9 +444,13 @@ class ConfigDataHandler(DataHandler):
                     for file in files:
                         pass_kwargs = copy.deepcopy(kwargs)
                         if isinstance(file, dict):
-                            if any([format_key in file and format_key in kwargs for format_key in format_keys]):
-                                raise ValueError("Duplicate definition of format element for item %s"%item)
-                            elif isinstance(file, dict) and any([format_key not in file and format_key not in kwargs for format_key in format_keys]) and require_format_args:
+                            if any([format_key in file and format_key in kwargs
+                                    for format_key in format_keys]):
+                                raise ValueError("Duplicate definition of format element for item"+
+                                                 str(item))
+                            elif (isinstance(file, dict) and
+                                  any([format_key not in file and format_key not in kwargs
+                                       for format_key in format_keys]) and require_format_args):
                                 raise ValueError("Incomplete definition of format for item %s"%file)
                             pass_kwargs.update(file)
                         else:
@@ -490,8 +512,9 @@ class ConfigDataHandler(DataHandler):
             if 'name' in files:
                 if (all([format_key in files or format_key in kwargs for format_key in format_keys])
                     or require_format_args==False):
-                    if any([format_key in files and format_key in kwargs for format_key in format_keys]):
-                        raise ValueError("Duplicate format definition for item %s"%str(files))                        
+                    if any([format_key in files and format_key in kwargs
+                            for format_key in format_keys]):
+                        raise ValueError("Duplicate format definition for item %s"%str(files))
                     pass_kwargs.update(files)
                     return_list+=[pass_kwargs]
                     files_keys = files.keys()
@@ -833,7 +856,7 @@ class ConfigDataHandler(DataHandler):
             if not any([v==obj for v in value_keys for obj in object_types] +
                        [v in format.split('-') for v in value_keys for file_dict in file_dicts
                         for format in file_dict]) and key=='fields':
-                self.addKwarg(key, {'name': value}, file_dicts, format_keys, 
+                self.addKwarg(key, {'name': value}, file_dicts, format_keys,
                               object_type_key, append)
             # Otherwise, recursively call this function with the extra formats/object types included
             else:
@@ -995,7 +1018,7 @@ class ConfigDataHandler(DataHandler):
         @param bins  A binning scheme defined by a dict, or a list of them
         @returns     A list of corresponding BinList or BinStep objects
         """
-        if isinstance(bins, dict):  
+        if isinstance(bins, dict):
             # In case there's just one bin definition as a dict, rather than a list of them
             bins = [bins]
         bin_list = []
@@ -1008,7 +1031,7 @@ class ConfigDataHandler(DataHandler):
             if not 'field' in bin_def:
                 raise ValueError('Must define a field for the bin to operate on; given '+
                                  'definition %s'%str(bin_def))
-            unexpected_keys = [key for key in bin_def 
+            unexpected_keys = [key for key in bin_def
                                if key not in self.expected_bin_keys[bin_def['name']]]
             if unexpected_keys:
                 raise ValueError('Got unexpected key or keys %s for bin type %s'%(unexpected_keys,
@@ -1052,7 +1075,7 @@ class ConfigDataHandler(DataHandler):
             elif not 'bins' in item:
                 return_list.append(item)
             else:
-                # This is a single item with a Bin, so copy it N times and put the 
+                # This is a single item with a Bin, so copy it N times and put the
                 # appropriate (list of) SingleBin(s) in each one.
                 if not 'bin_list' in item:
                     bins = ExpandBinList(self.makeBins(item['bins']))
@@ -1128,8 +1151,8 @@ class ConfigDataHandler(DataHandler):
         if (not hasattr(object_type, '__hash__') or (hasattr(object_type, '__iter__') and
             not all([hasattr(obj, '__hash__') for obj in object_type]))):
             raise ValueError('object_type argument must be able to be used as a dictionary key, or'+
-                             'be an iterable all of whose elements can be used as dictionary keys: '+
-                             'given %s'%object_type)
+                             'be an iterable all of whose elements can be used as dictionary keys:'+
+                             ' given %s'%object_type)
         if not hasattr(object_type, '__iter__'):
             if epoch in self.files and object_type in self.files[epoch]:
                 return_list = [file for file in self.files[epoch][object_type]]
@@ -1189,7 +1212,7 @@ class ConfigDataHandler(DataHandler):
             fields = data_id['fields']
         else:
             fields=None
-        
+
         # For multiepoch data sets with lists in the "name" key
         if hasattr(data_id['name'], '__iter__'):
             if 'multiepoch' not in epoch:
@@ -1201,7 +1224,7 @@ class ConfigDataHandler(DataHandler):
                 data_list.append(self.getData(data_id, object_type, epoch, bin_list=bin_list))
             data_id['name'] = name_list
             return data_list
-            
+
         if 'file_reader' in data_id:
             if d['file_reader']=='ASCII':
                 data = ReadASCIITable(data_id['name'], fields=fields)
@@ -1214,19 +1237,26 @@ class ConfigDataHandler(DataHandler):
                     raise RuntimeError('Data format must be either "catalog" or "image", given '+
                                        '%s'%data_format)
             elif isinstance(d['file_reader'], dict):
-                if 'extra_kwargs' in d['file_reader'] and not isinstance(d['file_reader']['extra_kwargs'], dict):
-                    raise ValueError("extra_kwargs argument of file_reader option must be a dict, given %s"%str(d['file_reader']['extra_kwargs']))
+                if ('extra_kwargs' in d['file_reader'] and
+                    not isinstance(d['file_reader']['extra_kwargs'], dict)):
+                    raise ValueError("extra_kwargs argument of file_reader option must be a dict, "+
+                                     "given "+str(d['file_reader']['extra_kwargs']))
                 if 'name' not in d['file_reader']:
                     if 'image' in epoch:
-                        data = ReadImage(data_id['name'], **d['file_reader'].get('extra_kwargs', {}))
+                        data = ReadImage(data_id['name'],
+                                         **d['file_reader'].get('extra_kwargs', {}))
                     else:
-                        data = ReadTable(data_id['name'], fields=fields, **d['file_reader'].get('extra_kwargs', {}))
+                        data = ReadTable(data_id['name'], fields=fields,
+                                         **d['file_reader'].get('extra_kwargs', {}))
                 elif d['file_reader']['name']=='ASCII':
-                    data = ReadASCIITable(data_id['name'], fields=fields, **d['file_reader'].get('extra_kwargs', {}))
+                    data = ReadASCIITable(data_id['name'], fields=fields,
+                                          **d['file_reader'].get('extra_kwargs', {}))
                 elif d['file_reader']['name']=='FITS':
-                    data = ReadFITSTable(data_id['name'], fields=fields, **d['file_reader'].get('extra_kwargs', {}))
+                    data = ReadFITSTable(data_id['name'], fields=fields,
+                                         **d['file_reader'].get('extra_kwargs', {}))
                 else:
-                    raise ValueError('Do not understand file_reader type: %s'%str(d['file_reader']['name']))
+                    raise ValueError('Do not understand file_reader type: '+
+                                     str(d['file_reader']['name']))
             else:
                 raise ValueError('Do not understand file_reader type: %s'%str(d['file_reader']))
         elif 'catalog' in epoch:
@@ -1243,6 +1273,7 @@ class ConfigDataHandler(DataHandler):
             for bin in bins_to_do:
                 data = bin(data)
             if 'nickname' in data_id:
-                data_id['nickname'] = '_'.join([data_id['nickname']]+[b.short_name for b in bins_to_do])
+                data_id['nickname'] = '_'.join([data_id['nickname']]+
+                                               [b.short_name for b in bins_to_do])
         return data
 
