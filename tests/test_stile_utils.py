@@ -8,7 +8,7 @@ except ImportError:
     import stile
 
 class TestStileUtils(unittest.TestCase):
-    
+
     def test_FormatArray(self):
         """Test formatted array routines and behavior."""
         data_raw = [(1,'hello',2.0),(3,'boo',5.0)]
@@ -40,7 +40,7 @@ class TestStileUtils(unittest.TestCase):
         # And one quick check for non-NumPy arrays, ie, assume a 1d array is a *row* not a *field*
         # and that everything else works
         numpy.testing.assert_equal(stile.FormatArray([1,2]),numpy.array([(1,2)],dtype='l,l'))
-    
+
 
 if __name__=='__main__':
     unittest.main()
