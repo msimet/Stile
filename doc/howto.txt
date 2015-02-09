@@ -1,0 +1,212 @@
+HOW THE CONFIG FILES WORK
+
+- Files are described by keys that start with "file" (except "file_reader", which has a special
+purpose described below).  Each "file" key is processed separately as far as grouping and
+inheritance are concerned, and then all the files described that way are combined into one large
+dict, ConfigDataHandler.files.
+- Systematics tests are described by keys that start with "sys_test".  As above, each "sys_test" key
+is processed separately, then combined into one large dict, ConfigDataHandler.sys_tests.
+- Other things to control Stile's behavior can be passed as simple "key: value" pairs, as described
+below.
+
+FILE INPUT
+
+The basic idea is to specify the name(s) of the file(s), the "format" (a combination of [spatial]
+`extent` such as 'CCD' or 'field'; `epoch`, usually one of 'single', 'coadd', or 'multiepoch'; and
+`data_format`--'table' or 'image'), and the `object_type`, such as 'star' or 'galaxy', contained in
+each file.  This tells Stile which tests to run on which files.
+
+Files can be described in one of two ways: as a nested dict, or as a list of dicts.  In the list of
+dicts case, each dict should look something like
+{'name': file_name, 'epoch': epoch, 'extent': extent, 'data_format': data_format,
+'object_type': object_type, other_key: other_value, ...}
+Each dict must have the name, epoch, extent, data_format, and object_type keys, or processing will
+fail.  You can define epochs or extents other than the Stile builtins.  
+
+If the 'name' argument is a list--either because it was defined that way, or because wildcards were
+expanded--each file will be analyzed separately unless the 'epoch' is 'multiepoch', in which case a
+list of files (or the lowest-level lists in a list of lists) will be considered a set of files to be
+analyzed together, each one expected to represent the same area of sky but at a different time.
+(Catalogs made from many exposures, but containing only one entry per observed object, are called
+'coadd's in this terminology; 'multiepoch' is defined by having multiple independent measurements
+per object.  User-defined epochs will be processed as if they were 'single' or 'coadd' data sets.)
+
+Other keys you can define include:
+'nickname': a string to put in the filename of outputs to indicate which file was used (this
+    defaults to the name of the file on disk).
+'wildcard': a Boolean value indicating whether to expand wildcards through the Python "glob" module
+    (default: False).
+'fields': a description of the columns (fields) of a data table, as either a list of strings (one
+    per column) or a dict of the form {column_name: column_number}.  (For FITS files only, the dict
+    can also be of the form {column_name_for_Stile: column_name_in_FITS_table}.)  If these are ASCII
+    tables, or if FITS tables have the wrong names for the columns (shown below), then this must be
+    included for proper processing.
+'flag_field': a string or list of strings defining column(s) which should be FALSE in order to be
+    kept, or a dict of the form {'column_name': keep_only_this_value}.  
+'file_reader': 'FITS' or 'ASCII'.  This will be automatically determined by Stile, but can be
+    specified if desired.  You can also do {'name': ['FITS'|'ASCII'], 'extra_args': {dict of kwargs
+    to be passed to the file reader}}, if you want better control of the file readin--see the Python
+    documentation for the functions Stile.ReadASCIITable or Stile.ReadFITSTable for possible kwargs.
+'bins': a (list of) bin description(s); see below.
+'group': a group name.  A group is a set of files that should be analyzed together when multiple
+    object types are necessary, eg for a star/galaxy cross-correlation.  A group should have no more
+    than one file of each format+object_type (with the exception of "multiepoch", in which case a
+    group should have no more than one multiepoch set of files per format+object_type).  You can
+    also define 'group: True', but that won't do anything if you've given your files as a list of
+    dicts.
+
+You can also define the files with a nested dict.  The nested dicts take the form
+epoch: {
+    extent: {
+        data_format: {
+            object_type: 
+                list_of_files } } }
+The keys do not need to appear in that nesting order--ie you can also do
+data_format: {
+    extent: {
+        object_type: {
+            epoch: 
+                list_of_files} } } 
+as long as every key at each level describes the SAME kind of thing.  You can't, for example, do
+'multiepoch':{
+    'CCD': {
+        'catalog': {
+            'star':
+                list_of_files}}
+    'image': {
+        'CCD': {
+            'galaxy':
+                list_of_files}}}
+although actually you can do
+'multiepoch':{
+    'catalog': {
+        'CCD': {
+            'star': list_of_files,
+            'galaxy: list_of_files}}
+    'image': {
+        'galaxy': {
+            'CCD': list_of_files,
+            'field': list_of_files}}}
+since each individual sub-dictionary has all the keys at the same level being the same type of
+format or object indicator. The list_of_files at the lowest level of the dict can be a list of
+strings or a list of dicts, if you'd like more granular control over how the files are read in and
+understood; the available keys are the same as for the list of dict case described above.  You can
+also define the 'wildcard', 'fields', 'file_reader' and 'flag_field' keys at any level of the dict,
+in which case those keys will be defined for all files in that level or any child levels of the
+nested dict, unless overridden.  The 'flag_field' arguments will be appended together in the case of
+duplicate definitions; other key clashes are always resolved in favor of the innermost level (with
+the exception of the format and object_type keys, in which case clashes will cause processing to
+fail).  
+
+When files are described in this nested dict style, Stile will automatically group files together
+for analysis if all the object_types with the same format have a list of files of the same length.
+You can turn this behavior off by adding the key 'group': False at any level of the nested dict (at
+which point the grouping for all sub-levels of that dict will be turned off).  You can also turn it
+off for individual files; files with a 'group' key defined as anything other than 'True' are skipped
+when figuring out if the lists of files are the same length for automatic grouping purposes.  Note
+that wildcards or lists of files in a 'name' key are expanded BEFORE grouping takes place, but
+definitions of binning are NOT: if you define a star/galaxy cross-correlation with one star file and
+one galaxy file, and you bin the star sample into three pieces, you will get three star/galaxy
+cross-correlation outputs for that group.
+
+Binning can be done with a 'bins' kwarg, which takes a dict (for one bin) or a list of dicts (for
+bins which will be ANDed together).  You can do 'Step' bins or 'List' bins.  'Step' bins define bins
+of equal width:
+{'name': 'Step', 'field': field, 'low': 0, 'high': 10, 'n_bins': 4, 'step': 2.5, 'use_log': False}.
+The 'field' argument says which field to bin on.  You only need to define three of the four
+['low', 'high', 'step', 'n_bins'], though as long as all four agree processing will continue if you
+pass all four.  'use_log' can be omitted if it's False; otherwise the bins are equal size in
+logarithmic steps instead of linear steps, and the 'step' size is delta(log field), not delta(field),
+although the 'low' and 'high' endpoints should still be in 'field' and not 'log(field)' space.
+'List' just takes a list of the endpoints of the bins:
+{'name': 'List', 'field': field, 'endpoints': [0,1,2,3,5]}
+and assumes the first bin goes from 0-1, the second from 1-2, etc.  The list must be monotonic.
+Bins for both kinds ('List' and 'Step') are half-open intervals, low<=val<high.
+
+If multiple bins are defined--say, a scheme with 3 bins in magnitude and a scheme with 2 bins in
+size--then the output will include bins 1/3 & 1/2, then 2/3 and 1/2, then 3/3 and 1/2, then 1/3 and
+2/2, etc.  If you want to bin separately--do magnitude bins including all sizes, then size bins
+including all magnitudes--just define the file twice with different 'bins' kwargs.  (To maintain
+automatic grouping, you could include the other files in the group twice--Stile will automatically
+merge those two definitions after groups are defined as long as all the kwargs are the same.)
+
+SYSTEMATICS TESTS
+
+Systematics tests are defined like the files above, with the exception that you do not need to
+completely specify the format for a sys_test: an incomplete definition will be matched with all
+possible files.  In particular, you should not define the object_type except for the Stat type of
+test, as the other tests already know which object types they need.
+
+For example, if you had files in {'epoch': 'single', 'extent': 'CCD', 'data_format': 'catalog'},
+{'epoch': 'single', 'extent': 'field', 'data_format': 'catalog'}, and {'epoch': 'coadd', 'extent':
+'CCD', 'data_format': 'catalog'}, and you defined a test with the format {'extent': 'CCD'}, it would
+apply to the files in the first and third formats, but not the files in the second format.  Note
+that the tests are only run if files exist for that format: if you find that you have defined tests
+which are not running, make sure that you have suitable files defined as well.
+
+The keywords 'nickname', 'wildcard', 'fields', 'flag_field', 'file_reader', and 'group' have no
+impact on sys_tests and may result in an error if included.  'bins' can be defined--and in fact it
+is more I/O efficient to define them for tests than for the individual files--but they cannot be
+defined for any test that requires multiple object_types.  (This functionality is planned, but not
+yet implemented.)  
+
+The specific tests and their required extra arguments are:
+{'name': 'CorrelationFunction', 'type': type, 'extra_kwargs': extra_kwargs[, 'bins': bin_list]}
+CorrelationFunction types are:
+    - GalaxyShear: g_t|x of 'galaxy' objects around 'galaxy lens' objects 
+      (shear-density correlation)
+    - BrightStarShear: g_t|x of 'galaxy' objects around 'star bright' objects 
+      (shear-density correlation)
+    - StarXGalaxyDensity: xi of 'star' crossed with 'galaxy' objects (density-density correlation)
+    - StarXGalaxyShear: xi_+|- of 'star' crossed with 'galaxy' objects (shear-shear correlation)
+    - StarXStarShear: xi_+|- autocorrelation of 'star' objects (shear-shear correlation)
+    - GalaxyDensity: xi autocorrelation of 'galaxy' objects (density-density correlation)
+    - StarDensity: xi autocorrelation of 'star' objects (density-density correlation)
+The 'extra_kwargs' are required for CorrelationFunctionSysTests, because the TreeCorr package does
+not assume certain values to ensure proper processing.  The keys you should define are 'ra_units'
+and 'dec_units' (for ra, dec coords) or 'x_units' and 'y_units' (for x, y coords), all of which
+should have values selected from 'deg', 'radians', 'arcsec', 'arcmin', 'hour'; plus 'min_sep',
+'max_sep', 'nbins' and 'sep_units' to define the binning for the correlation function.
+{'name': 'ScatterPlot', 'type': type[, 'bins': bin_list, 'extra_kwargs': extra_kwargs]}
+ScatterPlot types are:
+    - StarVsPSFG1: 'g1' vs 'g1_psf' for 'star' objects
+    - StarVsPSFG2: 'g2' vs 'g2_psf' for 'star' objects
+    - StarVsPSFSigma: 'sigma' vs 'sigma_psf' for 'star' objects
+    - ResidualVsPSFG1: 'g1_psf'-'g1' vs 'g1' for 'star' objects
+    - ResidualVsPSFG2: 'g2_psf'-'g2' vs 'g2' for 'star' objects
+    - ResidualVsPSFSigma: 'sigma_psf'-'sigma' vs 'sigma' for 'star' objects
+{'name': 'WhiskerPlot', 'type': type[, 'bins': bin_list, 'extra_kwargs': extra_kwargs]}
+WhiskerPlot types are:
+    - Star: whisker plot of star shapes ('g1', 'g2') for 'star' objects
+    - PSF: whisker plot of PSF shapes ('g1_psf', 'g2_psf') for 'star' objects
+    - Residual: whisker plot of (PSF-star) shapes
+{'name': 'Stat', 'field': field, 'object_type': object_type[, 'bins': bin_list, 
+ 'extra_kwargs': extra_kwargs]}
+Stat tests can be defined for any field in any object_type in your catalog.  (Of course, you may
+also limit this via formats the same way you can for any of the other tests.)
+
+In general, possible kwargs for the 'extra_kwargs' field can be found in the Python documentation
+strings for the objects CorrelationFunctionSysTest, ScatterPlotSysTest, etc.
+
+GLOBAL ARGUMENTS FOR CONFIG FILES
+
+save_memory: if True, prioritize clearing out memory after using the data, at the expense of
+sometimes reading in the same file several times for cross-correlations with other files.  If False
+(the default), files read in for a cross-correlation type test will remain in memory until all
+possible tests with that file are done.
+output_path: base directory for output files (default: current directory)
+clobber: a boolean variable indicating whether to clobber (overwrite) existing files
+(default: False)
+
+A NOTE ON MULTIEPOCH DATA
+
+We currently have no multiepoch tests, so the tests we have run on the processing of multiepoch data
+sets are currently rudimentary.  Users who run into bugs (in any part of Stile, not just the
+multiepoch data processing) are encouraged to report them at https://github.com/msimet/Stile/issues 
+
+APPENDIX: STILE EXPECTED FIELD NAMES
+
+ra, dec: coordinates in RA/dec space, OR
+x, y: coordinates in x/y space
+g1, g2, sigma: shear and size for objects
+g1_psf, g2_psf, sigma_psf: shear and size for the PSF at the location of the object
