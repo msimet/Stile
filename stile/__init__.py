@@ -6,5 +6,5 @@ from . import treecorr_utils
 from .treecorr_utils import ReadTreeCorrResultsFile
 from .data_handler import DataHandler, ConfigDataHandler
 from .sys_tests import (GalaxyShearSysTest, BrightStarShearSysTest, StarXGalaxyShearSysTest,
-                        StarXStarShearSysTest, StatSysTest, ScatterPlotStarVsPSFG1SysTest)                        
+                        StarXStarShearSysTest, StatSysTest, ScatterPlotStarVsPSFG1SysTest)
 from .drivers import ConfigDriver
