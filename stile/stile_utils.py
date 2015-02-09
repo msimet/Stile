@@ -139,10 +139,6 @@ class Stats:
 
         return ret_str
 
-def standardTests():
-    return [stile.StatSysTest(field='e1'), stile.StatSysTest(field='e2'), 
-            stile.RealShearSysTest()]
-
 data_formats = ['catalog', # Catalog or table of data
                 'image' # Image
                ]
@@ -189,7 +185,7 @@ class Format:
     @property
     def str(self):
         return '-'.join([self.epoch, self.extent, self.data_format])
-    
+
 def EmptyFormatDict(type=list):
     format_dict = {}
     for epoch in epochs:
@@ -224,4 +220,4 @@ def PopAndCheckFormat(dict,key,type,default=None):
     if not isinstance(val,type):
         raise ValueError("Key %s should be type %s (got %s)"%(key,str(type),str(val)))
     return val
-        
+
