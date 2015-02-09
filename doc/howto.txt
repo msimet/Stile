@@ -1,3 +1,9 @@
+Stile has an automatic driver for files and systematics tests defined using a config file.  You can
+run this driver via the executable bin/StileConfig.py, passing one or more config files as arguments
+on the command line.  Config files can be JSON or YAML, if you have PyYAML installed (all example
+scripts are YAML).  Config files will be combined into one large dictionary before being processed;
+later files will override the keys of earlier files.  
+
 HOW THE CONFIG FILES WORK
 
 - Files are described by keys that start with "file" (except "file_reader", which has a special
@@ -8,6 +14,10 @@ dict, ConfigDataHandler.files.
 is processed separately, then combined into one large dict, ConfigDataHandler.sys_tests.
 - Other things to control Stile's behavior can be passed as simple "key: value" pairs, as described
 below.
+
+The sys_tests and files don't have fully defined keys so that you can use multiple config files
+without keys clashing, or use multiple sets of file definitions if it's easier to organize the file
+that way.
 
 FILE INPUT
 
