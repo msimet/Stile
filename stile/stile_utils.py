@@ -144,8 +144,7 @@ data_formats = ['catalog', # Catalog or table of data
                ]
 extents = ['CCD', # Single CCD
            'field', # Single field-of-view or pointing (multiple CCDs)
-           'patch', # Larger than a field, but still a small area on the sky
-           'tract' # A large area (about as large as would have a single WCS/background solution)
+           'survey' # A large area 
           ]
 epochs  = ['single',     # One data measurement per object
            'coadd',      # One data measurement per object, based on several different observations
