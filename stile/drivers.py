@@ -29,8 +29,9 @@ class ConfigDriver(object):
                 else:
                     self.file_indices.append(files)
                     return len(file_indices)-1
-    
-    def _runAllTests(self, config, data, index, data_list, undone_files, waiting_list, single_test, group_test):
+
+    def _runAllTests(self, config, data, index, data_list, undone_files,
+                           waiting_list, single_test, group_test):
         """
         A helper function to run both single-dataset tests and group-dataset tests without reading 
         in datasets multiple times.
@@ -51,20 +52,21 @@ class ConfigDriver(object):
                 # of the indices requested is neither in undone_files nor waiting_list, which means
                 # it's been deleted or popped from both places, so all its tests are complete), so
                 # we can skip it.  Otherwise, do the test.
-                if all([i in undone_files or i in waiting_list or i==index 
+                if all([i in undone_files or i in waiting_list or i==index
                         for i in group_dict['indices']]):
                     for i in group_dict['indices']:
                         if i in waiting_list:
                             pass
                         elif not i==index:
                             undone_files.remove(i)
-                            new_data = config.getData(data_list[i][0], data_list[i][1], data_list[i][2])
+                            new_data = config.getData(data_list[i][0], data_list[i][1],
+                                                      data_list[i][2])
                             waiting_list[i] = new_data
                         else:
                             waiting_list[index] = data
                     self.RunMultiSysTests(config,
-                                          [waiting_list[i] for i in group_dict['indices']],
-                                          group_dict['sys_tests'], self.getName([data_list[i][0] for i in group_dict['indices']]))
+                        [waiting_list[i] for i in group_dict['indices']], group_dict['sys_tests'],
+                        self.getName([data_list[i][0] for i in group_dict['indices']]))
         # Delete this file from waiting_list, so we don't do any tests involving it again.
         if index in waiting_list:
             del waiting_list[index]
@@ -78,14 +80,14 @@ class ConfigDriver(object):
         # Run a test and save or plot the results
         results = sys_test['sys_test'](data, **sys_test['extra_args'])
         if isinstance(results, numpy.ndarray):
-            file_io.WriteASCIITable(config.getOutputPath(sys_test['sys_test'].short_name, name, 
+            file_io.WriteASCIITable(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                                    '.txt'), results, print_header=True)
         elif isinstance(results, stile_utils.Stats):
-            with open(config.getOutputPath([sys_test['sys_test'].short_name, name], 
+            with open(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                            '.txt'), 'w') as f:
                 f.write(str(results)+'\n')
         plot_results = sys_test['sys_test'].plot(results)
-        plot_results.savefig(config.getOutputPath(sys_test['sys_test'].short_name, name, 
+        plot_results.savefig(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                                   '.png'))
 
     def RunSysTests(self, config, data, sys_test_list, name):
@@ -119,7 +121,7 @@ class ConfigDriver(object):
             file_io.WriteASCIITable(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                                 '.txt'), results, print_header=True)
         elif isinstance(results, str):
-            with open(config.getOutputPath(sys_test['sys_test'].short_name, name, 
+            with open(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                            '.txt')) as f:
                 f.write(results+'\n')
         plot_results = sys_test['sys_test'].plot(results)
@@ -196,7 +198,7 @@ class ConfigDriver(object):
                         for index in indices:
                             if index not in group_test:
                                 group_test[index] = []
-                            group_test[index].append({'sys_tests': 
+                            group_test[index].append({'sys_tests':
                                 format_obj_dict[format][obj_type], 'indices': tuple(indices)})
                     else:
                         if hasattr(item,'__len__') and not isinstance(item, dict):
@@ -238,23 +240,27 @@ class ConfigDriver(object):
             # any groups, and we can at least reuse the data we've read in for the single test.
             for index in single_test:
                 data = config.getData(data_list[index][0], data_list[index][1], data_list[index][2])
-                self.RunSysTests(config, data, single_test[index], self.getName(data_list[index][0]))
+                self.RunSysTests(config, data, single_test[index],
+                                 self.getName(data_list[index][0]))
                 if index in group_test:
                     for group_dict in group_test[index]:
                         if group_dict['indices'][0]==index:
-                            multi_data = [data] + [config.getData(data_list[i][0], data_list[i][1], data_list[i][2]) 
+                            multi_data = [data] + [config.getData(data_list[i][0], data_list[i][1],
+                                                                  data_list[i][2])
                                                    for i in group_dict[indices][1:]]
-                            self.runMultiSysTests(config, multi_data, 
-                                                  group_dict['sys_tests'], self.getName(data_list[i][0]))
+                            self.runMultiSysTests(config, multi_data, group_dict['sys_tests'],
+                                                  self.getName(data_list[i][0]))
             # Now, do any files that *only* appear in groups
             group_only = group_test.viewkeys() - single_test.viewkeys()
             for index in group_only:
                 for group_dict in group_test[index]:
                     if group_dict['indices'][0]==index:
-                        multi_data = [data] + [config.getData(data_list[i][0], data_list[i][1], data_list[i][2]) 
+                        multi_data = [data] + [config.getData(data_list[i][0], data_list[i][1],
+                                                              data_list[i][2])
                                                for i in group_dict[indices][1:]]
-                        self.runMultiSysTests(config, multi_data, group_dict['sys_tests'], self.getName(data_list[i][0]))
-        
+                        self.runMultiSysTests(config, multi_data, group_dict['sys_tests'],
+                                              self.getName(data_list[i][0]))
+
         if self.file_indices:
             print "Gave index numbers to various files (for output filenames) as follows..."
             for i, file in enumerate(self.file_indices):
