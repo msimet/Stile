@@ -35,7 +35,7 @@ def ReadFITSImage(file_name, hdu=0):
         return data
     else:
         raise ImportError('No FITS handler found!')
-    
+
 def ReadFITSTable(file_name, hdu=1, fields=None):
     """
     This function exists so you can ReadFITSTable(file_name) rather than remembering that table
@@ -165,7 +165,7 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     if print_header:
         if hasattr(data,'dtype') and hasattr(data.dtype,'names') and data.dtype.names:
             if numpy.__version__>'1.7.0':
-                numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
+                numpy.savetxt(file_name, data, fmt=_format_str(data.dtype),
                         header=', '.join(data.dtype.names))
             else:
                 with open(file_name, 'w') as f:
