@@ -166,6 +166,11 @@ class ConfigDataHandler(DataHandler):
         elif isinstance(stile_args, (str,list)):
             stile_args = self.loadConfig(stile_args)
             config = stile_args
+        elif isinstance(stile_args, dict):
+            config = stile_args
+        else:
+            raise ValueError("Input cannot be used to initalize a ConfigDataHandler: "+
+                             str(stile_args))
         self.parseFiles(config)
         self.parseSysTests(config)
         self.output_path = stile_args.get('output_path', '.')
@@ -439,8 +444,11 @@ class ConfigDataHandler(DataHandler):
         if 'fields' in files:
             pass_kwargs['fields'] = stile_utils.PopAndCheckFormat(files, 'fields', (dict, list))
         if 'flag_field' in files:
-            pass_kwargs['flag_field'] = stile_utils.PopAndCheckFormat(files, 'flag_field',
-                                                                      (str, list))
+            if 'flag_field' in pass_kwargs:
+                pass_kwargs['flag_field'] = [pass_kwargs['flag_field'], files.pop('flag_field')]
+            else:
+                pass_kwargs['flag_field'] = stile_utils.PopAndCheckFormat(files, 'flag_field',
+                                                                          (str, list, dict))
         if 'file_reader' in files:
             pass_kwargs['file_reader'] = files.get('file_reader')
 
@@ -801,7 +809,7 @@ class ConfigDataHandler(DataHandler):
                             for object_type in file_dict[format]]
             value_keys = value.keys()
             if not any([v==obj for v in value_keys for obj in object_types] +
-                       [v in format.split('-') for file_dict in file_dicts 
+                       [v in format.split('-') for v in value_keys for file_dict in file_dicts
                         for format in file_dict]) and key=='fields':
                 self.addKwarg(key, {'name': value}, file_dicts, format_keys, 
                               object_type_key, append)

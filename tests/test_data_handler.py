@@ -524,6 +524,13 @@ class TestDataHandler(unittest.TestCase):
                                                                 'file2': copy.deepcopy(self.dict0)})
         self.assertEqual(results, expected_results)
         self.assertEqual(groups, self.expected_groups0)
+        
+        # Quickly test that empty keys are properly skipped
+        skip_dict = copy.deepcopy(self.dict0)
+        skip_dict['single']['field'] = {}
+        results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict0))
+        self.assertEqual(results, self.expected_files0)
+        
         # Repeat (skipping the dummy check) for dict1, 2, 3 etc...
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict1))
         self.assertEqual(results, self.expected_files1)
