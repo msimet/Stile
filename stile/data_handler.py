@@ -342,6 +342,24 @@ class ConfigDataHandler(DataHandler):
         list of all format keys for each element, eg if this is being used to define sys_tests
         instead of files.
         """
+        # This is a very long and annoying function.  The basic idea of this is to take a possibly
+        # nested dict and turn it into a list of dicts, where the keys from higher levels of the
+        # dict have been turned into the VALUES of something in the new dict (based on what Stile
+        # knows about what kinds of keys those values should correspond to).  That way, we can have
+        # arbitrary ordering of levels of the nested dict, while easily maintaining all the
+        # information that was put in.  If I was writing this again I'd probably do it differently,
+        # frankly, but this works so I'm not messing with it any more.
+        #
+        # What happens is, if this is a dict, we pull out the kwargs that could apply to child 
+        # levels of the dict (such as file_reader, etc).  Then we figure out what kind of file-
+        # relevant keys are in this layer of the dict.  We pop those keys out of the dict, add them
+        # as kwargs to be passed to a recursive call of this function, and then execute the
+        # recursive call with the value of the key, along with any kwargs which were passed to this
+        # iteration of this function.  (In other words, any kwargs will override previous kwargs
+        # [except for 'flag_field' which appends], but we copy the dict to make sure it's not 
+        # changed for any parallel recursive calls.)  Then, when we get all the way down to a list
+        # of dicts, we add all of those kwargs to each element of the list and return that.  Whew!
+        
         format_keys = ['epoch', 'extent', 'data_format', 'object_type']
         # First things first: if this is a list, we've recursed through all the levels of the dict.
         # The kwargs contain the format keys from all the superior levels, so we'll update with
@@ -808,11 +826,16 @@ class ConfigDataHandler(DataHandler):
             object_types = [object_type for file_dict in file_dicts for format in file_dict
                             for object_type in file_dict[format]]
             value_keys = value.keys()
+            # If this does not look like it has any remaining format or object keys, then it's
+            # probably a dict that's supposed to be the value of a key.  Call this function
+            # again, but with {'name': value} instead, so it gets caught by the previous branch of
+            # this if statement.
             if not any([v==obj for v in value_keys for obj in object_types] +
                        [v in format.split('-') for v in value_keys for file_dict in file_dicts
                         for format in file_dict]) and key=='fields':
                 self.addKwarg(key, {'name': value}, file_dicts, format_keys, 
                               object_type_key, append)
+            # Otherwise, recursively call this function with the extra formats/object types included
             else:
                 for value_key in value_keys:
                     if value_key in value: # in case it was popped in a call earlier in this loop
