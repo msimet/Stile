@@ -217,7 +217,10 @@ def PopAndCheckFormat(dict,key,type,default=None):
     @param default  What default value to return if the key isn't in the dict (default: None)
     @returns        The value of the key if it was in the dict, else default
     """
-    val = dict.pop(key,default)
+    if key in dict:
+        val = dict.pop(key)
+    else:
+        val = default
     if not isinstance(val,type):
         raise ValueError("Key %s should be type %s (got %s)"%(key,str(type),str(val)))
     return val

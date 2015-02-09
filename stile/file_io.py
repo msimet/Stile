@@ -52,7 +52,7 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
     """
     return stile_utils.FormatArray(ReadFITSImage(file_name, hdu), fields=fields)
 
-def ReadASCIITable(file_name, **kwargs):
+def ReadASCIITable(file_name, read_header=False, **kwargs):
     """
     Read an ASCII table from disk.  This is a small wrapper for numpy.genfromtxt() that returns the
     kind of array we expect.  **kwargs should be suitable kwargs from numpy.genfromtxt().
@@ -68,6 +68,17 @@ def ReadASCIITable(file_name, **kwargs):
         fields = kwargs.pop('fields')
     else:
         fields = None
+    if read_header and not fields:
+        with open(file_name) as f:
+            fields = f.readline()
+        fields = fields.strip()
+        if fields[0]=='#':
+            fields = fields.split('\t')
+            if len(fields)==1:
+                fields = field.split()
+            fields = fields[1:]
+        else:
+            fields = None
     d = numpy.genfromtxt(file_name, dtype=None, **kwargs)
     return stile_utils.FormatArray(d, fields=fields)
 
@@ -153,8 +164,13 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     data = _handleFields(data_array, fields)
     if print_header:
         if hasattr(data,'dtype') and hasattr(data.dtype,'names') and data.dtype.names:
-            numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
+            if numpy.__version__>'1.7.0':
+                numpy.savetxt(file_name, data, fmt=_format_str(data.dtype), 
                         header=', '.join(data.dtype.names))
+            else:
+                with open(file_name, 'w') as f:
+                    f.write('#\t'+'\t'.join(data.dtype.names)+'\n')
+                    numpy.savetxt(f, data, fmt=_format_str(data.dtype))
         else:
             import warnings
             warnings.warn('No named data type, so requested header cannot be printed.')

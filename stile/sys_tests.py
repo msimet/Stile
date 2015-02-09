@@ -295,7 +295,6 @@ class CorrelationFunctionSysTest(SysTest):
                                           use_chip_coords = use_chip_coords)
         random2 = self.makeCatalog(random2, config=treecorr_kwargs, use_as_k = use_as_k,
                                             use_chip_coords = use_chip_coords)
-
         treecorr_kwargs[correlation_function_type+'_file_name'] = output_file
 
         func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
@@ -606,8 +605,8 @@ class StatSysTest(SysTest):
     revert back to the original value from the time of initialization.
 
     By default, the systematics tester will simply return a Stats object for the user.  However,
-    calling it with `verbose=True` will result in the statistics being printed directly using the
-    Stats.prettyPrint() function.
+    calling it with `verbose=True` will result in the statistics being printed directly.  The Stats
+    object can also be printed.
 
     Ordinarily, a StatSysTest object will throw an exception if asked to run on an array that has
     any Nans or infinite values.  The `ignore_bad` keyword (at the time when the StatSytTest is

@@ -50,6 +50,11 @@ class DataHandler:
       Additionally, the class can define a .getOutputPath() function to place the data in a more
       complex system than the default (all in one directory with long output path names).
       """
+    multi_file = True
+    clobber = False
+    written_files = []
+    output_path = '.'
+    
     def __init__(self):
         raise NotImplementedError()
 
@@ -68,23 +73,42 @@ class DataHandler:
         """
         raise NotImplementedError()
 
-    def getOutputPath(self, extension='.dat', multi_file=False, *args):
+    def getOutputPath(self, *args):
         """
         Return a path to an output file given a list of strings that should appear in the output
         filename, taking care not to clobber other files (unless requested).
         @param args       A list of strings to appear in the file name
-        @param extension  The file extension to be used
-        @param multi_file Whether multiple files with the same args will be created within a single
-                          run of Stile. This appends a number to the file name; if clobbering is
-                          allowed, this argument also prevents Stile from writing over outputs from
-                          the same systematics test during the same run.
         @returns A path to an output file meeting the input specifications.
         """
         #TODO: no-clobbering case
-        sys_test_string = '_'.join(args)
-        if multi_file:
-            nfiles = glob.glob(os.path.join(self.output_path, sys_test_string)+'*'+extension)
-            return os.path.join(self.output_path, sys_test_string+'_'+str(nfiles)+extension)
+        if args[-1][0]=='.':
+            sys_test_string = '_'.join(args[:-1])
+            extension = args[-1]
+        else:
+            sys_test_string = '_'.join(args)
+            extension = ''
+        if self.clobber and self.multi_file:
+            file_base = os.path.join(self.output_path, sys_test_string+extension)
+            if file_base not in self.written_files:
+                self.written_files[file_base] = 0
+            else:
+                self.written_files[file_base] += 1
+            return os.path.join(self.output_path, sys_test_string+'_'+str(self.written_files[file_base])+extension)
+        elif self.multi_file: 
+            files = glob.glob(os.path.join(self.output_path, sys_test_string)+'*'+extension)
+            n_underscores = self.output_path.count('_')+sys_test_string.count('_')+1
+            files = [f for f in files if f.count('_')<=n_underscores]  # Ignore filenames with bins
+            if files:
+                if not os.path.join(self.output_path, sys_test_string)+extension in files:
+                    return os.path.join(self.output_path, sys_test_string+extension)
+                elif not os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension) in files:
+                    return os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension)
+                else:
+                    for i in range(len(files)):
+                        if not os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension) in files:
+                            return os.path.join(self.output_path, sys_test_string+'_'+str(len(files))+extension)
+            else:
+                return os.path.join(self.output_path, sys_test_string+extension)
         else:
             return os.path.join(self.output_path, sys_test_string+extension)
 
@@ -139,10 +163,13 @@ class ConfigDataHandler(DataHandler):
             config = self.loadConfig('config_file')
             config.update(stile_args)
             stile_args = config
-        elif isinstance(stile_args, str):
-            config = self.loadConfig(stile_args)
-        self.parseFiles(stile_args)
-        self.parseSysTests(stile_args)
+        elif isinstance(stile_args, (str,list)):
+            stile_args = self.loadConfig(stile_args)
+            config = stile_args
+        self.parseFiles(config)
+        self.parseSysTests(config)
+        self.output_path = stile_args.get('output_path', '.')
+        self.clobber = stile_args.get('clobber', False)
         self.stile_args = stile_args
 
     def loadConfig(self, files):
@@ -158,7 +185,8 @@ class ConfigDataHandler(DataHandler):
             has_yaml=False
         if isinstance(files, str):
             try:
-                config = config_reader.read(files)
+                with open(files) as f:
+                    config = config_reader.load(f)
             except Exception as e:
                 if not has_yaml and os.path.splitext(files)[-1].lower()=='.yaml':
                     raise ValueError('It looks like this config file is a .yaml file, but you '+
@@ -166,7 +194,10 @@ class ConfigDataHandler(DataHandler):
                 else:
                     raise e
         elif hasattr(files, '__iter__'):
-            config_list = [self.loadConfig(file) for file in files]
+            config_list = []
+            for file_name in files:
+                with open(file_name) as f:
+                    config_list.append(config_reader.load(f))
             config = config_list[0]
             for config_item in config_list[1:]:
                 config.update(config_item)
@@ -225,7 +256,9 @@ class ConfigDataHandler(DataHandler):
         """
         # Get the 'group' and 'wildcard' keys at the file level, which indicate whether to try to
         # match star & galaxy etc files or to expand wildcards in filenames.
-        group = stile_utils.PopAndCheckFormat(stile_args, 'group', bool, default=True)
+        group = stile_args.get('group', True)  # we don't PopAndCheck here since could be any ID
+        if 'group' in stile_args:
+            del stile_args['group']
         wildcard = stile_utils.PopAndCheckFormat(stile_args, 'wildcard', bool, default=False)
         keys = sorted(stile_args.keys())
         file_list = []
@@ -400,7 +433,7 @@ class ConfigDataHandler(DataHandler):
         # where we are explicitly given False (which can override higher-level Trues) and cases
         # where we would input False by default (which can't override).
         if 'group' in files:
-            pass_kwargs['group'] = stile_utils.PopAndCheckFormat(files, 'group', bool)
+            pass_kwargs['group'] = files.pop('group') # No checking format here--too many options
         if 'wildcard' in files:
             pass_kwargs['wildcard'] = stile_utils.PopAndCheckFormat(files, 'wildcard', bool)
         if 'fields' in files:
@@ -428,13 +461,16 @@ class ConfigDataHandler(DataHandler):
                                                      **pass_kwargs)
         # If there are keys left, it might be a single dict describing one file; check for that.
         if files:
-            if any([format_key in files for format_key in format_keys]) and 'name' in files:
+            if 'name' in files:
                 if (all([format_key in files or format_key in kwargs for format_key in format_keys])
                     or require_format_args==False):
                     if any([format_key in files and format_key in kwargs for format_key in format_keys]):
                         raise ValueError("Duplicate format definition for item %s"%str(files))                        
                     pass_kwargs.update(files)
                     return_list+=[pass_kwargs]
+                    files_keys = files.keys()
+                    for key in files_keys:
+                        del files[key]
                 else:
                     raise ValueError('File description does not include all format keywords: '+
                                      '%s'%files)
@@ -764,26 +800,32 @@ class ConfigDataHandler(DataHandler):
             object_types = [object_type for file_dict in file_dicts for format in file_dict
                             for object_type in file_dict[format]]
             value_keys = value.keys()
-            for value_key in value_keys:
-                if value_key in value: # in case it was popped in a call earlier in this loop
-                    new_value = value.pop(value_key)
-                    if value_key=='extent' or value_key=='data_format' or value_key=='epoch':
-                        self.addKwarg(key, value, file_dicts,
-                                      format_keys=stile_utils.flatten([format_keys, new_value]),
-                                      object_type_key=object_type_key)
-                    elif value_key=='object_type':
-                        self.addKwarg(key, value, file_dicts, format_keys=format_keys,
-                                      object_type_key=new_value)
-                    elif value_key in object_types:
-                        self.addKwarg(key, new_value, file_dicts, format_keys=format_keys,
-                                      object_type_key=value_key)
-                    elif value_key=='name':
-                        self.addKwarg(key, new_value, file_dicts, format_keys=format_keys,
-                                      object_type_key=object_type_key)
-                    else:
-                        new_format_keys = stile_utils.flatten([format_keys, value_key])
-                        self.addKwarg(key, new_value, file_dicts, format_keys=new_format_keys,
-                                      object_type_key=object_type_key)
+            if not any([v==obj for v in value_keys for obj in object_types] +
+                       [v in format.split('-') for file_dict in file_dicts 
+                        for format in file_dict]) and key=='fields':
+                self.addKwarg(key, {'name': value}, file_dicts, format_keys, 
+                              object_type_key, append)
+            else:
+                for value_key in value_keys:
+                    if value_key in value: # in case it was popped in a call earlier in this loop
+                        new_value = value.pop(value_key)
+                        if value_key=='extent' or value_key=='data_format' or value_key=='epoch':
+                            self.addKwarg(key, value, file_dicts,
+                                          format_keys=stile_utils.flatten([format_keys, new_value]),
+                                          object_type_key=object_type_key)
+                        elif value_key=='object_type':
+                            self.addKwarg(key, value, file_dicts, format_keys=format_keys,
+                                          object_type_key=new_value)
+                        elif value_key in object_types:
+                            self.addKwarg(key, new_value, file_dicts, format_keys=format_keys,
+                                          object_type_key=value_key)
+                        elif value_key=='name':
+                            self.addKwarg(key, new_value, file_dicts, format_keys=format_keys,
+                                          object_type_key=object_type_key)
+                        else:
+                            new_format_keys = stile_utils.flatten([format_keys, value_key])
+                            self.addKwarg(key, new_value, file_dicts, format_keys=new_format_keys,
+                                          object_type_key=object_type_key)
         return file_dicts
 
     def addItem(self, item, sys_test_dict, format_keys=[]):
@@ -1062,7 +1104,7 @@ class ConfigDataHandler(DataHandler):
                 return_list = [file for file in self.files[epoch][object_type]]
             else:
                 return []
-        elif isinstance(object_type, list):
+        else:
             groups_list = []
             for group in sorted(self.groups.keys()):  # Sort for unit testing purposes, mainly
                 if epoch in self.groups[group] and all([obj in self.groups[group][epoch]
@@ -1084,7 +1126,7 @@ class ConfigDataHandler(DataHandler):
         else:
             raise ValueError('flag_field kwarg must be a string, list, or dict; given %s'%flag)
 
-    def getData(self, data_id, object_type, epoch, extent=None, data_format=None, bin_list=None):
+    def getData(self, data_id, object_type, epoch, extent=None, data_format=None, bin_list=[]):
         """
         Return the data corresponding to 'data_id' for the given object_type and data format.
 
@@ -1140,20 +1182,36 @@ class ConfigDataHandler(DataHandler):
                 else:
                     raise RuntimeError('Data format must be either "catalog" or "image", given '+
                                        '%s'%data_format)
-        elif 'catalog' in format:
+            elif isinstance(d['file_reader'], dict):
+                if 'extra_kwargs' in d['file_reader'] and not isinstance(d['file_reader']['extra_kwargs'], dict):
+                    raise ValueError("extra_kwargs argument of file_reader option must be a dict, given %s"%str(d['file_reader']['extra_kwargs']))
+                if 'name' not in d['file_reader']:
+                    if 'image' in epoch:
+                        data = ReadImage(data_id['name'], **d['file_reader'].get('extra_kwargs', {}))
+                    else:
+                        data = ReadTable(data_id['name'], fields=fields, **d['file_reader'].get('extra_kwargs', {}))
+                elif d['file_reader']['name']=='ASCII':
+                    data = ReadASCIITable(data_id['name'], fields=fields, **d['file_reader'].get('extra_kwargs', {}))
+                elif d['file_reader']['name']=='FITS':
+                    data = ReadFITSTable(data_id['name'], fields=fields, **d['file_reader'].get('extra_kwargs', {}))
+                else:
+                    raise ValueError('Do not understand file_reader type: %s'%str(d['file_reader']['name']))
+            else:
+                raise ValueError('Do not understand file_reader type: %s'%str(d['file_reader']))
+        elif 'catalog' in epoch:
             data = ReadTable(data_id['name'], fields=fields)
-        elif 'image' in format:
+        elif 'image' in epoch:
             data = ReadImage(data_id['name'])
         else:
             raise RuntimeError('Data format must be either "catalog" or "image", given '+
                                '%s'%data_format)
-        if data_id['flag_field']:
+        if 'flag_field' in data_id and data_id['flag_field']:
             data = data[self.getMask(data, data_id['flag_field'])]
-        if bin_list:
-            for bin in bin_list:
+        bins_to_do = bin_list + data_id.get('bin_list', [])
+        if bins_to_do:
+            for bin in bins_to_do:
                 data = bin(data)
-        if 'bin_list' in data_id:
-            for bin in data_id['bin_list']:
-                data = bin(data)
+            if 'nickname' in data_id:
+                data_id['nickname'] = '_'.join([data_id['nickname']]+[b.short_name for b in bins_to_do])
         return data
 
