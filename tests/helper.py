@@ -26,4 +26,4 @@ def FormatSame(arr1,arr2):
     arr2 = arr2.astype(arr2.dtype.newbyteorder('='))
     arr2.dtype.names = arr1.dtype.names
     return (arr1,arr2)
-    
+
