@@ -11,7 +11,12 @@ import os
 import glob
 
 class TestDrivers(unittest.TestCase):
+    """
+    Test all the drivers in stile/drivers.py (currently just the ConfigDriver).
+    """
     def setUp(self):
+        # Start by defining some config objects, replacing some of the functions that don't
+        # return anything so we can tell if they're doing the right thing.
         self.filename = '__stile_test_file'
         def getOutputPath(other_self, *args):
             n = len(glob.glob(os.path.join(self.filename)+'*'+args[-1]))
@@ -21,27 +26,43 @@ class TestDrivers(unittest.TestCase):
                 return self.filename+args[-1]
 
         self.driver = stile.ConfigDriver()
-        
+
         self.config = stile.ConfigDataHandler({})
+        # Now we replace the config objects' .getOutputPath with our own version, which just dumps
+        # everything into a file starting with self.filename so we can find it easily later.
         setattr(self.config, 'getOutputPath', types.MethodType(getOutputPath, self.config))
-        
+
         self.finished_tests = []
+        # And, here, instead of actually running the tests, we're going to capture the input in a
+        # class attribute so we can tell that _runAllTests is firing off the right submodules,
+        # without having to actually run the tests or anything.
         def runTest(original_self, config, data, sys_test_list, name):
             self.finished_tests.append((data[0][0], sys_test_list, "single"))
         def runMultiTest(original_self, config, data, sys_test_list, name):
             self.finished_tests.append(([d[0][0] for d in data], sys_test_list, "multi"))
         self.driver_captured = stile.ConfigDriver()
-        setattr(self.driver_captured, '_runMultiSysTestHelper', types.MethodType(runMultiTest, self.driver_captured))
-        setattr(self.driver_captured, '_runSysTestHelper', types.MethodType(runTest, self.driver_captured))
-        
+        setattr(self.driver_captured, '_runMultiSysTestHelper',
+                types.MethodType(runMultiTest, self.driver_captured))
+        setattr(self.driver_captured, '_runSysTestHelper',
+                types.MethodType(runTest, self.driver_captured))
+
+        # A simple file dict for a config object
         self.config_1 = {'single':
-                            {'CCD': 
+                            {'CCD':
                                 {'catalog': {
-                                    'galaxy lens': '../examples/example_lens_catalog.dat', 
+                                    'galaxy lens': '../examples/example_lens_catalog.dat',
                                     'galaxy': '../examples/example_source_catalog.dat'}}},
                          'fields': {'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5}}
-        self.tests_1 = [{'epoch': 'single', 'extent': 'CCD', 'format': 'catalog', 'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear', 'extra_args': {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1, 'sep_units': 'degrees', 'nbins': 20}}]
-        self.tests_dict_1 = {'sys_test': stile.GalaxyShearSysTest(), 'extra_args': self.tests_1[0]['extra_args'], 'bins': [], 'bin_list': []}
+        # A single test to try out
+        self.tests_1 = [{'epoch': 'single', 'extent': 'CCD', 'format': 'catalog',
+                         'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear',
+                         'extra_args': {'ra_units': 'degrees', 'dec_units': 'degrees',
+                                        'min_sep': 0.05, 'max_sep': 1, 'sep_units': 'degrees',
+                                        'nbins': 20}}]
+        self.tests_dict_1 = {'sys_test': stile.GalaxyShearSysTest(),
+                             'extra_args': self.tests_1[0]['extra_args'], 'bins': [],
+                             'bin_list': []}
+        # This should be the resulting correlation function
         self.expected_result_1 = numpy.array(
                    [(0.053888, 0.054426, 0.022059, -0.042588, 0.025785, 182.0, 182.0),
                     (0.062596, 0.062048, 0.0037377, 0.02995, 0.020788, 280.0, 280.0),
@@ -65,26 +86,39 @@ class TestDrivers(unittest.TestCase):
                     (0.92784, 0.92784, 0.0, 0.0, 0.0, 0.0, 0.0)],
                     dtype=[("R_nom",float),("<R>",float),("<gamT>",float),("<gamX>",float),
                            ("sigma",float),("weight",int),("npairs",int)])
+        # Test the flag-field functionality (which we can't test in test_data_handlers.py, since the
+        # data file is never read in there).
         self.config_1_flags = {'single':
-                            {'CCD': 
+                            {'CCD':
                                 {'catalog': {
-                                    'galaxy lens': {'name': 'test_data/combo_example_catalog.dat', 'flag_field': {'obj': 0}}, 
-                                    'galaxy': {'name': 'test_data/combo_example_catalog.dat', 'flag_field': {'obj': 1}}}}},
+                                    'galaxy lens': {'name': 'test_data/combo_example_catalog.dat',
+                                                    'flag_field': {'obj': 0}},
+                                    'galaxy': {'name': 'test_data/combo_example_catalog.dat',
+                                               'flag_field': {'obj': 1}}}}},
                          'fields': {'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5, 'obj': 6}}
-        
-        self.tests_2 = [{'epoch': 'single', 'extent': 'CCD', 'format': 'catalog', 'name': 'StatSysTest', 'field': 'g1'},
-                        {'epoch': 'single', 'extent': 'CCD', 'format': 'catalog', 'name': 'StatSysTest', 'field': 'ra', 'bins': {'name': 'BinStep', 'low': -100, 'high': 100, 'n_bins': 2, 'field': 'ra'}}]
+        # Test binning
+        self.tests_2 = [{'epoch': 'single', 'extent': 'CCD', 'format': 'catalog',
+                         'name': 'StatSysTest', 'field': 'g1'},
+                        {'epoch': 'single', 'extent': 'CCD', 'format': 'catalog',
+                         'name': 'StatSysTest', 'field': 'ra',
+                         'bins': {'name': 'BinStep', 'low': -100, 'high': 100, 'n_bins': 2,
+                                  'field': 'ra'}}]
         self.bins = stile.BinStep(low=-100, high=100, n_bins=2, field='ra')
-        self.tests_dict_2a = {'sys_test': stile.StatSysTest(field='g1'), 'extra_args': {}, 'bins': [], 'bin_list': []}
-        self.tests_dict_2b = {'sys_test': stile.StatSysTest(field='ra'), 'extra_args': {}, 'bins': [self.bins], 'bin_list': [self.bins]}
-        
-        self.data = stile.ReadTable('../examples/example_source_catalog.dat', fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
-        self.lens_data = stile.ReadTable('../examples/example_lens_catalog.dat', fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        self.tests_dict_2a = {'sys_test': stile.StatSysTest(field='g1'), 'extra_args': {},
+                              'bins': [], 'bin_list': []}
+        self.tests_dict_2b = {'sys_test': stile.StatSysTest(field='ra'), 'extra_args': {},
+                              'bins': [self.bins], 'bin_list': [self.bins]}
+
+        self.data = stile.ReadTable('../examples/example_source_catalog.dat',
+                            fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        self.lens_data = stile.ReadTable('../examples/example_lens_catalog.dat',
+                            fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
         self.expected_result_2a = stile.StatSysTest()(self.data['g1'])
         # Call to get the SingleBin objects
         self.expected_result_2b = [stile.StatSysTest()(bin(self.data)['ra']) for bin in self.bins()]
-        
+
     def tearDown(self):
+        # Delete any files we've created.
         files = glob.glob(self.filename+'*')
         for file in files:
             os.remove(file)
@@ -93,23 +127,32 @@ class TestDrivers(unittest.TestCase):
                 os.remove(letter)
 
     def test_sys_test_helper(self):
-        self.driver._runSysTestHelper(config=self.config, data=self.data, sys_test=self.tests_dict_2a, name='name')
+        # This is the innermost function of the ConfigDriver, the bit that actually runs the
+        # sys_tests.  Check that it gets the right results.
+        self.driver._runSysTestHelper(config=self.config, data=self.data,
+                                      sys_test=self.tests_dict_2a, name='name')
         with open(self.filename+'.txt') as f:
             results = f.read()
         self.assertEqual(results, str(self.expected_result_2a)+'\n')
         for i, (bin, expected) in enumerate(zip(self.bins(), self.expected_result_2b)):
-            self.driver._runSysTestHelper(config=self.config, data=bin(self.data), sys_test=self.tests_dict_2b, name='name')
+            self.driver._runSysTestHelper(config=self.config, data=bin(self.data),
+                                          sys_test=self.tests_dict_2b, name='name')
             with open(self.filename+str(i+2)+'.txt') as f:
                 results = f.read()
             self.assertEqual(results, str(expected)+'\n')
-    
+
     def test_multi_sys_test_helper(self):
-        self.driver._runMultiSysTestHelper(config=self.config, data=[self.lens_data, self.data], sys_test=self.tests_dict_1, name='name')
+        # Same as above, but for multiple-dataset tests.
+        self.driver._runMultiSysTestHelper(config=self.config, data=[self.lens_data, self.data],
+                                           sys_test=self.tests_dict_1, name='name')
         results = stile.ReadTable(self.filename+'.txt', read_header=True)
         numpy.testing.assert_equal(results, self.expected_result_1)
-    
+
     def test_run_sys_tests(self):
-        self.driver.RunSysTests(config=self.config, data=self.data, sys_test_list = [self.tests_dict_2a, self.tests_dict_2b], name='name')
+        # A slightly higher level, that loops through a list of tests.
+        self.driver.RunSysTests(config=self.config, data=self.data,
+                                sys_test_list = [self.tests_dict_2a, self.tests_dict_2b],
+                                name='name')
         with open(self.filename+'.txt') as f:
             results = f.read()
         self.assertEqual(results, str(self.expected_result_2a)+'\n')
@@ -121,15 +164,20 @@ class TestDrivers(unittest.TestCase):
         self.assertEqual(results, str(self.expected_result_2b[1])+'\n')
 
     def test_run_multi_sys_tests(self):
-        self.driver.RunMultiSysTests(config=self.config, data=[self.lens_data, self.data], sys_test_list=[self.tests_dict_1], name='name')
+        # As above, for multi-dataset tests.
+        self.driver.RunMultiSysTests(config=self.config, data=[self.lens_data, self.data],
+                                     sys_test_list=[self.tests_dict_1], name='name')
         results = stile.ReadTable(self.filename+'.txt', read_header=True)
         numpy.testing.assert_equal(results, self.expected_result_1)
-    
+
     def test_run_all_tests(self):
-        # make some little temporary files
+        # make some little temporary files with contents corresponding to the filename
         for letter in ['a', 'b', 'c', 'd', 'e', 'f']:
             with open(letter, 'w') as f:
-                f.write(letter+' '+letter+'\n')  # Two so it makes an array, not a scalar, when read in
+                f.write(letter+' '+letter+'\n')  # Two so it makes an array, not scalar, when read
+        # Now, test that the ConfigDriver does the tests in the proper order, that is, using
+        # associations between files in a group to pick the next test to do, rather than just
+        # continuing in input order.
         complicated_dict = {
             'single': {
                 'field': {
@@ -140,8 +188,12 @@ class TestDrivers(unittest.TestCase):
                     'catalog': {
                         'galaxy': ['a', 'a', 'b'],
                         'galaxy lens': ['d', 'e', 'f']} } } }
-        complicated_test_dict = [{'name': 'CorrelationFunction', 'type': 'GalaxyShear'}, {'name': 'Stat', 'field': 'ra', 'object_type': 'galaxy'}, {'name': 'Stat', 'field': 'g1', 'extent': 'CCD', 'object_type': 'galaxy lens'}]
-        config = stile.ConfigDataHandler({'files': complicated_dict, 'sys_tests': complicated_test_dict})
+        complicated_test_dict = [{'name': 'CorrelationFunction', 'type': 'GalaxyShear'},
+                                 {'name': 'Stat', 'field': 'ra', 'object_type': 'galaxy'},
+                                 {'name': 'Stat', 'field': 'g1', 'extent': 'CCD',
+                                  'object_type': 'galaxy lens'}]
+        config = stile.ConfigDataHandler({'files': complicated_dict,
+                                          'sys_tests': complicated_test_dict})
         self.driver_captured(config)
         # What's happening here?
         # - First we hit d,a from the groupings in single-field-catalog
@@ -151,18 +203,19 @@ class TestDrivers(unittest.TestCase):
         # - then d,a shear test
         # - then the a single test, then the e,a multi test since we already had a, then single-e
         # - then on to f as normal
-        expected_file_letters = [['d', 'a'], 'a', ['e', 'b'], 'b', ['f', 'c'], 'c', 'd', ['d', 'a'], 'a', ['e', 'a'], 'e', 'f', ['f', 'b'], 'b']
+        expected_file_letters = [['d', 'a'], 'a', ['e', 'b'], 'b', ['f', 'c'], 'c', 'd', ['d', 'a'],
+                                 'a', ['e', 'a'], 'e', 'f', ['f', 'b'], 'b']
         gs = stile.GalaxyShearSysTest
         st = stile.StatSysTest
         expected_tests = [gs, st, gs, st, gs, st, st, gs, st, gs, st, st, gs, st]
-        for res, letters, test_type in zip(self.finished_tests, expected_file_letters, expected_tests):
+        for res, letters, test_type in zip(self.finished_tests, expected_file_letters,
+                                           expected_tests):
             self.assertEqual(res[0], letters)
             self.assertIsInstance(res[1]['sys_test'], test_type)
             self.assertEqual(res[1]['bin_list'], [])
             self.assertEqual(res[1]['extra_args'] , {})
-    
-    
-    
+
+
+
 if __name__=='__main__':
     unittest.main()
-    
