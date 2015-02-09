@@ -5,6 +5,7 @@ objects they create which can be applied to data to limit it to the bin in quest
 #TODO: binning for images
 import numpy
 
+
 class BinList:
     """
     An object which, when called, returns bin definitions (a list of SingleBins) following the bin
@@ -19,6 +20,7 @@ class BinList:
                      decreasing.
     @returns         A list of SingleBin objects determined by the input criteria.
     """
+
     def __init__(self, field, bin_list):
         if not isinstance(field, str):
             raise TypeError('Field description must be a string. Passed value: '+str(field)+
@@ -39,9 +41,9 @@ class BinList:
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return (self.bin_list==other.bin_list and self.field==other.field and 
+        return (self.bin_list==other.bin_list and self.field==other.field and
                 self.reverse==other.reverse)
-                
+
     def __call__(self):
         """
         Returns a list of SingleBin objects following the definitions provided when the class was
@@ -52,8 +54,8 @@ class BinList:
         if self.reverse:
             return_list.reverse()
         return return_list
-        
-        
+
+
 
 class BinStep:
     """
@@ -173,7 +175,8 @@ class SingleBin:
     @param low        The lower edge of the bin (inclusive).
     @param high       The upper edge of the bin (exclusive).
     @param short_name A string denoting this bin in filenames.
-    @param long_name  A string denoting this bin in program text outputs/plots (default: "low-high").
+    @param long_name  A string denoting this bin in program text outputs/plots
+                      (default: "low-high").
     """
     def __init__(self, field, low, high, short_name, long_name=None):
         if not isinstance(field, str):
@@ -212,10 +215,10 @@ class BinFunction:
 
     @param function       The function to be applied to the data (an entire array, not just a
                           field).  The function should return an array of ints corresponding to the
-                          bin numbers of the data rows (unless `returns_bools` is set, see below). The
-                          function should take a data array as its only argument, unless
-                          `return_bools` is set to True, in which case it should take a bin number as
-                          its second argument.
+                          bin numbers of the data rows (unless `returns_bools` is set, see below).
+                          The function should take a data array as its only argument, unless
+                          `return_bools` is set to True, in which case it should take a bin number
+                          as its second argument.
     @param n_bins         The maximum number of bins returned by the input function.  If None, the
                           function will be checked for an `n_bins` attribute; if it does not exist
                           an error will be raised.
