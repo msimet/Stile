@@ -31,7 +31,7 @@ dicts case, each dict should look something like
 {'name': file_name, 'epoch': epoch, 'extent': extent, 'data_format': data_format,
 'object_type': object_type, other_key: other_value, ...}
 Each dict must have the name, epoch, extent, data_format, and object_type keys, or processing will
-fail.  You can define epochs or extents other than the Stile builtins.  
+fail.  You can define epochs or extents other than the Stile builtins.
 
 If the 'name' argument is a list--either because it was defined that way, or because wildcards were
 expanded--each file will be analyzed separately unless the 'epoch' is 'multiepoch', in which case a
@@ -118,6 +118,10 @@ that wildcards or lists of files in a 'name' key are expanded BEFORE grouping ta
 definitions of binning are NOT: if you define a star/galaxy cross-correlation with one star file and
 one galaxy file, and you bin the star sample into three pieces, you will get three star/galaxy
 cross-correlation outputs for that group.
+
+As above, you can define your own epochs and extents.  However, with this nested-dict format, you'll
+need to make sure they appear at the same level of the dict as known Stile epochs or extents so it
+can figure out which thing you meant.  (Those Stile-builtin keys can be empty!)
 
 Binning can be done with a 'bins' kwarg, which takes a dict (for one bin) or a list of dicts (for
 bins which will be ANDed together).  You can do 'Step' bins or 'List' bins.  'Step' bins define bins
