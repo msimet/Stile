@@ -44,7 +44,7 @@ class TestCorrelationFunctions(unittest.TestCase):
                     (0.92784, 0.92784, 0.0, 0.0, 0.0, 0.0, 0.0)],
                     dtype=[("R_nom",float),("<R>",float),("<gamT>",float),("<gamX>",float),
                            ("sigma",float),("weight",float),("npairs",float)])
-            
+
     def test_getCF(self):
         """Test getCF() directly, without first processing by child classes."""
         stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
@@ -55,9 +55,12 @@ class TestCorrelationFunctions(unittest.TestCase):
                     fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
         source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
                     fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
-        lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),dec=numpy.array([lens_data['dec']]), ra_units='degrees', dec_units='degrees')
+        lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),
+                                        dec=numpy.array([lens_data['dec']]),
+                                        ra_units='degrees', dec_units='degrees')
         source_catalog = treecorr.Catalog(ra=source_data['ra'],dec=source_data['dec'],
-                                          g1=source_data['g1'],g2=source_data['g2'], ra_units='degrees', dec_units='degrees')
+                                          g1=source_data['g1'],g2=source_data['g2'],
+                                          ra_units='degrees', dec_units='degrees')
         results = cf.getCF('ng',lens_catalog,source_catalog,**stile_args)
         numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
         results2 = cf.getCF('ng',lens_data,source_data,config=stile_args)
@@ -74,7 +77,7 @@ class TestCorrelationFunctions(unittest.TestCase):
         realshear = stile.GalaxyShearSysTest()
         results3 = realshear(lens_data,source_data,config=stile_args)
         numpy.testing.assert_equal(results,results3)
-    
+
 if __name__=='__main__':
     unittest.main()
 
