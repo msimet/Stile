@@ -25,9 +25,10 @@ def CompareTest(t1, t2):
     same_bool = (t1['bin_list']==t2['bin_list'] and t1['extra_args']==t2['extra_args'] and
                  type(t1['sys_test'])==type(t2['sys_test']))
     if same_bool and isinstance(t1['sys_test'], stile.StatSysTest):
-        same_bool &= t1['sys_test'].field==t2['sys_test'].field and t1['sys_test'].objects_list==t2['sys_test'].objects_list
+        same_bool &= (t1['sys_test'].field==t2['sys_test'].field and
+                      t1['sys_test'].objects_list==t2['sys_test'].objects_list)
     return same_bool
-        
+
 class TestDataHandler(unittest.TestCase):
     def setUp(self):
         # An empty "files" keyword will make the DataHandler fail, so do this and don't bother
@@ -394,23 +395,23 @@ class TestDataHandler(unittest.TestCase):
         self.bins0 = {'single': {
             'CCD': {
                 'catalog': {
-                    'galaxy': [{'name': 'g1.dat', 
-                                'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
-                                          'high': 2}]}, 
+                    'galaxy': [{'name': 'g1.dat',
+                                'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0,
+                                          'high': 2}]},
                                'g2.dat', 'g3.dat'],
                     'star':   [{'name': 's1.dat',
-                                'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}, 
+                                'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]},
                                's2.dat', 's3.dat']
             } } } }
         self.expected_files_bins0 = {'single-CCD-catalog': {
-                                'galaxy': [{'name': 'g1.dat', 'group': '_stile_group_0', 
-                                            'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 
+                                'galaxy': [{'name': 'g1.dat', 'group': '_stile_group_0',
+                                            'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2,
                                             'low': 0, 'high': 2}]},
                                            {'name': 'g2.dat', 'group': '_stile_group_1'},
                                            {'name': 'g3.dat', 'group': '_stile_group_2'}],
-                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0', 
-                                            'bins': [{'name': 'List', 'field': 'ra', 
-                                            'endpoints': [0,1,2]}]}, 
+                                'star':   [{'name': 's1.dat', 'group': '_stile_group_0',
+                                            'bins': [{'name': 'List', 'field': 'ra',
+                                            'endpoints': [0,1,2]}]},
                                            {'name': 's2.dat', 'group': '_stile_group_1'},
                                            {'name': 's3.dat', 'group': '_stile_group_2'}]}}
         self.expected_groups_bins0 = {'_stile_group_0': {
@@ -425,18 +426,20 @@ class TestDataHandler(unittest.TestCase):
             'CCD': {
                 'catalog': {
                     'galaxy': [{'name': ['g1.dat', 'g2.dat', 'g3.dat'],
-                                'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                                'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0,
                                           'high': 2}]}],
                     'star':   [{'name': ['s1.dat', 's2.dat'],
                                 'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}]
             } } } }
         self.expected_files_bins1 = {'multiepoch-CCD-catalog': {
-                                'galaxy': [{'name': ['g1.dat', 'g2.dat', 'g3.dat'], 'group': '_stile_group_0', 
-                                            'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 
-                                            'low': 0, 'high': 2}]}],
-                                'star':   [{'name': ['s1.dat', 's2.dat'], 'group': '_stile_group_0', 
-                                            'bins': [{'name': 'List', 'field': 'ra', 
-                                            'endpoints': [0,1,2]}]}]}}
+                                'galaxy': [{'name': ['g1.dat', 'g2.dat', 'g3.dat'],
+                                            'group': '_stile_group_0',
+                                            'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2,
+                                                'low': 0, 'high': 2}]}],
+                                'star':   [{'name': ['s1.dat', 's2.dat'],
+                                            'group': '_stile_group_0',
+                                            'bins': [{'name': 'List', 'field': 'ra',
+                                                'endpoints': [0,1,2]}]}]}}
         self.expected_groups_bins1 = {'_stile_group_0': {
                 'multiepoch-CCD-catalog': { 'star': 0, 'galaxy': 0}}}
 
@@ -524,13 +527,13 @@ class TestDataHandler(unittest.TestCase):
                                                                 'file2': copy.deepcopy(self.dict0)})
         self.assertEqual(results, expected_results)
         self.assertEqual(groups, self.expected_groups0)
-        
+
         # Quickly test that empty keys are properly skipped
         skip_dict = copy.deepcopy(self.dict0)
         skip_dict['single']['field'] = {}
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict0))
         self.assertEqual(results, self.expected_files0)
-        
+
         # Repeat (skipping the dummy check) for dict1, 2, 3 etc...
         results, n = self.testConfigDataHandler._parseFileHelper(copy.deepcopy(self.dict1))
         self.assertEqual(results, self.expected_files1)
@@ -717,7 +720,7 @@ class TestDataHandler(unittest.TestCase):
                                          self.expected_files_list0, 'single-field-catalog', 'star',
                                          'single-CCD-image', 'galaxy random')))
 
-        # Now, loop through those defined test sets, checking that we get the expected formats and 
+        # Now, loop through those defined test sets, checking that we get the expected formats and
         # objects, and NOT the formats and objects we don't expect
         for name, test_set in test_sets:
             results = test_set.config.listFileTypes()
@@ -768,36 +771,36 @@ class TestDataHandler(unittest.TestCase):
                              {'name': 's3.dat', 'file_reader': 'ASCII', 'group': '_stile_group_1'}]]
         self.assertEqual(len(results), len(expected_results))
         self.assertTrue(all([r in expected_results for r in results]))
-        
+
         # Make sure that a properly zipped file list is returned if binning is defined
         config = stile.ConfigDataHandler({'file': self.bins0})
         results = config.listData(['galaxy', 'star'], 'single-CCD-catalog')
-        expected_results = [[{'name': 'g1.dat', 'group': '_stile_group_0', 
+        expected_results = [[{'name': 'g1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
-                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0,
                                           'high': 2}]},
-                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                             {'name': 's1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
                               'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
-                            [{'name': 'g1.dat', 'group': '_stile_group_0', 
+                            [{'name': 'g1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
-                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0,
                                           'high': 2}]},
-                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                             {'name': 's1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
                               'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
-                            [{'name': 'g1.dat', 'group': '_stile_group_0', 
+                            [{'name': 'g1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
-                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0,
                                           'high': 2}]},
-                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                             {'name': 's1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',0,1,'name')],
                               'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
-                            [{'name': 'g1.dat', 'group': '_stile_group_0', 
-                              'bin_list': [stile.binning.SingleBin('ra',1,2,'name')], 
-                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0, 
-                                          'high': 2}]}, 
-                             {'name': 's1.dat', 'group': '_stile_group_0', 
+                            [{'name': 'g1.dat', 'group': '_stile_group_0',
+                              'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
+                              'bins': [{'name': 'Step', 'field': 'ra', 'n_bins': 2, 'low': 0,
+                                          'high': 2}]},
+                             {'name': 's1.dat', 'group': '_stile_group_0',
                               'bin_list': [stile.binning.SingleBin('ra',1,2,'name')],
                               'bins': [{'name': 'List', 'field': 'ra', 'endpoints': [0,1,2]}]}],
                             [{'name': 'g2.dat', 'group': '_stile_group_1'},
@@ -808,19 +811,19 @@ class TestDataHandler(unittest.TestCase):
         from test_binning import compare_single_bin
         for r, er in zip(results, expected_results):
             for i in range(2):
-                self.assertTrue(('bin_list' in r[i] and 'bin_list' in er[i]) or 
+                self.assertTrue(('bin_list' in r[i] and 'bin_list' in er[i]) or
                                 ('bin_list' not in r[i] and 'bin_list' not in er[i]))
                 if 'bin_list' in r[i]:
                     self.assertEqual(len(r[i]['bin_list']), len(er[i]['bin_list']))
-                    self.assertTrue(all([compare_single_bin(rb,erb) 
+                    self.assertTrue(all([compare_single_bin(rb,erb)
                                         for rb, erb in zip(r[i]['bin_list'], er[i]['bin_list'])]))
                     b_l = r[i]['bin_list']
                     del r[i]['bin_list']
                     del er[i]['bin_list']
                     self.assertEqual(r[i], er[i])
                     # Not sure why we have to do this, but it seems to be necessary to pass tests
-                    r[i]['bin_list'] = b_l                      
-                    
+                    r[i]['bin_list'] = b_l
+
     def test_systests(self):
         """
         Test the internals of the parseSysTests method.
@@ -839,21 +842,23 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'Stat', 'field': 'g1', 'object_type': 'galaxy'}]}
         self.assertEqual(results, expected_results)
         results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
-        expected_results_obj = {'single-CCD-catalog': 
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}, 
+        expected_results_obj = {'single-CCD-catalog':
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
              {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]}
         expected_results_obj['single-CCD-catalog'][3]['sys_test'].objects_list = ['galaxy']
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         results = config_9.parseSysTestsDict({'sys_tests': copy.deepcopy(self.sys_tests_0)})
         expected_results['multiepoch-CCD-catalog'] = []
         expected_results_obj['multiepoch-CCD-catalog'] = []
         self.assertEqual(results, expected_results)
         results = config_9.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         del expected_results['multiepoch-CCD-catalog']
         del expected_results_obj['multiepoch-CCD-catalog']
         results = config_3.parseSysTestsDict({'sys_tests': copy.deepcopy(self.sys_tests_0)})
@@ -864,8 +869,9 @@ class TestDataHandler(unittest.TestCase):
         expected_results_obj['single-field-catalog'] = []
         results = config_3.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
-        
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
+
         results = config_0.parseSysTestsDict({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         expected_results = {'single-CCD-catalog':
             [{'name': 'CorrelationFunction', 'type': 'GalaxyShear'},
@@ -875,13 +881,14 @@ class TestDataHandler(unittest.TestCase):
              # The last item of sys_tests_1 is an 'image' so shouldn't appear
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
              {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]}
         results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         results = config_9.parseSysTestsDict({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         expected_results['multiepoch-CCD-catalog'] = [{'name': 'CorrelationFunction',
                                                        'type': 'BrightStarShear'},
@@ -889,12 +896,13 @@ class TestDataHandler(unittest.TestCase):
             {'name': 'ScatterPlot', 'type': 'StarVsPSFG1'}]
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = [
-            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-            {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
+            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
+            {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]
         results = config_9.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         del expected_results['multiepoch-CCD-catalog']
         expected_results['single-CCD-image'] = [{'name': 'Stat', 'field': 'g1',
                                                  'object_type': 'galaxy'}]
@@ -912,7 +920,8 @@ class TestDataHandler(unittest.TestCase):
             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]
         results = config_3.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
 
         results = config_0.parseSysTestsDict({'sys_test_2': copy.deepcopy(self.sys_tests_2)})
         expected_results = {'single-CCD-catalog':
@@ -922,21 +931,23 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'Stat', 'field': 'g1', 'object_type': 'galaxy'}]}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}, 
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
              {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]}
         expected_results_obj['single-CCD-catalog'][3]['sys_test'].objects_list = ['galaxy']
         results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_2)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         results = config_9.parseSysTestsDict({'sys_test_2': copy.deepcopy(self.sys_tests_2)})
         expected_results['multiepoch-CCD-catalog'] = []
         self.assertEqual(results, expected_results)
         results = config_9.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_2)})
         expected_results_obj['multiepoch-CCD-catalog'] = []
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         del expected_results['multiepoch-CCD-catalog']
         results = config_3.parseSysTestsDict({'sys_test_2': copy.deepcopy(self.sys_tests_2)})
         expected_results['single-CCD-image'] = []
@@ -947,7 +958,8 @@ class TestDataHandler(unittest.TestCase):
         expected_results_obj['single-field-catalog'] = []
         results = config_3.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_2)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
 
         results = config_0.parseSysTestsDict({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
@@ -959,15 +971,16 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'CorrelationFunction', 'type': 'GalaxyShear'}]}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
-             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}]} 
+            [{'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
+             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}]}
         results = config_0.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         results = config_9.parseSysTestsDict({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
@@ -977,14 +990,15 @@ class TestDataHandler(unittest.TestCase):
             {'name': 'CorrelationFunction', 'type': 'StarXStarShear'}]
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = [
-            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}, 
-            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
+            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
+            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]
         results = config_9.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         del expected_results['multiepoch-CCD-catalog']
         results = config_3.parseSysTestsDict({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
@@ -1006,8 +1020,9 @@ class TestDataHandler(unittest.TestCase):
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
-        
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
+
 
         results = config_0.parseSysTestsDict({'sys_test': copy.deepcopy(self.sys_tests_4)})
         expected_results = {'single-CCD-catalog':
@@ -1015,18 +1030,20 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'CorrelationFunction', 'type': 'BrightStarShear'}]}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
              {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]}
         results = config_0.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_4)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         results = config_9.parseSysTestsDict({'sys_test': copy.deepcopy(self.sys_tests_4)})
         expected_results['multiepoch-CCD-catalog'] = []
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = []
         results = config_9.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_4)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         del expected_results['multiepoch-CCD-catalog']
         results = config_3.parseSysTestsDict({'sys_test': copy.deepcopy(self.sys_tests_4)})
         expected_results['single-CCD-image'] = [{'name': 'ScatterPlot',
@@ -1045,30 +1062,33 @@ class TestDataHandler(unittest.TestCase):
         expected_results_obj['single-CCD-image'][1]['sys_test'].objects_list = ['galaxy']
         expected_results_obj['single-field-catalog'] = []
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
-        
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
+
         results = config_0.parseSysTestsDict({'sys_test': copy.deepcopy(self.sys_tests_5)})
         expected_results = {'single-CCD-catalog': []}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog': []}
         results = config_0.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
-        
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
+
         results = config_9.parseSysTestsDict({'sys_test': copy.deepcopy(self.sys_tests_5)})
         expected_results['multiepoch-CCD-catalog'] = [{'name': 'CorrelationFunction',
                                                        'type': 'GalaxyShear'},
                             {'name': 'CorrelationFunction', 'type': 'BrightStarShear'}]
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = [
-             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
+             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
              {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]
         expected_results_obj['single-CCD-catalog'] = [
-             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}, 
+             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
              {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]
         results = config_9.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
         del expected_results['multiepoch-CCD-catalog']
         results = config_3.parseSysTestsDict({'sys_test': copy.deepcopy(self.sys_tests_5)})
         expected_results['single-CCD-image'] = []
@@ -1079,7 +1099,8 @@ class TestDataHandler(unittest.TestCase):
         expected_results_obj['single-field-catalog'] = []
         results = config_3.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
-        self.assertTrue(all([CompareTest(r, e) for format in results for r,e in zip(results[format], expected_results_obj[format])]))
+        self.assertTrue(all([CompareTest(r, e) for format in results
+                             for r,e in zip(results[format], expected_results_obj[format])]))
 
     def test_make_bins_and_tests(self):
         """
@@ -1087,14 +1108,15 @@ class TestDataHandler(unittest.TestCase):
         """
         bin1 = {'name': 'Step', 'field': 'ra', 'low': 0, 'high': 7.5, 'n_bins': 8}
         expected_bin1 = stile.BinStep(field='ra', low=0, high=7.5, n_bins=8)
-        bin2 = {'name': 'Step', 'field': 'dec', 'high': 10, 'n_bins': 13, 'step': 0.5, 'use_log': True}
+        bin2 = {'name': 'Step', 'field': 'dec', 'high': 10, 'n_bins': 13, 'step': 0.5,
+                'use_log': True}
         expected_bin2 = stile.BinStep(field='dec', high=10, n_bins=13, step=0.5, use_log=True)
         bin3 = {'name': 'Step', 'field': 'g1', 'high': -2, 'n_bins': 5}  # should fail
         bin4 = {'name': 'List', 'field': '?!', 'endpoints': [0,1,3,5,10]}
         expected_bin4 = stile.BinList(bin_list=[0,1,3,5,10], field='?!')
         bin5 = {'name': 'List', 'field': 'g2', 'endpoints': [5,7,-1,8,10]}  # should fail
         bin6 = {'name': 'List', 'endpoints': [5,7,-1,8,10]}  # should fail
-        
+
         bin_obj = self.testConfigDataHandler.makeBins(bin1)
         self.assertEqual(len(bin_obj), 1)
         bin_obj = bin_obj[0]
@@ -1110,30 +1132,32 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(bin_obj, expected_bin4)
         self.assertRaises(ValueError, self.testConfigDataHandler.makeBins, bin5)
         self.assertRaises(ValueError, self.testConfigDataHandler.makeBins, bin6)
-        
-    
+
+
         test1 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear'}
-        test2 = {'name': 'CorrelationFunction', 'type': 'BrightStarShear', 'extra_args': {'ra': 7}}  # extra args
+        test2 = {'name': 'CorrelationFunction', 'type': 'BrightStarShear',
+                 'extra_args': {'ra': 7}}  # extra args
         test3 = {'name': 'CorrelationFunction', 'type': 'GalaxyDensity', 'bins': bin1}  # with bins
         test4 = {'name': 'CorrelationFunction', 'type': 'StarDensity',  #both
                  'extra_args': {'random keyword': 'random argument'}, 'bins': bin4}
         test5 = {'name': 'CorrelationFunction', 'type': 'PlanetDensity'}  # not a real type
         test6 = {'name': 'CorrelationFunction'}  # missing a type
         test7 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFG2'}
-        test8 = {'name': 'ScatterPlot', 'type': 'StarVsPSFSigma', 'extra_args': {'ra': 7}}  
+        test8 = {'name': 'ScatterPlot', 'type': 'StarVsPSFSigma', 'extra_args': {'ra': 7}}
         test9 = {'name': 'ScatterPlot', 'type': 'StarVsPSFG1', 'bins': bin2}
-        test10 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFSigma', 
+        test10 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFSigma',
                  'extra_args': {'random keyword': 'random argument'}, 'bins': bin1}
         test11 = {'name': 'ScatterPlot', 'type': 'StarVsResidualG2'}
         test12 = {'name': 'ScatterPlot'}
         test13 = {'name': 'WhiskerPlot', 'type': 'Residual'}
         test14 = {'name': 'WhiskerPlot', 'type': 'Star', 'extra_args': {'ra': 7}}  # xtra arg
         test15 = {'name': 'WhiskerPlot', 'type': 'PSF', 'bins': bin4}
-        test16 = {'name': 'WhiskerPlot', 'type': 'PSF', 
+        test16 = {'name': 'WhiskerPlot', 'type': 'PSF',
                  'extra_args': {'random keyword': 'random argument'}, 'bins': bin2}
         test17 = {'name': 'WhiskerPlot', 'type': 'Planet'}
         test18 = {'name': 'WhiskerPlot'}
-        test19 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear', 'random keyword': 'random argument'}
+        test19 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear',
+                  'random keyword': 'random argument'}
         test20 = {'name': 'ScatterPlot', 'type': 'StarVsPSFG1', 'random keyword': 'random argument'}
         test21 = {'name': 'WhiskerPlot', 'type': 'Star', 'random keyword': 'random argument'}
 
@@ -1154,11 +1178,13 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(test_obj['bin_list'], [expected_bin4])
         self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
         test_obj = self.testConfigDataHandler.makeTest(test7)
-        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotResidualVsPSFG2SysTest)
+        self.assertIsInstance(test_obj['sys_test'],
+                              stile.sys_tests.ScatterPlotResidualVsPSFG2SysTest)
         self.assertEqual(test_obj['bin_list'], [])
         self.assertEqual(test_obj['extra_args'], {})
         test_obj = self.testConfigDataHandler.makeTest(test8)
-        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotStarVsPSFSigmaSysTest)
+        self.assertIsInstance(test_obj['sys_test'],
+                              stile.sys_tests.ScatterPlotStarVsPSFSigmaSysTest)
         self.assertEqual(test_obj['bin_list'], [])
         self.assertEqual(test_obj['extra_args'], {'ra': 7})
         test_obj = self.testConfigDataHandler.makeTest(test9)
@@ -1166,7 +1192,8 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(test_obj['bin_list'], [expected_bin2])
         self.assertEqual(test_obj['extra_args'], {})
         test_obj = self.testConfigDataHandler.makeTest(test10)
-        self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotResidualVsPSFSigmaSysTest)
+        self.assertIsInstance(test_obj['sys_test'],
+                              stile.sys_tests.ScatterPlotResidualVsPSFSigmaSysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin1])
         self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
         test_obj = self.testConfigDataHandler.makeTest(test13)
@@ -1194,54 +1221,54 @@ class TestDataHandler(unittest.TestCase):
         self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test19)
         self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test20)
         self.assertRaises(ValueError, self.testConfigDataHandler.makeTest, test21)
-        
+
     def test_errors(self):
         """
         Make sure that various errors are raised, if not already tested in previous methods.
         """
-        bad_test = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+        bad_test = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog',
                                'name': 's1.dat', 'object_type': 'star'}],
                     'sys_tests': [{'name': 'CorrelationFunction', 'type': 'BrightStarShear'},
                                   'CorrelationFunction']}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_test)
-        
+
         bad_test['sys_tests'] = 'CorrelationFunction'
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_test)
-        
+
         bad_files = {'files': 's1.dat'}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_files)
-        
-        bad_files = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+
+        bad_files = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog',
                                 'name': 's1.dat', 'object_type': 'star'},
                                'g1.dat']}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_files)
-        
-        bad_formats = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+
+        bad_formats = {'files': [{'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog',
                                 'name': 's1.dat'}]}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_formats)
-        bad_formats = {'files': {'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog', 
+        bad_formats = {'files': {'epoch': 'coadd', 'extent': 'field', 'data_format': 'catalog',
                                 'name': 's1.dat'}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_formats)
         bad_formats = {'files': {'coadd': {'field': {'catalog': 's1.dat'}}}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_formats)
-        duplicate_formats = {'files': {'coadd': {'field': {'catalog': {'name': 's1.dat', 
+        duplicate_formats = {'files': {'coadd': {'field': {'catalog': {'name': 's1.dat',
                              'object_type': 'star', 'epoch': 'coadd'}}}}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, duplicate_formats)
-                                
-        bad_multiepoch = {'files': [{'epoch': 'multiepoch', 'extent': 'field', 
+
+        bad_multiepoch = {'files': [{'epoch': 'multiepoch', 'extent': 'field',
                                      'data_format': 'catalog', 'name': 's1.dat'}]}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_multiepoch)
-        bad_multiepoch = {'files': {'multiepoch': {'field': {'catalog': {'star': 
+        bad_multiepoch = {'files': {'multiepoch': {'field': {'catalog': {'star':
                                 [['s1.dat', 's2.dat'], ['s3.dat', 's4.dat'], 's5.dat']}}}}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_multiepoch)
-        
-        extra_kwarg = {'files': {'coadd': {'field': {'catalog': {'name': 's1.dat', 
+
+        extra_kwarg = {'files': {'coadd': {'field': {'catalog': {'name': 's1.dat',
                              'object_type': 'star'}}, 'hello': 'goodbye'}}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, extra_kwarg)
 
-        bad_groups = {'files': {'coadd': {'field': {'catalog': {'star': 
+        bad_groups = {'files': {'coadd': {'field': {'catalog': {'star':
                                                                 {'name': 's1.dat', 'group': 1}}}},
-                                          'CCD': {'catalog': {'galaxy': 
+                                          'CCD': {'catalog': {'galaxy':
                                                                 {'name': 'g1.dat', 'group': 1}}}}}
         self.assertRaises(ValueError, stile.ConfigDataHandler, bad_groups)
 
