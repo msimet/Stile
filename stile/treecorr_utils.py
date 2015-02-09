@@ -29,8 +29,8 @@ def Parser():
                    help="Last row of the file(s) to be considered",
                    dest='last_row')
     p.add_argument('--x_units',
-                   help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only allowed "+
-                        "by certain DataHandlers",
+                   help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only "+
+                        "allowed by certain DataHandlers",
                    dest='x_units')
     p.add_argument('--y_units',
                    help="Y-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
