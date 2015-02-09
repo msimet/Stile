@@ -25,7 +25,7 @@ files:
 sys_tests:
     name: CorrelationFunction
     type: GalaxyShear
-    extra_args:
+    extra_kwargs:
         ra_units: degrees
         dec_units: degrees
         min_sep: 0.05

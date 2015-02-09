@@ -22,7 +22,7 @@ class Set(object):
         self.not_found_object = not_found_object
 
 def CompareTest(t1, t2):
-    same_bool = (t1['bin_list']==t2['bin_list'] and t1['extra_args']==t2['extra_args'] and
+    same_bool = (t1['bin_list']==t2['bin_list'] and t1['extra_kwargs']==t2['extra_kwargs'] and
                  type(t1['sys_test'])==type(t2['sys_test']))
     if same_bool and isinstance(t1['sys_test'], stile.StatSysTest):
         same_bool &= (t1['sys_test'].field==t2['sys_test'].field and
@@ -843,10 +843,11 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(results, expected_results)
         results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_0)})
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]}
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [],
+              'extra_kwargs': {}},
+             {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_kwargs': {}}]}
         expected_results_obj['single-CCD-catalog'][3]['sys_test'].objects_list = ['galaxy']
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results
@@ -881,10 +882,11 @@ class TestDataHandler(unittest.TestCase):
              # The last item of sys_tests_1 is an 'image' so shouldn't appear
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]}
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [],
+              'extra_kwargs': {}}]}
         results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results
@@ -896,9 +898,9 @@ class TestDataHandler(unittest.TestCase):
             {'name': 'ScatterPlot', 'type': 'StarVsPSFG1'}]
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = [
-            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_kwargs': {}}]
         results = config_9.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results
@@ -913,11 +915,11 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(results, expected_results)
         del expected_results_obj['multiepoch-CCD-catalog']
         expected_results_obj['single-CCD-image'] = [
-            {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_kwargs': {}}]
         expected_results_obj['single-CCD-image'][0]['sys_test'].objects_list = ['galaxy']
         expected_results_obj['single-field-catalog'] = [
-            {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_kwargs': {}}]
         results = config_3.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_1)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results
@@ -931,10 +933,11 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'Stat', 'field': 'g1', 'object_type': 'galaxy'}]}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]}
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 
+              'extra_kwargs': {}},
+             {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_kwargs': {}}]}
         expected_results_obj['single-CCD-catalog'][3]['sys_test'].objects_list = ['galaxy']
         results = config_0.parseSysTests({'sys_tests': copy.deepcopy(self.sys_tests_2)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
@@ -971,10 +974,11 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'CorrelationFunction', 'type': 'GalaxyShear'}]}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}}]}
+            [{'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [],
+              'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}}]}
         results = config_0.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
@@ -990,9 +994,9 @@ class TestDataHandler(unittest.TestCase):
             {'name': 'CorrelationFunction', 'type': 'StarXStarShear'}]
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = [
-            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.StarXStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}}]
         results = config_9.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
@@ -1011,11 +1015,11 @@ class TestDataHandler(unittest.TestCase):
         self.assertEqual(results, expected_results)
         del expected_results_obj['multiepoch-CCD-catalog']
         expected_results_obj['single-CCD-image'] = [
-            {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_kwargs': {}}]
         expected_results_obj['single-CCD-image'][0]['sys_test'].objects_list = ['galaxy']
         expected_results_obj['single-field-catalog'] = [
-            {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_kwargs': {}}]
         results = config_3.parseSysTests({'sys_test_1': copy.deepcopy(self.sys_tests_3a),
             'sys_test_2': copy.deepcopy(self.sys_tests_3b),
             'sys_test_3': copy.deepcopy(self.sys_tests_3c)})
@@ -1030,8 +1034,8 @@ class TestDataHandler(unittest.TestCase):
              {'name': 'CorrelationFunction', 'type': 'BrightStarShear'}]}
         self.assertEqual(results, expected_results)
         expected_results_obj = {'single-CCD-catalog':
-            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]}
+            [{'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}}]}
         results = config_0.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_4)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results
@@ -1057,8 +1061,8 @@ class TestDataHandler(unittest.TestCase):
                                                  'type': 'StarVsPSFG1'},
                             {'name': 'Stat', 'field': 'g1', 'object_type': 'galaxy'}]
         expected_results_obj['single-CCD-image'] = [
-            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_args': {}},
-            {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_args': {}}]
+            {'sys_test': stile.ScatterPlotStarVsPSFG1SysTest(), 'bin_list': [], 'extra_kwargs': {}},
+            {'sys_test': stile.StatSysTest(field='g1'), 'bin_list': [], 'extra_kwargs': {}}]
         expected_results_obj['single-CCD-image'][1]['sys_test'].objects_list = ['galaxy']
         expected_results_obj['single-field-catalog'] = []
         self.assertEqual(results.keys(), expected_results_obj.keys())
@@ -1080,11 +1084,11 @@ class TestDataHandler(unittest.TestCase):
                             {'name': 'CorrelationFunction', 'type': 'BrightStarShear'}]
         self.assertEqual(results, expected_results)
         expected_results_obj['multiepoch-CCD-catalog'] = [
-             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]
+             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}}]
         expected_results_obj['single-CCD-catalog'] = [
-             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_args': {}},
-             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_args': {}}]
+             {'sys_test': stile.GalaxyShearSysTest(), 'bin_list': [], 'extra_kwargs': {}},
+             {'sys_test': stile.BrightStarShearSysTest(), 'bin_list': [], 'extra_kwargs': {}}]
         results = config_9.parseSysTests({'sys_test': copy.deepcopy(self.sys_tests_5)})
         self.assertEqual(results.keys(), expected_results_obj.keys())
         self.assertTrue(all([CompareTest(r, e) for format in results
@@ -1136,24 +1140,24 @@ class TestDataHandler(unittest.TestCase):
 
         test1 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear'}
         test2 = {'name': 'CorrelationFunction', 'type': 'BrightStarShear',
-                 'extra_args': {'ra': 7}}  # extra args
+                 'extra_kwargs': {'ra': 7}}  # extra args
         test3 = {'name': 'CorrelationFunction', 'type': 'GalaxyDensity', 'bins': bin1}  # with bins
         test4 = {'name': 'CorrelationFunction', 'type': 'StarDensity',  #both
-                 'extra_args': {'random keyword': 'random argument'}, 'bins': bin4}
+                 'extra_kwargs': {'random keyword': 'random argument'}, 'bins': bin4}
         test5 = {'name': 'CorrelationFunction', 'type': 'PlanetDensity'}  # not a real type
         test6 = {'name': 'CorrelationFunction'}  # missing a type
         test7 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFG2'}
-        test8 = {'name': 'ScatterPlot', 'type': 'StarVsPSFSigma', 'extra_args': {'ra': 7}}
+        test8 = {'name': 'ScatterPlot', 'type': 'StarVsPSFSigma', 'extra_kwargs': {'ra': 7}}
         test9 = {'name': 'ScatterPlot', 'type': 'StarVsPSFG1', 'bins': bin2}
         test10 = {'name': 'ScatterPlot', 'type': 'ResidualVsPSFSigma',
-                 'extra_args': {'random keyword': 'random argument'}, 'bins': bin1}
+                 'extra_kwargs': {'random keyword': 'random argument'}, 'bins': bin1}
         test11 = {'name': 'ScatterPlot', 'type': 'StarVsResidualG2'}
         test12 = {'name': 'ScatterPlot'}
         test13 = {'name': 'WhiskerPlot', 'type': 'Residual'}
-        test14 = {'name': 'WhiskerPlot', 'type': 'Star', 'extra_args': {'ra': 7}}  # xtra arg
+        test14 = {'name': 'WhiskerPlot', 'type': 'Star', 'extra_kwargs': {'ra': 7}}  # xtra arg
         test15 = {'name': 'WhiskerPlot', 'type': 'PSF', 'bins': bin4}
         test16 = {'name': 'WhiskerPlot', 'type': 'PSF',
-                 'extra_args': {'random keyword': 'random argument'}, 'bins': bin2}
+                 'extra_kwargs': {'random keyword': 'random argument'}, 'bins': bin2}
         test17 = {'name': 'WhiskerPlot', 'type': 'Planet'}
         test18 = {'name': 'WhiskerPlot'}
         test19 = {'name': 'CorrelationFunction', 'type': 'GalaxyShear',
@@ -1164,54 +1168,54 @@ class TestDataHandler(unittest.TestCase):
         test_obj = self.testConfigDataHandler.makeTest(test1)
         self.assertIsInstance(test_obj['sys_test'], stile.GalaxyShearSysTest)
         self.assertEqual(test_obj['bin_list'], [])
-        self.assertEqual(test_obj['extra_args'], {})
+        self.assertEqual(test_obj['extra_kwargs'], {})
         test_obj = self.testConfigDataHandler.makeTest(test2)
         self.assertIsInstance(test_obj['sys_test'], stile.BrightStarShearSysTest)
         self.assertEqual(test_obj['bin_list'], [])
-        self.assertEqual(test_obj['extra_args'], {'ra': 7})
+        self.assertEqual(test_obj['extra_kwargs'], {'ra': 7})
         test_obj = self.testConfigDataHandler.makeTest(test3)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.GalaxyDensitySysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin1])
-        self.assertEqual(test_obj['extra_args'], {})
+        self.assertEqual(test_obj['extra_kwargs'], {})
         test_obj = self.testConfigDataHandler.makeTest(test4)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.StarDensitySysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin4])
-        self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
+        self.assertEqual(test_obj['extra_kwargs'], {'random keyword': 'random argument'})
         test_obj = self.testConfigDataHandler.makeTest(test7)
         self.assertIsInstance(test_obj['sys_test'],
                               stile.sys_tests.ScatterPlotResidualVsPSFG2SysTest)
         self.assertEqual(test_obj['bin_list'], [])
-        self.assertEqual(test_obj['extra_args'], {})
+        self.assertEqual(test_obj['extra_kwargs'], {})
         test_obj = self.testConfigDataHandler.makeTest(test8)
         self.assertIsInstance(test_obj['sys_test'],
                               stile.sys_tests.ScatterPlotStarVsPSFSigmaSysTest)
         self.assertEqual(test_obj['bin_list'], [])
-        self.assertEqual(test_obj['extra_args'], {'ra': 7})
+        self.assertEqual(test_obj['extra_kwargs'], {'ra': 7})
         test_obj = self.testConfigDataHandler.makeTest(test9)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.ScatterPlotStarVsPSFG1SysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin2])
-        self.assertEqual(test_obj['extra_args'], {})
+        self.assertEqual(test_obj['extra_kwargs'], {})
         test_obj = self.testConfigDataHandler.makeTest(test10)
         self.assertIsInstance(test_obj['sys_test'],
                               stile.sys_tests.ScatterPlotResidualVsPSFSigmaSysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin1])
-        self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
+        self.assertEqual(test_obj['extra_kwargs'], {'random keyword': 'random argument'})
         test_obj = self.testConfigDataHandler.makeTest(test13)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotResidualSysTest)
         self.assertEqual(test_obj['bin_list'], [])
-        self.assertEqual(test_obj['extra_args'], {})
+        self.assertEqual(test_obj['extra_kwargs'], {})
         test_obj = self.testConfigDataHandler.makeTest(test14)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotStarSysTest)
         self.assertEqual(test_obj['bin_list'], [])
-        self.assertEqual(test_obj['extra_args'], {'ra': 7})
+        self.assertEqual(test_obj['extra_kwargs'], {'ra': 7})
         test_obj = self.testConfigDataHandler.makeTest(test15)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotPSFSysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin4])
-        self.assertEqual(test_obj['extra_args'], {})
+        self.assertEqual(test_obj['extra_kwargs'], {})
         test_obj = self.testConfigDataHandler.makeTest(test16)
         self.assertIsInstance(test_obj['sys_test'], stile.sys_tests.WhiskerPlotPSFSysTest)
         self.assertEqual(test_obj['bin_list'], [expected_bin2])
-        self.assertEqual(test_obj['extra_args'], {'random keyword': 'random argument'})
+        self.assertEqual(test_obj['extra_kwargs'], {'random keyword': 'random argument'})
         self.assertRaises(AttributeError, self.testConfigDataHandler.makeTest, test5)
         self.assertRaises(AttributeError, self.testConfigDataHandler.makeTest, test11)
         self.assertRaises(AttributeError, self.testConfigDataHandler.makeTest, test17)

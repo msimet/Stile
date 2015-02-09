@@ -54,9 +54,10 @@ Other keys you can define include:
 'flag_field': a string or list of strings defining column(s) which should be FALSE in order to be
     kept, or a dict of the form {'column_name': keep_only_this_value}.  
 'file_reader': 'FITS' or 'ASCII'.  This will be automatically determined by Stile, but can be
-    specified if desired.  You can also do {'name': ['FITS'|'ASCII'], 'extra_args': {dict of kwargs
-    to be passed to the file reader}}, if you want better control of the file readin--see the Python
-    documentation for the functions Stile.ReadASCIITable or Stile.ReadFITSTable for possible kwargs.
+    specified if desired.  You can also do {'name': ['FITS'|'ASCII'], 'extra_kwargs': {dict of
+    kwargs to be passed to the file reader}}, if you want better control of the file readin--see the
+    Python documentation for the functions Stile.ReadASCIITable or Stile.ReadFITSTable for possible
+    kwargs.
 'bins': a (list of) bin description(s); see below.
 'group': a group name.  A group is a set of files that should be analyzed together when multiple
     object types are necessary, eg for a star/galaxy cross-correlation.  A group should have no more

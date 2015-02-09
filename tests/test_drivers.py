@@ -56,11 +56,11 @@ class TestDrivers(unittest.TestCase):
         # A single test to try out
         self.tests_1 = [{'epoch': 'single', 'extent': 'CCD', 'format': 'catalog',
                          'name': 'CorrelationFunctionSysTest', 'type': 'GalaxyShear',
-                         'extra_args': {'ra_units': 'degrees', 'dec_units': 'degrees',
+                         'extra_kwargs': {'ra_units': 'degrees', 'dec_units': 'degrees',
                                         'min_sep': 0.05, 'max_sep': 1, 'sep_units': 'degrees',
                                         'nbins': 20}}]
         self.tests_dict_1 = {'sys_test': stile.GalaxyShearSysTest(),
-                             'extra_args': self.tests_1[0]['extra_args'], 'bins': [],
+                             'extra_kwargs': self.tests_1[0]['extra_kwargs'], 'bins': [],
                              'bin_list': []}
         # This should be the resulting correlation function
         self.expected_result_1 = numpy.array(
@@ -104,9 +104,9 @@ class TestDrivers(unittest.TestCase):
                          'bins': {'name': 'BinStep', 'low': -100, 'high': 100, 'n_bins': 2,
                                   'field': 'ra'}}]
         self.bins = stile.BinStep(low=-100, high=100, n_bins=2, field='ra')
-        self.tests_dict_2a = {'sys_test': stile.StatSysTest(field='g1'), 'extra_args': {},
+        self.tests_dict_2a = {'sys_test': stile.StatSysTest(field='g1'), 'extra_kwargs': {},
                               'bins': [], 'bin_list': []}
-        self.tests_dict_2b = {'sys_test': stile.StatSysTest(field='ra'), 'extra_args': {},
+        self.tests_dict_2b = {'sys_test': stile.StatSysTest(field='ra'), 'extra_kwargs': {},
                               'bins': [self.bins], 'bin_list': [self.bins]}
 
         self.data = stile.ReadTable('../examples/example_source_catalog.dat',
@@ -213,7 +213,7 @@ class TestDrivers(unittest.TestCase):
             self.assertEqual(res[0], letters)
             self.assertIsInstance(res[1]['sys_test'], test_type)
             self.assertEqual(res[1]['bin_list'], [])
-            self.assertEqual(res[1]['extra_args'] , {})
+            self.assertEqual(res[1]['extra_kwargs'] , {})
 
 
 

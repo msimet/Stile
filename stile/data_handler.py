@@ -133,7 +133,7 @@ class ConfigDataHandler(DataHandler):
     "epoch-extent-dataFormat").  The values of the dict for the .files attribute are also dicts,
     keyed by the object type, with values being lists of files (either strings or dicts giving more
     info about how to read in the file); the values of the .sys_tests dict are just lists of tests,
-    all of them defined by a dict of the form {'sys_test': SysTest object, 'extra_args': extra
+    all of them defined by a dict of the form {'sys_test': SysTest object, 'extra_kwargs': extra
     keyword arguments to be passed in calls to the SysTest object, 'bins': list of bins to be
     applied to the data}.  (The 'bins' option is not currently allowed for tests that require more
     than one data set to run.)   Or, visually:
@@ -141,7 +141,7 @@ class ConfigDataHandler(DataHandler):
                     'object_type_1': [file_1, file_2, {dict_describing_file_3}, ...],
                     'object_type_2': [file_4]}, ...}
     self.sys_tests = {'format_1': 
-                        [{'sys_test': test_object_1, 'extra_args': {}, 'bins': [bin1, bin2...]}]}
+                        [{'sys_test': test_object_1, 'extra_kwargs': {}, 'bins': [bin1, bin2...]}]}
                         
     The .groups attribute is slightly different.  It is keyed by a group name, and then proceeds
     through format and object_type to an index into the corresponding .files[format][object_type]
@@ -153,10 +153,10 @@ class ConfigDataHandler(DataHandler):
     """
     # Keys we expect to get in 'test' or 'bin' dictionaries
     expected_systest_keys = {
-        'CorrelationFunction': ['name', 'bins', 'type', 'treecorr_kwargs', 'extra_args'],
-        'ScatterPlot': ['name', 'bins', 'type', 'extra_args'],
-        'WhiskerPlot': ['name', 'bins', 'type', 'extra_args'],
-        'Stat': ['name', 'bins', 'field', 'object_type', 'extra_args']
+        'CorrelationFunction': ['name', 'bins', 'type', 'treecorr_kwargs', 'extra_kwargs'],
+        'ScatterPlot': ['name', 'bins', 'type', 'extra_kwargs'],
+        'WhiskerPlot': ['name', 'bins', 'type', 'extra_kwargs'],
+        'Stat': ['name', 'bins', 'field', 'object_type', 'extra_kwargs']
     }
     expected_bin_keys = {
         'List': ['name', 'field', 'endpoints'],
@@ -949,7 +949,7 @@ class ConfigDataHandler(DataHandler):
                             - 'sys_test': a stile.SysTest object
                             - 'bin_list': a list of stile.BinStep or stile.BinList objects to
                               be applied to the data
-                            - 'extra_args': a dict of extra keyword arguments to be passed to
+                            - 'extra_kwargs': a dict of extra keyword arguments to be passed to
                               calls of the returned 'sys_test'.
         """
         # Check inputs for proper formats and keys
@@ -967,10 +967,10 @@ class ConfigDataHandler(DataHandler):
                                                                                   sys_test['name']))
 
         # Process the non-sys-test args
-        if 'extra_args' in sys_test:
-            extra_args = sys_test['extra_args']
+        if 'extra_kwargs' in sys_test:
+            extra_kwargs = sys_test['extra_kwargs']
         else:
-            extra_args = {}
+            extra_kwargs = {}
         if 'bins' in sys_test:
             bin_list = self.makeBins(sys_test['bins'])
         else:
@@ -985,7 +985,7 @@ class ConfigDataHandler(DataHandler):
             # return_test = sys_tests.CorrelationFunctionSysTest(sys_test['type'])
             return_test = eval('sys_tests.'+sys_test['type']+'SysTest()')
             if 'treecorr_kwargs' in sys_test:
-                extra_args.update(sys_test['treecorr_kwargs'])
+                extra_kwargs.update(sys_test['treecorr_kwargs'])
         elif sys_test['name'] == 'ScatterPlot':
             if 'type' not in sys_test:
                 raise ValueError('Must pass "type" argument for ScatterPlot systematics '+
@@ -1007,7 +1007,7 @@ class ConfigDataHandler(DataHandler):
                 raise ValueError('Must pass "object_type" argument for Stat sys test')
             return_test = sys_tests.StatSysTest(field=sys_test['field'])
             return_test.objects_list = [sys_test['object_type']]  # for automated processing
-        return {'sys_test': return_test, 'bin_list': bin_list, 'extra_args': extra_args}
+        return {'sys_test': return_test, 'bin_list': bin_list, 'extra_kwargs': extra_kwargs}
 
     def makeBins(self, bins):
         """

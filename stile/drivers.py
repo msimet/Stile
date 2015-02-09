@@ -78,7 +78,7 @@ class ConfigDriver(object):
 
     def _runSysTestHelper(self, config, data, sys_test, name):
         # Run a test and save or plot the results
-        results = sys_test['sys_test'](data, **sys_test['extra_args'])
+        results = sys_test['sys_test'](data, **sys_test['extra_kwargs'])
         if isinstance(results, numpy.ndarray):
             file_io.WriteASCIITable(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                                    '.txt'), results, print_header=True)
@@ -116,7 +116,7 @@ class ConfigDriver(object):
 
     def _runMultiSysTestHelper(self, config, data, sys_test, name):
         # Run a test given a list of data arrays, then save or plot the results
-        results = sys_test['sys_test'](*data, **sys_test['extra_args'])
+        results = sys_test['sys_test'](*data, **sys_test['extra_kwargs'])
         if isinstance(results, numpy.ndarray):
             file_io.WriteASCIITable(config.getOutputPath(sys_test['sys_test'].short_name, name,
                                                 '.txt'), results, print_header=True)
