@@ -10,23 +10,23 @@ builtin JSON, once the required format changes to the configuration file have be
 commas instead of line breaks.)
 
 ## Table of contents ##
-I. Running Stile from a configuration file  
-II. Contents of a configuration file  
-    A. The 'file' Items  
-        1. As a list of dicts  
-        2. As a nested dict  
-        3. Other file specification keywords  
-            a. Field schemas (column names)  
-            b. File readers  
-            c. Flags  
-            d. Binning  
-    B. The 'sys_test' Items  
-    C. Global arguments for config files  
-III. Lists of options  
-    A. Field names  
-    B. Extra arguments for file specification  
-    C. Formats  
-    D. Object types  
+* Running Stile from a configuration file
+* Contents of a configuration file
+    * The 'file' Items
+        * As a list of dicts
+        * As a nested dict
+        * Other file specification keywords
+            * Field schemas (column names)
+            * File readers
+            * Flags
+            * Binning
+    * The 'sys_test' Items
+    * Global arguments for config files
+* Lists of options
+    * Field names
+    * Extra arguments for file specification
+    * Formats
+    * Object types
 
 ## Running Stile from a configuration file ##
 
@@ -34,7 +34,7 @@ To start running Stile from a configuration file, you only need to type:
 ```
 /path/to/StileConfig.py config.yaml [config2.yaml config3.yaml...]
 ```
-StileConfig.py is found in the bin/ directory of the Stile package you downloaded from Github.
+StileConfig.py is found in the `bin/` directory of the Stile package you downloaded from Github.
 Config files will be combined into one large dictionary before being processed; later files will
 override the keys of earlier files.
 
@@ -88,7 +88,7 @@ There are two main ways you can specify your file information:
  - epoch: single, extent: field, data_format: catalog, object_type: star, name: star3.fits
  - epoch: single, extent: field, data_format: catalog, object_type: galaxy, name: galaxy3.fits
 ```
-A little verbose, but clear.  
+A little verbose, but clear.
 
 Some tests require two object types from the same region of sky: say, a B-mode signal around random
 points, for which you need both `galaxy random` and `galaxy` types.   In that case, you can add a
@@ -108,14 +108,14 @@ Now, Stile will assume that a test that needs both a galaxy and a star sample ca
 and `galaxy0.fits`.  It doesn't matter what you call the `group`s as long as they're unique.  (Also,
 passing more than one file of the same format and object_type to a group will result in an error.)
    
-If you want, you can pass a list of filenames instead of a single filename:   
+If you want, you can pass a list of filenames instead of a single filename: 
 ```
  - epoch: single, extent: CCD, data_format: catalog, object_type: star, 
    name: [star0.fits, star1.fits, star2.fits]
  - epoch: single, extent: CCD, data_format: catalog, object_type: galaxy, 
    name: [galaxy0.fits, galaxy1.fits, galaxy2.fits]
 ```
-   
+
 #### As a nested dict ####
    
 If most of your data is in a group, or if you just want to type less, you can pass your data as a
@@ -135,7 +135,7 @@ Each file in the list is assumed to be a separate data set.  In this format, if 
 with the same extent, epoch and data format have a list of the same length, Stile will assume that
 each *position* in that list is a group.  So in this previous example, `star0.fits` and `galaxy0.fits`
 would be assumed to go together, as would `galaxy1.fits` and `star1.fits`, and as would `star3.fits`
-and `galaxy3.fits`.  
+and `galaxy3.fits`.
 
 The order of the nesting isn't important: the following is just fine.
 ```
@@ -153,7 +153,7 @@ So this is also fine:
 ```
  catalog:
    single:
-     CCD:  
+     CCD:
        star: star0.fits, star1.fits, star2.fits
        galaxy: galaxy0.fits, galaxy1.fits, galaxy2.fits
    multiepoch:
@@ -166,7 +166,7 @@ But this is not:
 ```
  catalog:
    single:
-     CCD:  
+     CCD:
        star: star0.fits, star1.fits, star2.fits
        galaxy: galaxy0.fits, galaxy1.fits, galaxy2.fits
    CCD:
@@ -342,7 +342,7 @@ file_reader: {name: ASCII, extra_kwargs: {comment: !})
 
 The ASCII keyword arguments are the arguments for `numpy.genfromtxt()`; the FITS argument keywords
 are for `pyfits.open()` [or `astropy.io.fits.open()`].  Note that by default the data is read from
-hdu=1, the first extension, where table data is normally found.
+`hdu=1`, the first extension, where table data is normally found.
 
 If you're using Stile directly from Python, instead of the command line, you can also define the
 file reader as a function of your own.  It should take as its argument only the filename you
@@ -414,9 +414,9 @@ completely specify the format for a sys_test: an incomplete definition will be m
 possible files.  In particular, you should not define the object_type except for the Stat type of
 test, as the other tests already know which object types they need.
 
-For example, if you had files in {epoch: single, extent: CCD, data_format: catalog},
-{epoch: single, extent: field, data_format: catalog}, and {epoch: coadd, extent:
-CCD, data_format: catalog}, and you defined a test with the format {extent: CCD}, it would
+For example, if you had files in `{epoch: single, extent: CCD, data_format: catalog}`,
+`{epoch: single, extent: field, data_format: catalog}`, and `{epoch: coadd, extent:
+CCD, data_format: catalog}`, and you defined a test with the format `{extent: CCD}`, it would
 apply to the files in the first and third formats, but not the files in the second format.  Note
 that the tests are only run if files exist for that format: if you find that you have defined tests
 which are not running, make sure that you have suitable files defined as well.
@@ -543,4 +543,4 @@ be assumed to have a single measurement per object.
 `galaxy random`: random positions distributed like the galaxies  
 `galaxy lens random`: random positions distributed like the galaxy lenses  
 
-# REPORT BUGS TO: https://github.com/msimet/Stile/issues #
+**REPORT BUGS TO: https://github.com/msimet/Stile/issues**
