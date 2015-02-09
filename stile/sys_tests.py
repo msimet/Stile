@@ -95,7 +95,7 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-if treecorr.version<'3.1':        
+if treecorr.version<'3.1':
     treecorr_func_dict = {'gg': treecorr.G2Correlation,
                           'm2': treecorr.G2Correlation,
                           'ng': treecorr.NGCorrelation,
@@ -258,11 +258,11 @@ class CorrelationFunctionSysTest(SysTest):
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
-        
+
         if data is None:
             raise ValueError('Must include a data array!')
         if correlation_function_type=='nn':
-            if random is None or ((data2 is not None or random2 is not None) and not 
+            if random is None or ((data2 is not None or random2 is not None) and not
                                   (data2 is not None and random2 is not None)):
                 raise ValueError('Incorrect data types for correlation function: must have '
                                    'data and random, and random2 if data2.')
@@ -286,7 +286,7 @@ class CorrelationFunctionSysTest(SysTest):
                 raise ValueError('Must include data2 for this correlation function type')
             if random is not None or random2 is not None:
                 print "Warning: randoms ignored for this correlation function type"
-                
+
         data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k,
                                       use_chip_coords = use_chip_coords)
         data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k,
@@ -314,7 +314,7 @@ class CorrelationFunctionSysTest(SysTest):
             func_dd.process(data)
             func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
             func_rr.process(data)
-            if treecorr_kwargs.get('nn_statistic', 
+            if treecorr_kwargs.get('nn_statistic',
                self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
                 func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_dr.process(data,random)
@@ -368,7 +368,8 @@ class CorrelationFunctionSysTest(SysTest):
     def compensateDefault(self, data, data2, random, random2, both=False):
         """
         Figure out if a compensated statistic can be used from the data present.  Keyword "both"
-        indicates that both data sets if present must have randoms; the default, False, means only the first data set must have a random.
+        indicates that both data sets if present must have randoms; the default, False, means only
+        the first data set must have a random.
         """
         if not random or (random and not len(random)):  # No random
             return 'simple'
@@ -379,7 +380,7 @@ class CorrelationFunctionSysTest(SysTest):
                 return 'simple'
         else:  # There's a random, and we can ignore 'both' since this is an autocorrelation
             return 'compensated'
-            
+
         
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
@@ -479,7 +480,8 @@ class CorrelationFunctionSysTest(SysTest):
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
-        if plot_random_only and pd.datarandom_t_field:  # Plot the randoms-only measurements if requested
+        if plot_random_only and pd.datarandom_t_field:
+            # Plot the randoms-only measurements if requested
             ax = fig.add_subplot(nrows, 1, nrows)
             ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
@@ -634,8 +636,8 @@ class StatSysTest(SysTest):
 
     def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False):
         """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
-        all the statistics tests and populate a stile.Stats object with the results, which it returns
-        to the user.
+        all the statistics tests and populate a stile.Stats object with the results, which it
+        returns to the user.
 
         @param array           The tuple, list, NumPy array, or structured NumPy array/catalog on
                                which to carry out the calculations.
@@ -826,7 +828,7 @@ class WhiskerPlotSysTest(SysTest):
         if size is None:
             q = ax.quiver(x, y, gx, gy, units = 'inches',
                           headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = linewidth, 
+                          pivot = 'middle', width = linewidth,
                           scale = scale)
         else:
             q = ax.quiver(x, y, gx, gy, size, units = 'inches',
@@ -875,9 +877,9 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
         return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
                                 array['psf_sigma'], linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
-    
+
 class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
     long_name = 'Make a Whisker plot of residuals'
@@ -890,7 +892,7 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
                                 linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
 class ScatterPlotSysTest(SysTest):
@@ -922,7 +924,7 @@ class ScatterPlotSysTest(SysTest):
         @param zlabel          The label of z values which appears at the side of color bar.
                                [default: None, meaning do not show a label of z values]
         @param color           The color of scattered points. This color is also applied to linear
-                               regression if argument `linear_regression` is True. This parameter is 
+                               regression if argument `linear_regression` is True. This parameter is
                                ignored when z is not None. In this case, the color of linear 
                                regression is set to blue.
                                [default: None, meaning follow a matplotlib's default color]
@@ -988,10 +990,12 @@ class ScatterPlotSysTest(SysTest):
             raise TypeError('lim should be ((xmin, xmax), (ymin, ymax)) or'
                             '`float` to indicate p%-percentile around median.')
         else:
-            # Even if lim = None, we want to set limits. Limits set by matplotlib looks uneven probably because it seems to pick round numbers for the endpoints (eg -0.2 and 0.2).
+            # Even if lim = None, we want to set limits. Limits set by matplotlib looks uneven
+            # probably because it seems to pick round numbers for the endpoints (eg -0.2 and 0.2).
             xlim = (numpy.min(x)-0.05*(numpy.max(x)-numpy.min(x)),
                     numpy.max(x)+0.05*(numpy.max(x)-numpy.min(x)))
-            # We apply the same thing to y. However, when y has error, setting the limit may cut out error, so we just leave it.
+            # We apply the same thing to y. However, when y has error, setting the limit may cut out
+            # error, so we just leave it.
             if yerr is None:
                 ylim = (numpy.min(y)-0.05*(numpy.max(y)-numpy.min(y)),
                         numpy.max(y)+0.05*(numpy.max(y)-numpy.min(y)))
@@ -1029,15 +1033,15 @@ class ScatterPlotSysTest(SysTest):
             # If equal_axis is False, just use x limits set to axis.
             if not equal_axis:
                 xlimtmp = ax.get_xlim()
-            # If equal_axis is True, x limits may not reflect an actual limit of a plot,e.g., if 
+            # If equal_axis is True, x limits may not reflect an actual limit of a plot,e.g., if
             # y limits are wider than x limits, an actual limit along the x-axis becomes wider
             # than what we specified although a value tied to a matplotlib.axes object remains
             # the same, which can result in a regression line truncated in smaller range along
             # x-axis if we simply use ax.get_xlim() to the regression line. To avoid this,
-            # take a wider range between x limits and y limits, and set this range to 
+            # take a wider range between x limits and y limits, and set this range to
             # the x limit of a regression line.
             else:
-                d = numpy.max([ax.get_xlim()[1] - ax.get_xlim()[0], 
+                d = numpy.max([ax.get_xlim()[1] - ax.get_xlim()[0],
                                ax.get_ylim()[1] - ax.get_ylim()[0]])
                 xlimtmp = [numpy.average(x)-0.5*d, numpy.average(x)+0.5*d]
             xtmp = numpy.linspace(*xlimtmp)
@@ -1143,8 +1147,9 @@ class ScatterPlotSysTest(SysTest):
         elif stat == "median":
             x_med = numpy.array([numpy.median(x[ccds == ccd]) for ccd in set(ccds)])
             y_med = numpy.array([numpy.median(y[ccds == ccd]) for ccd in set(ccds)])
-            y_med_std = numpy.array([numpy.sqrt(numpy.pi/2.)*numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
-                                     for ccd in set(ccds)])
+            y_med_std = (numpy.array([numpy.sqrt(numpy.pi/2.)*
+                         numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+                                     for ccd in set(ccds)]))
             return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
@@ -1266,6 +1271,6 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
         return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
                                 xlabel=r'$\sigma^{\rm PSF}$  [arcsec]',
                                 ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$  [arcsec]',
-                                color=color, lim=lim, equal_axis=False, 
+                                color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line='zero')
 
