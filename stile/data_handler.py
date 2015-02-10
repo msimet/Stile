@@ -52,7 +52,7 @@ class DataHandler:
       """
     multi_file = True
     clobber = False
-    written_files = []
+    written_files = {}
     output_path = '.'
 
     def __init__(self):
