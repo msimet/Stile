@@ -193,7 +193,7 @@ def EmptyFormatDict(type=list):
                 format_dict[Format(epoch,extent,data_format).str] = type()
     return format_dict
 
-def flatten(obj):
+def Flatten(obj):
     if hasattr(obj,'__iter__') and not isinstance(obj,dict):
         return_list = []
         for o in obj:

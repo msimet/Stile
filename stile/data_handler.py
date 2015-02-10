@@ -553,7 +553,7 @@ class ConfigDataHandler(DataHandler):
                 else:
                     return [names]
             else:
-                return stile_utils.flatten(names)
+                return stile_utils.Flatten(names)
         else:
             if is_multiepoch:
                 # We have to be a bit careful about expanding wildcards in the multiepoch case,
@@ -565,7 +565,7 @@ class ConfigDataHandler(DataHandler):
                 else:
                     return [sorted(glob.glob(n)) for n in names]
             elif hasattr(names, '__iter__'):
-                return stile_utils.flatten([self._expandWildcardHelper(n, wildcard, is_multiepoch)
+                return stile_utils.Flatten([self._expandWildcardHelper(n, wildcard, is_multiepoch)
                                             for n in names])
             else:
                 return glob.glob(names)
@@ -647,7 +647,7 @@ class ConfigDataHandler(DataHandler):
                 return_dict[format_obj.str][object_type].append(item)
             else:
                 # If there name argument is a list of names, then turn it into one dict per name.
-                names = stile_utils.flatten(item.pop('name'))
+                names = stile_utils.Flatten(item.pop('name'))
                 for name in names:
                     new_dict = copy.deepcopy(item)
                     if isinstance(name, dict):
@@ -662,7 +662,7 @@ class ConfigDataHandler(DataHandler):
         Take a list of dicts as output by self._formatFileList() and merge them into one dict.
         Return that dict and a dict describing the groups (as output by self._getGroups()).
         """
-        list_of_dicts = stile_utils.flatten(list_of_dicts)
+        list_of_dicts = stile_utils.Flatten(list_of_dicts)
         if not list_of_dicts:
             return {}, self._getGroups({})
         files = list_of_dicts.pop(0)
@@ -692,8 +692,8 @@ class ConfigDataHandler(DataHandler):
                             (not item_diff_keys or item_diff_keys==set(['group'])) and
                             all([item1[ikey]==item2[ikey] for ikey in item1.keys()
                                  if ikey!='group'])):
-                            item1['group'] = (stile_utils.flatten(item1.get('group', []))+
-                                              stile_utils.flatten(item2.get('group', [])))
+                            item1['group'] = (stile_utils.Flatten(item1.get('group', []))+
+                                              stile_utils.Flatten(item2.get('group', [])))
                             del_list.append(j+i+1)
                 # Get rid of duplicate items; go from the back end, so you don't mess up the later
                 # indices.
@@ -865,7 +865,7 @@ class ConfigDataHandler(DataHandler):
                         new_value = value.pop(value_key)
                         if value_key=='extent' or value_key=='data_format' or value_key=='epoch':
                             self.addKwarg(key, value, file_dicts,
-                                          format_keys=stile_utils.flatten([format_keys, new_value]),
+                                          format_keys=stile_utils.Flatten([format_keys, new_value]),
                                           object_type_key=object_type_key)
                         elif value_key=='object_type':
                             self.addKwarg(key, value, file_dicts, format_keys=format_keys,
@@ -877,7 +877,7 @@ class ConfigDataHandler(DataHandler):
                             self.addKwarg(key, new_value, file_dicts, format_keys=format_keys,
                                           object_type_key=object_type_key)
                         else:
-                            new_format_keys = stile_utils.flatten([format_keys, value_key])
+                            new_format_keys = stile_utils.Flatten([format_keys, value_key])
                             self.addKwarg(key, new_value, file_dicts, format_keys=new_format_keys,
                                           object_type_key=object_type_key)
         return file_dicts
@@ -919,7 +919,7 @@ class ConfigDataHandler(DataHandler):
                     if item_key=='extent' or item_key=='data_format' or item_key=='epoch':
                         new_value = item.pop(item_key)
                         self.addItem(item, sys_test_dict,
-                                     format_keys=stile_utils.flatten([format_keys, new_value]))
+                                     format_keys=stile_utils.Flatten([format_keys, new_value]))
         return sys_test_dict
 
     def _checkAndCoerceFormat(self, epoch, extent, data_format):
