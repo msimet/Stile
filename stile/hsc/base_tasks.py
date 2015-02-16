@@ -73,7 +73,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
-                   'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
+                   'deblend.parent-too-big', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
