@@ -726,7 +726,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # the name of runtime, at the expense of some complexity in terms of nested lists of things.
         # Some of this code is annotated more clearly in the CCD* version of this class.
 
-        # temporary fix for a patch that exists in 
+        # temporary fix for a patch that exists in dataRefList but not in catalogs.
         catalogs = list()
         for dataRef in dataRefList:
             try:
