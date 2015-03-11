@@ -726,6 +726,9 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                     for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
+	for dataRef in dataRefList:
+		print dataRef.dataId, "data id"
+	raise RuntimeError()
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
 
@@ -735,6 +738,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=self.config.ccd_type)
             extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
+	    print dataRef.dataId, "data id"
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
@@ -906,10 +910,10 @@ class MultiVisitSingleEpochStileTask(VisitSingleEpochStileTask):
             _, ccd_str = VisitSingleEpochStileTask.getFilenameBase(this_visit)
             _, _, ccds = ccd_str.split('-')
             file_string_list.append((visit, ccds))
-        file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]
+        file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]]
         for i, (visit, ccds) in enumerate(file_string_list[1:]):
             if (not (visit - 1 in visits) or not (ccds == file_string_list_sorted[-1])):
-                file_string_list_sorted.append[[visit, ccds]]
+                file_string_list_sorted.append([visit, ccds])
             # This is: if this is another visit in a contiguous series of them, but it's either the
             # last one, or the next one has a different set of CCDs. (We know that 
             # file_string_list is in order, because visits is sorted.)
@@ -1172,7 +1176,7 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
             _, patch_str = TractSingleEpochStileTask.getFilenameBase(this_visit)
             _, _, patches = patch_str.split('-')
             file_string_list.append((tract, patches))
-        file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]
+        file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]]
         for i, (tract, patches) in enumerate(file_string_list[1:]):
             if (not (tract - 1 in tracts) or not (patches == file_string_list_sorted[-1])):
                 file_string_list_sorted.append[[tract, patches]]
