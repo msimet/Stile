@@ -685,6 +685,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     ConfigClass = VisitSingleEpochStileConfig
     _DefaultName = "VisitSingleEpochStile"
     item_type='ccd'
+    multi_item_type=None
 
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -726,8 +727,6 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                     for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
-	for dataRef in dataRefList:
-		print dataRef.dataId, "data id"
 	raise RuntimeError()
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
@@ -737,8 +736,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # Some tests need to know which data came from which CCD
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=self.config.ccd_type)
-            extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
-	    print dataRef.dataId, "data id"
+            if self.multi_item_type:
+                extra_col_dict['CCD'].fill(str(dataRef.dataId[self.multi_item_type])+'_'+
+                                           str(dataRef.dataId[self.item_type]))
+            else:
+                extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
@@ -881,6 +883,7 @@ class MultiVisitSingleEpochStileTask(VisitSingleEpochStileTask):
     # lsst magic
     RunnerClass = StileMultiVisitRunner
     _DefaultName = "MultiVisitSingleEpochStile"
+    multi_item_type='visit'
     
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -1152,6 +1155,7 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
     """Like TractSingleEpochStileTask, but analyzes multiple tracts per call instead of just one."""
     RunnerClass = StileMultiTractRunner
     _DefaultName = "MultiTractSingleEpochStile"
+    multi_item_type='tract'
 
     @staticmethod
     def getFilenameBase(dataRefList):
