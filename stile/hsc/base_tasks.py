@@ -664,7 +664,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc="length of whisker per inch", default = 0.4)
     scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype=str, default='median',
                                                      doc="scatter points in scatter plot #er ccd?")
-    ccd_type = int
+    ccd_type = str
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -727,7 +727,6 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                     for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
-	raise RuntimeError()
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
 
