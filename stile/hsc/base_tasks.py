@@ -1154,6 +1154,7 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
     """Like TractSingleEpochStileTask, but analyzes multiple tracts per call instead of just one."""
     RunnerClass = StileMultiTractRunner
     _DefaultName = "MultiTractSingleEpochStile"
+    ConfigClass = TractSingleEpochStileConfig
     multi_item_type='tract'
 
     @staticmethod
