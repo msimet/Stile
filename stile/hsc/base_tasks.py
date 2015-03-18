@@ -59,7 +59,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "StarXGalaxyShear", "StarXStarShear", 
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -648,7 +648,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "StarXGalaxyShear", "StarXStarShear", 
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -758,6 +758,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             sys_test_data.sys_test_name = sys_test.name
             # Masks expects: a tuple of masks, one for each required data set for the sys_test
             temp_mask_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
+	    print temp_mask_list, "temp mask list"
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
@@ -1018,7 +1019,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "StarXGalaxyShear", "StarXStarShear", 
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -1051,6 +1052,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
                    'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+    ccd_type = str
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile tract tasks.  Most of this code (incl this docstring)
@@ -1220,13 +1222,13 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
         for tract in tracts:
             this_tract = [dataRef for dataRef in dataRefList
                           if dataRef.dataId['tract']==tract]
-            _, patch_str = TractSingleEpochStileTask.getFilenameBase(this_visit)
+            _, patch_str = TractSingleEpochStileTask.getFilenameBase(this_tract)
             _, _, patches = patch_str.split('-')
             file_string_list.append((tract, patches))
         file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]]
         for i, (tract, patches) in enumerate(file_string_list[1:]):
             if (not (tract - 1 in tracts) or not (patches == file_string_list_sorted[-1])):
-                file_string_list_sorted.append[[tract, patches]]
+                file_string_list_sorted.append([tract, patches])
             # This is: if this is another tract in a contiguous series of them, but it's either the
             # last one, or the next one has a different set of patches. (We know that 
             # file_string_list is in order, because tracts is sorted.)
