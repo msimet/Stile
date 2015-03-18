@@ -568,13 +568,18 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # From Steve Bickerton's helpful HSC butler documentation
             if calib_type=="fcr":
                 ffp = lsst.meas.mosaic.FluxFitParams(calib_data)
-                x, y = data.getX(), data.getY()
-                correction = numpy.array([ffp.eval(x[i], y[i]) for i in range(n)])
-                zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
+                x = [src.getX() for src in data]
+                y = [src.getY() for src in data]
+                correction = numpy.array([ffp.eval(x[i], y[i]) for i in range(len(x))])
+                zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
             key = data.schema.find('flux.psf.flags').key
-            return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
+            return (zeropoint - 2.5*numpy.log10(numpy.array([src.getPsfFlux() for src in data])),
+                    numpy.array([src.get(key)==0 for src in data]))
+        elif col=="mag_inst":
+            key = data.schema.find('flux.psf.flags').key
+            return (- 2.5*numpy.log10(numpy.array([src.getPsfFlux() for src in data])),
                     numpy.array([src.get(key)==0 for src in data]))
         elif col=="w":
             # Use uniform weights for now if we don't use shapes ("w" will be removed from the

@@ -1436,3 +1436,26 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
                                                                        linear_regression=True,
                                                                        reference_line='zero')
 
+
+class ScatterPlotResidualSigmaVsPSFMagSysTest(ScatterPlotSysTest):
+    short_name = 'scatterplot_residual_sigma_vs_psf_magnitude'
+    long_name = 'Make a scatter plot of residual sigma vs PSF magnitude'
+    objects_list = ['star PSF']
+    required_quantities = [('sigma', 'sigma_err', 'psf_sigma', 'mag_inst')]
+
+    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
+        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        import numpy.lib.recfunctions
+        use_array = numpy.copy(array)
+        use_array = numpy.lib.recfunctions.append_fields(use_array, 'sigma_residual_frac', (use_array['sigma'] - use_array['psf_sigma'])/use_array['psf_sigma'])
+        use_array = numpy.lib.recfunctions.append_fields(use_array, 'sigma_residual_frac_err', use_array['sigma_err']/use_array['psf_sigma'])
+        return super(ScatterPlotResidualSigmaVsPSFMagSysTest, self).__call__(use_array, 'mag_inst', 'sigma_residual_frac', 'sigma_residual_frac_err',
+                                                                       residual = False,
+                                                                       per_ccd_stat = self.per_ccd_stat,
+                                                                       xlabel=r'Instrumental PSF magnitude',
+                                                                       ylabel=r'$(\sigma^{\rm star} - \sigma^{\rm PSF})/\sigma^{\rm PSF}$',
+ 
+                                                                       color=color, lim=lim, equal_axis=False,
+                                                                       linear_regression=True,
+                                                                       reference_line='zero')
+
