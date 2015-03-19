@@ -307,7 +307,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         # in pixel. When the pipeline is updated, we should update this line as well.
         xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
                dataRef.dataId.get('ccd'))
-               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key(
+               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
                'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
 
         if shape_cols:
@@ -1019,7 +1019,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear", 
+                             "StarXGalaxyShear", "StarXStarShear",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -1167,7 +1167,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
 
     def getCalibData(self, dataRef, shape_cols):
         calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
@@ -1201,6 +1201,12 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
     _DefaultName = "MultiTractSingleEpochStile"
     ConfigClass = TractSingleEpochStileConfig
     multi_item_type='tract'
+    item_type = 'patch'
+
+    def __init__(self, **kwargs):
+        lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
+        self.sys_tests = self.config.sys_tests.apply()
+        self.catalog_type = 'deepCoadd_src'
 
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -1251,7 +1257,7 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
 
     def getCalibData(self, dataRef, shape_cols):
         calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
