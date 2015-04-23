@@ -889,7 +889,7 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
 
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
@@ -975,7 +975,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
 
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
