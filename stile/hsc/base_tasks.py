@@ -957,15 +957,14 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
         default = "deep",
     )
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
-    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+    flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
-
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
@@ -1044,14 +1043,14 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     whiskerplot_scale = lsst.pex.config.Field(dtype=float,
         doc="length of whisker per inch", default = 0.4)
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
-    flags = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+    flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center'])
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
     ccd_type = str
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
