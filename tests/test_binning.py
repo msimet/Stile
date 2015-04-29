@@ -10,7 +10,7 @@ except ImportError:
 
 def binfunction(x):
     return numpy.ceil(x)
-        
+
 def compare_single_bin(b1,b2):
     if b1.field!=b2.field:
         return False
@@ -35,7 +35,8 @@ class TestBinning(unittest.TestCase):
         self.bin_array_6 = numpy.array([tuple(b) for b in bin_array_6],dtype=[('field_0',float)])
 
     def test_BinStep_SingleBin_creation(self):
-        """Test that the constructor for SingleBin and BinStep objects behaves appropriately given various inputs."""
+        """Test that the constructor for SingleBin and BinStep objects behaves appropriately given
+        various inputs."""
         # All of these should return the same objects (the expected_obj_list), except the final one,
         # which should return them in the reverse order.
         lhs = stile.BinStep('field_0',low=0,high=6,step=1)
@@ -43,8 +44,8 @@ class TestBinning(unittest.TestCase):
         lsn = stile.BinStep('field_0',low=0,step=1,n_bins=6)
         hsn = stile.BinStep('field_0',high=6,step=1,n_bins=6)
         reverse_lhs = stile.BinStep('field_0',low=6,high=0,step=-1)
-        
-        expected_obj_list = [stile.binning.SingleBin('field_0',low=0,high=1,short_name='b'), 
+
+        expected_obj_list = [stile.binning.SingleBin('field_0',low=0,high=1,short_name='b'),
                              stile.binning.SingleBin('field_0',low=1,high=2,short_name='b'),
                              stile.binning.SingleBin('field_0',low=2,high=3,short_name='b'),
                              stile.binning.SingleBin('field_0',low=3,high=4,short_name='b'),
@@ -65,7 +66,7 @@ class TestBinning(unittest.TestCase):
                              msg='BinStep ('+name+') created wrong number of SingleBins!')
             for i in range(len(obj_list)):
                 self.assertTrue(compare_single_bin(obj_list[i],expected_obj_list[i]),
-                             msg='BinStep ('+name+') created incorrect SingleBins!') 
+                             msg='BinStep ('+name+') created incorrect SingleBins!')
 
         # As above, but using logarithmic bins.
         lhs = stile.BinStep('field_0',low=0.25,high=8,step=numpy.log(2.),use_log=True)
@@ -73,9 +74,9 @@ class TestBinning(unittest.TestCase):
         lsn = stile.BinStep('field_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
         hsn = stile.BinStep('field_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
         reverse_lhs = stile.BinStep('field_0',low=8,high=0.25,step=-numpy.log(2.),
-                                    use_log=True)        
-        
-        expected_obj_list = [stile.binning.SingleBin('field_0',low=0.25,high=0.5,short_name='b'), 
+                                    use_log=True)
+
+        expected_obj_list = [stile.binning.SingleBin('field_0',low=0.25,high=0.5,short_name='b'),
                              stile.binning.SingleBin('field_0',low=0.5,high=1.,short_name='b'),
                              stile.binning.SingleBin('field_0',low=1.,high=2.,short_name='b'),
                              stile.binning.SingleBin('field_0',low=2.,high=4.,short_name='b'),
@@ -95,12 +96,12 @@ class TestBinning(unittest.TestCase):
                              msg='Log BinStep ('+name+') created wrong number of SingleBins!')
             for i in range(len(obj_list)):
                 self.assertTrue(compare_single_bin(obj_list[i],expected_obj_list[i]),
-                             msg='BinStep ('+name+') created incorrect SingleBins!') 
+                             msg='BinStep ('+name+') created incorrect SingleBins!')
 
     def test_BinList_SingleBin_creation(self):
         """Test that the creation of a SingleBin exhibits appropriate behavior."""
         obj = stile.BinList('field_0',[0,1.1,1.9,3.0,4.0,5.0,6.5])
-        
+
         expected_obj_list = [stile.binning.SingleBin('field_0',low=0,high=1.1,short_name='b'),
                              stile.binning.SingleBin('field_0',low=1.1,high=1.9,short_name='b'),
                              stile.binning.SingleBin('field_0',low=1.9,high=3,short_name='b'),
@@ -114,7 +115,7 @@ class TestBinning(unittest.TestCase):
                          msg='BinList created wrong number of SingleBins!')
         for i in range(len(obj_list)):
             self.assertTrue(compare_single_bin(obj_list[i],expected_obj_list[i]),
-                         msg='BinList created incorrect SingleBins!') 
+                         msg='BinList created incorrect SingleBins!')
 
         obj = stile.BinList('field_0',[6.5,5.0,4.0,3.0,1.9,1.1,0])
         obj_list = obj()
@@ -123,7 +124,7 @@ class TestBinning(unittest.TestCase):
                          msg='Reversed BinList created wrong number of SingleBins!')
         for i in range(len(obj_list)):
             self.assertTrue(compare_single_bin(obj_list[i],expected_obj_list[i]),
-                         msg='Reversed BinList created incorrect SingleBins!') 
+                         msg='Reversed BinList created incorrect SingleBins!')
         self.assertRaises(TypeError,stile.BinList,[0.5,1.5,1.0])
 
     def test_BinStep_linear(self):
@@ -133,7 +134,7 @@ class TestBinning(unittest.TestCase):
         lsn = stile.BinStep('field_0',low=0,step=1,n_bins=6)
         hsn = stile.BinStep('field_0',high=6,step=1,n_bins=6)
         reverse_lhs = stile.BinStep('field_0',low=6,high=0,step=-1)
-        
+
         names = ["passed low, high, and step",
                  "passed low, high, and n_bins",
                  "passed low, step, and n_bins",
@@ -143,7 +144,7 @@ class TestBinning(unittest.TestCase):
 
         # Expected results; each item of the list is the result of the n-th SingleBin.
         # Formatted arrays don't compare properly to non-formatted arrays, so we use slices of the
-        # original array to ensure the formatting matches properly even for empty (formatted) 
+        # original array to ensure the formatting matches properly even for empty (formatted)
         # arrays.
         expected_bin_array_1 = [self.bin_array_1[0],self.bin_array_1[1],self.bin_array_1[2],
                                 self.bin_array_1[3],self.bin_array_1[4],self.bin_array_1[:0]]
@@ -195,13 +196,13 @@ class TestBinning(unittest.TestCase):
         lsn = stile.BinStep('field_0',low=0.25,step=numpy.log(2.),n_bins=5,use_log=True)
         hsn = stile.BinStep('field_0',high=8,step=numpy.log(2.),n_bins=5,use_log=True)
         reverse_lhs = stile.BinStep('field_0',low=8,high=0.25,step=-numpy.log(2.),
-                                    use_log=True)        
+                                    use_log=True)
         names = ["passed low, high, and step",
                  "passed low, high, and n_bins",
                  "passed low, step, and n_bins",
                  "passed high, step, and n_bins",
                  "passed low, high, and step with low and high reversed"]
-        
+
         objs = [lhs,lhn,lsn,hsn,reverse_lhs]
 
         expected_bin_array_1 = [self.bin_array_1[:0],self.bin_array_1[0],self.bin_array_1[1],
@@ -250,7 +251,7 @@ class TestBinning(unittest.TestCase):
         """Test that BinList objects behave appropriately with respect to SingleBin behavior."""
         obj_forward = stile.BinList('field_0',[0,1.,1.9,3.0,4.0,5.0,6.5])
         obj_reverse = stile.BinList('field_0',[6.5,5.0,4.0,3.0,1.9,1.,0])
-        
+
         names = [" ", " (reversed) "]
         objs = [obj_forward,obj_reverse]
 
