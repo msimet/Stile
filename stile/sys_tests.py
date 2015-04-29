@@ -818,7 +818,8 @@ class WhiskerPlotSysTest(SysTest):
                                [default: None, meaning do not show the size information]
         @param linewidth       Width of whiskers in units of inches.
                                [default: 0.01]
-        @param scale           Length of whisker per inch.
+        @param scale           Data units per inch for the whiskers; a smaller scale is a longer
+                               whisker.
                                [default: None, meaning follow the default autoscaling algorithm from
                                matplotlib]
         @param keylength       Length of a key.
@@ -971,43 +972,44 @@ class ScatterPlotSysTest(SysTest):
         This method has a bunch of options for controlling appearance of a plot, which is
         explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
         __call__ of the child class and return `matplotlib.figure.Figure` that scatterPlot returns.
-        @param array           The structured NumPy array which contains data to be plotted.
-        @param x_field         The name of field in array to be used for x.
-        @param y_field         The name of field in array to be used for y.
-        @param yerr_field      The name of field in array to be used for y error.
-        @param z_field         The name of field in array to be used for z which appears as
-                               colors of scattered points.
+        @param array           A structured NumPy array which contains data to be plotted.
+        @param x_field         The name of the field in `array` to be used for x.
+        @param y_field         The name of the field in `array` to be used for y.
+        @param yerr_field      The name of the field in `array` to be used for y error.
+        @param z_field         The name of the field in `array` to be used for z, which appears as
+                               the colors of scattered points.
                                [default: None, meaning there is no additional quantity]
-        @param residual        Show residual between x and y on y-axis.
-                               [default: False, meaning y value itself on y-axis]
-        @param per_ccd_stat    Which statistics (median, mean, or None) to be performed within
+        @param residual        Show residual between x and y on the y-axis.
+                               [default: False, meaning y value itself is on the y-axis]
+        @param per_ccd_stat    Which statistics (median, mean, or None) to be calculated within
                                each CCD.
-                               [default: None, meaning no statistics is performed]
-        @param xlabel          The label of x-axis.
-                               [default: None, meaning do not show a label of x-axis]
-        @param ylabel          The label of y-axis.
-                               [default: None, meaning do not show a label of y-axis]
-        @param zlabel          The label of z values which appears at the side of color bar.
+                               [default: None, meaning no statistics are calculated]
+        @param xlabel          The label for the x-axis.
+                               [default: None, meaning do not show a label on the x-axis]
+        @param ylabel          The label for the y-axis.
+                               [default: None, meaning do not show a label on the y-axis]
+        @param zlabel          The label for the z values which appears at the side of the color
+                               bar.
                                [default: None, meaning do not show a label of z values]
         @param color           The color of scattered points. This color is also applied to
                                linear regression if argument `linear_regression` is True. This
                                parameter is ignored when z is not None. In this case, the
                                color of linear regression is set to blue.
                                [default: None, meaning follow a matplotlib's default color]
-        @param lim             The limit of axis. This can be specified explicitly by
+        @param lim             The limit of the axes. This can be specified explicitly by
                                using tuples such as ((xmin, xmax), (ymin, ymax)).
-                               If one passes float p, it calculate p%-percentile around median
-                               for each of x-axis and y-axis.
+                               If one passes float p, this routine calculates the p%-percentile
+                               around the median for each axis.
                                [default: None, meaning do not set any limits]
-        @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
+        @equal_axis            If True, force ticks of the x-axis and y-axis equal to each other.
                                [default: False]
         @linear_regression     If True, perform linear regression for x and y and plot a
                                regression line. If yerr is not None, perform the linear
-                               regression with incorporating the error into the standard chi^2
+                               regression incorporating the error into the standard chi^2
                                and plot a regression line with a 1-sigma allowed region.
                                [default: False]
         @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y
-                               is drawn. If reference_line == 'zero', y=0 id drawn.
+                               is drawn. If reference_line == 'zero', y=0 is drawn.
                                A user-specific function can be used by passing an object which
                                has an attribute '__call__' and returns a 1-d Numpy array.
         @returns               a matplotlib.figure.Figure object
