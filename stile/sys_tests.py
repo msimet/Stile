@@ -887,6 +887,9 @@ class WhiskerPlotSysTest(SysTest):
             ax.set_ylim(*ylim)
         return fig
 
+    def getData(self):
+        return self.data
+
 class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
@@ -906,9 +909,6 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
                                 size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
-    def getData(self):
-        return self.data
-
 class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_psf'
     long_name = 'Make a Whisker plot of PSFs'
@@ -927,10 +927,6 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
-
-    def getData(self):
-        return self.data
-
     
 class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
@@ -952,9 +948,6 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
                                 size_label = r'$\sigma$ [pixel]', 
                                 xlim = xlim, ylim = ylim, equal_axis = True)
-
-    def getData(self):
-        return self.data
 
 class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
