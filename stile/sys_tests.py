@@ -1013,38 +1013,38 @@ class ScatterPlotSysTest(SysTest):
                 x, y, yerr = self.getStatisticsPerCCD(array['CCD'], array[x_field],
                                                       array[y_field], yerr = array[yerr_field],
                                                       stat = per_ccd_stat)
-                self.data = stile_utils.FormatArray(numpy.rec.fromarrays([list(set(array['CCD'])), x,
-                                                                          y, yerr],
-                                                                         names = ['ccd',
-                                                                                  x_field,
-                                                                                  y_field, 
-                                                                                  yerr_field]))
+                self.data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
+                                                  y, yerr],
+                                                 names = ['ccd',
+                                                          x_field,
+                                                          y_field, 
+                                                          yerr_field])
             else:
                 x, y, yerr, z = self.getStatisticsPerCCD(array['CCD'], array[x_field],
                                                       array[y_field], yerr = array[yerr_field],
                                                       z = array[z_field], stat = per_ccd_stat)
-                self.data = stile_utils.FormatArray(numpy.rec.fromarrays([list(set(array['CCD'])), x,
-                                                                          y, yerr, zz],
-                                                                         names = ['ccd',
-                                                                                  x_field,
-                                                                                  y_field, 
-                                                                                  yerr_field,
-                                                                                  z_field]))
+                self.data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
+                                                  y, yerr, zz],
+                                                 names = ['ccd',
+                                                          x_field,
+                                                          y_field, 
+                                                          yerr_field,
+                                                          z_field])
         else:
             if z_field is None:
                 z = None
                 x, y, yerr = array[x_field], array[y_field], array[yerr_field]
-                self.data = stile_utils.FormatArray(numpy.rec.fromarrays([x,y,yerr],
-                                                                         names = [x_field,
-                                                                                  y_field,
-                                                                                  yerr_field]))
+                self.data = numpy.rec.fromarrays([x,y,yerr],
+                                                 names = [x_field,
+                                                          y_field,
+                                                          yerr_field])
             else:
                 x, y, yerr, z = array[x_field], array[y_field], array[yerr_field], array[z_field]
-                self.data = stile_utils.FormatArray(numpy.rec.fromarrays([x,y,yerr,z],
-                                                                         names = [x_field,
-                                                                                  y_field,
-                                                                                  yerr_field,
-                                                                                  z_field]))
+                self.data = numpy.rec.fromarrays([x,y,yerr,z],
+                                                 names = [x_field,
+                                                          y_field,
+                                                          yerr_field,
+                                                          z_field])
         y = y-x if residual else y
         return self.scatterPlot(x, y, yerr, z,
                                 xlabel=xlabel, ylabel=ylabel,
