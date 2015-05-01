@@ -675,6 +675,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype = str,
                                                      default='median',
                                                      doc="Which statistics (median, mean, or None) to be performed in CCDs.")
+    ccd_type = 'S7'
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
