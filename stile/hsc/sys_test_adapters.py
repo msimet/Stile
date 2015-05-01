@@ -370,6 +370,7 @@ class ScatterPlotStarVsPSFG1Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -386,6 +387,7 @@ class ScatterPlotStarVsPSFG2Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -402,6 +404,7 @@ class ScatterPlotStarVsPSFSigmaAdapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -418,6 +421,7 @@ class ScatterPlotResidualVsPSFG1Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -434,6 +438,7 @@ class ScatterPlotResidualVsPSFG2Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -450,6 +455,7 @@ class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 

@@ -1333,10 +1333,9 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         return super(ScatterPlotStarVsPSFG1SysTest, self).__call__(array, 'psf_g1', 'g1', 'g1_err',
                                                                    residual = False,
-                                                                   per_ccd_stat = self.per_ccd_stat,
+                                                                   per_ccd_stat = per_ccd_stat,
                                                                    xlabel=r'$g^{\rm PSF}_1$',
                                                                    ylabel=r'$g^{\rm star}_1$',
                                                                    color=color, lim=lim, equal_axis=False,
@@ -1350,10 +1349,9 @@ class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         return super(ScatterPlotStarVsPSFG2SysTest, self).__call__(array, 'psf_g2', 'g2', 'g2_err',
                                                                    residual = False,
-                                                                   per_ccd_stat = self.per_ccd_stat,
+                                                                   per_ccd_stat = per_ccd_stat,
                                                                    xlabel=r'$g^{\rm PSF}_2$',
                                                                    ylabel=r'$g^{\rm star}_2$',
                                                                    color=color, lim=lim, equal_axis=False,
@@ -1367,10 +1365,9 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         return super(ScatterPlotStarVsPSFSigmaSysTest, self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err',
                                                                       residual = False,
-                                                                      per_ccd_stat = self.per_ccd_stat,
+                                                                      per_ccd_stat = per_ccd_stat,
                                                                       xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
                                                                       ylabel=r'$\sigma^{\rm star}$ [arcsec]',
                                                                       color=color, lim=lim, equal_axis=False,
@@ -1384,10 +1381,9 @@ class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         return super(ScatterPlotResidualVsPSFG1SysTest, self).__call__(array, 'psf_g1', 'g1', 'g1_err',
                                                                        residual = True,
-                                                                       per_ccd_stat = self.per_ccd_stat,
+                                                                       per_ccd_stat = per_ccd_stat,
                                                                        xlabel=r'$g^{\rm PSF}_1$',
                                                                        ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
  
@@ -1402,10 +1398,9 @@ class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         return super(ScatterPlotResidualVsPSFG2SysTest, self).__call__(array, 'psf_g2', 'g2', 'g2_err',
                                                                        residual = True,
-                                                                       per_ccd_stat = self.per_ccd_stat,
+                                                                       per_ccd_stat = per_ccd_stat,
                                                                        xlabel=r'$g^{\rm PSF}_2$',
                                                                        ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
  
@@ -1420,10 +1415,9 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
     def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         return super(ScatterPlotResidualVsPSFSigmaSysTest, self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err',
                                                                        residual = True,
-                                                                       per_ccd_stat = self.per_ccd_stat,
+                                                                       per_ccd_stat = per_ccd_stat,
                                                                        xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
                                                                        ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$ [arcsec]',
  
