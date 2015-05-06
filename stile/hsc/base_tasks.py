@@ -58,8 +58,8 @@ class SysTestData(object):
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Set the default systematics tests for the CCD level.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear",
+                    default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -73,7 +73,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
-                   'deblend.parent-too-big', 'deblend.failed', 'deblend.skipped',
+                   'deblend.parent-too-big', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
@@ -210,6 +210,9 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
                       sys_test_data.sys_test_name+filename_chip+'.dat'), results, print_header=True)
+            if hasattr(sys_test.sys_test, 'getData'):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip+'.dat'), sys_test.sys_test.getData(), print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
                 fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
@@ -304,10 +307,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
-               dataRef.dataId.get('ccd'))
-               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if extra_col_dict.has_key(
-               'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
+        if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
+            'CCD')and ('x' in raw_cols or 'y' in raw_cols):
+            xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
+                    dataRef.dataId.get('ccd'))
+                                           ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm()
+        else:
+            xy0 = None
 
         if shape_cols:
             for col in shape_cols:
@@ -646,8 +652,13 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     # Set the default systematics tests for the visit level.  Some keys (eg "flags", "shape_flags")
     # inherited from CCDSingleEpochStileConfig.
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear"])
+                    default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
@@ -661,9 +672,10 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc="y limit for whisker plot", default = [-20000., 20000.])
     whiskerplot_scale = lsst.pex.config.Field(dtype=float,
         doc="length of whisker per inch", default = 0.4)
-    scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype=str, default='median',
-                                                     doc="scatter points in scatter plot #er ccd?")
-    ccd_type = int
+    scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype = str,
+                                                     default='median',
+                                                     doc="Which statistics (median, mean, or None) to be performed in CCDs.")
+    ccd_type = 'S7'
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -721,8 +733,16 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # run (!) even before you get to the collation step.  So, we duplicate some code here in
         # the name of runtime, at the expense of some complexity in terms of nested lists of things.
         # Some of this code is annotated more clearly in the CCD* version of this class.
-        catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
-                    for dataRef in dataRefList]
+
+        # temporary fix for a patch that exists in dataRefList but not in catalogs.
+        catalogs = list()
+        for dataRef in dataRefList:
+            try:
+                catalogs.append(dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS))
+            except RuntimeError as e:
+                print e, ', skip this patch'
+        #catalogs = [dataRef.get(self.catalog_type, immediate=True, flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+        #            for dataRef in dataRefList]
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
@@ -795,6 +815,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
                       sys_test_data.sys_test_name+filename_chips+'.dat'), results, print_header=True)
+            if hasattr(sys_test.sys_test, 'getData'):
+                stile.WriteASCIITable(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips+'.dat'), sys_test.sys_test.getData(), print_header=True)
+            if hasattr(results, 'savefig'):
+                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
             fig = sys_test.sys_test.plot(results)
             fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
 
@@ -840,18 +865,37 @@ class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
 class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear",
-                             #"WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
-                             #"ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
-                             #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [7., 5.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [None, None])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [None, None])
+    whiskerplot_scale = lsst.pex.config.Field(dtype=float,
+        doc="length of whisker per inch", default = 0.4)
     flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
     )
+    # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
+    flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                   'deblend.parent-too-big', 'deblend.skipped',
+                   'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
+                   'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                   'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
+                   'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
+                   'flags.pixel.clipped.any'])
+
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
@@ -892,7 +936,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 
     def getCalibData(self, dataRef, shape_cols):
         calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
@@ -903,19 +947,43 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
 
 class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
-                    default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
-                             "StarXGalaxyShear", "StarXStarShear",
-                             #"WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
-                             #"ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
-                             #"ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             #"ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                    default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
+                             "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
+                             "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
+                             "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.05', 'max_sep': '1',
+                                 'sep_units': 'degrees', 'nbins': '20'})
     flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
     )
+    whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
+        doc="figure size for whisker plot", default = [12., 10.])
+    whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
+        doc="x limit for whisker plot", default = [None, None])
+    whiskerplot_ylim = lsst.pex.config.ListField(dtype=float,
+        doc="y limit for whisker plot", default = [None, None])
+    whiskerplot_scale = lsst.pex.config.Field(dtype=float,
+        doc="length of whisker per inch", default = 0.4)
+    # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
+    flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
+        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+                   'deblend.parent-too-big', 'deblend.skipped',
+                   'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
+                   'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
+                   'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
+                   'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
+                   'flags.pixel.clipped.any'])
+
     ccd_type = 'S7' # NumPy string dtype, 7 characters long 
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
@@ -1030,7 +1098,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
 
     def getCalibData(self, dataRef, shape_cols):
         calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
