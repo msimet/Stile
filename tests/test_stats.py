@@ -28,7 +28,7 @@ class TestStats(unittest.TestCase):
                                        err_msg='Unexpected result for median of random numbers!')
         numpy.testing.assert_almost_equal(self.gaussian_sigma/stats_obj.stddev-1., 0., decimal=3,
                                        err_msg='Unexpected result for mean of random numbers!')
-        numpy.testing.assert_almost_equal(self.gaussian_sigma**2/stats_obj.variance-1., 0., 
+        numpy.testing.assert_almost_equal(self.gaussian_sigma**2/stats_obj.variance-1., 0.,
                                        decimal=3,
                                        err_msg='Unexpected result for mean of random numbers!')
         for ind in range(len(stats_obj.percentiles)):
@@ -92,7 +92,7 @@ class TestStats(unittest.TestCase):
         test_arr["item1"] = numpy.arange(test_len)
         test_arr["item2"] = 2*numpy.arange(test_len)
 
-        # Make sure it can get the stats for each field appropriately, for a catalog with two 
+        # Make sure it can get the stats for each field appropriately, for a catalog with two
         # fields.
         foo = stile.StatSysTest()
         res1 = foo(test_arr, field='item1')
@@ -106,7 +106,7 @@ class TestStats(unittest.TestCase):
         numpy.testing.assert_almost_equal((test_len-1.), res2.mean, decimal=7,
                                           err_msg='Wrong mean for structured array')
 
-        # Make sure that if you set `field` at initialization, it always uses that field for 
+        # Make sure that if you set `field` at initialization, it always uses that field for
         # multiple calls, even reverting back after a single call using another field.
         bar = stile.StatSysTest(field='item1')
         res1 = bar(test_arr)
