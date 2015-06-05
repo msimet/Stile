@@ -59,7 +59,10 @@ def MaskPSFStar(data, config):
     try:
         return data['calib.psf.used']==True
     except LsstCppException:
-        key = data.schema.find('calib.psf.used').key
+        try:
+            key = data.schema.find('calib.psf.used').key
+        except KeyError:
+            key = data.schema.find('calib.psf.used.any').key
         return numpy.array([src.get(key)==True for src in data])
 
 # Map the object type strings onto the above functions.
@@ -262,6 +265,25 @@ class StarXStarShearAdapter(ShapeSysTestAdapter):
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
+class Rho1Adapter(ShapeSysTestAdapter):
+    """
+    Adapter for the StarPSFResidXStarPSFResidShearSysTest.  See the documentation for that class or
+    BaseSysTestAdapter for more information.
+    """
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.Rho1SysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
+
 class StatsPSFFluxAdapter(ShapeSysTestAdapter):
     """
     Adapter for the StatSysTest.  See the documentation for that class or BaseSysTestAdapter for
@@ -343,11 +365,12 @@ class ScatterPlotStarVsPSFG1Adapter(ShapeSysTestAdapter):
         self.name = self.sys_test.short_name
         self.setupMasks()
 
-    def __call__(self, task_config,*data, **kwargs):
+    def __call__(self, task_config, *data, **kwargs):
         try:
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -364,6 +387,7 @@ class ScatterPlotStarVsPSFG2Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -380,6 +404,7 @@ class ScatterPlotStarVsPSFSigmaAdapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -396,6 +421,7 @@ class ScatterPlotResidualVsPSFG1Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -412,6 +438,7 @@ class ScatterPlotResidualVsPSFG2Adapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -428,6 +455,7 @@ class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
             per_ccd_stat = task_config.scatterplot_per_ccd_stat
         except  AttributeError:
             per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
@@ -436,6 +464,7 @@ adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear", StarXGalaxyShearAdapter)
 adapter_registry.register("StarXStarShear", StarXStarShearAdapter)
+adapter_registry.register("Rho1", Rho1Adapter)
 adapter_registry.register("WhiskerPlotStar", WhiskerPlotStarAdapter)
 adapter_registry.register("WhiskerPlotPSF", WhiskerPlotPSFAdapter)
 adapter_registry.register("WhiskerPlotResidual", WhiskerPlotResidualAdapter)
