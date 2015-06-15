@@ -1425,3 +1425,184 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
                                                                        linear_regression=True,
                                                                        reference_line='zero')
 
+
+class BinnedScatterPlotSysTest(ScatterPlotSysTest):
+    short_name = 'binnedscatterplot'
+    """
+    A base class for Stile systematics tests that generate scatter plots binned in one variable,
+    such as RMS ellipticity in magnitude bins or number density in longitude bins. This implements
+    a `__call__` method to produce a `matplotlib.figure.Figure`. Every child class of
+    BinnedScatterPlotSysTest should use binnedScatterPlotSysTest.scatterPlot through `super`. See
+    the docstring for BinnedScatterPlotSysTest.binnedScatterPlot for information on how to write
+    further tests using it.
+    
+    The following quantities can be defined when the class is initialized, or passed to the 
+    `__call__` method as kwargs:
+        @param x_field         The name of the field in `array` to be used for x (the field that
+                               defines the bins--magnitude in a plot of RMS ellipticity as a
+                               function of magnitude, for example).
+        @param y_field         The name of the field in `array` to be used for y.
+        @param yerr_field      The name of the field in `array` to be used for y error.
+        @param w_field         The name of the field in `array` to be used for the weights.
+                               Defining both yerr_field and w_field will result in an error.
+        @param method          The method to combine the values of `array[y_field]` in each bin.
+                               Can be a string ('mean', 'median' or 'rms'), or a callable function
+                               which operates on the given array and returns either the desired
+                               value for the (already-binned) data, or a tuple of the value and its
+                               error.  [default: 'mean']
+        @param binning         The way to bin the values based on `array[x_field]`.  If not given,
+                               ten equally-sized bins will be used; if given, should be a number 
+                               indicating the number of requested equally-sized bins (will be
+                               rounded to nearest int) or one of the Binning* classes defined in
+                               Stile (BinStep, BinList, etc).
+                               [default: None, meaning ten equally-sized bins]
+    """
+    def __init__(self, x_field=None, y_field=None, yerr_field=None, w_field=None, method='mean',
+                 binning=10):
+        self.x_field = x_field
+        self.y_field = y_field
+        self.yerr_field = yerr_field
+        self.w_field = w_field
+        self.method = method
+        self.binning = binning
+    
+    def __call__(self, array, x_field=None, y_field=None, yerr_field=None, w_field=None, 
+                 method=None, binning=None, xlabel=None, ylabel=None, zlabel=None, color = "",
+                 lim=None, equal_axis=False, linear_regression=False, reference_line = None):
+        """
+        Draw a binned scatter plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling appearance of a plot, which are
+        explained below. To implement a child class of BinnedScatterPlotSysTest, call
+        `super(classname, self).__call__(*args, **kwargs)` within the `__call__` method of the child
+        class and return the `matplotlib.figure.Figure` that this `__call__` method returns.
+        @param array           A structured NumPy array which contains data to be plotted.
+        @param x_field         The name of the field in `array` to be used for x (the field that
+                               defines the bins--magnitude in a plot of RMS ellipticity as a
+                               function of magnitude, for example).
+        @param y_field         The name of the field in `array` to be used for y.
+        @param yerr_field      The name of the field in `array` to be used for y error.
+        @param w_field         The name of the field in `array` to be used for the weights.
+                               Defining both yerr_field and w_field will result in an error.
+        @param method          The method to combine the values of `array[y_field]` in each bin.
+                               Can be a string ('mean', 'median' or 'rms'), or a callable function
+                               which operates on the given array and returns either the desired
+                               value for the (already-binned) data, or a tuple of the value and its
+                               error.  [default: 'mean']
+        @param binning         The way to bin the values based on `array[x_field]`.  If not given,
+                               ten equally-sized bins will be used; if given, should be a number 
+                               indicating the number of requested equally-sized bins (will be
+                               rounded to nearest int) or one of the Binning* classes defined in
+                               Stile (BinStep, BinList, etc).
+                               [default: None, meaning ten equally-sized bins]
+        @param xlabel          The label for the x-axis.
+                               [default: None, meaning do not show a label on the x-axis]
+        @param ylabel          The label for the y-axis.
+                               [default: None, meaning do not show a label on the y-axis]
+        @param color           The color of scattered points. This color is also applied to
+                               linear regression if argument `linear_regression` is True.
+                               [default: None, meaning follow a matplotlib's default color]
+        @param lim             The limit of the axes. This can be specified explicitly by
+                               using tuples such as ((xmin, xmax), (ymin, ymax)).
+                               [default: None, meaning do not set any limits]
+        @equal_axis            If True, force ticks of the x-axis and y-axis equal to each other.
+                               [default: False]
+        @linear_regression     If True, perform linear regression for x and y and plot a
+                               regression line. If yerr is not None, perform the linear
+                               regression incorporating the error into the standard chi^2
+                               and plot a regression line with a 1-sigma allowed region.
+                               [default: False]
+        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y
+                               is drawn. If reference_line == 'zero', y=0 is drawn.
+                               A user-specific function can be used by passing an object which
+                               has an attribute '__call__' and returns a 1-d Numpy array.
+        @returns               a matplotlib.figure.Figure object
+        """
+        if not x_field:
+            if self.x_field:
+                x_field = self.x_field
+            else:
+                raise ValueError('Must pass x_field kwarg if not defined when initializing object')
+        if not y_field:
+            if self.y_field:
+                y_field = self.y_field
+            else:
+                raise ValueError('Must pass x_field kwarg if not defined when initializing object')
+        if not yerr_field:
+            yerr_field = self.yerr_field
+        if not w_field:
+            w_field = self.w_field
+        if not method:
+            method = self.method
+        if not binning:
+            binning = self.binning
+        if not isinstance(binning, 
+                         (stile.binning.BinStep, stile.binning.BinList, stile.binning.BinFunction)):
+            try:
+                low = min(array[x_field])
+                high = max(rray[x_field])
+                high += 1.E-6*(high-low) # to avoid <= upper bound problem
+                binning = stile.BinStep(low=low, high=high, field=x_field, n_bins=numpy.round(binning))
+            except:
+                raise RuntimeError("Cannot understand binning argument: %s. Must be a "
+                                   "stile.BinStep, stile.BinList, or stile.BinFunction, or "
+                                   "a number"%str(binning))
+        if w_field:
+            if yerr_field:
+                raise RuntimeError("Cannot pass both a yerr_field and a w_field")
+            weights = array[w_field]
+        elif yerr_field:
+            weights = 1./array[yerr_field]**2
+        else:
+            weights = numpy.ones(array.shape[0])
+        x_vals = []
+        y_vals = []
+        y_err_vals = []
+        for ibin, bin in enumerate(binning()):
+            mask = bin(array)
+            x_vals.append(numpy.mean(array[x_field][mask]))
+            if method=='mean':
+                y_vals.append(numpy.sum(weights*array[y_field])[mask]/numpy.sum(weights[mask]))
+                yerr_vals.append() # figure this out
+            elif method=='median':
+                y_vals.append(numpy.median(array[y_field][mask]))
+                yerr_vals.append() # figure this out
+            elif method=='rms':
+                y_vals.append(numpy.sqrt(numpy.sum((weights*array[y_field]**2)[mask])/numpy.sum(weights[mask])))
+            elif hasattr(method, '__call__'):
+                val = method(array[mask])
+                if hasattr(val, 'len'):
+                    if len(val)==2:
+                        y_vals.append(val[0])
+                        yerr_vals.append(val[1])
+                    else:
+                        raise RuntimeError('method callable may return a tuple of at most length 2 '
+                                           '(a value and its error)')
+                else:
+                    y_vals.append(val)
+        if hasattr(method, '__call__'):
+            y_name = "f(data)"
+        else:
+            y_name = method + " of " + y_field
+        if isinstance(binning, stile.binning.BinFunction):
+            x_name = 'bin number'
+        else:
+            x_name = x_field
+        x_vals = numpy.array(x_vals)
+        y_vals = numpy.array(y_vals)
+        if yerr_vals:
+            yerr_vals = numpy.array(yerr_vals)
+            self.data = numpy.rec.fromarrays([x_vals, y_vals, yerr_vals], 
+                                            names = [x_name, y_name, y_name+'_err'])
+        else:
+            yerr_vals = None
+            self.data = numpy.rec.fromarrays([x_vals, y_vals], 
+                                            names = [x_name, y_name])
+        if not xlabel:
+            xlabel = x_name
+        if not ylabel:
+            ylabel = y_name
+        return self.scatterPlot(x, y, yerr, None,
+                                xlabel=xlabel, ylabel=ylabel,
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line=reference_line)
+
