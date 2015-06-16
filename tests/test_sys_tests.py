@@ -54,13 +54,13 @@ mag = [14.8435156914, 14.1908463802, 14.3260978164, 14.7713128658, 14.2375565438
        19.7096265534, 19.9638882085, 19.1217978937, 19.1296452118, 19.0901038016, 19.3641559185]      
 data = numpy.rec.fromarrays([numpy.array(mag), numpy.array(e1)], names=['mag','e1'])
 
-means = numpy.array([-0.329512262063, -0.143461455482, 0.261209398388,
+means = numpy.array([-0.33386605345, -0.143461455482, 0.261209398388,
                      0.118940939595, -0.119718822072, 0.0503444521599])
-medians = numpy.array([-0.0251835420899, 0.10421800734, 0.104961818167,
+medians = numpy.array([-0.1517580508039, 0.10421800734, 0.104961818167,
                        0.160266274143, 0.00753812168641, -0.149559747485])
-rms = numpy.array([0.917339212222, 0.890891207925, 0.911144568394,
+rms = numpy.array([0.898951027918, 0.890891207925, 0.911144568394,
                    1.11059740575, 1.51276947794, 1.16757299242])
-
+                   
 def e1_median(array):
     return numpy.median(array['e1'])
 
@@ -71,38 +71,38 @@ class TestSysTests(unittest.TestCase):
         """
         test_obj_1 = stile.BinnedScatterPlotSysTest() # Blank, to test kwarg calls
         test_obj_2 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6)
-        test_obj_3 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning=stile.BinStep(low=14.0080025531, high=9.9638941644, n_bins=6))
+        test_obj_3 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning=stile.BinStep(field='mag', low=14.0080025531, high=19.9638941644, n_bins=6))
         test_obj_4 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method='median')
-        test_obj_4 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method='rms')
-        test_obj_4 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method=e1_median)
+        test_obj_5 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method='rms')
+        test_obj_6 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method=e1_median)
          
         test_obj_1(data, x_field='mag', y_field='e1', binning=6)
         mean_obj_1 = test_obj_1.getData()
-        numpy.testing.assert_equal(mean_obj_1['e1'], means)
+        numpy.testing.assert_almost_equal(mean_obj_1['mean of e1'], means)
         test_obj_2(data)
         mean_obj_2 = test_obj_2.getData()
-        numpy.testing.assert_equal(mean_obj_2['e1'], means)
+        numpy.testing.assert_almost_equal(mean_obj_2['mean of e1'], means)
         test_obj_3(data)
         mean_obj_3 = test_obj_3.getData()
-        numpy.testing.assert_equal(mean_obj_3['e1'], means)
+        numpy.testing.assert_almost_equal(mean_obj_3['mean of e1'], means)
         test_obj_1(data, x_field='mag', y_field='e1', binning=6, method='median')
         median_obj_1 = test_obj_1.getData()
-        numpy.testing.assert_equal(median_obj_1['e1'], medians)
+        numpy.testing.assert_almost_equal(median_obj_1['median of e1'], medians)
         test_obj_4(data)
         median_obj_4 = test_obj_4.getData()
-        numpy.testing.assert_equal(median_obj_4['e1'], medians)
+        numpy.testing.assert_almost_equal(median_obj_4['median of e1'], medians)
         test_obj_1(data, x_field='mag', y_field='e1', binning=6, method='rms')
         rms_obj_1 = test_obj_1.getData()
-        numpy.testing.assert_equal(rms_obj_1['e1'], rms)
+        numpy.testing.assert_almost_equal(rms_obj_1['rms of e1'], rms)
         test_obj_5(data)
         rms_obj_5 = test_obj_5.getData()
-        numpy.testing.assert_equal(rms_obj_5['e1'], rms)
+        numpy.testing.assert_almost_equal(rms_obj_5['rms of e1'], rms)
         test_obj_1(data, x_field='mag', y_field='e1', binning=6, method=e1_median)
         median_obj_1 = test_obj_1.getData()
-        numpy.testing.assert_equal(median_obj_1['e1'], medians)
+        numpy.testing.assert_almost_equal(median_obj_1['f(data)'], medians)
         test_obj_6(data)
         median_obj_6 = test_obj_6.getData()
-        numpy.testing.assert_equal(median_obj_6['e1'], medians)
+        numpy.testing.assert_almost_equal(median_obj_6['f(data)'], medians)
 
 if __name__=='__main__':
     unittest.main()
