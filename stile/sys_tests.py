@@ -1537,39 +1537,39 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             binning = self.binning
         if not isinstance(binning, 
                          (stile.binning.BinStep, stile.binning.BinList, stile.binning.BinFunction)):
-            try:
+#            try:
                 low = min(array[x_field])
-                high = max(rray[x_field])
+                high = max(array[x_field])
                 high += 1.E-6*(high-low) # to avoid <= upper bound problem
-                binning = stile.BinStep(low=low, high=high, field=x_field, n_bins=numpy.round(binning))
-            except:
-                raise RuntimeError("Cannot understand binning argument: %s. Must be a "
-                                   "stile.BinStep, stile.BinList, or stile.BinFunction, or "
-                                   "a number"%str(binning))
-        if w_field:
-            if yerr_field:
-                raise RuntimeError("Cannot pass both a yerr_field and a w_field")
-            weights = array[w_field]
-        elif yerr_field:
-            weights = 1./array[yerr_field]**2
-        else:
-            weights = numpy.ones(array.shape[0])
+                binning = stile.BinStep(field=x_field, low=low, high=high, n_bins=numpy.round(binning))
+#            except:
+#                raise RuntimeError("Cannot understand binning argument: %s. Must be a "
+#                                   "stile.BinStep, stile.BinList, or stile.BinFunction, or "
+#                                   "a number"%str(binning))
+        if w_field and yerr_field:
+            raise RuntimeError("Cannot pass both a yerr_field and a w_field")
         x_vals = []
         y_vals = []
-        y_err_vals = []
+        yerr_vals = []
         for ibin, bin in enumerate(binning()):
-            mask = bin(array)
-            x_vals.append(numpy.mean(array[x_field][mask]))
+            masked_array = bin(array)
+            if w_field:
+                weights = masked_array[w_field]
+            elif yerr_field:
+                weights = 1./masked_array[yerr_field]**2
+            else:
+                weights = numpy.ones(masked_array.shape[0])
+            x_vals.append(numpy.mean(masked_array[x_field]))
             if method=='mean':
-                y_vals.append(numpy.sum(weights*array[y_field])[mask]/numpy.sum(weights[mask]))
-                yerr_vals.append() # figure this out
+                y_vals.append(numpy.sum(weights*masked_array[y_field])/numpy.sum(weights))
+                #yerr_vals.append() # figure this out
             elif method=='median':
-                y_vals.append(numpy.median(array[y_field][mask]))
-                yerr_vals.append() # figure this out
+                y_vals.append(numpy.median(masked_array[y_field]))
+                #yerr_vals.append() # figure this out
             elif method=='rms':
-                y_vals.append(numpy.sqrt(numpy.sum((weights*array[y_field]**2)[mask])/numpy.sum(weights[mask])))
+                y_vals.append(numpy.sqrt(numpy.sum(weights*masked_array[y_field]**2)/numpy.sum(weights)))
             elif hasattr(method, '__call__'):
-                val = method(array[mask])
+                val = method(masked_array)
                 if hasattr(val, 'len'):
                     if len(val)==2:
                         y_vals.append(val[0])
@@ -1601,7 +1601,7 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             xlabel = x_name
         if not ylabel:
             ylabel = y_name
-        return self.scatterPlot(x, y, yerr, None,
+        return self.scatterPlot(x_vals, y_vals, yerr_vals, None,
                                 xlabel=xlabel, ylabel=ylabel,
                                 color=color, lim=lim, equal_axis=False,
                                 linear_regression=True, reference_line=reference_line)
