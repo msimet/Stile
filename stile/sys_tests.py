@@ -1446,10 +1446,10 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         @param w_field         The name of the field in `array` to be used for the weights.
                                Defining both yerr_field and w_field will result in an error.
         @param method          The method to combine the values of `array[y_field]` in each bin.
-                               Can be a string ('mean', 'median' or 'rms'), or a callable function
-                               which operates on the given array and returns either the desired
-                               value for the (already-binned) data, or a tuple of the value and its
-                               error.  [default: 'mean']
+                               Can be a string ('mean', 'median', 'rms' or 'count'), or a callable
+                               function which operates on the given array and returns either the
+                               desired value for the (already-binned) data, or a tuple of the value
+                               and its error.  [default: 'mean']
         @param binning         The way to bin the values based on `array[x_field]`.  If not given,
                                ten equally-sized bins will be used; if given, should be a number 
                                indicating the number of requested equally-sized bins (will be
@@ -1484,10 +1484,10 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         @param w_field         The name of the field in `array` to be used for the weights.
                                Defining both yerr_field and w_field will result in an error.
         @param method          The method to combine the values of `array[y_field]` in each bin.
-                               Can be a string ('mean', 'median' or 'rms'), or a callable function
-                               which operates on the given array and returns either the desired
-                               value for the (already-binned) data, or a tuple of the value and its
-                               error.  [default: 'mean']
+                               Can be a string ('mean', 'median', 'rms' or 'count'), or a callable
+                               function which operates on the given array and returns either the
+                               desired value for the (already-binned) data, or a tuple of the value
+                               and its error.  [default: 'mean']
         @param binning         The way to bin the values based on `array[x_field]`.  If not given,
                                ten equally-sized bins will be used; if given, should be a number 
                                indicating the number of requested equally-sized bins (will be
@@ -1537,15 +1537,15 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             binning = self.binning
         if not isinstance(binning, 
                          (stile.binning.BinStep, stile.binning.BinList, stile.binning.BinFunction)):
-#            try:
+            try:
                 low = min(array[x_field])
                 high = max(array[x_field])
                 high += 1.E-6*(high-low) # to avoid <= upper bound problem
                 binning = stile.BinStep(field=x_field, low=low, high=high, n_bins=numpy.round(binning))
-#            except:
-#                raise RuntimeError("Cannot understand binning argument: %s. Must be a "
-#                                   "stile.BinStep, stile.BinList, or stile.BinFunction, or "
-#                                   "a number"%str(binning))
+            except:
+                raise RuntimeError("Cannot understand binning argument: %s. Must be a "
+                                   "stile.BinStep, stile.BinList, or stile.BinFunction, or "
+                                   "a number"%str(binning))
         if w_field and yerr_field:
             raise RuntimeError("Cannot pass both a yerr_field and a w_field")
         x_vals = []
@@ -1561,13 +1561,28 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                 weights = numpy.ones(masked_array.shape[0])
             x_vals.append(numpy.mean(masked_array[x_field]))
             if method=='mean':
-                y_vals.append(numpy.sum(weights*masked_array[y_field])/numpy.sum(weights))
-                #yerr_vals.append() # figure this out
+                sum_weights = numpy.sum(weights)
+                mean = numpy.sum(weights*masked_array[y_field])/sum_weights
+                y_vals.append(mean)
+                # This is the unbiased sigma estimator for weighted data, with a further /sqrt(n)
+                # for error on the mean
+                yerr_vals.append(
+                    numpy.sqrt(numpy.sum((weights*(masked_array[y_field]-mean))**2)/
+                    (sum_weights-numpy.sum(weights**2)/sum_weights)/len(masked_array)))
             elif method=='median':
                 y_vals.append(numpy.median(masked_array[y_field]))
-                #yerr_vals.append() # figure this out
+                # Only correct in the limit of lots of data--but probably where we are
+                yerr_vals.append(
+                    1.253*numpy.std(masked_array[y_field])/
+                    numpy.sqrt(len(masked_array)))
             elif method=='rms':
-                y_vals.append(numpy.sqrt(numpy.sum(weights*masked_array[y_field]**2)/numpy.sum(weights)))
+                y_vals.append(
+                    numpy.sqrt(numpy.sum(weights*masked_array[y_field]**2)/
+                    numpy.sum(weights)))
+            elif method=='count':
+                # I think there is a better method of weight-counting we could be using?
+                y_vals.append(numpy.sum(weights))
+                yerr_vals.append(numpy.sqrt(numpy.sum(weights)))
             elif hasattr(method, '__call__'):
                 val = method(masked_array)
                 if hasattr(val, 'len'):
@@ -1603,6 +1618,6 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             ylabel = y_name
         return self.scatterPlot(x_vals, y_vals, yerr_vals, None,
                                 xlabel=xlabel, ylabel=ylabel,
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line=reference_line)
+                                color=color, lim=lim, equal_axis=equal_axis,
+                                linear_regression=linear_regression, reference_line=reference_line)
 
