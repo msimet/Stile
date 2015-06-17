@@ -265,6 +265,18 @@ class StarXStarShearAdapter(ShapeSysTestAdapter):
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
+class StarSizeResidualAdapter(ShapeSysTestAdapter):
+    """
+    Adapter for the StarSizeResidualSysTest.  See the documentation for that class or
+    BaseSysTestAdapter for more information.
+    """
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.StarSizeResidualSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
 class Rho1Adapter(ShapeSysTestAdapter):
     """
     Adapter for the StarPSFResidXStarPSFResidShearSysTest.  See the documentation for that class or
@@ -464,6 +476,7 @@ adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear", StarXGalaxyShearAdapter)
 adapter_registry.register("StarXStarShear", StarXStarShearAdapter)
+adapter_registry.register("StarSizeResidual", StarSizeResidualAdapter)
 adapter_registry.register("Rho1", Rho1Adapter)
 adapter_registry.register("WhiskerPlotStar", WhiskerPlotStarAdapter)
 adapter_registry.register("WhiskerPlotPSF", WhiskerPlotPSFAdapter)

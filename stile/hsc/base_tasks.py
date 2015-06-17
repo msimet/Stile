@@ -60,6 +60,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "StarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",

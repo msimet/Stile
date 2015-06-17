@@ -557,6 +557,22 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
+class StarSizeResidualSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto correlation of star-PSF size residuals.
+    """
+    short_name = 'star_x_star_size_residual'
+    long_name = 'Auto-correlation of residual star sizes'
+    objects_list = ['star']
+    required_quantities = [('ra', 'dec', 'sigma', 'psf_sigma')]
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_kwargs = copy.deepcopy(kwargs)
+        new_kwargs['k_col'] = 'sigma'
+        new_data = data.copy()
+        new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['sigma']
+        return self.getCF('kk', data, data2, random, random2, config=config, **new_kwargsk)
+    
+        
 class Rho1SysTest(CorrelationFunctionSysTest):
     """
     Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
