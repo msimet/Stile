@@ -60,6 +60,7 @@ medians = numpy.array([-0.1517580508039, 0.10421800734, 0.104961818167,
                        0.160266274143, 0.00753812168641, -0.149559747485])
 rms = numpy.array([0.898951027918, 0.890891207925, 0.911144568394,
                    1.11059740575, 1.51276947794, 1.16757299242])
+counts = [20, 20, 20, 20, 18, 22]          
                    
 def e1_median(array):
     return numpy.median(array['e1'])
@@ -71,10 +72,16 @@ class TestSysTests(unittest.TestCase):
         """
         test_obj_1 = stile.BinnedScatterPlotSysTest() # Blank, to test kwarg calls
         test_obj_2 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6)
-        test_obj_3 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning=stile.BinStep(field='mag', low=14.0080025531, high=19.9638941644, n_bins=6))
-        test_obj_4 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method='median')
-        test_obj_5 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method='rms')
-        test_obj_6 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6, method=e1_median)
+        test_obj_3 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1',
+            binning=stile.BinStep(field='mag', low=14.0080025531, high=19.9638941644, n_bins=6))
+        test_obj_4 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6,
+            method='median')
+        test_obj_5 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6,
+            method='rms')
+        test_obj_6 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6,
+            method='count')
+        test_obj_7 = stile.BinnedScatterPlotSysTest(x_field='mag', y_field='e1', binning = 6,
+            method=e1_median)
          
         test_obj_1(data, x_field='mag', y_field='e1', binning=6)
         mean_obj_1 = test_obj_1.getData()
@@ -97,12 +104,21 @@ class TestSysTests(unittest.TestCase):
         test_obj_5(data)
         rms_obj_5 = test_obj_5.getData()
         numpy.testing.assert_almost_equal(rms_obj_5['rms of e1'], rms)
+
+        test_obj_1(data, x_field='mag', y_field='e1', binning=6, method='count')
+        count_obj_1 = test_obj_1.getData()
+        numpy.testing.assert_equal(count_obj_1['count of e1'], counts)
+        test_obj_6(data)
+        count_obj_6 = test_obj_6.getData()
+        numpy.testing.assert_equal(count_obj_6['count of e1'], counts)
+
+
         test_obj_1(data, x_field='mag', y_field='e1', binning=6, method=e1_median)
         median_obj_1 = test_obj_1.getData()
         numpy.testing.assert_almost_equal(median_obj_1['f(data)'], medians)
-        test_obj_6(data)
-        median_obj_6 = test_obj_6.getData()
-        numpy.testing.assert_almost_equal(median_obj_6['f(data)'], medians)
+        test_obj_7(data)
+        median_obj_7 = test_obj_7.getData()
+        numpy.testing.assert_almost_equal(median_obj_7['f(data)'], medians)
 
 if __name__=='__main__':
     unittest.main()
