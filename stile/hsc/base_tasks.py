@@ -1209,7 +1209,6 @@ class StileMultiTractRunner(lsst.pipe.base.TaskRunner):
 
     See pipeBase.TaskRunner for more information.
     """
-
     @staticmethod
     def getTargetList(parsedCmd, **kwargs):
         return [(None, parsedCmd.id.refList)]
@@ -1218,7 +1217,7 @@ class StileMultiTractRunner(lsst.pipe.base.TaskRunner):
         task = self.TaskClass(config=self.config, log=self.log)
         result = task.run(*args)
 
-class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
+class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
     """Like TractSingleEpochStileTask, but analyzes multiple tracts per call instead of just one."""
     RunnerClass = StileMultiTractRunner
     _DefaultName = "MultiTractSingleEpochStile"
@@ -1245,13 +1244,13 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
         for tract in tracts:
             this_tract = [dataRef for dataRef in dataRefList
                           if dataRef.dataId['tract']==tract]
-            _, patch_str = TractSingleEpochStileTask.getFilenameBase(this_visit)
+            _, patch_str = TractSingleEpochStileTask.getFilenameBase(this_tract)
             _, _, patches = patch_str.split('-')
             file_string_list.append((tract, patches))
         file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]]
         for i, (tract, patches) in enumerate(file_string_list[1:]):
             if (not (tract - 1 in tracts) or not (patches == file_string_list_sorted[-1])):
-                file_string_list_sorted.append[[tract, patches]]
+                file_string_list_sorted.append([tract, patches])
             # This is: if this is another tract in a contiguous series of them, but it's either the
             # last one, or the next one has a different set of patches. (We know that 
             # file_string_list is in order, because tracts is sorted.)
@@ -1272,11 +1271,3 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
         parser.description = parser_description
         return parser
 
-    def getCalibData(self, dataRef, shape_cols):
-        calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate = True)
-        calib_type = "calexp" # This is just so computeShapes knows the format
-        if shape_cols:
-            calib_metadata_shape = calib_metadata
-
-        return calib_type, calib_metadata, calib_metadata_shape
