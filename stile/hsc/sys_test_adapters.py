@@ -186,7 +186,7 @@ class ShapeSysTestAdapter(BaseSysTestAdapter):
         sys_test itself returns.
         """
         new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(task_config.corr2_kwargs, *new_data, **kwargs)
+        return self.sys_test(config=task_config.treecorr_kwargs, *new_data, **kwargs)
         
 class GalaxyShearAdapter(ShapeSysTestAdapter):
     """
