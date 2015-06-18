@@ -1436,6 +1436,20 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
     the docstring for BinnedScatterPlotSysTest.binnedScatterPlot for information on how to write
     further tests using it.
     
+    We automatically implement four statistics to report per bin: 'mean', 'median', 'rms' and 
+    'count'.  'mean' reports the mean of all y values in each bin; 'median' reports the median, with
+    an error estimate that is valid only for large numbers of points; 'rms' reports the root-mean-
+    square value, with an approximate error estimate; and 'count' simply report the number of
+    objects, with sqrt(n) errors.  The user may also pass a callable function that operates on the
+    entire data array (not just the fields defined by `x_field` and `y_field`, described below,
+    which are used by the four methods described here).  The function should return either a single
+    value that will be used for the bin, or a tuple of two numbers, the value for the bin and its
+    error.
+    
+    Weights or y errors can be given for any of the builtin methods except 'median'.  Y errors are
+    assumed to be Gaussian and the derived weights are 1/yerr**2.  Weighted `count`s are simply
+    the sums of the weights.
+    
     The following quantities can be defined when the class is initialized, or passed to the 
     `__call__` method as kwargs:
         @param x_field         The name of the field in `array` to be used for x (the field that
@@ -1475,6 +1489,10 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         explained below. To implement a child class of BinnedScatterPlotSysTest, call
         `super(classname, self).__call__(*args, **kwargs)` within the `__call__` method of the child
         class and return the `matplotlib.figure.Figure` that this `__call__` method returns.
+        
+        Kwargs except `array`, `*_field`, `method` and `binning` are passed through to the parent
+        class function `scatterPlot()` unaltered.
+        
         @param array           A structured NumPy array which contains data to be plotted.
         @param x_field         The name of the field in `array` to be used for x (the field that
                                defines the bins--magnitude in a plot of RMS ellipticity as a
@@ -1525,8 +1543,8 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         if not y_field:
             if self.y_field:
                 y_field = self.y_field
-            else:
-                raise ValueError('Must pass x_field kwarg if not defined when initializing object')
+            elif not hasattr(method, '__call__'):
+                raise ValueError('Must pass y_field kwarg if not defined when initializing object')
         if not yerr_field:
             yerr_field = self.yerr_field
         if not w_field:
@@ -1560,27 +1578,43 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             else:
                 weights = numpy.ones(masked_array.shape[0])
             x_vals.append(numpy.mean(masked_array[x_field]))
-            if method=='mean':
+            if method=='mean' or method=='rms':
                 sum_weights = numpy.sum(weights)
                 mean = numpy.sum(weights*masked_array[y_field])/sum_weights
-                y_vals.append(mean)
                 # This is the unbiased sigma estimator for weighted data, with a further /sqrt(n)
                 # for error on the mean
-                yerr_vals.append(
-                    numpy.sqrt(numpy.sum((weights*(masked_array[y_field]-mean))**2)/
-                    (sum_weights-numpy.sum(weights**2)/sum_weights)/len(masked_array)))
+                sigma = numpy.sqrt(numpy.sum((weights*(masked_array[y_field]-mean))**2)/
+                    (sum_weights-numpy.sum(weights**2)/sum_weights))
+            if method=='mean':
+                y_vals.append(mean)
+                yerr_vals.append(sigma/numpy.sqrt(len(masked_array)))
+            elif method=='rms':
+                rms = numpy.sqrt(numpy.sum(weights*masked_array[y_field]**2)/
+                    numpy.sum(weights))
+                y_vals.append(rms)
+                # error estimate for rms: 
+                # sigma_x^2 = <x^2> - <x>^2
+                # x_{rms}^2 = <x^2> = sigma_x^2 + <x>^2
+                # x_{rms} = \sqrt{sigma_x^2 + <x>^2}
+                # By the Taylor expansion-type propagation of errors,
+                # sigma_{x_{rms}}^2 = (\partial x_{rms}/\partial sigma_x)^2 sigma_{sigma_x}^2 + 
+                #                     (\partial x_{rms}/\partial <x>)^2 sigma_{<x>}^2
+                #    = sigma_x^2/x_rms^2 * sigma_{sigma_x}^2 + <x>^2/x_rms^2 * sigma_{<x>}^2
+                # sigma_{<x>} is sigma_x/sqrt(n), and sigma_{sigma_x} is approx 
+                # 1/sqrt(2(n-1))*sigma_x for large n 
+                # (see http://ai.eecs.umich.edu/~fessler/papers/files/tr/stderr.pdf ).
+                yerr_vals.append(numpy.sqrt(
+                    (sigma**2/(numpy.sqrt(2*(len(masked_array)-1))*rms))**2 + 
+                    (mean*sigma/(numpy.sqrt(len(masked_array))*rms))**2))
             elif method=='median':
                 y_vals.append(numpy.median(masked_array[y_field]))
                 # Only correct in the limit of lots of data--but probably where we are
                 yerr_vals.append(
                     1.253*numpy.std(masked_array[y_field])/
                     numpy.sqrt(len(masked_array)))
-            elif method=='rms':
-                y_vals.append(
-                    numpy.sqrt(numpy.sum(weights*masked_array[y_field]**2)/
-                    numpy.sum(weights)))
+                    
             elif method=='count':
-                # I think there is a better method of weight-counting we could be using?
+                # I think there is a better method of weighted counting we could be using?
                 y_vals.append(numpy.sum(weights))
                 yerr_vals.append(numpy.sqrt(numpy.sum(weights)))
             elif hasattr(method, '__call__'):
