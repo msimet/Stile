@@ -63,7 +63,8 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "RMSE1Sky", "RMSE2Sky," "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
@@ -231,12 +232,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         @returns       The source catalog, masked to the rows which don't have any of our defined
                        flags set.
         """
-	masks = []
+        masks = []
         if self.config.flags_keep_false:
             masks += [catalog[flag]==False for flag in self.config.flags_keep_false]
         if self.config.flags_keep_true:
             masks += [catalog[flag]==True for flag in self.config.flags_keep_true]
-	if masks:
+        if masks:
             mask = masks[0]
             for new_mask in masks[1:]:
                 mask = numpy.logical_and(mask, new_mask)

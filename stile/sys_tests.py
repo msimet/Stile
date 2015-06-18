@@ -1477,6 +1477,11 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         self.y_field = y_field
         self.yerr_field = yerr_field
         self.w_field = w_field
+        list_of_quantities = []
+        for quantity in [x_field, y_field, yerr_field, w_field]:
+            if quantity:
+                list_of_quantities.append(quantity)
+        self.required_quantities = list_of_quantities
         self.method = method
         self.binning = binning
     

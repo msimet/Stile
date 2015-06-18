@@ -459,6 +459,47 @@ class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
+class RMSE1Sky(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', y_field='g1', w_field='w', method='rms')
+        self.name = 'rms_e1_sky'
+        self.setupMasks(['galaxy'])
+        
+class RMSE2Sky(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', y_field='g2', w_field='w', method='rms')
+        self.name = 'rms_e2_sky'
+        self.setupMasks(['galaxy'])
+    
+class RMSE1Chip(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'chip'
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', y_field='g1', w_field='w', method='rms')
+        self.name = 'rms_e1_chip'
+        self.setupMasks(['galaxy'])
+        
+class RMSE2Chip(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'chip'
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', y_field='g2', w_field='w', method='rms')
+        self.name = 'rms_e2_chip'
+        self.setupMasks(['galaxy'])
+
+class CountPerMagnitude(BaseSysTestAdapter):
+    def __init__(self, config):
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', w_field='w', method='count')
+        self.name = 'count_per_mag'
+        self.setupMasks(['galaxy'])
+        
+    
+        
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
@@ -474,3 +515,8 @@ adapter_registry.register("ScatterPlotStarVsPSFSigma", ScatterPlotStarVsPSFSigma
 adapter_registry.register("ScatterPlotResidualVsPSFG1", ScatterPlotResidualVsPSFG1Adapter)
 adapter_registry.register("ScatterPlotResidualVsPSFG2", ScatterPlotResidualVsPSFG2Adapter)
 adapter_registry.register("ScatterPlotResidualVsPSFSigma", ScatterPlotResidualVsPSFSigmaAdapter)
+adapter_registry.register("RMSE1Sky", RMSE1SkyAdapter)
+adapter_registry.register("RMSE2Sky", RMSE2SkyAdapter)
+adapter_registry.register("RMSE1Chip", RMSE1ChipAdapter)
+adapter_registry.register("RMSE2Chip", RMSE2ChipAdapter)
+adapter_registry.register("CountPerMagnitude", CountPerMagnitude)
