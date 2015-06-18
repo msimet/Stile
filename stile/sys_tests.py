@@ -569,7 +569,7 @@ class StarSizeResidualSysTest(CorrelationFunctionSysTest):
         new_kwargs = kwargs.copy()
         new_kwargs['use_as_k'] = 'sigma'
         new_data = data.copy()
-        new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['sigma']
+        new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['psf_sigma']
         return self.getCF('kk', data, data2, random, random2, config=config, **new_kwargs)
     
         
