@@ -445,19 +445,43 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                                 for src in data]
         if do_shape or do_err:
             if 'galaxy' in mask_type and self.config.do_hsm:  # For any galaxy type, use shape.hsm 
-                key = data.schema.find("shape.hsm.regauss.moments").key  #if available
+                key_g1 = data.schema.find("shape.hsm.regauss.e1").key
+                key_g2 = data.schema.find("shape.hsm.regauss.e2").key
+                g1 = numpy.array([src.get(key_g1) for src in data])
+                g2 = numpy.array([src.get(key_g2) for src in data])
+                if sky_coords:
+                    # we do not have size in shape.hsm, but it does not matter for shapes.
+                    # The size derived in this code is meaningless though.
+                    ixx_pixel = 1.+g1
+                    iyy_pixel = 1.-g1
+                    ixy_pixel = g2
+                    ixx = numpy.array([lt[0,0]**2*ixxp+2.*lt[0,0]*lt[0,1]*ixyp+lt[0,1]**2*iyyp
+                            for (ixxp, ixyp, iyyp, lt) 
+                            in zip(ixx_pixel, ixy_pixel, iyy_pixel, localLinearTransform)])
+                    iyy = numpy.array([lt[1,0]**2*ixxp+2.*lt[1,0]*lt[1,1]*ixyp+lt[1,1]**2*iyyp
+                            for (ixxp, ixyp, iyyp, lt) 
+                            in zip(ixx_pixel, ixy_pixel, iyy_pixel, localLinearTransform)])
+                    ixy = numpy.array([(lt[0,0]*lt[1,0]*ixxp +
+                                     (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])*ixyp+
+                                     lt[0,1]*lt[1,1]*iyyp)
+                            for (ixxp, ixyp, iyyp, lt) 
+                            in zip(ixx_pixel, ixy_pixel, iyy_pixel, localLinearTransform)])
+                else:
+                    ixx = 1.+g1
+                    iyy = 1.-g1
+                    ixy = g2
             else:
                 key = data.schema.find("shape.sdss").key
-            moments = [src.get(key) for src in data]
-            if sky_coords:
-                moments = [moment.transform(lt) for moment, lt in
-                                  zip(moments, localLinearTransform)]
-            ixx = numpy.array([mom.getIxx() for mom in moments])
-            ixy = numpy.array([mom.getIxy() for mom in moments])
-            iyy = numpy.array([mom.getIyy() for mom in moments])
+                moments = [src.get(key) for src in data]
+                if sky_coords:
+                    moments = [moment.transform(lt) for moment, lt in
+                                      zip(moments, localLinearTransform)]
+                ixx = numpy.array([mom.getIxx() for mom in moments])
+                ixy = numpy.array([mom.getIxy() for mom in moments])
+                iyy = numpy.array([mom.getIyy() for mom in moments])
         if do_err:
             if 'galaxy' in mask_type and self.config.do_hsm:
-                key = data.schema.find('shape.hsm.regauss.err').key
+                key = data.schema.find('shape.hsm.regauss.sigma').key
                 errs = numpy.array([src.get(key) for src in data])
                 sigma_errs = numpy.array(errs.shape)
                 sigma_errs.fill(1.)
