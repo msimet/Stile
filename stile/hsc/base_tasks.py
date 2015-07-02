@@ -64,7 +64,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
-                             "RMSE1Sky", "RMSE2Sky," "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
+                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
@@ -658,7 +658,8 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
@@ -870,7 +871,8 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
                              ])
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [7., 5.])
@@ -953,7 +955,8 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,

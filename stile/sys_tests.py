@@ -1481,7 +1481,8 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         for quantity in [x_field, y_field, yerr_field, w_field]:
             if quantity:
                 list_of_quantities.append(quantity)
-        self.required_quantities = list_of_quantities
+        self.required_quantities = [list_of_quantities]  # need a list per object type
+        print self.required_quantities
         self.method = method
         self.binning = binning
     

@@ -459,7 +459,7 @@ class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
-class RMSE1Sky(ShapeSysTestAdapter):
+class RMSE1SkyAdapter(ShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
@@ -467,7 +467,7 @@ class RMSE1Sky(ShapeSysTestAdapter):
         self.name = 'rms_e1_sky'
         self.setupMasks(['galaxy'])
         
-class RMSE2Sky(ShapeSysTestAdapter):
+class RMSE2SkyAdapter(ShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
@@ -475,7 +475,7 @@ class RMSE2Sky(ShapeSysTestAdapter):
         self.name = 'rms_e2_sky'
         self.setupMasks(['galaxy'])
     
-class RMSE1Chip(ShapeSysTestAdapter):
+class RMSE1ChipAdapter(ShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'chip'
         self.config = config
@@ -483,7 +483,7 @@ class RMSE1Chip(ShapeSysTestAdapter):
         self.name = 'rms_e1_chip'
         self.setupMasks(['galaxy'])
         
-class RMSE2Chip(ShapeSysTestAdapter):
+class RMSE2ChipAdapter(ShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'chip'
         self.config = config
@@ -491,7 +491,7 @@ class RMSE2Chip(ShapeSysTestAdapter):
         self.name = 'rms_e2_chip'
         self.setupMasks(['galaxy'])
 
-class CountPerMagnitude(BaseSysTestAdapter):
+class CountPerMagnitudeAdapter(BaseSysTestAdapter):
     def __init__(self, config):
         self.config = config
         self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', w_field='w', method='count')
@@ -519,4 +519,4 @@ adapter_registry.register("RMSE1Sky", RMSE1SkyAdapter)
 adapter_registry.register("RMSE2Sky", RMSE2SkyAdapter)
 adapter_registry.register("RMSE1Chip", RMSE1ChipAdapter)
 adapter_registry.register("RMSE2Chip", RMSE2ChipAdapter)
-adapter_registry.register("CountPerMagnitude", CountPerMagnitude)
+adapter_registry.register("CountPerMagnitude", CountPerMagnitudeAdapter)
