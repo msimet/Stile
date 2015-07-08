@@ -582,7 +582,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
             key = data.schema.find('flux.psf.flags').key
-            return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
+	    flux_key = data.schema.find('flux.psf').key
+            return (zeropoint - 2.5*numpy.log10([src.get(flux_key) for src in data]),
                     numpy.array([src.get(key)==0 for src in data]))
         elif col=="w":
             # Use uniform weights for now if we don't use shapes ("w" will be removed from the
