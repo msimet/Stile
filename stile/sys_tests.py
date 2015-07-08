@@ -1541,6 +1541,8 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                                has an attribute '__call__' and returns a 1-d Numpy array.
         @returns               a matplotlib.figure.Figure object
         """
+        if not method:
+            method = self.method
         if not x_field:
             if self.x_field:
                 x_field = self.x_field
@@ -1549,14 +1551,12 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         if not y_field:
             if self.y_field:
                 y_field = self.y_field
-            elif not hasattr(method, '__call__'):
+            elif not hasattr(method, '__call__') and not method=='count':
                 raise ValueError('Must pass y_field kwarg if not defined when initializing object')
         if not yerr_field:
             yerr_field = self.yerr_field
         if not w_field:
             w_field = self.w_field
-        if not method:
-            method = self.method
         if not binning:
             binning = self.binning
         if not isinstance(binning, 
@@ -1575,6 +1575,11 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
         x_vals = []
         y_vals = []
         yerr_vals = []
+	if y_field:
+	    nans = numpy.isnan(array[y_field])
+	    print "Skipping", numpy.sum(nans), "nans out of", len(array)
+	    array = array[numpy.invert(nans)]
+	
         for ibin, bin in enumerate(binning()):
             masked_array = bin(array)
             if w_field:
@@ -1636,6 +1641,8 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                     y_vals.append(val)
         if hasattr(method, '__call__'):
             y_name = "f(data)"
+	elif method=='count':
+	    y_name = 'number of objects'
         else:
             y_name = method + " of " + y_field
         if isinstance(binning, stile.binning.BinFunction):
