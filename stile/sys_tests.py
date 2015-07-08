@@ -448,7 +448,7 @@ class CorrelationFunctionSysTest(SysTest):
         if pd.x_title and plot_bmode:
             ax.errorbar(data[r], data[pd.x_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.x_title)
-        elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
+        elif pd.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
         ax.set_xscale('log')
@@ -566,17 +566,18 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
     objects_list = ['star']
     required_quantities = [('ra', 'dec', 'sigma', 'psf_sigma')]
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        new_kwargs = copy.deepcopy(kwargs)
-        new_kwargs['k_col'] = 'sigma'
+        new_kwargs = kwargs.copy()
+        new_kwargs['use_as_k'] = 'sigma'
         data_list = []
         for data_item in [data, data2, random, random2]:
             if data_item is not None:
                 new_data = data_item.copy()
                 new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['sigma']
                 data_list.append(new_data)
+		print new_data.dtype.names
             else:
                 data_list.append(data_item)
-        return self.getCF('kk', *data_list, **new_kwargs)
+        return self.getCF('kk', config=config, *data_list, **new_kwargs)
     
         
 class Rho1SysTest(CorrelationFunctionSysTest):
