@@ -186,7 +186,7 @@ class ShapeSysTestAdapter(BaseSysTestAdapter):
         sys_test itself returns.
         """
         new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(task_config.corr2_kwargs, *new_data, **kwargs)
+        return self.sys_test(config=task_config.treecorr_kwargs, *new_data, **kwargs)
         
 class GalaxyShearAdapter(ShapeSysTestAdapter):
     """
@@ -459,7 +459,19 @@ class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
-class RMSE1SkyAdapter(ShapeSysTestAdapter):
+class NoConfigShapeSysTestAdapter(ShapeSysTestAdapter):
+    """
+    Just like the ShapeSysTestAdapter, only don't send the config object to the test.
+    """
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, **kwargs)
+
+class RMSE1SkyAdapter(NoConfigShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
@@ -467,7 +479,7 @@ class RMSE1SkyAdapter(ShapeSysTestAdapter):
         self.name = 'rms_e1_sky'
         self.setupMasks(['galaxy'])
         
-class RMSE2SkyAdapter(ShapeSysTestAdapter):
+class RMSE2SkyAdapter(NoConfigShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
@@ -475,7 +487,7 @@ class RMSE2SkyAdapter(ShapeSysTestAdapter):
         self.name = 'rms_e2_sky'
         self.setupMasks(['galaxy'])
     
-class RMSE1ChipAdapter(ShapeSysTestAdapter):
+class RMSE1ChipAdapter(NoConfigShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'chip'
         self.config = config
@@ -483,7 +495,7 @@ class RMSE1ChipAdapter(ShapeSysTestAdapter):
         self.name = 'rms_e1_chip'
         self.setupMasks(['galaxy'])
         
-class RMSE2ChipAdapter(ShapeSysTestAdapter):
+class RMSE2ChipAdapter(NoConfigShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'chip'
         self.config = config
