@@ -557,7 +557,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarSizeResidualSysTest(CorrelationFunctionSysTest):
+class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
     """
     Compute the auto correlation of star-PSF size residuals.
     """
