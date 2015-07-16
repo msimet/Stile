@@ -1462,8 +1462,6 @@ class BaseScatterPlotSysTest(SysTest):
                 return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
-    def __call__(self, *args, **kwargs):
-        return self.scatterPlot(*args, **kwargs)
 
 class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
