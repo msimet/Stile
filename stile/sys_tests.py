@@ -1088,14 +1088,14 @@ class ScatterPlotSysTest(SysTest):
                                If one passes float p, it calculate p%-percentile around median
                                for each of x-axis and y-axis.
                                [default: None, meaning do not set any limits]
-        @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
+        @param equal_axis      If True, force ticks of x-axis and y-axis equal to each other.
                                [default: False]
-        @linear_regression     If True, perform linear regression for x and y and plot a regression
+        @param linear_regression  If True, perform linear regression for x and y and plot a regression
                                line. If yerr is not None, perform the linear regression with
                                incorporating the error into the standard chi^2 and plot
                                a regression line with a 1-sigma allowed region.
                                [default: False]
-        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y is
+        @param reference_line  Draw a reference line. If reference_line == 'one-to-one', x=y is
                                drawn. If reference_line == 'zero', y=0 id drawn. A user-specific
                                function can be used by passing an object which has an attribute
                                '__call__' and returns a 1-d Numpy array.
@@ -1518,23 +1518,24 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                                Stile (BinStep, BinList, etc).
                                [default: None, meaning ten equally-sized bins]
         @param xlabel          The label for the x-axis.
-                               [default: None, meaning do not show a label on the x-axis]
+                               [default: None, meaning use the value of `x_field`]
         @param ylabel          The label for the y-axis.
-                               [default: None, meaning do not show a label on the y-axis]
+                               [default: None, meaning use a string based on the `method` 
+                               and `y_value`]
         @param color           The color of scattered points. This color is also applied to
                                linear regression if argument `linear_regression` is True.
                                [default: None, meaning follow a matplotlib's default color]
         @param lim             The limit of the axes. This can be specified explicitly by
                                using tuples such as ((xmin, xmax), (ymin, ymax)).
                                [default: None, meaning do not set any limits]
-        @equal_axis            If True, force ticks of the x-axis and y-axis equal to each other.
+        @param equal_axis      If True, force ticks of the x-axis and y-axis equal to each other.
                                [default: False]
-        @linear_regression     If True, perform linear regression for x and y and plot a
+        @param linear_regression  If True, perform linear regression for x and y and plot a
                                regression line. If yerr is not None, perform the linear
                                regression incorporating the error into the standard chi^2
                                and plot a regression line with a 1-sigma allowed region.
                                [default: False]
-        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y
+        @param reference_line  Draw a reference line. If reference_line == 'one-to-one', x=y
                                is drawn. If reference_line == 'zero', y=0 is drawn.
                                A user-specific function can be used by passing an object which
                                has an attribute '__call__' and returns a 1-d Numpy array.
