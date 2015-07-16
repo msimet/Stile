@@ -1482,7 +1482,6 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             if quantity:
                 list_of_quantities.append(quantity)
         self.required_quantities = [list_of_quantities]  # need a list per object type
-        print self.required_quantities
         self.method = method
         self.binning = binning
     
@@ -1557,6 +1556,17 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             yerr_field = self.yerr_field
         if not w_field:
             w_field = self.w_field
+        if w_field and yerr_field:
+            raise RuntimeError("Cannot pass both a yerr_field and a w_field")
+        nans = numpy.isnan(array[x_field])
+	if y_field:
+	    nans = nans | numpy.isnan(array[y_field])
+        if w_field:
+            nans = nans | numpy.isnan(array[w_field])
+        if yerr_field:
+            nans = nans | numpy.isnan(array[yerr_field])
+        print "Skipping", numpy.sum(nans), "nans out of", len(array)
+	array = array[numpy.invert(nans)]
         if not binning:
             binning = self.binning
         if not isinstance(binning, 
@@ -1570,16 +1580,10 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                 raise RuntimeError("Cannot understand binning argument: %s. Must be a "
                                    "stile.BinStep, stile.BinList, or stile.BinFunction, or "
                                    "a number"%str(binning))
-        if w_field and yerr_field:
-            raise RuntimeError("Cannot pass both a yerr_field and a w_field")
+	
         x_vals = []
         y_vals = []
         yerr_vals = []
-	if y_field:
-	    nans = numpy.isnan(array[y_field])
-	    print "Skipping", numpy.sum(nans), "nans out of", len(array)
-	    array = array[numpy.invert(nans)]
-	
         for ibin, bin in enumerate(binning()):
             masked_array = bin(array)
             if w_field:
