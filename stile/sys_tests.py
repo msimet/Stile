@@ -128,7 +128,8 @@ def CorrelationFunctionSysTest(type=None):
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
         - StarXStarShear: autocorrelation of the shapes of 'star' type objects
         - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
-        - StarDensity Correlation: position autocorrelation of 'star' type objects
+        - StarDensityCorrelation: position autocorrelation of 'star' type objects
+        - Rho1: rho1 statistics (autocorrelation of residual star shapes)
         - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
           multiple types of correlation functions.  See the documentation for 
           BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
@@ -152,6 +153,8 @@ def CorrelationFunctionSysTest(type=None):
         return GalaxyDensityCorrelationSysTest()
     elif type=='StarDensityCorrelation':
         return StarDensityCorrelationSysTest()
+    elif type=='Rho1':
+        return Rho1SysTest()
     else:
         raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
     
@@ -599,7 +602,7 @@ class StarXStarShearSysTest(BaseCorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class Rho1SysTest(CorrelationFunctionSysTest):
+class Rho1SysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
     """
@@ -957,7 +960,7 @@ class BaseWhiskerPlotSysTest(SysTest):
     def getData(self):
         return self.data
 
-class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
+class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
     objects_list = ['star PSF']
