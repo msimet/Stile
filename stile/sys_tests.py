@@ -563,7 +563,7 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
     """
     short_name = 'star_x_star_size_residual'
     long_name = 'Auto-correlation of residual star sizes'
-    objects_list = ['star']
+    objects_list = ['star PSF']
     required_quantities = [('ra', 'dec', 'sigma', 'psf_sigma')]
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         new_kwargs = kwargs.copy()
@@ -572,9 +572,8 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
         for data_item in [data, data2, random, random2]:
             if data_item is not None:
                 new_data = data_item.copy()
-                new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['sigma']
+                new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['psf_sigma']
                 data_list.append(new_data)
-		print new_data.dtype.names
             else:
                 data_list.append(data_item)
         return self.getCF('kk', config=config, *data_list, **new_kwargs)
