@@ -22,6 +22,11 @@ import numpy
 import re
 import stile
 
+# So we can cut too-long path names.  This assumes that the machine where the code is stored has the
+# same settings as the machine where the files will be placed, but I think this is a safe assumption
+# for most HSC use cases.
+max_path_length = os.pathconf('sys_test_adapters.py', 'PC_NAME_MAX')
+
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
 
@@ -208,17 +213,22 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # run the test!
             results = sys_test(self.config, *new_catalogs)
             # If there's anything fancy to do with the results, do that.
+            this_max_path_length = max_path_length-4-len(sys_test_data.sys_test_name)
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chip+'.dat'), results, print_header=True)
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.dat'),
+                      results, print_header=True)
             if hasattr(sys_test.sys_test, 'getData'):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chip+'.dat'), sys_test.sys_test.getData(), print_header=True)
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.dat'), 
+                      sys_test.sys_test.getData(), print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
+                fig.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.png'))
             if hasattr(results, 'savefig'):
-                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
+                results.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.png'))
 
     def removeFlaggedObjects(self, catalog):
         """
@@ -819,16 +829,21 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(self.config, *new_catalogs)
+            this_max_path_length = max_path_length-4-len(sys_test_data.sys_test_name)
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chips+'.dat'), results, print_header=True)
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.dat'), 
+                      results, print_header=True)
             if hasattr(sys_test.sys_test, 'getData'):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chips+'.dat'), sys_test.sys_test.getData(), print_header=True)
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.dat'), 
+                      sys_test.sys_test.getData(), print_header=True)
             if hasattr(results, 'savefig'):
-                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+                results.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.png'))
             fig = sys_test.sys_test.plot(results)
-            fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            fig.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.png'))
 
     def makeArray(self, catalog_dict):
         """
