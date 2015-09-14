@@ -978,6 +978,11 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
         dtype = str,
         default = "deep",
     )
+    coadd_catalog_type = lsst.pex.config.Field(
+        doc = "coadd catalog type: deepCoadd_meas or deepCoadd_src",
+        dtype = str,
+        default = "deepCoadd_meas",
+    )
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
@@ -996,7 +1001,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRef):
@@ -1056,6 +1061,11 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
+    )
+    coadd_catalog_type = lsst.pex.config.Field(
+        doc = "coadd catalog type: deepCoadd_meas or deepCoadd_src",
+        dtype = str,
+        default = "deepCoadd_meas",
     )
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [12., 10.])
@@ -1122,7 +1132,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -1228,7 +1238,7 @@ class MultiTractSingleEpochStileTask(VisitSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRefList):
