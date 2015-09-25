@@ -3,6 +3,7 @@ Contains the class definitions of the Stile systematics tests.
 """
 import numpy
 import stile
+import stile_utils
 import treecorr
 from treecorr.corr2 import corr2_valid_params
 try:
@@ -21,7 +22,7 @@ class PlotNone(object):
     def savefig(self, filename):
         pass
 
-class SysTest:
+class SysTest(object):
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following
     attributes:
@@ -447,7 +448,7 @@ class CorrelationFunctionSysTest(SysTest):
         if pd.x_title and plot_bmode:
             ax.errorbar(data[r], data[pd.x_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.x_title)
-        elif pf.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
+        elif pd.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
         ax.set_xscale('log')
@@ -555,6 +556,61 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
+
+class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto correlation of star-PSF size residuals.
+    """
+    short_name = 'star_x_star_size_residual'
+    long_name = 'Auto-correlation of residual star sizes'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'sigma', 'psf_sigma')]
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_kwargs = kwargs.copy()
+        new_kwargs['use_as_k'] = 'sigma'
+        data_list = []
+        for data_item in [data, data2, random, random2]:
+            if data_item is not None:
+                new_data = data_item.copy()
+                new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['psf_sigma']
+                data_list.append(new_data)
+            else:
+                data_list.append(data_item)
+        return self.getCF('kk', config=config, *data_list, **new_kwargs)
+    
+        
+class Rho1SysTest(CorrelationFunctionSysTest):
+    """
+    Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
+    """
+    short_name = 'rho1'
+    long_name = 'Rho1 statistics (Auto-correlation of star-PSF shapes)'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w')]
+
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_data = data.copy()
+        new_data['g1'] = new_data['g1'] - new_data['psf_g1']
+        new_data['g2'] = new_data['g2'] - new_data['psf_g2']
+        if data2 is not None:
+            new_data2 = data2.copy()
+            new_data2['g1'] = new_data2['g1'] - new_data2['psf_g1']
+            new_data2['g2'] = new_data2['g2'] - new_data2['psf_g2']
+        else:
+            new_data2 = data2
+        if random is not None:
+            new_random = random.copy()
+            new_random['g1'] = new_random['g1'] - new_random['psf_g1']
+            new_random['g2'] = new_random['g2'] - new_random['psf_g2']
+        else:
+            new_random = random
+        if random2 is not None:
+            new_random2 = random2.copy()
+            new_random2['g1'] = new_random2['g1'] - new_random2['psf_g1']
+            new_random2['g2'] = new_random2['g2'] - new_random2['psf_g2']
+        else:
+            new_random2 = random2
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2, config=config, **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -763,6 +819,7 @@ class WhiskerPlotSysTest(SysTest):
     WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
     WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
     """
+
     def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, scale = None,
                     keylength = 0.05, figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
@@ -783,7 +840,8 @@ class WhiskerPlotSysTest(SysTest):
                                [default: None, meaning do not show the size information]
         @param linewidth       Width of whiskers in units of inches.
                                [default: 0.01]
-        @param scale           Length of whisker per inch.
+        @param scale           Data units per inch for the whiskers; a smaller scale is a longer
+                               whisker.
                                [default: None, meaning follow the default autoscaling algorithm from
                                matplotlib]
         @param keylength       Length of a key.
@@ -851,6 +909,9 @@ class WhiskerPlotSysTest(SysTest):
             ax.set_ylim(*ylim)
         return fig
 
+    def getData(self):
+        return self.data
+
 class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
@@ -859,6 +920,11 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
 
     def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
                  xlim = None, ylim = None):
+        if 'CCD' in array.dtype.names:
+            fields = list(self.required_quantities[0]) + ['CCD']
+        else:
+            fields = list(self.required_quantities[0])
+        self.data = numpy.rec.fromarrays([array[field] for field in fields], names = fields)
         return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
                                 linewidth = linewidth, scale = scale, figsize = figsize,
                                 xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
@@ -873,6 +939,11 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
 
     def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
                  xlim = None, ylim = None):
+        if 'CCD' in array.dtype.names:
+            fields = list(self.required_quantities[0]) + ['CCD']
+        else:
+            fields = list(self.required_quantities[0])
+        self.data = numpy.rec.fromarrays([array[field] for field in fields], names = fields)
         return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
                                 array['psf_sigma'], linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
@@ -887,6 +958,12 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
 
     def __call__(self, array, linewidth = 0.01, scale = None, figsize = None,
                  xlim = None, ylim = None):
+        data = [array['x'], array['y'], array['g1'] - array['psf_g1'], array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma']]
+        fields = ['x', 'y', 'g1-psf_g1', 'g2-psf_g2', 'sigma-psf_sigma']
+        if 'CCD' in array.dtype.names:
+            data += [array['CCD']]
+            fields += ['CCD']
+        self.data = numpy.rec.fromarrays(data, names = fields)
         return self.whiskerPlot(array['x'], array['y'], array['g1'] - array['psf_g1'],
                                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
                                 linewidth = linewidth, scale = scale,
@@ -902,6 +979,107 @@ class ScatterPlotSysTest(SysTest):
     ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
     ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
     """
+    def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual = False, 
+                 per_ccd_stat=None, xlabel=None, ylabel=None, zlabel=None, color = "",
+                 lim=None, equal_axis=False, linear_regression=False, reference_line = None):
+        """
+        Draw a scatter plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling appearance of a plot, which is
+        explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
+        __call__ of the child class and return `matplotlib.figure.Figure` that scatterPlot returns.
+        @param array           A structured NumPy array which contains data to be plotted.
+        @param x_field         The name of the field in `array` to be used for x.
+        @param y_field         The name of the field in `array` to be used for y.
+        @param yerr_field      The name of the field in `array` to be used for y error.
+        @param z_field         The name of the field in `array` to be used for z, which appears as
+                               the colors of scattered points.
+                               [default: None, meaning there is no additional quantity]
+        @param residual        Show residual between x and y on the y-axis.
+                               [default: False, meaning y value itself is on the y-axis]
+        @param per_ccd_stat    Which statistics (median, mean, or None) to be calculated within
+                               each CCD.
+                               [default: None, meaning no statistics are calculated]
+        @param xlabel          The label for the x-axis.
+                               [default: None, meaning do not show a label on the x-axis]
+        @param ylabel          The label for the y-axis.
+                               [default: None, meaning do not show a label on the y-axis]
+        @param zlabel          The label for the z values which appears at the side of the color
+                               bar.
+                               [default: None, meaning do not show a label of z values]
+        @param color           The color of scattered points. This color is also applied to
+                               linear regression if argument `linear_regression` is True. This
+                               parameter is ignored when z is not None. In this case, the
+                               color of linear regression is set to blue.
+                               [default: None, meaning follow a matplotlib's default color]
+        @param lim             The limit of the axes. This can be specified explicitly by
+                               using tuples such as ((xmin, xmax), (ymin, ymax)).
+                               If one passes float p, this routine calculates the p%-percentile
+                               around the median for each axis.
+                               [default: None, meaning do not set any limits]
+        @equal_axis            If True, force ticks of the x-axis and y-axis equal to each other.
+                               [default: False]
+        @linear_regression     If True, perform linear regression for x and y and plot a
+                               regression line. If yerr is not None, perform the linear
+                               regression incorporating the error into the standard chi^2
+                               and plot a regression line with a 1-sigma allowed region.
+                               [default: False]
+        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y
+                               is drawn. If reference_line == 'zero', y=0 is drawn.
+                               A user-specific function can be used by passing an object which
+                               has an attribute '__call__' and returns a 1-d Numpy array.
+        @returns               a matplotlib.figure.Figure object
+        """
+        if per_ccd_stat:
+            if z_field is None:
+                z = None
+                x, y, yerr = self.getStatisticsPerCCD(array['CCD'], array[x_field],
+                                                      array[y_field], yerr = array[yerr_field],
+                                                      stat = per_ccd_stat)
+                self.data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
+                                                  y, yerr],
+                                                 names = ['ccd',
+                                                          x_field,
+                                                          y_field, 
+                                                          yerr_field])
+            else:
+                x, y, yerr, z = self.getStatisticsPerCCD(array['CCD'], array[x_field],
+                                                      array[y_field], yerr = array[yerr_field],
+                                                      z = array[z_field], stat = per_ccd_stat)
+                self.data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
+                                                  y, yerr, zz],
+                                                 names = ['ccd',
+                                                          x_field,
+                                                          y_field, 
+                                                          yerr_field,
+                                                          z_field])
+        else:
+            if z_field is None:
+                z = None
+                x, y, yerr = array[x_field], array[y_field], array[yerr_field]
+                self.data = numpy.rec.fromarrays([x,y,yerr],
+                                                 names = [x_field,
+                                                          y_field,
+                                                          yerr_field])
+            else:
+                x, y, yerr, z = array[x_field], array[y_field], array[yerr_field], array[z_field]
+                self.data = numpy.rec.fromarrays([x,y,yerr,z],
+                                                 names = [x_field,
+                                                          y_field,
+                                                          yerr_field,
+                                                          z_field])
+        y = y-x if residual else y
+        return self.scatterPlot(x, y, yerr, z,
+                                xlabel=xlabel, ylabel=ylabel,
+                                color=color, lim=lim, equal_axis=False,
+                                linear_regression=True, reference_line=reference_line)
+
+    def getData(self):
+        """
+        Returns data used for scatter plot.
+        @returns stile_utils.FormatArray object
+        """
+        return self.data
+
     def scatterPlot(self, x, y, yerr=None, z=None, xlabel=None, ylabel=None, zlabel=None, color = ""
                     , lim=None, equal_axis=False, linear_regression=False, reference_line = None):
         """
@@ -1116,37 +1294,57 @@ class ScatterPlotSysTest(SysTest):
             cov_mc = -Sx/Delta
             return m, c, cov_m, cov_c, cov_mc
 
-    def getStatisticsPerCCD(self, ccds, x, y, yerr = None, stat = "mean"):
+    def getStatisticsPerCCD(self, ccds, x, y, yerr = None, z = None, stat = "median"):
         """
-        Calculate average for x and y for each CCD.
-        @param ccd             NumPy array for CCD, an array in which each element indicates CCD ID
-                               of each data point.
-        @param x               NumPy array for x.
-        @param y               NumPy array for y.
-        @param err             Numpy array for y error.
-                               [default: None, meaning do not consider y error]
-        @returns               x_ave, y_ave, y_ave_std.
+        Calculate median or mean for x and y (and z if specified) for each ccd.
+        @param ccds       NumPy array for ccds, an array in which each element indicates
+                          ccd id of each data point.
+        @param x          NumPy array for x.
+        @param y          NumPy array for y.
+        @param yerr       Numpy array for y error.
+                          [default: None, meaning do not consider y error]
+        @param z          NumPy array for z.
+                          [default: None, meaning do not statistics for z]
+        @returns          x_ave, y_ave, y_ave_std.
         """
         if stat == "mean":
-            x_ave = numpy.array([numpy.average(x[ccds == ccd]) for ccd in set(ccds)])
+            x_ave = numpy.array([numpy.average(x[ccds == ccd])
+                                 for ccd in set(ccds)])
             if yerr is None:
-                y_ave = numpy.array([numpy.average(y[ccds == ccd]) for ccd in set(ccds)])
-                y_ave_std = numpy.array([numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+                y_ave = numpy.array([numpy.average(y[ccds == ccd])
+                                     for ccd in set(ccds)])
+                y_ave_std = numpy.array([numpy.std(y[ccds == ccd])/
+                                         numpy.sqrt(len(y[ccds == ccd]))
                                          for ccd in set(ccds)])
-                return x_ave, y_ave, y_ave_std
             # calculate y and its std under the inverse variance weight if yerr is given
             else:
-                y_ave = numpy.array([numpy.sum(y[ccds == ccd]/yerr[ccds == ccd]**2)/
-                                     numpy.sum(1./yerr[ccds == ccd]**2) for ccd in set(ccds)])
-                y_ave_std = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2))
+                y_ave = numpy.array([numpy.sum(y[ccds == ccd]/
+                                               yerr[ccds == ccd]**2)/
+                                     numpy.sum(1./yerr[ccds == ccd]**2)
+                                     for ccd in set(ccds)])
+                y_ave_std = numpy.array([numpy.sqrt(1./numpy.sum(1./yerr[ccds == ccd]**2
+                                                                 ))
                                          for ccd in set(ccds)])
+            if z is not None:
+                z_ave = numpy.array([numpy.average(z[ccds == ccd])
+                                     for ccd in set(ccds)])
+                return x_ave, y_ave, y_ave_std, z_ave
+            else:
                 return x_ave, y_ave, y_ave_std
         elif stat == "median":
-            x_med = numpy.array([numpy.median(x[ccds == ccd]) for ccd in set(ccds)])
-            y_med = numpy.array([numpy.median(y[ccds == ccd]) for ccd in set(ccds)])
-            y_med_std = numpy.array([numpy.sqrt(numpy.pi/2.)*numpy.std(y[ccds == ccd])/numpy.sqrt(len(y[ccds == ccd]))
+            x_med = numpy.array([numpy.median(x[ccds == ccd])
+                                 for ccd in set(ccds)])
+            y_med = numpy.array([numpy.median(y[ccds == ccd])
+                                 for ccd in set(ccds)])
+            y_med_std = numpy.array([numpy.sqrt(numpy.pi/2.)*numpy.std(y[ccds == ccd])
+                                     /numpy.sqrt(len(y[ccds == ccd]))
                                      for ccd in set(ccds)])
-            return x_med, y_med, y_med_std
+            if z is not None:
+                z_med = numpy.array([numpy.median(z[ccds == ccd])
+                                     for ccd in set(ccds)])
+                return x_med, y_med, y_med_std, z_med
+            else:
+                return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
 
@@ -1156,18 +1354,15 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
-                                                          array['g1'], yerr = array['g1_err'],
-                                                          stat = per_ccd_stat)
-        else:
-            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
-        return self.scatterPlot(psf_g1, g1, yerr=g1_err,
-                                xlabel=r'$g^{\rm PSF}_1$', ylabel=r'$g^{\rm star}_1$',
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line='one-to-one')
+    def __call__(self, array, per_ccd_stat = None, color = '', lim=None):
+        return super(ScatterPlotStarVsPSFG1SysTest, self).__call__(array, 'psf_g1', 'g1', 'g1_err',
+                                                                   residual = False,
+                                                                   per_ccd_stat = per_ccd_stat,
+                                                                   xlabel=r'$g^{\rm PSF}_1$',
+                                                                   ylabel=r'$g^{\rm star}_1$',
+                                                                   color=color, lim=lim, equal_axis=False,
+                                                                   linear_regression=True,
+                                                                   reference_line='one-to-one')
 
 class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
@@ -1175,18 +1370,15 @@ class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
-                                                          array['g2'], yerr = array['g2_err'],
-                                                          stat = per_ccd_stat)
-        else:
-            psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
-        return self.scatterPlot(psf_g2, g2, yerr=g2_err,
-                                xlabel=r'$g^{\rm PSF}_2$', ylabel=r'$g^{\rm star}_2$',
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line='one-to-one')
+    def __call__(self, array, per_ccd_stat = None, color = '', lim=None):
+        return super(ScatterPlotStarVsPSFG2SysTest, self).__call__(array, 'psf_g2', 'g2', 'g2_err',
+                                                                   residual = False,
+                                                                   per_ccd_stat = per_ccd_stat,
+                                                                   xlabel=r'$g^{\rm PSF}_2$',
+                                                                   ylabel=r'$g^{\rm star}_2$',
+                                                                   color=color, lim=lim, equal_axis=False,
+                                                                   linear_regression=True,
+                                                                   reference_line='one-to-one')
 
 class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_sigma'
@@ -1194,20 +1386,15 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
-                                                                   array['sigma'],
-                                                                   yerr = array['sigma_err'],
-                                                                   stat = per_ccd_stat)
-        else:
-            psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
-        return self.scatterPlot(psf_sigma, sigma, yerr=sigma_err,
-                                xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
-                                ylabel=r'$\sigma^{\rm star}$ [arcsec]',
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line='one-to-one')
+    def __call__(self, array, per_ccd_stat = None, color = '', lim=None):
+        return super(ScatterPlotStarVsPSFSigmaSysTest, self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err',
+                                                                      residual = False,
+                                                                      per_ccd_stat = per_ccd_stat,
+                                                                      xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
+                                                                      ylabel=r'$\sigma^{\rm star}$ [arcsec]',
+                                                                      color=color, lim=lim, equal_axis=False,
+                                                                      linear_regression=True,
+                                                                      reference_line='one-to-one')
 
 class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g1'
@@ -1215,19 +1402,16 @@ class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_g1, g1, g1_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g1'],
-                                                          array['g1'], yerr = array['g1_err'],
-                                                          stat = per_ccd_stat)
-        else:
-            psf_g1, g1, g1_err = array['psf_g1'], array['g1'], array['g1_err']
-        return self.scatterPlot(psf_g1, g1-psf_g1, yerr=g1_err,
-                                xlabel=r'$g^{\rm PSF}_1$',
-                                ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line='zero')
+    def __call__(self, array, per_ccd_stat = None, color = '', lim=None):
+        return super(ScatterPlotResidualVsPSFG1SysTest, self).__call__(array, 'psf_g1', 'g1', 'g1_err',
+                                                                       residual = True,
+                                                                       per_ccd_stat = per_ccd_stat,
+                                                                       xlabel=r'$g^{\rm PSF}_1$',
+                                                                       ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
+ 
+                                                                       color=color, lim=lim, equal_axis=False,
+                                                                       linear_regression=True,
+                                                                       reference_line='zero')
 
 class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g2'
@@ -1235,19 +1419,16 @@ class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_g2, g2, g2_err = self.getStatisticsPerCCD(array['CCD'], array['psf_g2'],
-                                                          array['g2'], yerr = array['g2_err'],
-                                                          stat = per_ccd_stat)
-        else:
-            psf_g2, g2, g2_err = array['psf_g2'], array['g2'], array['g2_err']
-        return self.scatterPlot(psf_g2, g2-psf_g2, yerr=g2_err,
-                                xlabel=r'$g^{\rm PSF}_2$',
-                                ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
-                                color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line='zero')
+    def __call__(self, array, per_ccd_stat = None, color = '', lim=None):
+        return super(ScatterPlotResidualVsPSFG2SysTest, self).__call__(array, 'psf_g2', 'g2', 'g2_err',
+                                                                       residual = True,
+                                                                       per_ccd_stat = per_ccd_stat,
+                                                                       xlabel=r'$g^{\rm PSF}_2$',
+                                                                       ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
+ 
+                                                                       color=color, lim=lim, equal_axis=False,
+                                                                       linear_regression=True,
+                                                                       reference_line='zero')
 
 class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_sigma'
@@ -1255,18 +1436,14 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd_stat = 'None', color = '', lim=None):
-        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
-        if per_ccd_stat:
-            psf_sigma, sigma, sigma_err = self.getStatisticsPerCCD(array['CCD'], array['psf_sigma'],
-                                                                   array['sigma'],
-                                                                   yerr = array['sigma_err'],
-                                                                   stat = per_ccd_stat)
-        else:
-            psf_sigma, sigma, sigma_err = array['psf_sigma'], array['sigma'], array['sigma_err']
-        return self.scatterPlot(psf_sigma, sigma-psf_sigma, yerr=sigma_err,
-                                xlabel=r'$\sigma^{\rm PSF}$  [arcsec]',
-                                ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$  [arcsec]',
-                                color=color, lim=lim, equal_axis=False, 
-                                linear_regression=True, reference_line='zero')
+    def __call__(self, array, per_ccd_stat = None, color = '', lim=None):
+        return super(ScatterPlotResidualVsPSFSigmaSysTest, self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err',
+                                                                       residual = True,
+                                                                       per_ccd_stat = per_ccd_stat,
+                                                                       xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
+                                                                       ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$ [arcsec]',
+ 
+                                                                       color=color, lim=lim, equal_axis=False,
+                                                                       linear_regression=True,
+                                                                       reference_line='zero')
 
