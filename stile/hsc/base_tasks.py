@@ -52,7 +52,7 @@ class SysTestData(object):
     """
     def __init__(self):
         self.sys_test_name = None
-        self.mask_list = None
+        self.mask_tuple_list = None
         self.cols_list = None
 
 class CCDSingleEpochStileConfig(lsst.pex.config.Config):
@@ -60,6 +60,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -82,11 +83,16 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     flags_keep_true = []
     # Generate a list of flag columns to be used in the ._computeShapeMask() method for objects
     # where we have shape information
+    do_hsm = lsst.pex.config.Field(dtype=bool, default=False, doc="Use HSM shapes for galaxies?")
     shape_flags = lsst.pex.config.ListField(dtype=str,
-        doc="Flags that indicate failures for shape measurements",
+        doc="Flags that indicate failures for SDSS-type shape measurements",
         default = ['shape.sdss.flags', 'shape.sdss.centroid.flags',
                    'shape.sdss.flags.unweightedbad', 'shape.sdss.flags.unweighted',
                    'shape.sdss.flags.shift', 'shape.sdss.flags.maxiter'])
+    # And another list, but for "galaxy" types (where we use HSM regauss shapes)
+    shape_flags_hsm = lsst.pex.config.ListField(dtype=str,
+        doc="Flags that indicate failures for HSM-type shape measurements",
+        default = ['shape.hsm.regauss.flags'])
     bright_star_sn_cutoff = 50
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [7., 10.])
@@ -154,10 +160,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
-            # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            sys_test_data.mask_list = sys_test.getMasks(catalog, self.config)
+            # Masks expects: a tuple of tuples, with each tuple having a mask name and a mask, 
+            # and one tuple for each required data set for the sys_test
+            sys_test_data.mask_tuple_list = sys_test.getMasks(catalog, self.config)
             # cols expects: an iterable of iterables, describing for each required data set
-            # the set of extra required columns. len(mask_list) should be equal to len(cols_list).
+            # the set of extra required columns. len(mask_tuple_list) should be equal to 
+            # len(cols_list).
             sys_test_data.cols_list = sys_test.getRequiredColumns()
             # Generally, we will be updating the masks as we go to take care of the more granular
             # flags such as flux measurement errors.  However, the number of possible flags for
@@ -166,20 +174,21 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # corresponding to data sets where we need shape quantities, and "and" those into the
             # base mask, rather than doing it every time we ask for a shape quantity.
             shape_masks = []
-            for cols_list in sys_test_data.cols_list:
+            for (mask_type, mask), cols_list in zip(sys_test_data.mask_tuple_list, 
+                                                    sys_test_data.cols_list):
                 if any([key in cols_list for key in
                                 ['g1_sky', 'g1_err_sky', 'g2_sky', 'g2_err_sky',
                                  'g1_chip', 'g1_err_chip', 'g2_chip', 'g2_err_chip',
                                  'sigma_sky', 'sigma_chip', 'sigma_err_sky', 'sigma_err_chip', 
                                  'w']]):
-                    shape_masks.append(self._computeShapeMask(catalog))
+                    shape_masks.append(self._computeShapeMask(catalog, mask_type))
                 else:
                     shape_masks.append(True)
-            sys_test_data.mask_list = [numpy.logical_and(mask, shape_mask)
-                for mask, shape_mask in zip(sys_test_data.mask_list, shape_masks)]
+            sys_test_data.mask_tuple_list = [(mask_type, numpy.logical_and(mask, shape_mask))
+               for (mask_type, mask), shape_mask in zip(sys_test_data.mask_tuple_list, shape_masks)]
             # Generate any quantities that aren't already in the source catalog, but can
             # be generated from things that *are* in the source catalog.
-            for (mask, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
+            for (mask, cols) in zip(sys_test_data.mask_tuple_list, sys_test_data.cols_list):
                 self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             sys_data_list.append(sys_test_data)
         # Right now, we have a source catalog, plus a dict of other computed quantities.  Step
@@ -193,7 +202,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                         cols.append('_'.join(c.split('_')[:-1]))
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
-            for mask, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
+            for (mask_type, mask), cols in zip(sys_test_data.mask_tuple_list, 
+                                               sys_test_data.cols_list):
                 new_catalog = {}
                 for column in cols:
                     if column in extra_col_dict:
@@ -262,17 +272,18 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             data[key] = catalog_dict[key]
         return data
 
-    def generateColumns(self, dataRef, catalog, mask, raw_cols, extra_col_dict):
+    def generateColumns(self, dataRef, catalog, mask_tuple, raw_cols, extra_col_dict):
         """
         Generate required columns which are not already in the data array,  and update
-        `extra_col_dict` to include them.  Also update "mask" to exclude any objects which have
-        specific failures for the requested quantities, such as flux measurement failures for
-        flux/magnitude measurements.
+        `extra_col_dict` to include them.  Also update the mask (mask_tuple[1]) to exclude any 
+        objects which have specific failures for the requested quantities, such as flux measurement
+        failures for flux/magnitude measurements.
 
         @param dataRef        A dataRef that is the source of the following data
         @param catalog        A source catalog from the LSST pipeline.
-        @param mask           The mask indicating which rows to generate columns for.  `mask` is
-                              updated by this function.
+        @param mask_tuple     A 2-item tuple, with the mask name/type in the first element, and the
+                              mask indicating which rows to generate columns for in the second 
+                              element.  `mask_tuple[1]` is updated by this function.
         @param cols           An iterable of strings indicating which quantities are needed.
         @param extra_col_dict A dict whose keys are quantity names and whose values are
                               NumPy arrays of those quantities.  "nan" is used to indicate
@@ -325,7 +336,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # Now, figure out the rows where we need to compute at least one of these quantities
             nan_masks = [numpy.isnan(extra_col_dict[col]) for col in shape_cols]
             nan_mask = numpy.logical_or.reduce(nan_masks)
-            nan_and_col_mask = numpy.logical_and(nan_mask, mask)
+            nan_and_col_mask = numpy.logical_and(nan_mask, mask_tuple[1])
             # We will have to transform to sky coordinates if the locations are in (ra,dec).  But
             # we may also need the quantities in chip coordinates.
             do_sky_coords = True if numpy.any(['_sky' in col for col in raw_cols]) else False
@@ -338,10 +349,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     if do_quantity:
                         shapes_dict, extra_mask = self.computeShapes(catalog[nan_and_col_mask],
                             calib_metadata_shape, do_shape=do_shape, do_err=do_err, do_psf=do_psf,
-                            do_psf_err=do_psf_err, sky_coords=sky_coords)
+                            do_psf_err=do_psf_err, sky_coords=sky_coords, mask_type=mask_tuple[0])
                         if extra_mask is not None:
-                            mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
-                                                                       extra_mask)
+                            mask_tuple[1][nan_and_col_mask] = numpy.logical_and(extra_mask,
+                                                                   mask_tuple[1][nan_and_col_mask])
                         for col in shapes_dict:
                             if shapes_dict[col] is not None and col in extra_col_dict:
                                 extra_col_dict[col][nan_and_col_mask] = shapes_dict[col]
@@ -352,14 +363,15 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                     extra_col_dict[col] = numpy.zeros(len(catalog))
                     extra_col_dict[col].fill('nan')
                 nan_mask = numpy.isnan(extra_col_dict[col])
-                nan_and_col_mask = numpy.logical_and(nan_mask, mask)
+                nan_and_col_mask = numpy.logical_and(nan_mask, mask_tuple[1])
                 if any(nan_and_col_mask>0):
                     # "extra_mask" is the new mask with the quantity-specific flags
                     extra_col_dict[col][nan_and_col_mask], extra_mask = self.computeExtraColumn(
-                        col, catalog[nan_and_col_mask], calib_metadata, calib_type, xy0)
+                        col, catalog[nan_and_col_mask], calib_metadata, calib_type, xy0, 
+                        mask_type=mask_tuple[0])
                     if extra_mask is not None:
-                        mask[nan_and_col_mask] = numpy.logical_and(mask[nan_and_col_mask],
-                                                                   extra_mask)
+                        mask_tuple[1][nan_and_col_mask] = numpy.logical_and(extra_mask, 
+                                                                   mask_tuple[1][nan_and_col_mask])
 
     def getCalibData(self, dataRef, shape_cols):
         # "fcr_md" is the more granular calibration generated by the
@@ -385,21 +397,26 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         return calib_type, calib_metadata, calib_metadata_shape
 
-    def _computeShapeMask(self, data):
+    def _computeShapeMask(self, data, mask_type):
         """
         Compute and return the mask for `data` that excludes pernicious shape measurement failures.
         """
         masks = list()
-        for flag in self.config.shape_flags:
-            key = data.schema.find(flag).key
-            masks.append(numpy.array([src.get(key)==False for src in data]))
+        if 'galaxy' in mask_type and self.config.do_hsm:
+            for flag in self.config.shape_flags_hsm:
+                key = data.schema.find(flag).key
+                masks.append(numpy.array([src.get(key)==False for src in data]))
+        else:
+            for flag in self.config.shape_flags:
+                key = data.schema.find(flag).key
+                masks.append(numpy.array([src.get(key)==False for src in data]))
         mask = masks[0]
         for new_mask in masks[1:]:
             mask = numpy.logical_and(mask, new_mask)
         return mask
 
     def computeShapes(self, data, calib, do_shape=True, do_err=True, do_psf=True, do_psf_err=True,
-                            sky_coords=True):
+                            sky_coords=True, mask_type=None):
         """
         Compute the shapes for the given `data`, an LSST source catalog, with the associated
         `calib` calibrated exposure metadata ('calexp_md' or 'fcr_md', either works).
@@ -414,6 +431,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                           psf_sigma_err).
         @param sky_coords If True, compute the moments in ra, dec coordinates; else compute in
                           native coordinates (x, y for CCD).
+        @param mask_type  The object type corresponding to the data in `data` [Default: None]
         @returns          A tuple consisting of:
                               - A dict whose keys are column names ('g1', 'psf_sigma', etc) and
                                 whose values are a NumPy array of those quantities
@@ -425,33 +443,66 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             localLinearTransform = [wcs.linearizePixelToSky(src.getCentroid()).getLinear()
                                 for src in data]
         if do_shape or do_err:
-            key = data.schema.find("shape.sdss").key
-            moments = [src.get(key) for src in data]
-            if sky_coords:
-                moments = [moment.transform(lt) for moment, lt in
-                                  zip(moments, localLinearTransform)]
-            ixx = numpy.array([mom.getIxx() for mom in moments])
-            ixy = numpy.array([mom.getIxy() for mom in moments])
-            iyy = numpy.array([mom.getIyy() for mom in moments])
-        if do_err:
-            key = data.schema.find("shape.sdss.err").key
-            covariances = numpy.array([src.get(key) for src in data])
-            if sky_coords:
-                cov_ixx = numpy.zeros(covariances[:,0,0].shape)
-                cov_iyy = numpy.zeros(covariances[:,0,0].shape)
-                cov_ixy = numpy.zeros(covariances[:,0,0].shape)
-                for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
-                    cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
-                                  (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
-                    cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
-                                  (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
-                    cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
-                                  (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
-                                  (lt[0,1]*lt[1,1])**2*cov[1,1])
+            if 'galaxy' in mask_type and self.config.do_hsm:  # For any galaxy type, use shape.hsm 
+                key_g1 = data.schema.find("shape.hsm.regauss.e1").key
+                key_g2 = data.schema.find("shape.hsm.regauss.e2").key
+                g1 = numpy.array([src.get(key_g1) for src in data])
+                g2 = numpy.array([src.get(key_g2) for src in data])
+                if sky_coords:
+                    # we do not have size in shape.hsm, but it does not matter for shapes.
+                    # The size derived in this code is meaningless though.
+                    ixx_pixel = 1.+g1
+                    iyy_pixel = 1.-g1
+                    ixy_pixel = g2
+                    ixx = numpy.array([lt[0,0]**2*ixxp+2.*lt[0,0]*lt[0,1]*ixyp+lt[0,1]**2*iyyp
+                            for (ixxp, ixyp, iyyp, lt) 
+                            in zip(ixx_pixel, ixy_pixel, iyy_pixel, localLinearTransform)])
+                    iyy = numpy.array([lt[1,0]**2*ixxp+2.*lt[1,0]*lt[1,1]*ixyp+lt[1,1]**2*iyyp
+                            for (ixxp, ixyp, iyyp, lt) 
+                            in zip(ixx_pixel, ixy_pixel, iyy_pixel, localLinearTransform)])
+                    ixy = numpy.array([(lt[0,0]*lt[1,0]*ixxp +
+                                     (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])*ixyp+
+                                     lt[0,1]*lt[1,1]*iyyp)
+                            for (ixxp, ixyp, iyyp, lt) 
+                            in zip(ixx_pixel, ixy_pixel, iyy_pixel, localLinearTransform)])
+                else:
+                    ixx = 1.+g1
+                    iyy = 1.-g1
+                    ixy = g2
             else:
-                cov_ixx = covariances[:,0,0]
-                cov_iyy = covariances[:,1,1]
-                cov_ixy = covariances[:,2,2]
+                key = data.schema.find("shape.sdss").key
+                moments = [src.get(key) for src in data]
+                if sky_coords:
+                    moments = [moment.transform(lt) for moment, lt in
+                                      zip(moments, localLinearTransform)]
+                ixx = numpy.array([mom.getIxx() for mom in moments])
+                ixy = numpy.array([mom.getIxy() for mom in moments])
+                iyy = numpy.array([mom.getIyy() for mom in moments])
+        if do_err:
+            if 'galaxy' in mask_type and self.config.do_hsm:
+                key = data.schema.find('shape.hsm.regauss.sigma').key
+                errs = numpy.array([src.get(key) for src in data])
+                sigma_errs = numpy.array(errs.shape)
+                sigma_errs.fill(1.)
+            else:
+                key = data.schema.find("shape.sdss.err").key
+                covariances = numpy.array([src.get(key) for src in data])
+                if sky_coords:
+                    cov_ixx = numpy.zeros(covariances[:,0,0].shape)
+                    cov_iyy = numpy.zeros(covariances[:,0,0].shape)
+                    cov_ixy = numpy.zeros(covariances[:,0,0].shape)
+                    for i, (cov, lt) in enumerate(zip(covariances,localLinearTransform)):
+                        cov_ixx[i] = (lt[0,0]**4*cov[0,0] +
+                                      (2.*lt[0,0]*lt[0,1])**2*cov[2,2] + lt[0,1]**4*cov[1,1])
+                        cov_iyy[i] = (lt[1,0]**4*cov[0,0] +
+                                      (2.*lt[1,0]*lt[1,1])**2*cov[2,2] + lt[1,1]**4*cov[1,1])
+                        cov_ixy[i] = ((lt[0,0]*lt[1,0])**2*cov[0,0] +
+                                      (lt[0,0]*lt[1,1]+lt[0,1]*lt[1,0])**2*cov[2,2] +
+                                      (lt[0,1]*lt[1,1])**2*cov[1,1])
+                else:
+                    cov_ixx = covariances[:,0,0]
+                    cov_iyy = covariances[:,1,1]
+                    cov_ixy = covariances[:,2,2]
         if do_psf:
             key = data.schema.find("shape.sdss.psf").key
             psf_moments = [src.get(key) for src in data]
@@ -472,19 +523,24 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             g2 = None
             sigma = None
         if do_err:
-            dg1_dixx = 2.*iyy/(ixx+iyy)**2
-            dg1_diyy = -2.*ixx/(ixx+iyy)**2
-            g1_err = numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy)
-            dg2_dixx = -2.*ixy/(ixx+iyy)**2
-            dg2_diyy = -2.*ixy/(ixx+iyy)**2
-            dg2_dixy = 2./(ixx+iyy)
-            g2_err = numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy +
-                                dg2_dixy**2 * cov_ixy)
-            dsigma_dixx = 0.25/sigma**3*iyy
-            dsigma_diyy = 0.25/sigma**3*ixx
-            dsigma_dixy = -0.5/sigma**3*ixy
-            sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy +
-                                   dsigma_dixy**2 * cov_ixy)
+            if 'galaxy' in mask_type and self.config.do_hsm:
+                g1_err = errs
+                g2_err = errs
+                sigma_err = sigma_errs
+            else:
+                dg1_dixx = 2.*iyy/(ixx+iyy)**2
+                dg1_diyy = -2.*ixx/(ixx+iyy)**2
+                g1_err = numpy.sqrt(dg1_dixx**2 * cov_ixx + dg1_diyy**2 * cov_iyy)
+                dg2_dixx = -2.*ixy/(ixx+iyy)**2
+                dg2_diyy = -2.*ixy/(ixx+iyy)**2
+                dg2_dixy = 2./(ixx+iyy)
+                g2_err = numpy.sqrt(dg2_dixx**2 * cov_ixx + dg2_diyy**2 * cov_iyy +
+                                    dg2_dixy**2 * cov_ixy)
+                dsigma_dixx = 0.25/sigma**3*iyy
+                dsigma_diyy = 0.25/sigma**3*ixx
+                dsigma_dixy = -0.5/sigma**3*ixy
+                sigma_err = numpy.sqrt(dsigma_dixx**2 * cov_ixx + dsigma_diyy**2 * cov_iyy +
+                                       dsigma_dixy**2 * cov_ixy)
             w = 1./(0.51**2+g1_err**2+g2_err**2)
         else:
             g1_err = None
@@ -533,7 +589,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                      'psf_g1_chip': psf_g1, 'psf_g2_chip': psf_g2, 'psf_sigma_chip': psf_sigma},
                      extra_mask)
 
-    def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None):
+    def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None, mask_type=None):
         """
         Compute the quantity `col` for the given `data`.
 
@@ -544,6 +600,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
                           coadds where available, else "calexp").
         @param xy0        Offset of a CCD
                           [Default: None, meaning do not add any offset.]
+        @param mask_type  The object type corresponding to the data in `data` [Default: None]
         @returns          A 2-element tuple.  The first element is a list or NumPy array of the
                           quantity indicated by `col`. The second is either None (if no further
                           masking is needed) or a NumPy array of boolean values indicating where the
@@ -657,6 +714,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+			     "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -678,7 +736,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     scatterplot_per_ccd_stat = lsst.pex.config.Field(dtype = str,
                                                      default='median',
                                                      doc="Which statistics (median, mean, or None) to be performed in CCDs.")
-    ccd_type = str
+    ccd_type = 'S7'
 
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
@@ -765,31 +823,34 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
-            # Masks expects: a tuple of masks, one for each required data set for the sys_test
-            temp_mask_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
-	    print temp_mask_list, "temp mask list"
+
+            # Masks expects: a tuple of tuples, with each tuple having a mask name and a mask, 
+            # and one tuple for each required data set for the sys_test
+            temp_mask_tuple_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
             # cols expects: an iterable of iterables, describing for each required data set
             # the set of extra required columns.
             sys_test_data.cols_list = sys_test.getRequiredColumns()
-            shape_masks = []
-            for cols_list in sys_test_data.cols_list:
-                if any([key in cols_list for key in ['g1', 'g1_err', 'g2', 'g2_err',
-                                                     'sigma', 'sigma_err']]):
-                    shape_masks.append([self._computeShapeMask(catalog) for catalog in catalogs])
-                else:
-                    shape_masks.append([True]*len(catalogs))
-            # Now, temp_mask_list is ordered such that there is one list per catalog, and the
-            # list for each catalog iterates through the sys tests.  But shape_mask is ordered such
-            # that there is one list per sys test, and the list for each sys test iterates through
-            # the catalogs!  That's actually the form we want.  So this next line A) combines the
-            # new shape masks with the old flag masks, and B) switches the nesting of the mask list
-            # to be the ordering we expect.
-            sys_test_data.mask_list = [[numpy.logical_and(mask[i], shape_mask)
-                        for mask, shape_mask in zip(temp_mask_list, shape_masks[i])]
-                        for i in range(len(temp_mask_list[0]))]
-            for (mask_list, cols) in zip(sys_test_data.mask_list, sys_test_data.cols_list):
-                for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_list, catalogs,
-                                                                  extra_col_dicts):
+            if any([key in c for cols_list in sys_test_data.cols_list for c in cols_list 
+	                     for key in ['g1', 'g2', 'sigma']]):
+                shape_masks = [[self._computeShapeMask(catalog, mask_type=mask[0]) 
+                                        for mask in mask_tuple_list]
+					for catalog, mask_tuple_list in zip(catalogs, temp_mask_tuple_list)]
+            else:
+                shape_masks = [[[True]*len(catalog) for mask in mask_tuple_list]
+					for catalog, mask_tuple_list in zip(catalogs, temp_mask_tuple_list)]
+            # Now, temp_mask_tuple_list and shape_mask is ordered such that there is one list per catalog, 
+	    # and the list for each catalog iterates through the sys tests.  But we actually want one list per 
+	    # sys test, and the list for each sys test to iterate through the catalogs!  So this next line A) 
+	    # combines the new shape masks with the old flag masks, and B) switches the nesting of the mask 
+	    # list to be the ordering we expect.
+            sys_test_data.mask_tuple_list = [[(mask_tuple_list[i][0], 
+	                                       numpy.logical_and(mask_tuple_list[i][1], shape_mask_list[i]))
+                    for mask_tuple_list, shape_mask_list in zip(temp_mask_tuple_list, shape_masks)]
+                    for i in range(len(temp_mask_tuple_list[0]))]
+            for (mask_tuple_list, cols) in zip(sys_test_data.mask_tuple_list, 
+                                               sys_test_data.cols_list):
+                for dataRef, mask, catalog, extra_col_dict in zip(dataRefList, mask_tuple_list, 
+                                                                  catalogs, extra_col_dicts):
                     self.generateColumns(dataRef, catalog, mask, cols, extra_col_dict)
             # Some tests need to know which data came from which CCD, so we add a column for that here
             # to make sure it's propagated through to the sys_tests.
@@ -802,10 +863,12 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                         cols.append('_'.join(c.split('_')[:-1]))
         for sys_test, sys_test_data in zip(self.sys_tests, sys_data_list):
             new_catalogs = []
-            for mask_list, cols in zip(sys_test_data.mask_list, sys_test_data.cols_list):
+            for mask_tuple_list, cols in zip(sys_test_data.mask_tuple_list, 
+                                             sys_test_data.cols_list):
                 new_catalog = {}
                 for column in cols:
-                    for catalog, extra_col_dict, mask in zip(catalogs, extra_col_dicts, mask_list):
+                    for catalog, extra_col_dict, (mask_type, mask) in zip(catalogs, extra_col_dicts,
+                                                                          mask_tuple_list):
                         if column in extra_col_dict:
                             newcol = extra_col_dict[column][mask]
                         elif column in catalog.schema:
@@ -959,11 +1022,18 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+			     "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
                              ])
+    do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
+    treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
+                        keytype=str, itemtype=str,
+                        default={'ra_units': 'degrees', 'dec_units': 'degrees',
+                                 'min_sep': '0.0005', 'max_sep': '0.02',
+                                 'sep_units': 'degrees', 'nbins': '20'})
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [7., 5.])
     whiskerplot_xlim = lsst.pex.config.ListField(dtype=float,
@@ -985,13 +1055,14 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     )
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
-        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
+                   'flags.pixel.clipped.any'])
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
@@ -1032,7 +1103,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
         return parser
 
     def getCalibData(self, dataRef, shape_cols):
-	calib_metadata_shape = None
+        calib_metadata_shape = None
         calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
         calib_type = "calexp" # This is just so computeShapes knows the format
         if shape_cols:
@@ -1046,17 +1117,20 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+			     "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
                              'ScatterPlotResidualSigmaVsPSFMag'
                              ])
+    do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
                         default={'ra_units': 'degrees', 'dec_units': 'degrees',
                                  'min_sep': '0.05', 'max_sep': '1',
                                  'sep_units': 'degrees', 'nbins': '20'})
+    flags_keep_true = ['detect.is-primary']
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
@@ -1083,8 +1157,10 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
-    ccd_type = str
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
+                   'flags.pixel.clipped.any'])
+
+    ccd_type = 'S7' # NumPy string dtype, 7 characters long 
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
     """Subclass of TaskRunner for Stile tract tasks.  Most of this code (incl this docstring)
