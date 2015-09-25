@@ -22,6 +22,11 @@ import numpy
 import re
 import stile
 
+# So we can cut too-long path names.  This assumes that the machine where the code is stored has the
+# same settings as the machine where the files will be placed, but I think this is a safe assumption
+# for most HSC use cases.
+max_path_length = os.pathconf('.', 'PC_NAME_MAX')
+
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
 
@@ -60,6 +65,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+                             "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -123,7 +129,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         self.sys_tests = self.config.sys_tests.apply()
         self.catalog_type = 'src'
 
-    def getFilenameBase(self,dataRef):
+    @staticmethod
+    def getFilenameBase(dataRef):
         """
         Get the basic strings needed for an output filename in the HSC directory structure.
         """
@@ -217,17 +224,22 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # run the test!
             results = sys_test(self.config, *new_catalogs)
             # If there's anything fancy to do with the results, do that.
+            this_max_path_length = max_path_length-4-len(sys_test_data.sys_test_name)
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chip+'.dat'), results, print_header=True)
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.dat'),
+                      results, print_header=True)
             if hasattr(sys_test.sys_test, 'getData'):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chip+'.dat'), sys_test.sys_test.getData(), print_header=True)
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.dat'), 
+                      sys_test.sys_test.getData(), print_header=True)
             if hasattr(sys_test.sys_test, 'plot'):
                 fig = sys_test.sys_test.plot(results)
-                fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
+                fig.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.png'))
             if hasattr(results, 'savefig'):
-                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chip+'.png'))
+                results.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chip[:this_max_path_length]+'.png'))
 
     def removeFlaggedObjects(self, catalog):
         """
@@ -712,6 +724,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+			     "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -755,12 +768,14 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     ConfigClass = VisitSingleEpochStileConfig
     _DefaultName = "VisitSingleEpochStile"
     item_type='ccd'
+    multi_item_type=None
 
-    def getFilenameBase(self, dataRefList):
+    @staticmethod
+    def getFilenameBase(dataRefList):
         """
         Get the basic strings needed for an output filename in the HSC directory structure.
         """
-    # Hironao's dirty fix for getting a directory for saving results and plots
+        # Hironao's dirty fix for getting a directory for saving results and plots
         # and a (visit, chip) identifier for filename.
         # This part will be updated by Jim on branch "#20".
         # The directory is
@@ -811,7 +826,11 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         # Some tests need to know which data came from which CCD
         for dataRef, catalog, extra_col_dict in zip(dataRefList, catalogs, extra_col_dicts):
             extra_col_dict['CCD'] = numpy.zeros(len(catalog), dtype=self.config.ccd_type)
-            extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
+            if self.multi_item_type:
+                extra_col_dict['CCD'].fill(str(dataRef.dataId[self.multi_item_type])+'_'+
+                                           str(dataRef.dataId[self.item_type]))
+            else:
+                extra_col_dict['CCD'].fill(dataRef.dataId[self.item_type])
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
@@ -876,16 +895,21 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                             new_catalog[column] = [newcol]
                 new_catalogs.append(self.makeArray(new_catalog))
             results = sys_test(self.config, *new_catalogs)
+            this_max_path_length = max_path_length-4-len(sys_test_data.sys_test_name)
             if isinstance(results,numpy.ndarray):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chips+'.dat'), results, print_header=True)
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.dat'), 
+                      results, print_header=True)
             if hasattr(sys_test.sys_test, 'getData'):
                 stile.WriteASCIITable(os.path.join(dir, 
-                      sys_test_data.sys_test_name+filename_chips+'.dat'), sys_test.sys_test.getData(), print_header=True)
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.dat'), 
+                      sys_test.sys_test.getData(), print_header=True)
             if hasattr(results, 'savefig'):
-                results.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+                results.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.png'))
             fig = sys_test.sys_test.plot(results)
-            fig.savefig(os.path.join(dir, sys_test_data.sys_test_name+filename_chips+'.png'))
+            fig.savefig(os.path.join(dir, 
+                      sys_test_data.sys_test_name+filename_chips[:this_max_path_length]+'.png'))
 
     def makeArray(self, catalog_dict):
         """
@@ -926,10 +950,94 @@ class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
         parser.description = parser_description
         return parser
 
+class StileMultiVisitRunner(lsst.pipe.base.TaskRunner):
+    """Subclass of TaskRunner for Stile multiple-visit tasks.  Most of this code (incl this
+    docstring) pulled from measMosaic.
+
+    VisitSingleEpochStileTask.run() takes a number of arguments, one of which is a list of dataRefs
+    extracted from the command line (whereas most CmdLineTasks' run methods take a single dataRef,
+    and are called repeatedly).  This class transforms the processed arguments generated by the
+    ArgumentParser into the arguments expected by VisitSingleEpochStileTask.run().  It will still
+    call run() once per visit if multiple visits are present, but not once per CCD as would
+    otherwise occur.
+
+    See pipeBase.TaskRunner for more information.
+    """
+
+    @staticmethod
+    def getTargetList(parsedCmd, **kwargs):
+        return [(None, parsedCmd.id.refList)]
+
+    def __call__(self, args):
+        task = self.TaskClass(config=self.config, log=self.log)
+        result = task.run(*args)
+
+class MultiVisitSingleEpochStileTask(VisitSingleEpochStileTask):
+    """
+    A basic Task class to run visit-level single-epoch tests.  Inheriting from
+    lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
+    data ID, rather than reimplementing this ourselves.  Calling
+    >>> VisitSingleEpochStileTask.parseAndRun()
+    from within a script will send all the command-line arguments through the argument parser, then
+    call the run() method sequentially, once per CCD defined by the input arguments.
+
+    The "Visit" version of this class is different from the "CCD" level of the task in that we will
+    have to combine catalogs from each CCD in the visit, and do some trickery with iterables to keep
+    everything aligned.
+    """
+    # lsst magic
+    RunnerClass = StileMultiVisitRunner
+    _DefaultName = "MultiVisitSingleEpochStile"
+    multi_item_type='visit'
+    
+    @staticmethod
+    def getFilenameBase(dataRefList):
+        """
+        Get the basic strings needed for an output filename in the HSC directory structure.
+        """
+        # Hironao's dirty fix for getting a directory for saving results and plots
+        # and a (visit, chip) identifier for filename.
+        # This part will be updated by Jim on branch "#20".
+        # The directory is
+        # $SUPRIME_DATA_DIR/rerun/[rerun/name/for/stile]/%(pointing)05d/%(filter)s/stile_output.
+        # The filename has a visit identifier -%(visit)07d-[ccds], where [ccds] is a reduced form
+        # of a CCD list, e.g., if a CCD list is [0, 1, 2, 4, 5, 8, 10],
+        # [ccds] becomes 0..2^4..5^8^10.
+        src_filename = (dataRefList[0].get("src_filename",
+                                           immediate=True)[0]).replace('_parent/','')
+        dir = os.path.join(src_filename.split('output')[0], "stile_output")
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+        visits = [dataRef.dataId['visit'] for dataRef in dataRefList]
+        visits = list(set(visits))
+        visits.sort()
+        file_string_list = []
+        for visit in visits:
+            this_visit = [dataRef for dataRef in dataRefList
+                    if dataRef.dataId['visit']==visit]
+            _, ccd_str = VisitSingleEpochStileTask.getFilenameBase(this_visit)
+            _, _, ccds = ccd_str.split('-')
+            file_string_list.append((visit, ccds))
+        file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]]
+        for i, (visit, ccds) in enumerate(file_string_list[1:]):
+            if (not (visit - 1 in visits) or not (ccds == file_string_list_sorted[-1])):
+                file_string_list_sorted.append([visit, ccds])
+            # This is: if this is another visit in a contiguous series of them, but it's either the
+            # last one, or the next one has a different set of CCDs. (We know that 
+            # file_string_list is in order, because visits is sorted.)
+            elif (visit-1 in visits) and (not (visit+1 in visits) or 
+                  (visit+1 in visits and not ccds==file_string_list[i+2][1])):
+                file_string_list_sorted[-1][0] = file_string_list_sorted[-1][0]+"..%03d"%visit
+        file_string = "-%s-%s" % tuple(file_string_list_sorted[0])
+        for file_string_list in file_string_list_sorted[1:]:
+            file_string = file_string + "-%s-%s" % tuple(file_string_list)
+        return dir, file_string
+
 class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=["StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+			     "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -978,7 +1086,8 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
         self.sys_tests = self.config.sys_tests.apply()
         self.catalog_type = 'deepCoadd_src'
 
-    def getFilenameBase(self,dataRef):
+    @staticmethod
+    def getFilenameBase(dataRef):
         """
         Get the basic strings needed for an output filename in the HSC directory structure.
         """
@@ -1020,6 +1129,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     sys_tests = adapter_registry.makeField("tests to run", multi=True,
                     default=[#"StatsPSFFlux", #"GalaxyXGalaxyShear", "BrightStarShear",
                              "StarXGalaxyShear", "StarXStarShear", "Rho1",
+			     "StarXStarSizeResidual",
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
@@ -1107,7 +1217,8 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
         self.sys_tests = self.config.sys_tests.apply()
         self.catalog_type = 'deepCoadd_src'
 
-    def getFilenameBase(self,dataRefList):
+    @staticmethod
+    def getFilenameBase(dataRefList):
         """
         Get the basic strings needed for an output filename in the HSC directory structure.
         """
@@ -1177,3 +1288,78 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
             calib_metadata_shape = calib_metadata
 
         return calib_type, calib_metadata, calib_metadata_shape
+
+class StileMultiTractRunner(lsst.pipe.base.TaskRunner):
+    """Subclass of TaskRunner for Stile multi-tract tasks.  Most of this code (incl this docstring)
+    pulled from measMosaic.
+
+    MultiTractSingleEpochStileTask.run() takes a number of arguments, one of which is a list of
+    dataRefs extracted from the command line (whereas most CmdLineTasks' run methods take a single
+    dataRef, and are called repeatedly).  This class transforms the processed arguments generated by
+    the ArgumentParser into the arguments expected by TractSingleEpochStileTask.run().  It will
+    only call run() once per command line, regardless of how many tracts are passed.
+
+    See pipeBase.TaskRunner for more information.
+    """
+    @staticmethod
+    def getTargetList(parsedCmd, **kwargs):
+        return [(None, parsedCmd.id.refList)]
+
+    def __call__(self, args):
+        task = self.TaskClass(config=self.config, log=self.log)
+        result = task.run(*args)
+
+class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
+    """Like TractSingleEpochStileTask, but analyzes multiple tracts per call instead of just one."""
+    RunnerClass = StileMultiTractRunner
+    _DefaultName = "MultiTractSingleEpochStile"
+    ConfigClass = TractSingleEpochStileConfig
+    multi_item_type='tract'
+
+    @staticmethod
+    def getFilenameBase(dataRefList):
+        """
+        Get the basic strings needed for an output filename in the HSC directory structure.
+        """
+        # Combine the strings output by the TractSingleEpochStileTask into one filename.
+        src_filename = (dataRefList[0].get("deepCoadd_src_filename", immediate=True)[0]).replace('_parent/','')
+        t_filename = re.split('(HSC-.)',src_filename)[:2]
+        t_filename.append('stile_output')
+        dir = os.path.join(*t_filename)
+        if os.path.exists(dir) == False:
+            os.makedirs(dir)
+
+        tracts = [dataRef.dataId['tract'] for dataRef in dataRefList]
+        tracts = list(set(tracts))
+        tracts.sort()
+        file_string_list = []
+        for tract in tracts:
+            this_tract = [dataRef for dataRef in dataRefList
+                          if dataRef.dataId['tract']==tract]
+            _, patch_str = TractSingleEpochStileTask.getFilenameBase(this_tract)
+            _, _, patches = patch_str.split('-')
+            file_string_list.append((tract, patches))
+        file_string_list_sorted = [['%07d'%file_string_list[0][0], file_string_list[0][1]]]
+        for i, (tract, patches) in enumerate(file_string_list[1:]):
+            if (not (tract - 1 in tracts) or not (patches == file_string_list_sorted[-1])):
+                file_string_list_sorted.append([tract, patches])
+            # This is: if this is another tract in a contiguous series of them, but it's either the
+            # last one, or the next one has a different set of patches. (We know that 
+            # file_string_list is in order, because tracts is sorted.)
+            elif (tract-1 in tracts) and (not (tract+1 in tracts) or 
+                  (tract+1 in tracts and not patches==file_string_list[i+2][1])):
+                file_string_list_sorted[-1][0] = file_string_list_sorted[-1][0]+"..%03d"%tract
+        file_string = "-%s-%s" % tuple(file_string_list_sorted[0])
+        for file_string_list in file_string_list_sorted[1:]:
+            # TODO: should these be carats?
+            file_string = file_string + "-%s-%s" % tuple(file_string_list)
+        return dir, file_string
+        
+    @classmethod
+    def _makeArgumentParser(cls):
+        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", "deepCoadd", help="data ID, with patch/tract information",
+                               ContainerClass=ExistingCoaddDataIdContainer)
+        parser.description = parser_description
+        return parser
+
