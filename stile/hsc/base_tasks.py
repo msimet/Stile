@@ -25,7 +25,7 @@ import stile
 # So we can cut too-long path names.  This assumes that the machine where the code is stored has the
 # same settings as the machine where the files will be placed, but I think this is a safe assumption
 # for most HSC use cases.
-max_path_length = os.pathconf('sys_test_adapters.py', 'PC_NAME_MAX')
+max_path_length = os.pathconf('.', 'PC_NAME_MAX')
 
 parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
