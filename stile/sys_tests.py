@@ -127,6 +127,7 @@ def CorrelationFunctionSysTest(type=None):
           type objects
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
         - StarXStarShear: autocorrelation of the shapes of 'star' type objects
+        - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to PSF sizes
         - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
         - StarDensityCorrelation: position autocorrelation of 'star' type objects
         - Rho1: rho1 statistics (autocorrelation of residual star shapes)
@@ -149,6 +150,8 @@ def CorrelationFunctionSysTest(type=None):
         return StarXGalaxyShearSysTest()
     elif type=='StarXStarShear':
         return StarXStarShearSysTest()
+    elif type=='StarXStarSize':
+        return StarXStarSizeSysTest()
     elif type=='GalaxyDensityCorrelation':
         return GalaxyDensityCorrelationSysTest()
     elif type=='StarDensityCorrelation':
