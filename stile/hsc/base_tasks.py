@@ -329,13 +329,10 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
-            'CCD')and ('x' in raw_cols or 'y' in raw_cols):
-            xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
-                    dataRef.dataId.get('ccd'))
-                                           ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm()
-        else:
-            xy0 = None
+        xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
+               dataRef.dataId.get('ccd'))
+               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
+               'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
 
         if shape_cols:
             for col in shape_cols:
@@ -643,13 +640,18 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
             # From Steve Bickerton's helpful HSC butler documentation
             if calib_type=="fcr":
                 ffp = lsst.meas.mosaic.FluxFitParams(calib_data)
-                x, y = data.getX(), data.getY()
-                correction = numpy.array([ffp.eval(x[i], y[i]) for i in range(n)])
-                zeropoint = 2.5*numpy.log10(fcr.get("FLUXMAG0")) + correction
+                x = [src.getX() for src in data]
+                y = [src.getY() for src in data]
+                correction = numpy.array([ffp.eval(x[i], y[i]) for i in range(len(x))])
+                zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0")) + correction
             elif calib_type=="calexp":
                 zeropoint = 2.5*numpy.log10(calib_data.get("FLUXMAG0"))
             key = data.schema.find('flux.psf.flags').key
-            return (zeropoint - 2.5*numpy.log10(data.getPsfFlux()),
+            return (zeropoint - 2.5*numpy.log10(numpy.array([src.getPsfFlux() for src in data])),
+                    numpy.array([src.get(key)==0 for src in data]))
+        elif col=="mag_inst":
+            key = data.schema.find('flux.psf.flags').key
+            return (- 2.5*numpy.log10(numpy.array([src.getPsfFlux() for src in data])),
                     numpy.array([src.get(key)==0 for src in data]))
         elif col=="w":
             # Use uniform weights for now if we don't use shapes ("w" will be removed from the
@@ -831,6 +833,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
         for sys_test in self.sys_tests:
             sys_test_data = SysTestData()
             sys_test_data.sys_test_name = sys_test.name
+
             # Masks expects: a tuple of tuples, with each tuple having a mask name and a mask, 
             # and one tuple for each required data set for the sys_test
             temp_mask_tuple_list = [sys_test.getMasks(catalog, self.config) for catalog in catalogs]
@@ -1060,6 +1063,11 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
         dtype = str,
         default = "deep",
     )
+    coadd_catalog_type = lsst.pex.config.Field(
+        doc = "coadd catalog type: deepCoadd_meas or deepCoadd_src",
+        dtype = str,
+        default = "deepCoadd_meas",
+    )
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
          default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
@@ -1071,7 +1079,6 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                    'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
                    'flags.pixel.clipped.any'])
 
-
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
     _DefaultName = "PatchSingleEpochStile"
@@ -1080,7 +1087,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRef):
@@ -1129,7 +1136,8 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             'ScatterPlotResidualSigmaVsPSFMag'
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
@@ -1142,6 +1150,11 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
+    )
+    coadd_catalog_type = lsst.pex.config.Field(
+        doc = "coadd catalog type: deepCoadd_meas or deepCoadd_src",
+        dtype = str,
+        default = "deepCoadd_meas",
     )
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [12., 10.])
@@ -1210,7 +1223,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -1310,6 +1323,12 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
     _DefaultName = "MultiTractSingleEpochStile"
     ConfigClass = TractSingleEpochStileConfig
     multi_item_type='tract'
+    item_type = 'patch'
+
+    def __init__(self, **kwargs):
+        lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
+        self.sys_tests = self.config.sys_tests.apply()
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -1348,6 +1367,7 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
         for file_string_list in file_string_list_sorted[1:]:
             # TODO: should these be carats?
             file_string = file_string + "-%s-%s" % tuple(file_string_list)
+        file_string = "-multitracts"
         return dir, file_string
         
     @classmethod
@@ -1358,3 +1378,11 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
         parser.description = parser_description
         return parser
 
+    def getCalibData(self, dataRef, shape_cols):
+        calib_metadata_shape = None
+        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
+        calib_type = "calexp" # This is just so computeShapes knows the format
+        if shape_cols:
+            calib_metadata_shape = calib_metadata
+
+        return calib_type, calib_metadata, calib_metadata_shape

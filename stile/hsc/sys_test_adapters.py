@@ -63,7 +63,8 @@ def MaskPSFStar(data, config):
             key = data.schema.find('calib.psf.used').key
         except KeyError:
             key = data.schema.find('calib.psf.used.any').key
-        return numpy.array([src.get(key)==True for src in data])
+        key_shape = data.schema.find('shape.sdss.flags').key
+        return numpy.logical_and(numpy.array([src.get(key)==True for src in data]), numpy.array([src.get(key_shape)==False for src in data]))
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,
@@ -478,6 +479,22 @@ class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
         new_data = [self.fixArray(d) for d in data]
         return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
 
+class ScatterPlotResidualSigmaVsPSFMagAdapter(ShapeSysTestAdapter):
+    def __init__(self,config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotResidualSigmaVsPSFMagSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self,task_config,*data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat = per_ccd_stat)
+
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
@@ -494,3 +511,4 @@ adapter_registry.register("ScatterPlotStarVsPSFSigma", ScatterPlotStarVsPSFSigma
 adapter_registry.register("ScatterPlotResidualVsPSFG1", ScatterPlotResidualVsPSFG1Adapter)
 adapter_registry.register("ScatterPlotResidualVsPSFG2", ScatterPlotResidualVsPSFG2Adapter)
 adapter_registry.register("ScatterPlotResidualVsPSFSigma", ScatterPlotResidualVsPSFSigmaAdapter)
+adapter_registry.register("ScatterPlotResidualSigmaVsPSFMag", ScatterPlotResidualSigmaVsPSFMagAdapter)
