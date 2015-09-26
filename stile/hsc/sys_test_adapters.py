@@ -63,7 +63,8 @@ def MaskPSFStar(data, config):
             key = data.schema.find('calib.psf.used').key
         except KeyError:
             key = data.schema.find('calib.psf.used.any').key
-        return numpy.array([src.get(key)==True for src in data])
+        key_shape = data.schema.find('shape.sdss.flags').key
+        return numpy.logical_and(numpy.array([src.get(key)==True for src in data]), numpy.array([src.get(key_shape)==False for src in data]))
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,

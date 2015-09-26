@@ -69,7 +69,8 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
@@ -728,7 +729,8 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
@@ -1040,7 +1042,8 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
@@ -1062,15 +1065,21 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
         dtype = str,
         default = "deep",
     )
+    coadd_catalog_type = lsst.pex.config.Field(
+        doc = "coadd catalog type: deepCoadd_meas or deepCoadd_src",
+        dtype = str,
+        default = "deepCoadd_meas",
+    )
     # Generate a list of flag columns to be used in the .removeFlaggedObjects() method
     flags_keep_false = lsst.pex.config.ListField(dtype=str, doc="Flags that indicate unrecoverable failures",
-        default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
+         default = ['flags.negative', 'deblend.nchild', 'deblend.too-many-peaks',
                    'deblend.parent-too-big', 'deblend.skipped',
                    'deblend.has.stray.flux', 'flags.badcentroid', 'centroid.sdss.flags',
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
+                   'flags.pixel.clipped.any'])
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
@@ -1080,7 +1089,7 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRef):
@@ -1130,7 +1139,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
-                             'ScatterPlotResidualSigmaVsPSFMag'
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
@@ -1143,6 +1152,11 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
+    )
+    coadd_catalog_type = lsst.pex.config.Field(
+        doc = "coadd catalog type: deepCoadd_meas or deepCoadd_src",
+        dtype = str,
+        default = "deepCoadd_meas",
     )
     whiskerplot_figsize = lsst.pex.config.ListField(dtype=float,
         doc="figure size for whisker plot", default = [12., 10.])
@@ -1160,7 +1174,9 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                    'centroid.naive.flags', 'flags.pixel.edge', 'flags.pixel.interpolated.any',
                    'flags.pixel.interpolated.center', 'flags.pixel.saturated.any',
                    'flags.pixel.saturated.center', 'flags.pixel.cr.any', 'flags.pixel.cr.center',
-                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center', 'flags.pixel.clipped.any'])
+                   'flags.pixel.bad', 'flags.pixel.suspect.any', 'flags.pixel.suspect.center',
+                   'flags.pixel.clipped.any'])
+
     ccd_type = 'S7' # NumPy string dtype, 7 characters long 
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
@@ -1209,7 +1225,7 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRefList):
@@ -1314,7 +1330,7 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
     def __init__(self, **kwargs):
         lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
         self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = 'deepCoadd_src'
+        self.catalog_type = self.config.coadd_catalog_type
 
     @staticmethod
     def getFilenameBase(dataRefList):
