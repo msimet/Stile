@@ -69,7 +69,8 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
@@ -329,10 +330,13 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
-               dataRef.dataId.get('ccd'))
-               ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm() if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
-               'CCD') and ('x' in raw_cols or 'y' in raw_cols) else None
+        if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
+               'CCD') and ('x' in raw_cols or 'y' in raw_cols):
+            xy0 =  cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
+                dataRef.dataId.get('ccd'))
+                                       ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm()
+        else:
+            xy0 = None
 
         if shape_cols:
             for col in shape_cols:
@@ -728,7 +732,8 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
@@ -1041,7 +1046,8 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "WhiskerPlotStar", "WhiskerPlotPSF", "WhiskerPlotResidual",
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
-                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma"
+                             "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
@@ -1137,7 +1143,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "ScatterPlotStarVsPSFG1", "ScatterPlotStarVsPSFG2",
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
-                             'ScatterPlotResidualSigmaVsPSFMag'
+                             "ScatterPlotResidualSigmaVsPSFMag"
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
@@ -1325,11 +1331,6 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
     multi_item_type='tract'
     item_type = 'patch'
 
-    def __init__(self, **kwargs):
-        lsst.pipe.base.CmdLineTask.__init__(self, **kwargs)
-        self.sys_tests = self.config.sys_tests.apply()
-        self.catalog_type = self.config.coadd_catalog_type
-
     @staticmethod
     def getFilenameBase(dataRefList):
         """
@@ -1367,7 +1368,6 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
         for file_string_list in file_string_list_sorted[1:]:
             # TODO: should these be carats?
             file_string = file_string + "-%s-%s" % tuple(file_string_list)
-        file_string = "-multitracts"
         return dir, file_string
         
     @classmethod
@@ -1377,12 +1377,3 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
                                ContainerClass=ExistingCoaddDataIdContainer)
         parser.description = parser_description
         return parser
-
-    def getCalibData(self, dataRef, shape_cols):
-        calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_md", immediate = True)
-        calib_type = "calexp" # This is just so computeShapes knows the format
-        if shape_cols:
-            calib_metadata_shape = calib_metadata
-
-        return calib_type, calib_metadata, calib_metadata_shape
