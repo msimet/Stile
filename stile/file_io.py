@@ -21,10 +21,10 @@ def ReadFITSImage(file_name, hdu=0):
     Return the data from a single HDU extension of the FITS file ``file_name``.  Technically this
     doesn't have to be an image as the method is the same for table data; it's called "image"
     because of the default hdu=0 which can only be image data.
-    
+
     Header information is not preserved, as it is not used by Stile.  Any scaling of the data
     defined by the FITS standard will be done automatically when the data is accessed.
-    
+
     :param file_name: A path leading to a valid FITS file.
     :param hdu:       The HDU in which the requested data is located (default: 0).
     :returns:         The contents of the requested HDU.
@@ -43,7 +43,7 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
     This function exists so you can call ``ReadFITSTable(file_name)`` rather than remembering that
     table data is usually in extension 1, and also to automatically rewrite the fields if you want
     that.
-    
+
     :param file_name: A path leading to a valid FITS file.
     :param hdu:       The HDU in which the requested data is located (default: 1).
     :param fields:    A valid dict or list description of the fields in the file.  The list must
@@ -59,10 +59,10 @@ def ReadASCIITable(file_name, **kwargs):
     """
     Read an ASCII table from disk.  This is a small wrapper for ``numpy.genfromtxt()`` that returns
     the kind of array we expect.  **kwargs should be suitable kwargs from ``numpy.genfromtxt()``.
-    
+
     :param file_name: A path leading to a valid FITS file.
-    :param fields:    A valid dict or list description of the fields in the file.  The list must have
-                      the same number of items as there are fields; the dict takes the form 
+    :param fields:    A valid dict or list description of the fields in the file.  The list must
+                      have the same number of items as there are fields; the dict takes the form
                       ``{'new_name': old_column_number}`` and can skip some fields.
     :param kwargs:    Other kwargs to be used by ``numpy.genfromtxt().``
     :returns:         The contents of the requested file.
@@ -145,15 +145,15 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     dict which does not completely describe all the fields less than its maximum field number,
     columns not indicated by the dict will be moved around to fill in any gaps.  If you specify,
     say, columns 0, 1, and 3, you may be surprised by what is in column 2!
-    
-    At the moment, if your maximum column number in the ``fields`` dict is greater than the number of
-    fields in the ``data_array``, an error will occur.  Also, if you send an object in the array
+
+    At the moment, if your maximum column number in the ``fields`` dict is greater than the number
+    of fields in the ``data_array``, an error will occur.  Also, if you send an object in the array
     (that is, something with ``numpy.dtype=object``) whose string representation is >60 characters,
-    it will be truncated to 60.  
-    
-    Setting the keyword ``print_header`` to ``True`` will cause the file to have a header line 
-    starting with a hash sign and then containing a comma-separated list of the fields.  If you have 
-    strings which contain spaces, the column descriptions won't hold properly, and you should 
+    it will be truncated to 60.
+
+    Setting the keyword ``print_header`` to ``True`` will cause the file to have a header line
+    starting with a hash sign and then containing a comma-separated list of the fields.  If you have
+    strings which contain spaces, the column descriptions won't hold properly, and you should
     probably use a FITS file writer or replace the space with underscores or another character.
     """
     data = _handleFields(data_array, fields)
@@ -189,17 +189,17 @@ def _coerceFitsFormat(fmt):
 
 def WriteFITSTable(file_name, data_array, fields=None):
     """
-    Given a ``file_name`` and a ``data_array``, write the ``data_array`` to the ``file_name`` as a 
-    FITS file if there is an available module to do so (``pyfits`` or ``astropy.io.fits``).  
+    Given a ``file_name`` and a ``data_array``, write the ``data_array`` to the ``file_name`` as a
+    FITS file if there is an available module to do so (``pyfits`` or ``astropy.io.fits``).
     Otherwise, raise an error.
-    
-    If ``fields`` is not ``None``, this will rearrange a NumPy formatted array to the field 
-    specification (must be either a list of field names, or a dict of the form ``'field_name': 
-    field_position/original_order_field_name``.  Note that if ``fields`` is a dict which does not 
-    completely describe all the fields less than its maximum field number, columns not indicated by 
-    the dict will be moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3, 
+
+    If ``fields`` is not ``None``, this will rearrange a NumPy formatted array to the field
+    specification (must be either a list of field names, or a dict of the form ``'field_name':
+    field_position/original_order_field_name``.  Note that if ``fields`` is a dict which does not
+    completely describe all the fields less than its maximum field number, columns not indicated by
+    the dict will be moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3,
     you may be surprised by what is in column 2!
-    
+
     At the moment, if your maximum column number in the ``fields`` dict is greater than the number
     of fields in the ``data_array``, an error will occur.
     """
@@ -218,20 +218,20 @@ def WriteFITSTable(file_name, data_array, fields=None):
 def WriteTable(file_name, data_array, fields=None):
     """
     Pick a type of file (ASCII or FITS) and write to it.  If the ``file_name`` has an extention, it
-    will be used to determine the file type (``.fit`` or ``.fits`` in any capitalization will be 
+    will be used to determine the file type (``.fit`` or ``.fits`` in any capitalization will be
     FITS, else ASCII); if no extension, it will write a FITS file if a fits handler is found, else
-    an ASCII file.  If you know which kind of file you want to write, you should use 
+    an ASCII file.  If you know which kind of file you want to write, you should use
     :func:`WriteFITSTable` or :func:`WriteASCIITable` directly.
-    
+
     If ``fields`` is not None, this will rearrange a NumPy formatted array to the field
-    specification (must be either a list of field names, or a dict of the form ``'field_name': 
-    field_position/original_order_field_name``.  Note that if ``fields`` is a dict which does not 
-    completely describe all the fields less than its maximum field number, columns not indicated by 
-    the dict will be moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3, 
+    specification (must be either a list of field names, or a dict of the form ``'field_name':
+    field_position/original_order_field_name``.  Note that if ``fields`` is a dict which does not
+    completely describe all the fields less than its maximum field number, columns not indicated by
+    the dict will be moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3,
     you may be surprised by what is in column 2!
-    
+
     At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-    of fields in ``data_array``, an error will occur.  Also see the docstring for 
+    of fields in ``data_array``, an error will occur.  Also see the docstring for
     :func:`WriteASCIITable` for further caveats on its behavior.
     """
     ext = os.path.splitext(file_name)[1]
@@ -251,9 +251,9 @@ def WriteTable(file_name, data_array, fields=None):
 def ReadTable(file_name, **kwargs):
     """
     Pick a proper (FITS or ASCII) reading function for a file containing a table and read the file
-    in.  If ``file_name`` has an extention, it will be used to determine the file type (``.fit`` or 
+    in.  If ``file_name`` has an extention, it will be used to determine the file type (``.fit`` or
     ``.fits`` in any capitalization will be FITS, else ASCII); if no extension, it will try reading
-    it as a FITS file, then as an ASCII file.  If you know which kind of file you want to read, 
+    it as a FITS file, then as an ASCII file.  If you know which kind of file you want to read,
     you should use :func:`WriteFITSTable` or :func:`WriteASCIITable` directly.
     """
     ext = os.path.splitext(file_name)[1]
