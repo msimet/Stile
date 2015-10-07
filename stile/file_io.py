@@ -26,7 +26,7 @@ def ReadFITSImage(file_name, hdu=0):
     defined by the FITS standard will be done automatically when the data is accessed.
 
     :param file_name: A path leading to a valid FITS file.
-    :param hdu:       The HDU in which the requested data is located (default: 0).
+    :param hdu:       The HDU in which the requested data is located [default: 0].
     :returns:         The contents of the requested HDU.
     """
     if has_fits:
@@ -45,7 +45,7 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
     that.
 
     :param file_name: A path leading to a valid FITS file.
-    :param hdu:       The HDU in which the requested data is located (default: 1).
+    :param hdu:       The HDU in which the requested data is located [default: 1].
     :param fields:    A valid dict or list description of the fields in the file.  The list must
                       have the same number of items as there are fields; the dict takes the form
                       ``{'new_name': 'old_name'}`` or ``{'new_name': old_column_number}`` and can

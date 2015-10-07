@@ -64,17 +64,17 @@ class BinStep:
 
     :param field:     Data field to which the binning system should be applied.
     :param low:       The low edge of the lowest bin, inclusive; should be in linear space
-                      regardless of ``use_log`` (default: ``None``).
+                      regardless of ``use_log`` [default: ``None``].
     :param high:      The high edge of the highest bin, exclusive; should be in linear space
-                      regardless of ``use_log`` (default: ``None``).
+                      regardless of ``use_log`` [default: ``None``].
     :param step:      The width of each bin (in linear space if ``use_log=False``, in base-e log
-                      space if ``use_log=True``) (default: ``None``).
+                      space if ``use_log=True``) [default: ``None``].
     :param n_bins:    The total number of bins requested; if float, will be converted to the next
-                      largest integer (default: ``None``).
+                      largest integer [default: ``None``].
     :param use_log:   If ``True``, bin in log space; else bin in linear space. Even when
                       ``use_log=True``, all arguments except ``step`` should be given in linear
                       space, and the returned bin edges will also be in linear space.
-                      (default: ``False``)
+                      [default: ``False``]
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
@@ -169,7 +169,7 @@ class SingleBin:
     :param high:       The upper edge of the bin (exclusive).
     :param short_name: A string denoting this bin in filenames.
     :param long_name:  A string denoting this bin in program text outputs/plots
-                       (default: ``"low-high"``).
+                       [default: ``"low-high"``].
     """
 
     def __init__(self, field, low, high, short_name, long_name=None):
@@ -219,7 +219,7 @@ class BinFunction:
                            exist an error will be raised.
     :param returns_bools:  ``True`` if the function will return an array of bools corresponding to a
                            mask to the bin number in question; ``False`` otherwise.
-                           (default: ``False``)
+                           [default: ``False``]
     :returns:              A list of :class:`SingleFunctionBin` objects determined by the input
                            criteria.
     """
@@ -252,10 +252,10 @@ class SingleFunctionBin(SingleBin):
     :param function:       The function that returns the bin information.
     :param n:              Which bin this ``SingleFunctionBin`` considers.
     :param returns_bools:  ``True`` if the function returns bools, ``False`` if it returns bin
-                           numbers (default: ``False``).
-    :param short_name:     A string denoting this bin in filenames (default: ``str(n)``).
+                           numbers [default: ``False``].
+    :param short_name:     A string denoting this bin in filenames [default: ``str(n)``].
     :param long_name:      A string denoting this bin in program outputs/plots
-                           (default: ``short_name``).
+                           [default: ``short_name``].
     """
 
     def __init__(self, function, n, returns_bools=False, short_name=None, long_name=None):
