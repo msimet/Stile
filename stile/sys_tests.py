@@ -1,4 +1,4 @@
-"""@file sys_tests.py
+"""
 Contains the class definitions of the Stile systematics tests.
 """
 import numpy
@@ -16,9 +16,10 @@ try:
 except ImportError:
     has_matplotlib = False
 
-# Silly class so we can call savefig() on something returned from a plot() class that doesn't
-# actually do anything.
 class PlotNone(object):
+    """
+    An empty class with a ``.savefig()`` method that does nothing, for code automation purposes.
+    """
     def savefig(self, filename):
         pass
 
@@ -26,31 +27,35 @@ class SysTest(object):
     """
     A SysTest is a lensing systematics test of some sort.  It should define the following
     attributes:
-        short_name: a string that can be used in filenames to denote this systematics test
-        long_name: a string to denote this systematics test within program text outputs
-        objects_list: a list of objects that the test should operate on.  We expect these objects
-            to be from the list:
-            ['galaxy', 'star',  # all such objects,
-             'galaxy lens',     # only galaxies to be used as lenses in galaxy-galaxy lensing tests,
-             'star PSF',        # stars used in PSF determination,
-             'star bright',     # especially bright stars,
-             'galaxy random',   # random catalogs with the same spatial distribution as the
-             'star random']     # 'galaxy' or 'star' samples.
-        required_quantities: a list of tuples.  Each tuple is the list of fields/quantities that
-            should be given for the corresponding object from the objects_list.  We expect the
+
+        * ``short_name``: a string that can be used in filenames to denote this systematics test
+        * ``long_name``: a string to denote this systematics test within program text outputs
+        * ``objects_list``: a list of objects that the test should operate on.  We expect these
+            objects to be from the list:
+            [``'galaxy', 'star',``    # all such objects,
+             ``'galaxy lens',``       # only galaxies to be used as lenses in galaxy-galaxy lensing,
+             ``'star PSF',``          # stars used in PSF determination,
+             ``'star bright',``       # especially bright stars,
+             ``'galaxy random',``     # random catalogs with the same spatial distribution as the
+             ``'star random'] ``      # 'galaxy' or 'star' samples.
+        * ``required_quantities``: a list of tuples.  Each tuple is the list of fields/quantities
+            that should be given for the corresponding object from the objects_list.  We expect the
             quantities to be from the list:
-            ['ra', 'dec',       # Position on the sky
-             'x', 'y',          # Position in CCD/detector coordinates (or any flat projection)
-             'g1', g2', 'g1_err', 'g2'_err', # Two components of shear and their errors
-             'sigma', 'sigma_err', # Object size and its error
-             'w',               # Per-object weight
-             'psf_g1', 'psf_g2', 'psf_sigma'] # PSF shear and size at the object location
+            [``'ra', 'dec',``         # Position on the sky
+             ``'x', 'y',``            # Position in CCD/detector coords (or any flat projection)
+             ``'g1', 'g1_err',``      # Two components of shear and their errors
+             ``'g2', 'g2_err',``
+             ``'sigma', 'sigma_err',``# Object size and its error
+             ``'w',``                 # Per-object weight
+             ``'psf_g1', 'psf_g2',``  # PSF shear and size at the object location
+             ``'psf_sigma'``]
 
     It should define the following methods:
-        __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-            Run a test on a set of data, or a test involving two data sets data and data2, with
-            optional corresponding randoms random and random2.  Keyword args can be in a dict passed
-            to `config` or as explicit kwargs.  Explicit kwargs should override `config` arguments.
+        * ``__call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs)``:
+            Run a test on a set of data, or a test involving two data sets ``data`` and ``data2``,
+            with optional corresponding randoms ``random`` and ``random2``.  Keyword args can be in
+            a dict passed to ``config`` or as explicit kwargs.  Explicit kwargs should override
+            ``config`` arguments.
     """
     short_name = ''
     long_name = ''
@@ -60,9 +65,9 @@ class SysTest(object):
         raise NotImplementedError()
     def plot(self, results):
         """
-        If the results returned from the __call__() function of this class have a .savefig()
-        method, return that object.  Otherwise, return an object with a .savefig() method that
-        doesn't do anything.  plot() should be overridden by child classes to actually generate
+        If the results returned from the ``__call__()`` function of this class have a ``.savefig()``
+        method, return that object.  Otherwise, return an object with a ``.savefig()`` method that
+        doesn't do anything.  ``plot()`` should be overridden by child classes to actually generate
         plots if desired.
         """
         if hasattr(results, 'savefig'):
@@ -96,7 +101,7 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-if treecorr.version<'3.1':        
+if treecorr.version<'3.1':
     treecorr_func_dict = {'gg': treecorr.G2Correlation,
                           'm2': treecorr.G2Correlation,
                           'ng': treecorr.NGCorrelation,
@@ -120,10 +125,10 @@ else:
 class CorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
-    class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact
-    arguments to this method should be created by child classes of CorrelationFunctionSysTest; see
-    the docstring for CorrelationFunctionSysTest.getCF() for information on how to write further
-    tests using it.
+    class method ``getCF()`` which runs a TreeCorr correlation function on a given set of data.
+    Exact arguments to this method should be created by child classes of CorrelationFunctionSysTest;
+    see the docstring for :func:`CorrelationFunctionSysTest.getCF` for information on how to write
+    further tests using it.
     """
     short_name = 'corrfunc'
     # Set the details (such as field names and titles) for all the possible plots generated by
@@ -206,42 +211,48 @@ class CorrelationFunctionSysTest(SysTest):
 
         The user needs to specify the type of correlation function requested.  The available types
         are:
-            'nn': a 2-point correlation function
-            'ng': a point-shear correlation function (eg galaxy-galaxy lensing)
-            'gg': a shear-shear correlation function (eg cosmic shear)
-            'nk': a point-scalar [such as convergence, hence k meaning "kappa"] correlation function
-            'kk': a scalar-scalar correlation function
-            'kg': a scalar-shear correlation function
-            'm2': an aperture mass measurement
-            'nm': an <N aperture mass> measurement
-            'norm': 'nm' properly normalized by the average values of n and aperture mass to return
-                    something like a correlation coefficient.
+
+            * ``nn``: a 2-point correlation function
+            * ``ng``: a point-shear correlation function (eg galaxy-galaxy lensing)
+            * ``gg``: a shear-shear correlation function (eg cosmic shear)
+            * ``nk``: a point-scalar [such as convergence, hence k meaning "kappa"] correlation
+                      function
+            * ``kk``: a scalar-scalar correlation function
+            * ``kg``: a scalar-shear correlation function
+            * ``m2``: an aperture mass measurement
+            * ``nm``: an <N aperture mass> measurement
+            * ``norm``: ``nm`` properly normalized by the average values of n and aperture mass to
+                    return something like a correlation coefficient.
         More details can be found in the Readme.md for TreeCorr.
 
-        Additionally, for the 'nn', 'ng', 'nk', 'nm' and 'norm' options, the user can pass a kwarg 
-        nn_statistic = 'compensated' or nn_statistic = 'true' (or similarly for 'ng' and 'nk'; 
-        note that the 'nm' type checks the 'ng_statistic' kwarg and the 'norm' type checks the
-        'nn_statistic' kwarg!).  For 'nn' and 'norm' correlation functions, 'compensated' is the 
-        Landy-Szalay estimator, while 'simple' is just (data/random - 1).  For the other kinds, 
-        'compensated' means the random-shear or random-kappa correlation function is subtracted 
-        from the data correlation function,  while 'simple' merely returns the data correlation 
-        function.  Again, the TreeCorr documentation contains more information.  The '*_statistic'
-        kwarg will be ignored if it is passed for any other correlation function type.  The 
-        default is to use 'compensated' if randoms are present and 'simple' otherwise.
+        Additionally, for the ``'nn'``, ``'ng'``, ``'nk'``, ``'nm'`` and ``'norm'`` options, the
+        user can pass a kwarg ``nn_statistic = 'compensated'`` or ``nn_statistic = 'true'`` (or
+        similarly for ``'ng'`` and ``'nk'``; note that the ``'nm'`` type checks the
+        ``'ng_statistic'`` kwarg and the ``'norm'`` type checks the ``'nn_statistic'`` kwarg!).  For
+        ``'nn'`` and ``'norm'`` correlation functions, ``'compensated'`` is the Landy-Szalay
+        estimator, while ``'simple'`` is just (data/random - 1).  For the other kinds,
+        ``'compensated'`` means the random-shear or random-kappa correlation function is subtracted
+        from the data correlation function,  while ``'simple'`` merely returns the data correlation
+        function.  Again, the TreeCorr documentation contains more information.  The
+        ``'*_statistic'`` kwarg will be ignored if it is passed for any other correlation function
+        type.  The default is to use ``'compensated'`` if randoms are present and ``'simple'``
+        otherwise.
 
         This function accepts all (self-consistent) sets of data, data2, random, and random2.
-        Including "data2" and possibly "random2" will return a cross-correlation; otherwise the
-        program returns an autocorrelation.  "Random" keys are necessary for the 'nn' form of the
-        correlation function, and can be used (but are not necessary) for 'ng', 'nk', and 'kg'.
+        Including ``"data2"`` and possibly ``"random2"`` will return a cross-correlation; otherwise
+        the program returns an autocorrelation.  ``"Random"`` keys are necessary for the ``'nn'``
+        form of the correlation function, and can be used (but are not necessary) for ``'ng'``,
+        ``'nk'``, and ``'kg'``.
 
-        @param stile_args    The dict containing the parameters that control Stile's behavior
-        @param correlation_function_type The type of correlation function ('nn', 'ng', 'gg', 'nk',
-                             'k2', 'kg', 'm2', 'nm', 'norm') to request from TreeCorr--see above.
-        @param data, data2, random, random2: NumPy arrays of data with fields using the field name
-                             strings given in the stile.fieldNames dict.
-        @param kwargs        Any other TreeCorr parameters (will silently supercede anything in
-                             stile_args).
-        @returns             a numpy array of the TreeCorr outputs.
+        :param stile_args:    The dict containing the parameters that control Stile's behavior
+        :param correlation_function_type: The type of correlation function (``'nn', 'ng', 'gg',
+                              'nk', 'k2', 'kg', 'm2', 'nm', 'norm'``) to request from
+                              TreeCorr--see above.
+        :param data:, data2, random, random2: NumPy arrays of data with fields using the field name
+                              strings given in the ``stile.fieldNames`` dict.
+        :param kwargs:        Any other TreeCorr parameters (will silently supercede anything in
+                              ``stile_args``).
+        :returns:             a numpy array of the TreeCorr outputs.
         """
         import tempfile
         import os
@@ -259,11 +270,11 @@ class CorrelationFunctionSysTest(SysTest):
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
         treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
-        
+
         if data is None:
             raise ValueError('Must include a data array!')
         if correlation_function_type=='nn':
-            if random is None or ((data2 is not None or random2 is not None) and not 
+            if random is None or ((data2 is not None or random2 is not None) and not
                                   (data2 is not None and random2 is not None)):
                 raise ValueError('Incorrect data types for correlation function: must have '
                                    'data and random, and random2 if data2.')
@@ -287,7 +298,7 @@ class CorrelationFunctionSysTest(SysTest):
                 raise ValueError('Must include data2 for this correlation function type')
             if random is not None or random2 is not None:
                 print "Warning: randoms ignored for this correlation function type"
-                
+
         data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k = use_as_k,
                                       use_chip_coords = use_chip_coords)
         data2 = self.makeCatalog(data2, config=treecorr_kwargs, use_as_k = use_as_k,
@@ -316,7 +327,7 @@ class CorrelationFunctionSysTest(SysTest):
             func_dd.process(data)
             func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
             func_rr.process(data)
-            if treecorr_kwargs.get('nn_statistic', 
+            if treecorr_kwargs.get('nn_statistic',
                self.compensateDefault(data,data2,random,random2,both=True)) == 'compensated':
                 func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_dr.process(data,random)
@@ -369,8 +380,9 @@ class CorrelationFunctionSysTest(SysTest):
 
     def compensateDefault(self, data, data2, random, random2, both=False):
         """
-        Figure out if a compensated statistic can be used from the data present.  Keyword "both"
-        indicates that both data sets if present must have randoms; the default, False, means only the first data set must have a random.
+        Figure out if a compensated statistic can be used from the data present.  Keyword ``"both"``
+        indicates that both data sets if present must have randoms; the default, False, means only
+        the first data set must have a random.
         """
         if not random or (random and not len(random)):  # No random
             return 'simple'
@@ -381,24 +393,25 @@ class CorrelationFunctionSysTest(SysTest):
                 return 'simple'
         else:  # There's a random, and we can ignore 'both' since this is an autocorrelation
             return 'compensated'
-            
-        
+
+
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
-        Plot the data returned from a CorrelationFunctionSysTest object.  This chooses some
+        Plot the data returned from a :class:`CorrelationFunctionSysTest` object.  This chooses some
         sensible defaults, but much of its behavior can be changed.
 
-        @param data       The data returned from a CorrelationFunctionSysTest, as-is.
-        @param colors     A tuple of 2 colors, used for the first and second lines on any given plot
-        @param log_yscale Whether to use a logarithmic y-scale [default: False]
-        @param plot_bmode Whether to plot the b-mode signal, if there is one [default: True]
-        @param plot_data_only   Whether to plot the data-only correlation functions, if present
-                                [default: True]
-        @param plot_random_only Whether to plot the random-only correlation functions, if present
-                                [default: True]
-        @returns          A matplotlib Figure which may be written to a file with .savefig(), if
-                          matplotlib can be imported; else None.
+        :param data:       The data returned from a ``CorrelationFunctionSysTest``, as-is.
+        :param colors:     A tuple of 2 colors, used for the first and second lines on any given
+                           plot
+        :param log_yscale: Whether to use a logarithmic y-scale [default: False]
+        :param plot_bmode: Whether to plot the b-mode signal, if there is one [default: True]
+        :param plot_data_only:   Whether to plot the data-only correlation functions, if present
+                                 [default: True]
+        :param plot_random_only: Whether to plot the random-only correlation functions, if present
+                                 [default: True]
+        :returns:          A matplotlib ``Figure`` which may be written to a file with
+                           ``.savefig()``, if matplotlib can be imported; else None.
         """
 
         if not has_matplotlib:
@@ -481,7 +494,8 @@ class CorrelationFunctionSysTest(SysTest):
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
-        if plot_random_only and pd.datarandom_t_field:  # Plot the randoms-only measurements if requested
+        # Plot the randoms-only measurements if requested
+        if plot_random_only and pd.datarandom_t_field:
             ax = fig.add_subplot(nrows, 1, nrows)
             ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
@@ -572,13 +586,14 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
         for data_item in [data, data2, random, random2]:
             if data_item is not None:
                 new_data = data_item.copy()
-                new_data['sigma'] = (new_data['psf_sigma'] - new_data['sigma'])/new_data['psf_sigma']
+                new_data['sigma'] = ((new_data['psf_sigma'] - new_data['sigma'])/
+                                     new_data['psf_sigma'])
                 data_list.append(new_data)
             else:
                 data_list.append(data_item)
         return self.getCF('kk', config=config, *data_list, **new_kwargs)
-    
-        
+
+
 class Rho1SysTest(CorrelationFunctionSysTest):
     """
     Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
@@ -610,7 +625,8 @@ class Rho1SysTest(CorrelationFunctionSysTest):
             new_random2['g2'] = new_random2['g2'] - new_random2['psf_g2']
         else:
             new_random2 = random2
-        return self.getCF('gg', new_data, new_data2, new_random, new_random2, config=config, **kwargs)
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2, config=config,
+                          **kwargs)
 
 class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     """
@@ -640,10 +656,10 @@ class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
 class StatSysTest(SysTest):
     """
     A class for the Stile systematics tests that use basic statistical quantities. It uses NumPy
-    routines for all the innards, and saves the results in a stile.stile_utils.Stats object (see
-    stile_utils.py) that can carry around the information, print the results in a useful format,
-    write to file, or (eventually) become an argument to plotting routines that might output some of
-    the results on plots.
+    routines for all the innards, and saves the results in a :class:`stile.stile_utils.Stats` object
+    (see``stile_utils.py``) that can carry around the information, print the results in a useful
+    format, write to file, or (eventually) become an argument to plotting routines that might output
+    some of the results on plots.
 
     One of the calculations it does is find the percentiles of the given quantity.  The percentile
     levels to use can be set when the StatSysTest is initialized, or when it is called.  These
@@ -655,19 +671,19 @@ class StatSysTest(SysTest):
     dimensions.  In case (b), the user must give a field name using the `field` keyword argument,
     either at initialization or when calling the test.
 
-    For both the `percentile` and `field` arguments, the behavior is different if the keyword
+    For both the ``percentile`` and ``field`` arguments, the behavior is different if the keyword
     argument is used at the time of initialization or calling.  When used at the time of
     initialization, that value will be used for all future calls unless called with another value
-    for those arguments.  However, the value of `percentile` and `field` for calls after that will
-    revert back to the original value from the time of initialization.
+    for those arguments.  However, the value of ``percentile`` and ``field`` for calls after that
+    will revert back to the original value from the time of initialization.
 
     By default, the systematics tester will simply return a Stats object for the user.  However,
-    calling it with `verbose=True` will result in the statistics being printed directly using the
-    Stats.prettyPrint() function.
+    calling it with ``verbose=True`` will result in the statistics being printed directly using the
+    ``Stats.prettyPrint()`` function.
 
     Ordinarily, a StatSysTest object will throw an exception if asked to run on an array that has
-    any Nans or infinite values.  The `ignore_bad` keyword (at the time when the StatSytTest is
-    called, not initialized) changes this behavior so these bad values are quietly ignored.
+    any Nans or infinite values.  The ``ignore_bad`` keyword (at the time when the ``StatSytTest``
+    is called, not initialized) changes this behavior so these bad values are quietly ignored.
 
     Options to consider adding in future: weighted sums and other weighted statistics; outlier
     rejection.
@@ -676,39 +692,39 @@ class StatSysTest(SysTest):
     long_name = 'Calculate basic statistics of a given quantity'
 
     def __init__(self, percentiles=[2.2, 16., 50., 84., 97.8], field=None):
-        """Function to initialize a StatSysTest object.
+        """Function to initialize a ``StatSysTest`` object.
 
-        @param percentiles     The percentile levels at which to find the value of the input array
-                               when called.  [default: [2.2, 16., 50., 84., 97.8].]
-        @param field           The name of the field to use in a NumPy structured array / catalog.
-                               [default: None, meaning we're using a simple array without field
-                               names.]
+        :param percentiles:     The percentile levels at which to find the value of the input array
+                                when called.  [default: ``[2.2, 16., 50., 84., 97.8]``.]
+        :param field:           The name of the field to use in a NumPy structured array / catalog.
+                                [default: None, meaning we're using a simple array without field
+                                names.]
 
-        @returns the requested StatSysTest object.
+        :returns: the requested ``StatSysTest`` object.
         """
         self.percentiles = percentiles
         self.field = field
 
     def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False):
-        """Calling a StatSysTest with a given array argument as `array` will cause it to carry out
-        all the statistics tests and populate a stile.Stats object with the results, which it returns
-        to the user.
+        """Calling a ``StatSysTest`` with a given array argument as ``array`` will cause it to carry
+        out all the statistics tests and populate a :class:`stile.Stats` object with the results,
+        which it returns to the user.
 
-        @param array           The tuple, list, NumPy array, or structured NumPy array/catalog on
-                               which to carry out the calculations.
-        @param percentiles     The percentile levels to use for this particular calculation.
-                               [default: None, meaning use whatever levels were defined when
-                               initializing this StatSysTest object]
-        @param field           The name of the field to use in a NumPy structured array / catalog.
-                               [default: None, meaning use whatever field was defined when
-                               initializing this StatSysTest object]
-        @param verbose         If True, print the calculated statistics of the input `array` to
-                               screen.  If False, silently return the Stats object. [default:
-                               False.]
-        @param ignore_bad      If True, search for values that are NaN or Inf, and remove them
-                               before doing calculations.  [default: False.]
+        :param array:           The tuple, list, NumPy array, or structured NumPy array/catalog on
+                                which to carry out the calculations.
+        :param percentiles:     The percentile levels to use for this particular calculation.
+                                [default: ``None``, meaning use whatever levels were defined when
+                                initializing this ``StatSysTest`` object]
+        :param field:           The name of the field to use in a NumPy structured array / catalog.
+                                [default: ``None``, meaning use whatever field was defined when
+                                initializing this ``StatSysTest`` object]
+        :param verbose:         If ``True``, print the calculated statistics of the input ``array``
+                                to screen.  If ``False``, silently return the ``Stats`` object.
+                                [default: ``False``.]
+        :param ignore_bad:      If ``True``, search for values that are ``NaN`` or ``Inf``, and
+                                remove them before doing calculations.  [default: ``False``.]
 
-        @returns a stile.stile_utils.Stats object
+        :returns: a :class:`stile.stile_utils.Stats` object
         """
         # Set the percentile levels and field, if the user provided them.  Otherwise use what was
         # set up at the time of initialization.
@@ -815,53 +831,53 @@ class WhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     """
     A base class for Stile systematics tests that generate whisker plots. This implements the class
-    method whiskerPlot. Every child class of WhiskerPlotSysTest should use
-    WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
-    WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
+    method :func:`WhiskerPlotSysTest.whiskerPlot`. Every child class of ``WhiskerPlotSysTest``
+    should use ``WhiskerPlotSysTest.whiskerPlot`` through ``__call__``. See the docstring for
+    :func:`WhiskerPlotSysTest.whiskerPlot` for information on how to write further tests using it.
     """
 
     def whiskerPlot(self, x, y, g1, g2, size = None, linewidth = 0.01, scale = None,
                     keylength = 0.05, figsize = None, xlabel = None, ylabel = None,
                     size_label = None, xlim = None, ylim = None, equal_axis = False):
         """
-        Draw a whisker plot and return a `matplotlib.figure.Figure` object.
+        Draw a whisker plot and return a ``matplotlib.figure.Figure`` object.
         This method has a bunch of options for controlling the appearance of a plot, which are
-        explained below. To implement a child class of WhiskerPlotSysTest, call whiskerPlot within
-        __call__ of the child class and return the `matplotlib.figure.Figure` that whiskerPlot 
-        returns.
-        @param x               The tuple, list, or NumPy array for the x-position of objects.
-        @param y               The tuple, list, or NumPy array for the y-position of objects.
-        @param g1              The tuple, list, or Numpy array for the 1st ellipticity component
-                               of objects.
-        @param g2              The tuple, list, or Numpy array for the 2nd ellipticity component
-                               of objects.
-        @param size            The tuple, list, or Numpy array for the size of objects. The size
-                               information is shown as color gradation.
-                               [default: None, meaning do not show the size information]
-        @param linewidth       Width of whiskers in units of inches.
-                               [default: 0.01]
-        @param scale           Data units per inch for the whiskers; a smaller scale is a longer
-                               whisker.
-                               [default: None, meaning follow the default autoscaling algorithm from
-                               matplotlib]
-        @param keylength       Length of a key.
-                               [default: 0.05]
-        @param figsize         Size of a figure (x, y) in units of inches.
-                               [default: None, meaning use the default value of matplotlib]
-        @param xlabel          The x-axis label.
-                               [default: None, meaning do not show a label for the x-axis]
-        @param ylabel          The y-axis label.
-                               [default: None, meaning do not show a label for the y-axis]
-        @param size_label      The label for `size`, which is shown at the right of the color bar.
-                               [default: None, meaning do not show a size label]
-        @param xlim            Limits of x-axis (min, max). 
-                               [default: None, meaning do not set any limits for x]
-        @param ylim            Limits of y-axis (min, max). 
-                               [default: None, meaning do not set any limits for y]
-        @equal_axis            If True, force equal scaling for the x and y axes (distance between
-                               ticks of the same numerical values are equal on the x and y axes).
-                               [default: False]
-        @returns a matplotlib.figure.Figure object.
+        explained below. To implement a child class of ``WhiskerPlotSysTest``, call ``whiskerPlot``
+        within ``__call__`` of the child class and return the ``matplotlib.figure.Figure`` that
+        ``whiskerPlot`` returns.
+        :param x:               The tuple, list, or NumPy array for the x-position of objects.
+        :param y:               The tuple, list, or NumPy array for the y-position of objects.
+        :param g1:              The tuple, list, or Numpy array for the 1st ellipticity component
+                                of objects.
+        :param g2:              The tuple, list, or Numpy array for the 2nd ellipticity component
+                                of objects.
+        :param size:            The tuple, list, or Numpy array for the size of objects. The size
+                                information is shown as color gradation.
+                                [default: ``None``, meaning do not show the size information]
+        :param linewidth:       Width of whiskers in units of inches.
+                                [default: 0.01]
+        :param scale:           Data units per inch for the whiskers; a smaller scale is a longer
+                                whisker.
+                                [default: ``None``, meaning follow the default autoscaling algorithm
+                                from matplotlib]
+        :param keylength:       Length of a key.
+                                [default: 0.05]
+        :param figsize:         Size of a figure ``(x, y)`` in units of inches.
+                                [default: ``None``, meaning use the default value of matplotlib]
+        :param xlabel:          The x-axis label.
+                                [default: ``None``, meaning do not show a label for the x-axis]
+        :param ylabel:          The y-axis label.
+                                [default: ``None``, meaning do not show a label for the y-axis]
+        :param size_label:      The label for ``size``, which is shown at the right of the color
+                                bar. [default: ``None``, meaning do not show a size label]
+        :param xlim:            Limits of x-axis ``(min, max)``.
+                                [default: ``None``, meaning do not set any limits for x]
+        :param ylim:            Limits of y-axis ``(min, max)``.
+                                [default: ``None``, meaning do not set any limits for y]
+         @equal_axis            If True, force equal scaling for the x and y axes (distance between
+                                ticks of the same numerical values are equal on the x and y axes).
+                                [default: ``False``]
+        :returns: a ``matplotlib.figure.Figure`` object.
         """
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(1,1,1)
@@ -885,7 +901,7 @@ class WhiskerPlotSysTest(SysTest):
         if size is None:
             q = ax.quiver(x, y, gx, gy, units = 'inches',
                           headwidth = 0., headlength = 0., headaxislength = 0.,
-                          pivot = 'middle', width = linewidth, 
+                          pivot = 'middle', width = linewidth,
                           scale = scale)
         else:
             q = ax.quiver(x, y, gx, gy, size, units = 'inches',
@@ -947,9 +963,9 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
         return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
                                 array['psf_sigma'], linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
-    
+
 class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
     long_name = 'Make a Whisker plot of residuals'
@@ -968,66 +984,67 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
                                 linewidth = linewidth, scale = scale,
                                 figsize = figsize, xlabel = r'$x$ [pixel]', ylabel = r'$y$ [pixel]',
-                                size_label = r'$\sigma$ [pixel]', 
+                                size_label = r'$\sigma$ [pixel]',
                                 xlim = xlim, ylim = ylim, equal_axis = True)
 
 class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     """
-    A base class for Stile systematics tests that generate scatter plots. This implements the class 
-    method scatterPlot. Every child class of ScatterPlotSysTest should use
-    ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
-    ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
+    A base class for Stile systematics tests that generate scatter plots. This implements the class
+    method ``scatterPlot``. Every child class of ``ScatterPlotSysTest`` should use
+    ``ScatterPlotSysTest.scatterPlot`` through ``__call__``. See the docstring for
+    :func:`ScatterPlotSysTest.scatterPlot` for information on how to write further tests using it.
     """
-    def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual = False, 
+    def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual = False,
                  per_ccd_stat=None, xlabel=None, ylabel=None, zlabel=None, color = "",
                  lim=None, equal_axis=False, linear_regression=False, reference_line = None):
         """
-        Draw a scatter plot and return a `matplotlib.figure.Figure` object.
+        Draw a scatter plot and return a ``matplotlib.figure.Figure`` object.
         This method has a bunch of options for controlling appearance of a plot, which is
-        explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
-        __call__ of the child class and return `matplotlib.figure.Figure` that scatterPlot returns.
-        @param array           A structured NumPy array which contains data to be plotted.
-        @param x_field         The name of the field in `array` to be used for x.
-        @param y_field         The name of the field in `array` to be used for y.
-        @param yerr_field      The name of the field in `array` to be used for y error.
-        @param z_field         The name of the field in `array` to be used for z, which appears as
-                               the colors of scattered points.
-                               [default: None, meaning there is no additional quantity]
-        @param residual        Show residual between x and y on the y-axis.
-                               [default: False, meaning y value itself is on the y-axis]
-        @param per_ccd_stat    Which statistics (median, mean, or None) to be calculated within
-                               each CCD.
-                               [default: None, meaning no statistics are calculated]
-        @param xlabel          The label for the x-axis.
-                               [default: None, meaning do not show a label on the x-axis]
-        @param ylabel          The label for the y-axis.
-                               [default: None, meaning do not show a label on the y-axis]
-        @param zlabel          The label for the z values which appears at the side of the color
-                               bar.
-                               [default: None, meaning do not show a label of z values]
-        @param color           The color of scattered points. This color is also applied to
-                               linear regression if argument `linear_regression` is True. This
-                               parameter is ignored when z is not None. In this case, the
-                               color of linear regression is set to blue.
-                               [default: None, meaning follow a matplotlib's default color]
-        @param lim             The limit of the axes. This can be specified explicitly by
-                               using tuples such as ((xmin, xmax), (ymin, ymax)).
-                               If one passes float p, this routine calculates the p%-percentile
-                               around the median for each axis.
-                               [default: None, meaning do not set any limits]
-        @equal_axis            If True, force ticks of the x-axis and y-axis equal to each other.
-                               [default: False]
-        @linear_regression     If True, perform linear regression for x and y and plot a
-                               regression line. If yerr is not None, perform the linear
-                               regression incorporating the error into the standard chi^2
-                               and plot a regression line with a 1-sigma allowed region.
-                               [default: False]
-        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y
-                               is drawn. If reference_line == 'zero', y=0 is drawn.
-                               A user-specific function can be used by passing an object which
-                               has an attribute '__call__' and returns a 1-d Numpy array.
-        @returns               a matplotlib.figure.Figure object
+        explained below. To implement a child class of ``ScatterPlotSysTest``, call
+        :func:`ScatterPlot.scatterPlot` within ``__call__`` of the child class and return
+        ``matplotlib.figure.Figure`` that scatterPlot returns.
+        :param array:           A structured NumPy array which contains data to be plotted.
+        :param x_field:         The name of the field in ``array`` to be used for x.
+        :param y_field:         The name of the field in ``array`` to be used for y.
+        :param yerr_field:      The name of the field in ``array`` to be used for y error.
+        :param z_field:         The name of the field in ``array`` to be used for z, which appears
+                                as the colors of scattered points.
+                                [default: ``None``, meaning there is no additional quantity]
+        :param residual:        Show residual between x and y on the y-axis.
+                                [default: ``False``, meaning y value itself is on the y-axis]
+        :param per_ccd_stat:    Which statistics (median, mean, or None) to be calculated within
+                                each CCD.
+                                [default: ``None``, meaning no statistics are calculated]
+        :param xlabel:          The label for the x-axis.
+                                [default: ``None``, meaning do not show a label on the x-axis]
+        :param ylabel:          The label for the y-axis.
+                                [default: ``None``, meaning do not show a label on the y-axis]
+        :param zlabel:          The label for the z values which appears at the side of the color
+                                bar.
+                                [default: ``None``, meaning do not show a label of z values]
+        :param color:           The color of scattered points. This color is also applied to
+                                linear regression if argument ``linear_regression`` is True. This
+                                parameter is ignored when z is not None. In this case, the
+                                color of linear regression is set to blue.
+                                [default: ``None``, meaning follow a matplotlib's default color]
+        :param lim:             The limit of the axes. This can be specified explicitly by
+                                using tuples such as ``((xmin, xmax), (ymin, ymax))``.
+                                If one passes float ``p``, this routine calculates the p%-percentile
+                                around the median for each axis.
+                                [default: ``None``, meaning do not set any limits]
+        :param equal_axis:      If True, force ticks of the x-axis and y-axis equal to each other.
+                                [default: ``False``]
+        :param linear_regression: If True, perform linear regression for x and y and plot a
+                                regression line. If yerr is not None, perform the linear
+                                regression incorporating the error into the standard chi^2
+                                and plot a regression line with a 1-sigma allowed region.
+                                [default: ``False``]
+        :param reference_line:  Draw a reference line. If ``reference_line == 'one-to-one'``,
+                                ``x=y`` is drawn. If ``reference_line == 'zero'``, ``y=0`` is drawn.
+                                A user-specific function can be used by passing an object which
+                                has an attribute ``'__call__'`` and returns a 1-d Numpy array.
+        :returns:               a ``matplotlib.figure.Figure`` object
         """
         if per_ccd_stat:
             if z_field is None:
@@ -1039,7 +1056,7 @@ class ScatterPlotSysTest(SysTest):
                                                   y, yerr],
                                                  names = ['ccd',
                                                           x_field,
-                                                          y_field, 
+                                                          y_field,
                                                           yerr_field])
             else:
                 x, y, yerr, z = self.getStatisticsPerCCD(array['CCD'], array[x_field],
@@ -1049,7 +1066,7 @@ class ScatterPlotSysTest(SysTest):
                                                   y, yerr, zz],
                                                  names = ['ccd',
                                                           x_field,
-                                                          y_field, 
+                                                          y_field,
                                                           yerr_field,
                                                           z_field])
         else:
@@ -1076,52 +1093,53 @@ class ScatterPlotSysTest(SysTest):
     def getData(self):
         """
         Returns data used for scatter plot.
-        @returns stile_utils.FormatArray object
+        :returns: :class:`stile_utils.FormatArray` object
         """
         return self.data
 
     def scatterPlot(self, x, y, yerr=None, z=None, xlabel=None, ylabel=None, zlabel=None, color = ""
                     , lim=None, equal_axis=False, linear_regression=False, reference_line = None):
         """
-        Draw a scatter plot and return a `matplotlib.figure.Figure` object.
+        Draw a scatter plot and return a ``matplotlib.figure.Figure`` object.
         This method has a bunch of options for controlling appearance of a plot, which is
-        explained below. To implement a child class of ScatterPlotSysTest, call scatterPlot within
-        __call__ of the child class and return `matplotlib.figure.Figure` that scatterPlot returns.
-        @param x               The tuple, list, or NumPy array for x-axis.
-        @param y               The tuple, list, or NumPy array for y-axis.
-        @param yerr            The tuple, list, or Numpy array for error of the y values.
-                               [default: None, meaning do not plot an error]
-        @param z               The tuple, list, or Numpy array for an additional quantitiy
-                               which appears as colors of scattered points.
-                               [default: None, meaning there is no additional quantity]
-        @param xlabel          The label of x-axis.
-                               [default: None, meaning do not show a label of x-axis]
-        @param ylabel          The label of y-axis.
-                               [default: None, meaning do not show a label of y-axis]
-        @param zlabel          The label of z values which appears at the side of color bar.
-                               [default: None, meaning do not show a label of z values]
-        @param color           The color of scattered points. This color is also applied to linear
-                               regression if argument `linear_regression` is True. This parameter is 
-                               ignored when z is not None. In this case, the color of linear 
-                               regression is set to blue.
-                               [default: None, meaning follow a matplotlib's default color]
-        @param lim             The limit of axis. This can be specified explicitly by
-                               using tuples such as ((xmin, xmax), (ymin, ymax)).
-                               If one passes float p, it calculate p%-percentile around median
-                               for each of x-axis and y-axis.
-                               [default: None, meaning do not set any limits]
-        @equal_axis            If True, force ticks of x-axis and y-axis equal to each other.
-                               [default: False]
-        @linear_regression     If True, perform linear regression for x and y and plot a regression
-                               line. If yerr is not None, perform the linear regression with
-                               incorporating the error into the standard chi^2 and plot
-                               a regression line with a 1-sigma allowed region.
-                               [default: False]
-        @reference_line        Draw a reference line. If reference_line == 'one-to-one', x=y is
-                               drawn. If reference_line == 'zero', y=0 id drawn. A user-specific
-                               function can be used by passing an object which has an attribute
-                               '__call__' and returns a 1-d Numpy array.
-        @returns                a matplotlib.figure.Figure object
+        explained below. To implement a child class of ``ScatterPlotSysTest``, call
+        :func:``ScatterPlotSysTest.scatterPlot`` within ``__call__`` of the child class and return
+        the ``matplotlib.figure.Figure`` that ``scatterPlot`` returns.
+        :param x:               The tuple, list, or NumPy array for x-axis.
+        :param y:               The tuple, list, or NumPy array for y-axis.
+        :param yerr:            The tuple, list, or Numpy array for error of the y values.
+                                [default: ``None``, meaning do not plot an error]
+        :param z:               The tuple, list, or Numpy array for an additional quantity
+                                which appears as colors of scattered points.
+                                [default: ``None``, meaning there is no additional quantity]
+        :param xlabel:          The label of x-axis.
+                                [default: ``None``, meaning do not show a label of x-axis]
+        :param ylabel:          The label of y-axis.
+                                [default: ``None``, meaning do not show a label of y-axis]
+        :param zlabel:          The label of z values which appears at the side of color bar.
+                                [default: ``None``, meaning do not show a label of z values]
+        :param color:           The color of scattered points. This color is also applied to linear
+                                regression if argument ``linear_regression`` is True. This parameter
+                                is ignored when z is not None. In this case, the color of linear
+                                regression is set to blue.
+                                [default: ``None``, meaning follow a matplotlib's default color]
+        :param lim:             The limit of axis. This can be specified explicitly by
+                                using tuples such as ``((xmin, xmax), (ymin, ymax))``.
+                                If one passes float p, it calculate p%-percentile around median
+                                for each of x-axis and y-axis.
+                                [default: ``None``, meaning do not set any limits]
+        :param equal_axis:      If True, force ticks of the x-axis and y-axis equal to each other.
+                                [default: ``False``]
+        :param linear_regression: If True, perform linear regression for x and y and plot a
+                                regression line. If yerr is not None, perform the linear
+                                regression incorporating the error into the standard chi^2
+                                and plot a regression line with a 1-sigma allowed region.
+        :param reference_line:  Draw a reference line. If ``reference_line == 'one-to-one'``,
+                                ``x=y`` is drawn. If ``reference_line == 'zero'``, ``y=0`` is drawn.
+                                A user-specific function can be used by passing an object which has
+                                an attribute ``__call__`` and returns a 1-d Numpy array.
+                                [default: ``False``]
+        :returns:                a ``matplotlib.figure.Figure`` object
         """
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
@@ -1270,11 +1288,11 @@ class ScatterPlotSysTest(SysTest):
     def linearRegression(self, x, y, err = None):
         """
         Perform linear regression (y=mx+c). If error is given, it returns covariance.
-        @param x               NumPy array for x.
-        @param y               NumPy array for y.
-        @param err             Numpy array for y error.
-                               [default: None, meaning do not consider y error]
-        @returns               m, c. If err is not None, m, c, cov_m, cov_c, cov_mc.
+        :param x:               NumPy array for x.
+        :param y:               NumPy array for y.
+        :param err:             Numpy array for y error.
+                                [default: None, meaning do not consider y error]
+        :returns:               m, c. If err is not None, m, c, cov_m, cov_c, cov_mc.
         """
 
         e = numpy.ones(x.shape) if err is None else err
@@ -1297,15 +1315,15 @@ class ScatterPlotSysTest(SysTest):
     def getStatisticsPerCCD(self, ccds, x, y, yerr = None, z = None, stat = "median"):
         """
         Calculate median or mean for x and y (and z if specified) for each ccd.
-        @param ccds       NumPy array for ccds, an array in which each element indicates
-                          ccd id of each data point.
-        @param x          NumPy array for x.
-        @param y          NumPy array for y.
-        @param yerr       Numpy array for y error.
-                          [default: None, meaning do not consider y error]
-        @param z          NumPy array for z.
-                          [default: None, meaning do not statistics for z]
-        @returns          x_ave, y_ave, y_ave_std.
+        :param ccds:       NumPy array for ccds, an array in which each element indicates
+                           ccd id of each data point.
+        :param x:          NumPy array for x.
+        :param y:          NumPy array for y.
+        :param yerr:       Numpy array for y error.
+                           [default: None, meaning do not consider y error]
+        :param z:          NumPy array for z.
+                           [default: None, meaning do not statistics for z]
+        :returns:          x_ave, y_ave, y_ave_std.
         """
         if stat == "mean":
             x_ave = numpy.array([numpy.average(x[ccds == ccd])
