@@ -6,6 +6,7 @@ import file_io
 import treecorr
 from treecorr.corr2 import corr2_valid_params
 
+
 def Parser():
     import argparse
     p = argparse.Parser()
@@ -25,7 +26,7 @@ def Parser():
                    help="Last row of the file(s) to be considered",
                    dest='last_row')
     p.add_argument('--x_units',
-                   help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only allowed "+
+                   help="X-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
                         "by certain DataHandlers",
                    dest='x_units')
     p.add_argument('--y_units',
@@ -82,11 +83,11 @@ def Parser():
 
 def ReadTreeCorrResultsFile(file_name):
     """
-    Read in the given `file_name`.  Cast it into a formatted numpy array with the appropriate
+    Read in the given ``file_name``.  Cast it into a formatted numpy array with the appropriate
     fields and return it.
 
-    @param file_name The location of an output file from TreeCorr.
-    @returns         A numpy array corresponding to the data in `file_name`.
+    :param file_name: The location of an output file from TreeCorr.
+    :returns:         A numpy array corresponding to the data in ``file_name``.
     """
     import stile_utils
     output = file_io.ReadASCIITable(file_name, comments='#')
@@ -99,18 +100,19 @@ def ReadTreeCorrResultsFile(file_name):
     with open(file_name) as f:
         fields = f.readline().split()
     fields = fields[1:]
-    fields = [field for field in fields if field!='.']
+    fields = [field for field in fields if field != '.']
     return stile_utils.FormatArray(output, fields=fields)
+
 
 def PickTreeCorrKeys(input_dict):
     """
-    Take an `input_dict`, harvest the kwargs you'll need for TreeCorr, and return a dict containing
-    these values.  This is useful if you have a parameters dict that contains some things TreeCorr
-    might want, but some other keys that shouldn't be used by it.
+    Take an ``input_dict``, harvest the kwargs you'll need for TreeCorr, and return a dict
+    containing these values.  This is useful if you have a parameters dict that contains some things
+    TreeCorr might want, but some other keys that shouldn't be used by it.
 
-    @param input_dict A dict containing some (key, value) pairs that apply to TreeCorr.
-    @returns          A dict containing the (key, value) pairs from input_dict that apply to
-                      TreeCorr.
+    :param input_dict: A dict containing some (key, value) pairs that apply to TreeCorr.
+    :returns:          A dict containing the (key, value) pairs from input_dict that apply to
+                       TreeCorr.
     """
     if not input_dict:
         return {}
