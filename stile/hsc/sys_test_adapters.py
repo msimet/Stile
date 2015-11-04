@@ -20,11 +20,13 @@ def MaskGalaxy(data, config):
     # These arrays are generally contiguous in memory--so we can just index them like a NumPy
     # recarray.
     try:
-        return data['classification.extendedness']==1
+        return data['classification.extendedness'] == 1
     except LsstCppException:
         # But sometimes we've already masked the array--this will work in that case (but is slower
         # than above if the above is possible).
-        return numpy.array([src['classification.extendedness']==1 for src in data])
+        key = data.schema.find('classification.extendedness').key
+        return numpy.array([src[key] == 1 for src in data])
+
 
 def MaskStar(data, config):
     """
@@ -32,21 +34,25 @@ def MaskStar(data, config):
     correspond to stars.
     """
     try:
-        return data['classification.extendedness']==0
+        return data['classification.extendedness'] == 0
     except LsstCppException:
-        return numpy.array([src['classification.extendedness']==1 for src in data])
+        key = data.schema.find('classification.extendedness').key
+        return numpy.array([src[key] == 0 for src in data])
+
 
 def MaskBrightStar(data, config):
     """
     Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
-    correspond to bright stars.  Right now this is set to be the upper 10% of stars in a given
-    sample.
+    correspond to bright stars according to a given S/N cutoff set by
+    `config.bright_star_sn_cutoff`.
     """
-    star_mask = MaskStar(data)
-    bright_mask = (numpy.array([src['flux.psf']/src['flux.psf.err'] for src in data]) >
+    star_mask = MaskStar(data, config)
+    key_psf = data.schema.find('flux.psf').key
+    key_psf_err = data.schema.find('flux.psf.err').key
+    bright_mask = (numpy.array([src[key_psf]/src[key_psf_err] for src in data]) >
                    config.bright_star_sn_cutoff)
-
     return numpy.logical_and(star_mask, bright_mask)
+
 
 def MaskPSFStar(data, config):
     """
@@ -54,9 +60,15 @@ def MaskPSFStar(data, config):
     correspond to the stars used to determine the PSF.
     """
     try:
-        return data['calib.psf.used']==True
+        return data['calib.psf.used'] == True
     except LsstCppException:
-        return numpy.array([src.get('calib.psf.used')==True for src in data])
+        try:
+            key = data.schema.find('calib.psf.used').key
+        except KeyError:
+            key = data.schema.find('calib.psf.used.any').key
+        key_shape = data.schema.find('shape.sdss.flags').key
+        return numpy.logical_and(numpy.array([src.get(key) == True for src in data]), 
+                                 numpy.array([src.get(key_shape) == False for src in data]))
 
 # Map the object type strings onto the above functions.
 mask_dict = {'galaxy': MaskGalaxy,
@@ -76,8 +88,8 @@ class BaseSysTestAdapter(object):
     attribute `sys_test` that is a SysTest object; an attribute `name` that we can use to generate
     output filenames; a function __call__() that will run the test; a function `getMasks()` that
     returns a set of masks (one for each object type--such as "star" or "galaxy"--that is expected
-    for the test) if given a source catalog and config object; and a function getRequiredColumns() 
-    that returns a list of tuples of required quantities (such as "ra" or "g1"), one tuple 
+    for the test) if given a source catalog and config object; and a function getRequiredColumns()
+    that returns a list of tuples of required quantities (such as "ra" or "g1"), one tuple
     corresponding to each mask returned from getMasks().
 
     (More complete lists of the exact expected names for object types and required columns can be
@@ -89,7 +101,11 @@ class BaseSysTestAdapter(object):
        can then apply to the data to generate masks. Called with no arguments, it will attempt to
        read `self.sys_test.objects_list` for the list of objects (and will raise an error if that
        does not exist).
-     - a function getMasks() that will apply the masks in self.mask_funcs to the data.
+     - a function getMasks() that will apply the masks in self.mask_funcs to the data.  It also
+       requires a corresponding self.objects_list with the same length as self.mask_funcs,
+       containing a list of the object types that are in self.mask_funcs (this is used to 
+       distinguish stars, where we want raw shapes, from galaxies, where we want PSF-corrected
+       shapes).
      - a function getRequiredColumns() that will return the list of required columns from
        self.sys_test.required_quantities if it exists, and raise an error otherwise.
     Of course, any of these can be overridden if desired.
@@ -106,14 +122,16 @@ class BaseSysTestAdapter(object):
         attempt to read the objects_list from self.sys_test, and raise an error if that is not
         found.
         """
-        if objects_list==None:
+        if objects_list == None:
             if hasattr(self.sys_test, 'objects_list'):
-                objects_list = self.sys_test.objects_list
+                self.objects_list = self.sys_test.objects_list
             else:
                 raise ValueError('No objects_list given, and self.sys_test does not have an '
                                    'attribute objects_list')
+        else:
+            self.objects_list = objects_list
         # mask_dict (defined above) maps string object types onto masking functions.
-        self.mask_funcs = [mask_dict[obj_type] for obj_type in objects_list]
+        self.mask_funcs = [mask_dict[obj_type] for obj_type in self.objects_list]
 
 
     def getMasks(self, data, config):
@@ -125,7 +143,8 @@ class BaseSysTestAdapter(object):
                      to index the data, returning only the rows that meet the requirements of the
                      mask.
         """
-        return [mask_func(data, config) for mask_func in self.mask_funcs]
+        return [(obj, mask_func(data, config)) 
+                for obj, mask_func in zip(self.objects_list, self.mask_funcs)]
 
 
     def getRequiredColumns(self):
@@ -134,7 +153,7 @@ class BaseSysTestAdapter(object):
         the list matching the data from the corresponding element of the list returned by
         getMasks().  For example, if the masks returned were a star mask and a galaxy mask, and we
         wanted to know the shear signal around galaxies, this should return
-        >>> [('ra','dec'),('ra','dec','g1','g2','w')]
+        >>> [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
         since we need to know the positions of the stars and the positions, shears, and weights of
         the galaxies.
 
@@ -148,79 +167,372 @@ class BaseSysTestAdapter(object):
         return self.sys_test.required_quantities
 
 
-    def __call__(self, *data, **kwargs):
+    def __call__(self, task_config, *data, **kwargs):
         """
         Call this object's sys_test with the given data and kwargs, and return whatever the
         sys_test itself returns.
         """
         return self.sys_test(*data, **kwargs)
 
-class GalaxyShearAdapter(BaseSysTestAdapter):
+
+class ShapeSysTestAdapter(BaseSysTestAdapter):
+    shape_fields = ['g1', 'g2', 'sigma', 'g1_err', 'g2_err', 'sigma_err',
+                    'psf_g1', 'psf_g2', 'psf_sigma', 'psf_g1_err', 'psf_g2_err', 'psf_sigma_err']
+                    
+    def getRequiredColumns(self):
+        reqs = self.sys_test.required_quantities
+        return_reqs = []
+        for req in reqs:
+            return_reqs.append([r+'_'+self.shape_type if r in self.shape_fields else r 
+                                for r in req])
+        return return_reqs
+
+    def fixArray(self, array):
+        for field in self.shape_fields:
+            if field in array.dtype.names:
+                array[field] = array[field+'_'+self.shape_type]
+        return array
+
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(config=task_config.treecorr_kwargs, *new_data, **kwargs)
+
+
+class GalaxyShearAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the GalaxyShearSysTest.  See the documentation for that class or 
+    Adapter for the GalaxyShearSysTest.  See the documentation for that class or
     BaseSysTestAdapter for more information.
     """
     def __init__(self, config):
+        self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.GalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
-class BrightStarShearAdapter(BaseSysTestAdapter):
+
+class BrightStarShearAdapter(ShapeSysTestAdapter):
     """
     Adapter for the BrightStarShearSysTest.  See the documentation for that class or
     BaseSysTestAdapter for more information.
     """
     def __init__(self, config):
+        self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.BrightStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(task_config.treecorr_kwargs, *data, **kwargs)
 
-class StarXGalaxyShearAdapter(BaseSysTestAdapter):
+
+class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
     """
     Adapter for the StarXGalaxyShearSysTest.  See the documentation for that class or
     BaseSysTestAdapter for more information.
     """
     def __init__(self, config):
+        self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.StarXGalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
-class StarXStarShearAdapter(BaseSysTestAdapter):
+
+class StarXStarShearAdapter(ShapeSysTestAdapter):
     """
     Adapter for the StarXStarShearSysTest.  See the documentation for that class or
     BaseSysTestAdapter for more information.
     """
     def __init__(self, config):
+        self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.StarXStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 
-class StatsPSFFluxAdapter(BaseSysTestAdapter):
+class StarXStarSizeResidualAdapter(ShapeSysTestAdapter):
+    """
+    Adapter for the StarXStarSizeResidualSysTest.  See the documentation for that class or
+    BaseSysTestAdapter for more information.
+    """
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.StarXStarSizeResidualSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+
+class Rho1Adapter(ShapeSysTestAdapter):
+    """
+    Adapter for the StarPSFResidXStarPSFResidShearSysTest.  See the documentation for that class or
+    BaseSysTestAdapter for more information.
+    """
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.Rho1SysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+    def __call__(self, task_config, *data, **kwargs):
+        """
+        Call this object's sys_test with the given data and kwargs, and return whatever the
+        sys_test itself returns.
+        """
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
+
+
+class StatsPSFFluxAdapter(ShapeSysTestAdapter):
     """
     Adapter for the StatSysTest.  See the documentation for that class or BaseSysTestAdapter for
     more information.  In this case, we specifically request 'flux.psf' and object_type 'galaxy'.
 
     In the future, we plan to have this be more configurable; for now, this works as a test.
     """
+
     def __init__(self, config):
         self.config = config
         self.sys_test = sys_tests.StatSysTest(field='flux.psf')
         self.name = self.sys_test.short_name+'flux.psf'
-        self.mask_funcs = [mask_dict[obj_type] for obj_type in ['galaxy']]
+        self.mask_funcs = [self.MaskPSFFlux]
+        self.objects_list = ['galaxy']
+
+    def MaskPSFFlux(self, data, config):
+        base_mask = mask_dict['galaxy'](data, config)
+        try:
+            additional_mask = data['flux.psf.flags'] == 0
+        except LsstCppException:
+            key = data.schema.find('flux.psf.flags').key
+            additional_mask = numpy.array([src.get(key) == False for src in data])
+        return numpy.logical_and(base_mask, additional_mask)
 
     def getRequiredColumns(self):
         return (('flux.psf',),)
 
-    def __call__(self, *data, **kwargs):
+    def __call__(self, task_config, *data, **kwargs):
         return self.sys_test(*data, verbose=True, **kwargs)
+
+
+class WhiskerPlotStarAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'chip'
+        self.config = config
+        self.sys_test = sys_tests.WhiskerPlotStarSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data):
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, linewidth=0.01, scale=task_config.whiskerplot_scale,
+                              figsize=task_config.whiskerplot_figsize,
+                              xlim=task_config.whiskerplot_xlim,
+                              ylim=task_config.whiskerplot_ylim)
+
+
+class WhiskerPlotPSFAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'chip'
+        self.config = config
+        self.sys_test = sys_tests.WhiskerPlotPSFSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data):
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, linewidth=0.01, scale=task_config.whiskerplot_scale,
+                              figsize=task_config.whiskerplot_figsize,
+                              xlim=task_config.whiskerplot_xlim,
+                              ylim=task_config.whiskerplot_ylim)
+
+                              
+class WhiskerPlotResidualAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'chip'
+        self.config = config
+        self.sys_test = sys_tests.WhiskerPlotResidualSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data):
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, linewidth=0.01, scale=task_config.whiskerplot_scale,
+                              figsize=task_config.whiskerplot_figsize,
+                              xlim=task_config.whiskerplot_xlim,
+                              ylim=task_config.whiskerplot_ylim)
+
+
+class ScatterPlotStarVsPSFG1Adapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotStarVsPSFG1SysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
+
+
+class ScatterPlotStarVsPSFG2Adapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotStarVsPSFG2SysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
+
+
+class ScatterPlotStarVsPSFSigmaAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotStarVsPSFSigmaSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
+
+
+class ScatterPlotResidualVsPSFG1Adapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotResidualVsPSFG1SysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
+
+
+class ScatterPlotResidualVsPSFG2Adapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotResidualVsPSFG2SysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
+
+
+class ScatterPlotResidualVsPSFSigmaAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotResidualVsPSFSigmaSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
+
+
+class ScatterPlotResidualSigmaVsPSFMagAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.ScatterPlotResidualSigmaVsPSFMagSysTest()
+        self.name = self.sys_test.short_name
+        self.setupMasks()
+
+    def __call__(self, task_config, *data, **kwargs):
+        try:
+            per_ccd_stat = task_config.scatterplot_per_ccd_stat
+        except  AttributeError:
+            per_ccd_stat = False
+        new_data = [self.fixArray(d) for d in data]
+        return self.sys_test(*new_data, per_ccd_stat=per_ccd_stat)
 
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
 adapter_registry.register("BrightStarShear", BrightStarShearAdapter)
 adapter_registry.register("StarXGalaxyShear", StarXGalaxyShearAdapter)
 adapter_registry.register("StarXStarShear", StarXStarShearAdapter)
+adapter_registry.register("StarXStarSizeResidual", StarXStarSizeResidualAdapter)
+adapter_registry.register("Rho1", Rho1Adapter)
+adapter_registry.register("WhiskerPlotStar", WhiskerPlotStarAdapter)
+adapter_registry.register("WhiskerPlotPSF", WhiskerPlotPSFAdapter)
+adapter_registry.register("WhiskerPlotResidual", WhiskerPlotResidualAdapter)
+adapter_registry.register("ScatterPlotStarVsPSFG1", ScatterPlotStarVsPSFG1Adapter)
+adapter_registry.register("ScatterPlotStarVsPSFG2", ScatterPlotStarVsPSFG2Adapter)
+adapter_registry.register("ScatterPlotStarVsPSFSigma", ScatterPlotStarVsPSFSigmaAdapter)
+adapter_registry.register("ScatterPlotResidualVsPSFG1", ScatterPlotResidualVsPSFG1Adapter)
+adapter_registry.register("ScatterPlotResidualVsPSFG2", ScatterPlotResidualVsPSFG2Adapter)
+adapter_registry.register("ScatterPlotResidualVsPSFSigma", ScatterPlotResidualVsPSFSigmaAdapter)
+adapter_registry.register("ScatterPlotResidualSigmaVsPSFMag", 
+                          ScatterPlotResidualSigmaVsPSFMagAdapter)

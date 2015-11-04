@@ -1,9 +1,9 @@
 from .file_io import (ReadFITSImage, ReadFITSTable, ReadASCIITable, ReadTable, WriteTable,
                       WriteASCIITable, WriteFITSTable)
-from .stile_utils import Parser, FormatArray
+from .stile_utils import Parser, FormatArray, fieldNames
 from .binning import BinList, BinStep, BinFunction, ExpandBinList
-from . import corr2_utils
-from .corr2_utils import WriteCorr2ConfigurationFile, ReadCorr2ResultsFile, MakeCorr2FileKwargs
+from . import treecorr_utils
+from .treecorr_utils import ReadTreeCorrResultsFile
 from .data_handler import DataHandler
-from .sys_tests import (GalaxyShearSysTest, BrightStarShearSysTest, StarXGalaxyShearSysTest, 
+from .sys_tests import (GalaxyShearSysTest, BrightStarShearSysTest, StarXGalaxyShearSysTest,
                         StarXStarShearSysTest, StatSysTest)

@@ -4,6 +4,7 @@ import numpy
 import subprocess
 import helper
 import unittest
+import treecorr
 
 try:
     import stile
@@ -21,86 +22,62 @@ class TestCorrelationFunctions(unittest.TestCase):
     def setUp(self):
         # The output of our known data set from the example directory
         self.expected_result = numpy.array(
-                   [(5.389e-02, 5.443e-02, 2.206e-02,-4.259e-02, 2.578e-02, 1.820e+02, 1.820e+02),
-                    (6.260e-02, 6.205e-02, 3.738e-03, 2.995e-02, 2.079e-02, 2.800e+02, 2.800e+02),
-                    (7.271e-02, 7.241e-02, 1.857e-02,-4.192e-02, 1.755e-02, 3.930e+02, 3.930e+02),
-                    (8.446e-02, 8.489e-02,-9.208e-03,-6.122e-03, 1.556e-02, 5.000e+02, 5.000e+02),
-                    (9.811e-02, 9.817e-02, 1.986e-02, 9.554e-03, 1.447e-02, 5.780e+02, 5.780e+02),
-                    (1.140e-01, 1.140e-01, 7.698e-03, 4.370e-03, 1.068e-02, 1.061e+03, 1.061e+03),
-                    (1.324e-01, 1.342e-01, 9.733e-03,-4.264e-03, 1.037e-02, 1.125e+03, 1.125e+03),
-                    (1.538e-01, 1.520e-01, 2.400e-03,-7.149e-03, 9.048e-03, 1.478e+03, 1.478e+03),
-                    (1.786e-01, 1.772e-01, 2.964e-03,-1.999e-03, 7.230e-03, 2.315e+03, 2.315e+03),
-                    (2.075e-01, 2.076e-01, 1.652e-03,-2.616e-03, 6.580e-03, 2.795e+03, 2.795e+03),
-                    (2.410e-01, 2.411e-01,-1.277e-02, 2.982e-04, 5.274e-03, 4.350e+03, 4.350e+03),
-                    (2.799e-01, 2.855e-01, 1.326e-03,-1.140e-03, 4.651e-03, 5.593e+03, 5.593e+03),
-                    (3.252e-01, 3.270e-01,-2.517e-03, 3.061e-04, 4.554e-03, 5.834e+03, 5.834e+03),
-                    (3.777e-01, 3.752e-01,-3.427e-03,-5.551e-03, 3.459e-03, 1.011e+04, 1.011e+04),
-                    (4.387e-01, 4.393e-01, 2.000e-04,-2.414e-03, 3.095e-03, 1.263e+04, 1.263e+04),
-                    (5.096e-01, 4.973e-01,-3.784e-03, 5.500e-04, 3.025e-03, 1.322e+04, 1.322e+04),
-                    (5.920e-01, 5.873e-01, 2.131e-03, 9.000e-05, 3.673e-03, 8.971e+03, 8.971e+03),
-                    (6.877e-01, 6.877e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00),
-                    (7.988e-01, 7.988e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00),
-                    (9.278e-01, 9.278e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00)],
-                    dtype=[("R_nominal",float),("<R>",float),("<gamT>",float),("<gamX>",float),
-                           ("sig",float),("weight",float),("npairs",float)])
-            
+                   [(0.053888, 0.054426, 0.022059, -0.042588, 0.025785, 182.0, 182.0),
+                    (0.062596, 0.062048, 0.0037377, 0.02995, 0.020788, 280.0, 280.0),
+                    (0.072711, 0.072412, 0.018572, -0.041915, 0.017547, 393.0, 393.0),
+                    (0.08446, 0.084892, -0.0092076, -0.006122, 0.015557, 500.0, 500.0),
+                    (0.098107, 0.098174, 0.019855, 0.0095542, 0.014469, 578.0, 578.0),
+                    (0.11396, 0.11403, 0.0076978, 0.0043697, 0.010679, 1061.0, 1061.0),
+                    (0.13237, 0.13423, 0.0097326, -0.0042636, 0.010371, 1125.0, 1125.0),
+                    (0.15376, 0.15199, 0.0024, -0.0071487, 0.0090482, 1478.0, 1478.0),
+                    (0.17861, 0.17718, 0.0029644, -0.0019988, 0.0072297, 2315.0, 2315.0),
+                    (0.20747, 0.20757, 0.0016518, -0.0026162, 0.0065797, 2795.0, 2795.0),
+                    (0.241, 0.24111, -0.012766, 0.00029823, 0.0052742, 4350.0, 4350.0),
+                    (0.27994, 0.28555, 0.0013257, -0.0011404, 0.0046513, 5593.0, 5593.0),
+                    (0.32517, 0.32698, -0.0025167, 0.00030612, 0.0045542, 5834.0, 5834.0),
+                    (0.37772, 0.37523, -0.0034272, -0.0055511, 0.0034589, 10114.0, 10114.0),
+                    (0.43875, 0.43928, 0.00019999, -0.0024145, 0.0030951, 12631.0, 12631.0),
+                    (0.50965, 0.49734, -0.0037836, 0.00055003, 0.0030254, 13220.0, 13220.0),
+                    (0.592, 0.58727, 0.0021309, 9.0001e-05, 0.0036726, 8971.0, 8971.0),
+                    (0.68766, 0.68766, 0.0, 0.0, 0.0, 0.0, 0.0),
+                    (0.79877, 0.79877, 0.0, 0.0, 0.0, 0.0, 0.0),
+                    (0.92784, 0.92784, 0.0, 0.0, 0.0, 0.0, 0.0)],
+                    dtype=[("R_nom",float),("<R>",float),("<gamT>",float),("<gamX>",float),
+                           ("sigma",float),("weight",float),("npairs",float)])
+
     def test_getCF(self):
-        """Test getCF() directly, and the two kinds of file specification."""
-        stile_args = {'corr2_kwargs': { 'ra_units': 'degrees', 
-                                        'dec_units': 'degrees',
-                                        'min_sep': 0.05,
-                                        'max_sep': 1,
-                                        'sep_units': 'degrees',
-                                        'nbins': 20
-                                        } }
-        col_kwargs = {'ra_col': 2, 'dec_col': 3, 'g1_col': 5, 'g2_col': 6}
+        """Test getCF() directly, without first processing by child classes."""
+        stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
+                      'sep_units': 'degrees', 'nbins': 20}
         cf = stile.sys_tests.CorrelationFunctionSysTest()
         dh = temp_data_handler()
-        results = cf.getCF(stile_args,'ng',None,None,
-                                            file_name='../examples/example_lens_catalog.dat',
-                                            file_name2='../examples/example_source_catalog.dat',
-                                            **col_kwargs)
-        self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
+        lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),
+                                        dec=numpy.array([lens_data['dec']]),
+                                        ra_units='degrees', dec_units='degrees')
+        source_catalog = treecorr.Catalog(ra=source_data['ra'],dec=source_data['dec'],
+                                          g1=source_data['g1'],g2=source_data['g2'],
+                                          ra_units='degrees', dec_units='degrees')
+        results = cf.getCF('ng',lens_catalog,source_catalog,**stile_args)
         numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
-        kwargs = stile_args['corr2_kwargs']
-        stile_args['corr2_kwargs'] = {}
-        kwargs.update(col_kwargs)
-        results2 = cf.getCF(stile_args,'ng',
-                                            file_name='../examples/example_lens_catalog.dat',
-                                            file_name2='../examples/example_source_catalog.dat',
-                                             **kwargs)
+        results2 = cf.getCF('ng',lens_data,source_data,config=stile_args)
+        self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
+        # Missing necessary data file
         numpy.testing.assert_equal(results,results2)
-        results2 = cf.getCF(stile_args,'ng',
-                                             data=('../examples/example_lens_catalog.dat',
-                                                   {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                             data2=('../examples/example_source_catalog.dat',
-                                                   {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                             **kwargs)
-        numpy.testing.assert_equal(results,results2)
+        self.assertRaises(TypeError,
+                          cf.getCF,{},'ng',
+                          file_name='../examples/example_lens_catalog.dat')
+        # Nonsensical correlation type
+        self.assertRaises(ValueError,cf.getCF,'hello', lens_data, source_data, config=stile_args)
 
-        # Then, test the tests that use .getCF().
-        realshear = stile.RealShearSysTest()
-        results3 = realshear(stile_args,file_name='../examples/example_lens_catalog.dat',
-                                        file_name2='../examples/example_source_catalog.dat',
-                                        **kwargs)
+        # Then, test a test that uses .getCF().
+        realshear = stile.GalaxyShearSysTest()
+        results3 = realshear(lens_data,source_data,config=stile_args)
         numpy.testing.assert_equal(results,results3)
-        results3 = realshear(stile_args,data=('../examples/example_lens_catalog.dat',
-                                              {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                        data2=('../examples/example_source_catalog.dat',
-                                              {'ra': 1, 'dec': 2, 'g1': 4, 'g2': 5}),
-                                           **kwargs)
-        numpy.testing.assert_equal(results,results3)
-        self.assertRaises(TypeError,cf.getCF)
-        self.assertRaises(subprocess.CalledProcessError,
-                          cf.getCF,stile_args,'ng',
-                          file_name='../examples/example_lens_catalog.dat', **col_kwargs)
-        self.assertRaises(ValueError,cf.getCF,stile_args,'hello',
-                          file_name='../examples/example_lens_catalog.dat',
-                          file_name2='../examples/example_source_catalog.dat',
-                          **col_kwargs)
-    
+
 if __name__=='__main__':
-    print "Note: You may see some errors printed as we deliberately send wrong arguments to corr2.",
-    print "You do not need to worry about these as long as the Python script completes correctly."
     unittest.main()
 

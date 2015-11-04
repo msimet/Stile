@@ -1,93 +1,93 @@
 """@file stile_utils.py
-Various utilities for the Stile pipeline.  Includes input parsing and some numerical helper 
+Various utilities for the Stile pipeline.  Includes input parsing and some numerical helper
 functions.
 """
 
 import numpy
-import os
 
 def Parser():
     """
-    Returns an argparse Parser object with input args used by Stile and corr2.
+    Returns an argparse Parser object with input args used by Stile and TreeCorr.
     """
-    import corr2_utils
+    import treecorr_utils
     import argparse
-    p = argparse.Parser(parent=corr2_utils.Parser())
+    p = argparse.Parser(parent=treecorr_utils.Parser())
     #TODO: add, obviously, EVERYTHING ELSE
     return p
 
 def FormatArray(d, fields=None):
     """
-    Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name 
+    Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name
     description.
-    
-    This function uses the dtype that the array `d` comes with.  This means that arrays of 
+
+    This function uses the dtype that the array `d` comes with.  This means that arrays of
     heterogeneous objects may not return the dtype you expect (for example, ints will be converted
     to floats if there are floats in the array, or all numbers will be converted to strings if there
-    are any strings in the array).  Predefining the format or using a function like 
+    are any strings in the array).  Predefining the format or using a function like
     numpy.genfromtxt() will prevent these issues, as will reading from a FITS file.
 
     @param d      A NumPy array.
-    @param fields A dictionary whose keys are the names of the fields you'd like for the output 
-                  array, and whose values are field numbers (starting with 0) whose names those 
+    @param fields A dictionary whose keys are the names of the fields you'd like for the output
+                  array, and whose values are field numbers (starting with 0) whose names those
                   keys should replace (or, if the array is already formatted, the existing field
                   names the keys should replace); alternately, a list with the same length as the
-                  rows of `d`. (default: None)
-    @returns      A formatted numpy array with the same shape as d except that the innermost 
-                  dimension has turned into a record field if it was not already one, optionally 
+                  rows of `d`. [default: None]
+    @returns      A formatted numpy array with the same shape as d except that the innermost
+                  dimension has turned into a record field if it was not already one, optionally
                   with field names appropriately replaced.
     """
     # We want arrays to be numpy.arrays with field access (so we can say d['ra'] or something like
     # that).  In order for these to be created correctly, two conditions have to be met:
     # - The array needs to be initialized with the innermost dimension as a tuple rather than
     #   a list or other array, so NumPy knows that it's a record field;
-    # - The array has to be created with a dtype that indicates there are multiple fields.  For 
+    # - The array has to be created with a dtype that indicates there are multiple fields.  For
     #   convenience I'm going to do this as a single string of the form '?,?,?[...]' where each
     #   question mark is a single character (plus optional width for strings/voids) denoting what
     #   kind of data to expect. (This is the "array-protocol type string", see
     #   http://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html)
-    if not hasattr(d,'dtype'): 
+    if not hasattr(d, 'dtype'):
         # If it's not an array, make it one.
         d = numpy.array(d)
-    if not d.dtype.names: 
+    if not d.dtype.names:
         # If it is an array, but doesn't have a "names" attribute, that means it doesn't have
         # records/fields.  So we need to reformat the array.  Given the difficulty of generating
         # an individual dtype for each field, we'll just use the dtype of the overall array for
         # every entry, which involves no casting of types.
         d_shape = d.shape
-        if len(d_shape)==1: # Assume this was a single row (not a set of 1-column rows)
+        if len(d_shape) == 1:  # Assume this was a single row (not a set of 1-column rows)
             d = numpy.array([d])
             d_shape = d.shape
         # Cast this into a 2-d array
-        new_d = d.reshape(-1,d_shape[-1])
+        new_d = d.reshape(-1, d_shape[-1])
         # Generate the dtype string
-        if isinstance(d.dtype,str):
+        if isinstance(d.dtype, str):
             dtype = ','.join([d.dtype]*len(d[0]))
         else:
             dtype_char = d.dtype.char
-            if dtype_char=='S' or dtype_char=='O' or dtype_char=='V' or dtype_char=='U':
-                dtype = ','.join([d.dtype.str]*len(new_d[0])) # need the width as well as the char
+            if dtype_char == 'S' or dtype_char == 'O' or dtype_char == 'V' or dtype_char == 'U':
+                dtype = ','.join([d.dtype.str]*len(new_d[0]))  # need the width as well as the char
             else:
                 dtype = ','.join([dtype_char]*len(new_d[0]))
         # Make a new array with each row turned into a tuple and the correct dtype
-        d = numpy.array([tuple(nd) for nd in new_d],dtype=dtype)
-        if len(d_shape)>1:
+        d = numpy.array([tuple(nd) for nd in new_d], dtype=dtype)
+        if len(d_shape) > 1:
             # If this was a more-than-2d array, reshape it back to that original form, minus the
             # dimension we turned into a record (which will no longer appear in the shape).
             d = d.reshape(d_shape[:-1])
     if fields:
         # If the "fields" parameter was set, rewrite the numpy.dtype.names attribute to be the
         # field specification we want.
-        if isinstance(fields,dict):
+        if isinstance(fields, dict):
             names = list(d.dtype.names)
             for key in fields:
-                names[fields[key]]=key
+                names[fields[key]] = key
             d.dtype.names = names
-        elif len(fields)==len(d.dtype.names):
+        elif len(fields) == len(d.dtype.names):
             d.dtype.names = fields
         else:
             raise RuntimeError('Cannot use given fields: '+str(fields))
     return d
+
 
 class Stats:
     """A Stats object can carry around and output the statistics of some array.
@@ -136,7 +136,16 @@ class Stats:
         if self.percentiles is not None:
             ret_str += 'Below are lists of (percentile, value) combinations:\n'
             for index in range(len(self.percentiles)):
-                ret_str += '\t%f %f\n'%(self.percentiles[index],self.values[index])
+                ret_str += '\t%f %f\n'%(self.percentiles[index], self.values[index])
 
         return ret_str
 
+fieldNames = {
+    'g1': 'g1, a shear component in the ra direction',
+    'g2': 'g2, a shear component 45 degrees from the ra direction',
+    'sigma': 'a size parameter for objects with dimension [length] in arbitrary units',
+    'psf_g1': 'the g1 of the psf at the location of this object',
+    'psf_g2': 'the g2 of the psf at the location of this object',
+    'psf_sigma': 'the sigma of the psf at the location of this object',
+    'w': 'the weight to apply per object',
+    'z': 'the redshift of the object'}
