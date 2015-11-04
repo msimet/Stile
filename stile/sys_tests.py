@@ -187,7 +187,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
         PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
                     sigma_field='sigma', y_title="$\kappa$"),  # nk
-        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
+        PlotDetails(t_field='xi', t_title=r'$\xi_{\mathrm{re}}$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
                     x_field='<kgamX>', x_title=r'$\langle \kappa \gamma_X\rangle$',
                     datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
