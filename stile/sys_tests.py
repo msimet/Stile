@@ -875,7 +875,7 @@ class WhiskerPlotSysTest(SysTest):
                                 [default: ``None``, meaning do not set any limits for x]
         :param ylim:            Limits of y-axis ``(min, max)``.
                                 [default: ``None``, meaning do not set any limits for y]
-         @equal_axis            If True, force equal scaling for the x and y axes (distance between
+        :param equal_axis:      If True, force equal scaling for the x and y axes (distance between
                                 ticks of the same numerical values are equal on the x and y axes).
                                 [default: ``False``]
         :returns: a ``matplotlib.figure.Figure`` object.
