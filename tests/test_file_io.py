@@ -34,7 +34,7 @@ class TestFileIO(unittest.TestCase):
              (6.877e-01, 6.877e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00),
              (7.988e-01, 7.988e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00),
              (9.278e-01, 9.278e-01, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00, 0.000e+00)],
-             dtype='d,d,d,d,d,d,d')
+             dtype='d, d, d, d, d, d, d')
 
         self.table2_withstring = numpy.array([
             (1, 'first', 'aa', 1.0),
@@ -46,18 +46,18 @@ class TestFileIO(unittest.TestCase):
             (13, 'seventh', 'gg', 13.0),
             (21, 'eighth', 'hh', 21.0),
             (34, 'ninth', 'ii', 34.0),
-            (55, 'tenth', 'jj', 55.0)],dtype='l,S7,S2,d')
+            (55, 'tenth', 'jj', 55.0)], dtype='l, S7, S2, d')
 
-        # contents of test_data/[table.fits,image_and_table.fits,two_tables.fits (hdu 2)]
-        self.fits_table = numpy.array([(1.5,'hello',2),(3,'goodbye',5)],
-                                      dtype=[('q',float),('status','S7'),('final',int)])
+        # contents of test_data/[table.fits, image_and_table.fits, two_tables.fits (hdu 2)]
+        self.fits_table = numpy.array([(1.5, 'hello', 2), (3, 'goodbye', 5)],
+                                      dtype=[('q', float), ('status', 'S7'), ('final', int)])
         # contents of first extension of test_data/two_tables.fits
-        self.fits_table_2 = numpy.array([(1.5,2),(3.7,4),(1050.2,5)],
-                                        dtype=[('red',float),('blue',int)])
-        # contents of test_data/[image_int.fits,image_and_table.fits]
-        self.fits_int_image = numpy.array([[1,2],[3,4]])
+        self.fits_table_2 = numpy.array([(1.5, 2), (3.7, 4), (1050.2, 5)],
+                                        dtype=[('red', float), ('blue', int)])
+        # contents of test_data/[image_int.fits, image_and_table.fits]
+        self.fits_int_image = numpy.array([[1, 2], [3, 4]])
         # contents of test_data/image_float.fits
-        self.fits_float_image = numpy.array([[1.0,2.1],[3.4,1.6]])
+        self.fits_float_image = numpy.array([[1.0, 2.1], [3.4, 1.6]])
 
     def test_ReadFITSImage(self):
         """Test the ability to read in a FITS image."""
@@ -69,7 +69,7 @@ class TestFileIO(unittest.TestCase):
                                              self.fits_int_image)
             numpy.testing.assert_array_equal(stile.ReadFITSImage('test_data/image_float.fits'),
                                              self.fits_float_image)
-            self.assertRaises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
+            self.assertRaises(IOError, stile.ReadFITSImage, 'test_data/data_table.dat')
 
     def test_ReadFITSTable(self):
         """Test the ability to read in a FITS table."""
@@ -79,19 +79,19 @@ class TestFileIO(unittest.TestCase):
             # that numpy.ndarray and FITSrecs should be compared to each other, and also to deal
             # with FITS vs Python byteorder things for machines where that matters.
             result = stile.ReadFITSTable('test_data/table.fits')
-            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result, self.fits_table))
             result = stile.ReadTable('test_data/table.fits')
-            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result, self.fits_table))
             result = stile.ReadFITSTable('test_data/two_tables.fits')
-            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table_2))
+            numpy.testing.assert_equal(*helper.FormatSame(result, self.fits_table_2))
             result = stile.ReadFITSTable('test_data/image_and_table.fits')
-            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
-            result = stile.ReadFITSTable('test_data/two_tables.fits',hdu=2)
-            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
+            numpy.testing.assert_equal(*helper.FormatSame(result, self.fits_table))
+            result = stile.ReadFITSTable('test_data/two_tables.fits', hdu=2)
+            numpy.testing.assert_equal(*helper.FormatSame(result, self.fits_table))
             # And make sure that ReadTable picks up that this is a FITS file
-            result = stile.ReadTable('test_data/two_tables.fits',hdu=2)
-            numpy.testing.assert_equal(*helper.FormatSame(result,self.fits_table))
-            self.assertRaises(IOError,stile.ReadFITSImage,'test_data/data_table.dat')
+            result = stile.ReadTable('test_data/two_tables.fits', hdu=2)
+            numpy.testing.assert_equal(*helper.FormatSame(result, self.fits_table))
+            self.assertRaises(IOError, stile.ReadFITSImage, 'test_data/data_table.dat')
 
     def test_ReadASCIITable(self):
         """Test the ability to read in an ASCII table."""
@@ -99,42 +99,42 @@ class TestFileIO(unittest.TestCase):
         # arrays if necessary, so we don't really need to test much of the functionality--just make
         # sure that both natively formatted arrays (table_with_string) and natively raw arrays
         # (treecorr_output) are both returned as formatted arrays.
-        results = stile.ReadASCIITable('test_data/TreeCorr_output.dat',comments='#')
-        numpy.testing.assert_equal(results,self.table1)
+        results = stile.ReadASCIITable('test_data/TreeCorr_output.dat', comments='#')
+        numpy.testing.assert_equal(results, self.table1)
         results = stile.ReadASCIITable('test_data/table_with_string.dat')
-        numpy.testing.assert_equal(results,self.table2_withstring)
+        numpy.testing.assert_equal(results, self.table2_withstring)
         results = stile.ReadTable('test_data/table_with_string.dat')
-        numpy.testing.assert_equal(results,self.table2_withstring)
+        numpy.testing.assert_equal(results, self.table2_withstring)
 
     def test_WriteASCIITable(self):
         """Test the ability to write an ASCII table."""
         # Must be done after test_read_ASCII_table() since it uses the read_ASCII_table function!
         handle, filename = tempfile.mkstemp()
-        stile.file_io.WriteASCIITable(filename,self.table1)
+        stile.file_io.WriteASCIITable(filename, self.table1)
         results = stile.ReadASCIITable(filename)
         # genfromtxt will cleverly figure out the last two columns are ints, which we want it to,
         # but that causes problems here.
         try:
-            numpy.testing.assert_equal(results,self.table1)
+            numpy.testing.assert_equal(results, self.table1)
             raise RuntimeError('Arrays are equal, but should not have the same format')
         except AssertionError:
             pass
-        numpy.testing.assert_equal(results.astype('f'),self.table1.astype('f'))
+        numpy.testing.assert_equal(results.astype('f'), self.table1.astype('f'))
 
         # check field reordering
-        field_list = ['f3','f4','f6','f0','f2','f1','f5']
-        stile.file_io.WriteASCIITable(filename,self.table1,fields=field_list)
+        field_list = ['f3', 'f4', 'f6', 'f0', 'f2', 'f1', 'f5']
+        stile.file_io.WriteASCIITable(filename, self.table1, fields=field_list)
         results = stile.ReadASCIITable(filename)
-        numpy.testing.assert_equal(results.astype('f'),self.table1[field_list].astype('f'))
+        numpy.testing.assert_equal(results.astype('f'), self.table1[field_list].astype('f'))
         os.close(handle)
         if not stile.file_io.has_fits:
             # If there is a FITS handler, this table would be written as a FITS table, so we
             # shouldn't check it.  But otherwise these will be ASCII files, so test that
             # WriteTable() is sending them through that function properly.
             handle, filename = tempfile.mkstemp()
-            stile.file_io.WriteTable(filename,self.table1)
+            stile.file_io.WriteTable(filename, self.table1)
             results = stile.ReadASCIITable(filename)
-            numpy.testing.assert_equal(self.table1.astype('f'),results.astype('f'))
+            numpy.testing.assert_equal(self.table1.astype('f'), results.astype('f'))
             os.close(handle)
 
     def test_WriteFITSTable(self):
@@ -142,10 +142,10 @@ class TestFileIO(unittest.TestCase):
         if stile.file_io.has_fits:
             # First check that WriteFITSTable writes a FITS table of the right sort...
             handle, filename = tempfile.mkstemp()
-            stile.WriteFITSTable(filename,self.fits_table)
+            stile.WriteFITSTable(filename, self.fits_table)
             try:
                 self.assertTrue(
-                    stile.file_io.fits_handler.FITSDiff('test_data/table.fits','temp.fits'))
+                    stile.file_io.fits_handler.FITSDiff('test_data/table.fits', 'temp.fits'))
             except AttributeError:
                 # FITSDiff seems to not exist for one of my pyfits installations
                 numpy.testing.assert_equal(stile.ReadFITSTable('test_data/table.fits'),
@@ -154,17 +154,16 @@ class TestFileIO(unittest.TestCase):
 
             # Now see if WriteTable properly sends things through WriteFITSTable
             handle, filename = tempfile.mkstemp()
-            stile.WriteTable(filename,self.fits_table_2)
+            stile.WriteTable(filename, self.fits_table_2)
             numpy.testing.assert_equal(stile.ReadFITSTable('test_data/two_tables.fits'),
                                        stile.ReadFITSTable(filename))
 
             os.close(handle)
             handle, filename = tempfile.mkstemp()
-            self.assertRaises(TypeError,stile.WriteFITSTable,filename,[])
+            self.assertRaises(TypeError, stile.WriteFITSTable, filename, [])
             os.close(handle)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     if not stile.file_io.has_fits:
         print "Skipping FITS tests (no FITS module found)"
     unittest.main()
-

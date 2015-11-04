@@ -8,18 +8,20 @@ except ImportError:
     sys.path.append('..')
     import stile
 
+
 def funcname():
     import inspect
     return inspect.stack()[1][3]
 
+
 class TestStats(unittest.TestCase):
     def setUp(self):
-        self.rand_seed = 314159 # random seed for tests
-        self.n_points_test = 800000 # number of random points to use for unit tests of stats module
-        self.gaussian_mean = 27.0 # Mean value for the Gaussian from which to draw random points
-        self.gaussian_sigma = 4.0 # Sigma value for the Gaussian from which to draw random points
+        self.rand_seed = 314159  # random seed for tests
+        self.n_points_test = 800000  # number of random points to use for unit tests of stats module
+        self.gaussian_mean = 27.0  # Mean value for the Gaussian from which to draw random points
+        self.gaussian_sigma = 4.0  # Sigma value for the Gaussian from which to draw random points
 
-    def check_results(self,stats_obj):
+    def check_results(self, stats_obj):
         """A utility to check whether a stats object contains results consistent with inputs."""
         numpy.testing.assert_equal(self.n_points_test, stats_obj.N)
         numpy.testing.assert_almost_equal(self.gaussian_mean/stats_obj.mean-1., 0., decimal=3,
@@ -48,7 +50,7 @@ class TestStats(unittest.TestCase):
 
         # Run it through the StatSysTest framework and check that the outputs are as expected.
         test_obj = stile.StatSysTest()
-        result =  test_obj(test_vec)
+        result = test_obj(test_vec)
         self.check_results(result)
 
         # Do the same with it as a tuple, list, and reshaped into a multi-dimensional array.
@@ -63,32 +65,32 @@ class TestStats(unittest.TestCase):
         """Make sure StatSysTest throws exceptions at appropriate times."""
         foo = stile.StatSysTest()
         # Input 'array' is something silly, like a float, or None, or a string.
-        self.assertRaises(RuntimeError,foo,3.)
-        self.assertRaises(RuntimeError,foo,None)
-        self.assertRaises(RuntimeError,foo,'bar')
+        self.assertRaises(RuntimeError, foo, 3.)
+        self.assertRaises(RuntimeError, foo, None)
+        self.assertRaises(RuntimeError, foo, 'bar')
 
         # Called on a catalog without specifying field.
         schema = [("item1", float), ("item2", float)]
-        test_arr = numpy.zeros(20,dtype=numpy.dtype(schema))
-        self.assertRaises(RuntimeError,foo,test_arr)
+        test_arr = numpy.zeros(20, dtype=numpy.dtype(schema))
+        self.assertRaises(RuntimeError, foo, test_arr)
         # Called on a catalog that doesn't contain that field.
-        self.assertRaises(RuntimeError,foo,test_arr,field='item3')
+        self.assertRaises(RuntimeError, foo, test_arr, field='item3')
         # Called on something with NaN without keyword to ignore them.
         x = numpy.empty(10)
         x[3] = numpy.nan
-        self.assertRaises(RuntimeError,foo,x)
+        self.assertRaises(RuntimeError, foo, x)
         # Called on something that has no entries that aren't NaN, with exclusion flag, so we end up
         # with a useful array of length zero.
         x = numpy.empty(10)
         x.fill(numpy.nan)
-        self.assertRaises(RuntimeError,foo,x,ignore_bad=True)
+        self.assertRaises(RuntimeError, foo, x, ignore_bad=True)
 
     def test_statsystest_catalogs(self):
         """Test the StatSysTest functionality working directly from catalogs."""
         test_len = 10
 
         schema = [("item1", float), ("item2", float)]
-        test_arr = numpy.zeros(test_len,dtype=numpy.dtype(schema))
+        test_arr = numpy.zeros(test_len, dtype=numpy.dtype(schema))
         test_arr["item1"] = numpy.arange(test_len)
         test_arr["item2"] = 2*numpy.arange(test_len)
 
@@ -118,6 +120,5 @@ class TestStats(unittest.TestCase):
         numpy.testing.assert_almost_equal((test_len-1.), res3.mean, decimal=7)
         numpy.testing.assert_almost_equal(0.5*(test_len-1.), res4.mean, decimal=7)
 
-if __name__ =='__main__':
+if __name__ == '__main__':
     unittest.main()
-
