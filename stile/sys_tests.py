@@ -412,6 +412,9 @@ class BaseCorrelationFunctionSysTest(SysTest):
         results = stile.ReadTreeCorrResultsFile(output_file)
         os.close(handle)
         os.remove(output_file)
+        names = results.dtype.names
+        # Add the sep units to the column names of radial bins from TreeCorr outputs
+        names = [n+' [%s]'%treecorr_kwargs['sep_units'] if 'R' in n else n for n in names]
         return results
 
     def compensateDefault(self, data, data2, random, random2, both=False):
@@ -453,8 +456,10 @@ class BaseCorrelationFunctionSysTest(SysTest):
         fields = data.dtype.names
         # Pick which radius measurement to use
         for t_r in ['<R>', 'R_nominal', 'R']:
-            if t_r in fields:
-                r = t_r
+            is_r = [t_r in f for f in fields]
+            if any(is_r):
+                indx = is_r.index(True)
+                r = fields[indx]
                 break
         else:
             raise ValueError('No radius parameter found in data')
