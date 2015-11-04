@@ -31,7 +31,7 @@ def FormatArray(d, fields=None):
                   array, and whose values are field numbers (starting with 0) whose names those
                   keys should replace (or, if the array is already formatted, the existing field
                   names the keys should replace); alternately, a list with the same length as the
-                  rows of `d`. (default: None)
+                  rows of `d`. [default: None]
     @returns      A formatted numpy array with the same shape as d except that the innermost
                   dimension has turned into a record field if it was not already one, optionally
                   with field names appropriately replaced.
@@ -54,7 +54,7 @@ def FormatArray(d, fields=None):
         # an individual dtype for each field, we'll just use the dtype of the overall array for
         # every entry, which involves no casting of types.
         d_shape = d.shape
-        if len(d_shape)==1:  # Assume this was a single row (not a set of 1-column rows)
+        if len(d_shape) == 1:  # Assume this was a single row (not a set of 1-column rows)
             d = numpy.array([d])
             d_shape = d.shape
         # Cast this into a 2-d array
@@ -64,13 +64,13 @@ def FormatArray(d, fields=None):
             dtype = ','.join([d.dtype]*len(d[0]))
         else:
             dtype_char = d.dtype.char
-            if dtype_char=='S' or dtype_char=='O' or dtype_char=='V' or dtype_char=='U':
+            if dtype_char == 'S' or dtype_char == 'O' or dtype_char == 'V' or dtype_char == 'U':
                 dtype = ','.join([d.dtype.str]*len(new_d[0]))  # need the width as well as the char
             else:
                 dtype = ','.join([dtype_char]*len(new_d[0]))
         # Make a new array with each row turned into a tuple and the correct dtype
         d = numpy.array([tuple(nd) for nd in new_d], dtype=dtype)
-        if len(d_shape)>1:
+        if len(d_shape) > 1:
             # If this was a more-than-2d array, reshape it back to that original form, minus the
             # dimension we turned into a record (which will no longer appear in the shape).
             d = d.reshape(d_shape[:-1])
@@ -80,13 +80,14 @@ def FormatArray(d, fields=None):
         if isinstance(fields, dict):
             names = list(d.dtype.names)
             for key in fields:
-                names[fields[key]]=key
+                names[fields[key]] = key
             d.dtype.names = names
-        elif len(fields)==len(d.dtype.names):
+        elif len(fields) == len(d.dtype.names):
             d.dtype.names = fields
         else:
             raise RuntimeError('Cannot use given fields: '+str(fields))
     return d
+
 
 class Stats:
     """A Stats object can carry around and output the statistics of some array.

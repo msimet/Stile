@@ -29,9 +29,9 @@ class BinList:
             raise TypeError('Must pass a non-empty bin_list')
         self.field = field
         monotonic = numpy.array(bin_list[1:])-numpy.array(bin_list[:-1])
-        if numpy.all(monotonic>0):
+        if numpy.all(monotonic > 0):
             self.reverse = False
-        elif numpy.all(monotonic<0):
+        elif numpy.all(monotonic < 0):
             self.reverse = True
             bin_list.reverse()
         else:
@@ -56,7 +56,6 @@ class BinList:
         return return_list
 
 
-
 class BinStep:
     """
     An object which, when called, returns bin definitions (a list of SingleBins) following the
@@ -68,40 +67,41 @@ class BinStep:
 
     @param field     Data field to which the binning system should be applied.
     @param low       The low edge of the lowest bin, inclusive; should be in linear space regardless
-                     of `use_log` (default: None).
+                     of `use_log`. [default: None]
     @param high      The high edge of the highest bin, exclusive; should be in linear space
-                     regardless of `use_log` (default: None).
+                     regardless of `use_log`. [default: None]
     @param step      The width of each bin (in linear space if `use_log=False`, in base-e log space
-                     if `use_log=True`) (default: None).
+                     if `use_log=True`). [default: None]
     @param n_bins    The total number of bins requested; if float, will be converted to the next
-                     largest integer (default: None).
+                     largest integer. [default: None]
     @param use_log   If True, bin in log space; else bin in linear space. Even when `use_log=True`,
                      all arguments except step should be given in linear space, and the returned
-                     bin edges will also be in linear space. (default: False)
+                     bin edges will also be in linear space. [default: False]
     @returns         A list of SingleBin objects determined by the input criteria.
     """
+
     def __init__(self, field, low=None, high=None, step=None, n_bins=None, use_log=False):
         if not isinstance(field, str):
             raise TypeError('Field description must be a string. Passed value: '+str(field)+
                               'of type'+type(field))
         self.field = field
         n_none = (low is None) + (high is None) + (step is None) + (n_bins is None)
-        if n_none>1:
+        if n_none > 1:
             raise TypeError('Must pass at least three of low, high, step, n_bins')
-        if high==low:
+        if high == low:
             raise ValueError('High must be != low. Given arguments: (high, low) = (%f, %f)'%
                              (high, low))
-        if step is not None and step==0:
+        if step is not None and step == 0:
             raise ValueError('Step must be nonzero. Given argument: %f'%step)
-        if n_bins is not None and n_bins<=0:
+        if n_bins is not None and n_bins <= 0:
             raise ValueError('n_bins must be positive. Given argument: %i'%n_bins)
         if n_bins and not isinstance(n_bins, int):
-            if int(n_bins)==n_bins:
-                n_bins==int(n_bins)
+            if int(n_bins) == n_bins:
+                n_bins = int(n_bins)
             else:
                 n_bins = int(numpy.ceil(n_bins))
         if use_log:
-            if (low is not None and low<=0) or (high is not None and high<=0):
+            if (low is not None and low <= 0) or (high is not None and high <= 0):
                 raise ValueError('Only positive arguments accepted for low and high if use_log. '+
                                  'Given arguments: (low, high) = (%f, %f)'%(low, high))
             if low:
@@ -113,14 +113,14 @@ class BinStep:
             self.low = low
             if high is not None:
                 if step:
-                    if (high-low)*step<0:
+                    if (high-low)*step < 0:
                         raise ValueError('Argument step must have the same sign as (high-low). '+
                                          'Given arguments: high %f, low %f, step %f'%
                                          (high, low, step))
                     self.step = step
                     self.n_bins = int(numpy.ceil((high-low)/step))
                     if n_bins:
-                        if n_bins!=self.n_bins:
+                        if n_bins != self.n_bins:
                             raise ValueError('Cannot form a consistent binning with low %f, high '
                                              '%f, step %f, and n_bins %i--derived n_bins is %i.'
                                              %(low, high, step, n_bins, self.n_bins))
@@ -134,11 +134,11 @@ class BinStep:
             self.step = step
             self.n_bins = n_bins
             self.low = high-n_bins*step
-        if self.step<0:
+        if self.step < 0:
             # We want to store parameters such that bin_edge[0] <= bin 0 < bin_edge[1], even if
             # the step is negative, so we keep track of that here.
             self.low = self.low+self.n_bins*self.step
-            self.step*=-1
+            self.step *= -1
             self.reverse = True
         else:
             self.reverse = False
@@ -175,8 +175,8 @@ class SingleBin:
     @param low        The lower edge of the bin (inclusive).
     @param high       The upper edge of the bin (exclusive).
     @param short_name A string denoting this bin in filenames.
-    @param long_name  A string denoting this bin in program text outputs/plots
-                      (default: "low-high").
+    @param long_name  A string denoting this bin in program text outputs/plots.
+                      [default: "low-high"]
     """
     def __init__(self, field, low, high, short_name, long_name=None):
         if not isinstance(field, str):
@@ -204,7 +204,8 @@ class SingleBin:
         @returns      A NumPy array corresponding to the input data, restricted to the bin
                       described by this object.
         """
-        return data[numpy.logical_and(data[self.field]>=self.low, data[self.field]<self.high)]
+        return data[numpy.logical_and(data[self.field] >= self.low, data[self.field] < self.high)]
+
 
 class BinFunction:
     """
@@ -223,9 +224,10 @@ class BinFunction:
                           function will be checked for an `n_bins` attribute; if it does not exist
                           an error will be raised.
     @param returns_bools  True if the function will return an array of bools corresponding to a
-                          mask to the bin number in question; false otherwise.  (default: False)
+                          mask to the bin number in question; false otherwise.  [default: False]
     @returns              A list of SingleFunctionBin objects determined by the input criteria.
     """
+
     def __init__(self, function, n_bins=None, returns_bools=False):
         self.function = function
 
@@ -238,8 +240,10 @@ class BinFunction:
         else:
             self.n_bins = n_bins
         self.returns_bools = returns_bools
+
     def __call__(self):
         return [SingleFunctionBin(self.function, i, self.returns_bools) for i in range(self.n_bins)]
+
 
 class SingleFunctionBin(SingleBin):
     """
@@ -251,11 +255,12 @@ class SingleFunctionBin(SingleBin):
 
     @param function       The function that returns the bin information.
     @param n              Which bin this SingleFunctionBin considers.
-    @param returns_bools  True if the function returns bools, False if it returns bin numbers
-                          (default: False).
-    @param short_name     A string denoting this bin in filenames (default: str(n)).
-    @param long_name      A string denoting this bin in program outputs/plots (default: short_name).
+    @param returns_bools  True if the function returns bools, False if it returns bin numbers.
+                          [default: False]
+    @param short_name     A string denoting this bin in filenames. [default: str(n)]
+    @param long_name      A string denoting this bin in program outputs/plots. [default: short_name]
     """
+
     def __init__(self, function, n, returns_bools=False, short_name=None, long_name=None):
         if ((short_name and not isinstance(short_name, str)) or
             (long_name and not isinstance(long_name, str))):
@@ -268,12 +273,12 @@ class SingleFunctionBin(SingleBin):
             self.long_name = long_name
         else:
             self.long_name = self.short_name
-        self.function=function
-        self.n=n
+        self.function = function
+        self.n = n
         if returns_bools:
-            self.__call__=self._call_bool
+            self.__call__ = self._call_bool
         else:
-            self.__call__=self._call_int
+            self.__call__ = self._call_int
 
     def _call_int(self, data):
         """
@@ -284,7 +289,7 @@ class SingleFunctionBin(SingleBin):
         @returns      A NumPy array corresponding to the input data, restricted to the bin
                       described by this object.
         """
-        return data[self.function(data)==self.n]
+        return data[self.function(data) == self.n]
 
     def _call_bool(self, data):
         """
@@ -296,6 +301,7 @@ class SingleFunctionBin(SingleBin):
                       described by this object.
         """
         return data[self.function(data, self.n)]
+
 
 def ExpandBinList(bin_list):
     """

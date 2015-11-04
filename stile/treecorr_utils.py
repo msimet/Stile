@@ -29,8 +29,8 @@ def Parser():
                    help="Last row of the file(s) to be considered",
                    dest='last_row')
     p.add_argument('--x_units',
-                   help="X-column units (radians, hours, degrees, arcmin, arcsec)  -- only "+
-                        "allowed by certain DataHandlers",
+                   help="X-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
+                        "by certain DataHandlers",
                    dest='x_units')
     p.add_argument('--y_units',
                    help="Y-column units (radians, hours, degrees, arcmin, arcsec) -- only allowed "+
@@ -45,10 +45,10 @@ def Parser():
                         "allowed by certain DataHandlers",
                    dest='dec_units')
     p.add_argument('--flip_g1',
-                   help="Flip the sign of g1 (default: False)",
+                   help="Flip the sign of g1 [default: False]",
                    dest='flip_g1', default=False)
     p.add_argument('--flip_g2',
-                   help="Flip the sign of g2 (default: False)",
+                   help="Flip the sign of g2 [default: False]",
                    dest='flip_g2', default=False)
     p.add_argument('--min_sep',
                    help="Minimum separation for the TreeCorr correlation functions",
@@ -79,7 +79,7 @@ def Parser():
                    dest='num_threads')
     p.add_argument('--split_method',
                    help="One of 'mean', 'median', or 'middle', directing TreeCorr how to split the "
-                        "tree into child nodes. (default: 'mean')",
+                        "tree into child nodes. [default: 'mean']",
                    dest='split_method')
     return p
 
@@ -103,7 +103,7 @@ def ReadTreeCorrResultsFile(file_name):
     with open(file_name) as f:
         fields = f.readline().split()
     fields = fields[1:]
-    fields = [field for field in fields if field!='.']
+    fields = [field for field in fields if field != '.']
     return stile_utils.FormatArray(output, fields=fields)
 
 def PickTreeCorrKeys(input_dict):
