@@ -37,7 +37,6 @@ def ReadFITSImage(file_name, hdu=0):
     else:
         raise ImportError('No FITS handler found!')
 
-
 def ReadFITSTable(file_name, hdu=1, fields=None):
     """
     This function exists so you can call ``ReadFITSTable(file_name)`` rather than remembering that

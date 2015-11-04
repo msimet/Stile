@@ -1,5 +1,5 @@
 """
-data_handler.py: defines the classes that serve data to the various Stile systematics tests in the 
+data_handler.py: defines the classes that serve data to the various Stile systematics tests in the
 default drivers.
 """
 import os
@@ -9,8 +9,8 @@ import glob
 class DataHandler:
     """
     A class which contains information about the data set Stile is to be run on.  This is used for
-    the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).  
-    
+    the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).
+
     The class needs to be able to do two things:
       * List some data given a set of requirements (:func:`DataHandler.listData`).  The 
         requirements generally follow the form:

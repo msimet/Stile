@@ -72,7 +72,7 @@ def FormatArray(d, fields=None):
                 dtype = ','.join([dtype_char]*len(new_d[0]))
         # Make a new array with each row turned into a tuple and the correct dtype
         d = numpy.array([tuple(nd) for nd in new_d], dtype=dtype)
-        if len(d_shape)>1:
+        if len(d_shape) > 1:
             # If this was a more-than-2d array, reshape it back to that original form, minus the
             # dimension we turned into a record (which will no longer appear in the shape).
             d = d.reshape(d_shape[:-1])

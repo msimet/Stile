@@ -42,10 +42,10 @@ def Parser():
                         "allowed by certain DataHandlers",
                    dest='dec_units')
     p.add_argument('--flip_g1',
-                   help="Flip the sign of g1 (default: False)",
+                   help="Flip the sign of g1 [default: False]",
                    dest='flip_g1', default=False)
     p.add_argument('--flip_g2',
-                   help="Flip the sign of g2 (default: False)",
+                   help="Flip the sign of g2 [default: False]",
                    dest='flip_g2', default=False)
     p.add_argument('--min_sep',
                    help="Minimum separation for the TreeCorr correlation functions",
@@ -76,7 +76,7 @@ def Parser():
                    dest='num_threads')
     p.add_argument('--split_method',
                    help="One of 'mean', 'median', or 'middle', directing TreeCorr how to split the "
-                        "tree into child nodes. (default: 'mean')",
+                        "tree into child nodes. [default: 'mean']",
                    dest='split_method')
     return p
 

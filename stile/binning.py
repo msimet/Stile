@@ -95,7 +95,7 @@ class BinStep:
             raise ValueError('n_bins must be positive. Given argument: %i'%n_bins)
         if n_bins and not isinstance(n_bins, int):
             if int(n_bins) == n_bins:
-                n_bins == int(n_bins)
+                n_bins = int(n_bins)
             else:
                 n_bins = int(numpy.ceil(n_bins))
         if use_log:
