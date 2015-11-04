@@ -12,11 +12,14 @@ except ImportError:
     sys.path.append('..')
     import stile
 
+
 class temp_data_handler():
     def __init__(self):
         self.temp_dir = None
-    def getOutputPath(self,p):
+
+    def getOutputPath(self, p):
         return p
+
 
 class TestCorrelationFunctions(unittest.TestCase):
     def setUp(self):
@@ -42,8 +45,8 @@ class TestCorrelationFunctions(unittest.TestCase):
                     (0.68766, 0.68766, 0.0, 0.0, 0.0, 0.0, 0.0),
                     (0.79877, 0.79877, 0.0, 0.0, 0.0, 0.0, 0.0),
                     (0.92784, 0.92784, 0.0, 0.0, 0.0, 0.0, 0.0)],
-                    dtype=[("R_nom",float),("<R>",float),("<gamT>",float),("<gamX>",float),
-                           ("sigma",float),("weight",float),("npairs",float)])
+                    dtype=[("R_nom", float), ("<R>", float), ("<gamT>", float), ("<gamX>", float),
+                           ("sigma", float), ("weight", float), ("npairs", float)])
 
     def test_getCF(self):
         """Test getCF() directly, without first processing by child classes."""
@@ -58,26 +61,25 @@ class TestCorrelationFunctions(unittest.TestCase):
         lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),
                                         dec=numpy.array([lens_data['dec']]),
                                         ra_units='degrees', dec_units='degrees')
-        source_catalog = treecorr.Catalog(ra=source_data['ra'],dec=source_data['dec'],
-                                          g1=source_data['g1'],g2=source_data['g2'],
+        source_catalog = treecorr.Catalog(ra=source_data['ra'], dec=source_data['dec'],
+                                          g1=source_data['g1'], g2=source_data['g2'],
                                           ra_units='degrees', dec_units='degrees')
-        results = cf.getCF('ng',lens_catalog,source_catalog,**stile_args)
-        numpy.testing.assert_array_equal(*helper.FormatSame(results,self.expected_result))
-        results2 = cf.getCF('ng',lens_data,source_data,config=stile_args)
-        self.assertEqual(self.expected_result.dtype.names,results.dtype.names)
+        results = cf.getCF('ng', lens_catalog, source_catalog, **stile_args)
+        numpy.testing.assert_array_equal(*helper.FormatSame(results, self.expected_result))
+        results2 = cf.getCF('ng', lens_data, source_data, config=stile_args)
+        self.assertEqual(self.expected_result.dtype.names, results.dtype.names)
         # Missing necessary data file
-        numpy.testing.assert_equal(results,results2)
+        numpy.testing.assert_equal(results, results2)
         self.assertRaises(TypeError,
-                          cf.getCF,{},'ng',
+                          cf.getCF, {}, 'ng',
                           file_name='../examples/example_lens_catalog.dat')
         # Nonsensical correlation type
-        self.assertRaises(ValueError,cf.getCF,'hello', lens_data, source_data, config=stile_args)
+        self.assertRaises(ValueError, cf.getCF, 'hello', lens_data, source_data, config=stile_args)
 
         # Then, test a test that uses .getCF().
         realshear = stile.GalaxyShearSysTest()
-        results3 = realshear(lens_data,source_data,config=stile_args)
-        numpy.testing.assert_equal(results,results3)
+        results3 = realshear(lens_data, source_data, config=stile_args)
+        numpy.testing.assert_equal(results, results3)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     unittest.main()
-
