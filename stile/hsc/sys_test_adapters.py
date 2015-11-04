@@ -1,4 +1,4 @@
-"""sys_test_adapters.py
+﻿"""sys_test_adapters.py
 Contains classes to wrap Stile systematics tests with functions necessary to run the tests via the
 HSC/LSST pipeline.
 """
@@ -13,12 +13,12 @@ adapter_registry = lsst.pex.config.makeRegistry("Stile test outputs")
 # We need to mask the data to particular object types; these pick out the flags we need to do that.
 def MaskGalaxy(data, config):
     """
-    Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
+    Given ``data``, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to galaxies.
     """
-    # Will have to be more careful/clever about this when classification.extendedness is continuous.
-    # These arrays are generally contiguous in memory--so we can just index them like a NumPy
-    # recarray.
+    # Will have to be more careful/clever about this when classification.extendedness is
+    # continuous. These arrays are generally contiguous in memory--so we can just index them like a
+    # NumPy recarray.
     try:
         return data['classification.extendedness'] == 1
     except LsstCppException:
@@ -30,7 +30,7 @@ def MaskGalaxy(data, config):
 
 def MaskStar(data, config):
     """
-    Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
+    Given ``data``, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to stars.
     """
     try:
@@ -42,9 +42,9 @@ def MaskStar(data, config):
 
 def MaskBrightStar(data, config):
     """
-    Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
+    Given ``data``, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to bright stars according to a given S/N cutoff set by
-    `config.bright_star_sn_cutoff`.
+    ``config.bright_star_sn_cutoff``.
     """
     star_mask = MaskStar(data, config)
     key_psf = data.schema.find('flux.psf').key
@@ -56,7 +56,7 @@ def MaskBrightStar(data, config):
 
 def MaskPSFStar(data, config):
     """
-    Given `data`, an LSST source catalog, return a NumPy boolean array describing which rows
+    Given ``data``, an LSST source catalog, return a NumPy boolean array describing which rows
     correspond to the stars used to determine the PSF.
     """
     try:
@@ -67,7 +67,7 @@ def MaskPSFStar(data, config):
         except KeyError:
             key = data.schema.find('calib.psf.used.any').key
         key_shape = data.schema.find('shape.sdss.flags').key
-        return numpy.logical_and(numpy.array([src.get(key) == True for src in data]), 
+        return numpy.logical_and(numpy.array([src.get(key) == True for src in data]),
                                  numpy.array([src.get(key_shape) == False for src in data]))
 
 # Map the object type strings onto the above functions.
@@ -83,31 +83,33 @@ class BaseSysTestAdapter(object):
     This is an abstract class, implementing a couple of useful masking and column functions for
     reuse in child classes.
 
-    The basic function of a SysTestAdapter is to wrap a Stile SysTest object in a way that makes it
-    easy to use with the LSST drivers found in base_tasks.py.  It should always have: an
-    attribute `sys_test` that is a SysTest object; an attribute `name` that we can use to generate
-    output filenames; a function __call__() that will run the test; a function `getMasks()` that
-    returns a set of masks (one for each object type--such as "star" or "galaxy"--that is expected
-    for the test) if given a source catalog and config object; and a function getRequiredColumns()
-    that returns a list of tuples of required quantities (such as "ra" or "g1"), one tuple
-    corresponding to each mask returned from getMasks().
+    The basic function of a ``BaseSysTestAdapter`` is to wrap a Stile ``SysTest`` object in a way
+    that makes it easy to use with the LSST drivers found in base_tasks.py.  It should always have:
+    an attribute ``sys_test`` that is a SysTest object; an attribute ``name`` that we can use to
+    generate output filenames; a function ``__call__()`` that will run the test; a function
+    ``getMasks()`` that returns a set of masks (one for each object type--such as "star" or
+    "galaxy"--that is expected for the test) if given a source catalog and config object; and a
+    function ``getRequiredColumns()`` that returns a list of tuples of required quantities (such as
+    "ra" or "g1"), one tuple corresponding to each mask returned from ``getMasks()``.
 
     (More complete lists of the exact expected names for object types and required columns can be
-    found in the documentation for the class `Stile.sys_tests.SysTest`.)
+    found in the documentation for the class ``Stile.sys_tests.SysTest``.)
 
-    BaseSysTestAdapter makes some of these functions easier.  In particular, it defines:
-     - a function setupMasks() that can take a list of strings corresponding to object types and
-       generate an attribute, self.mask_funcs, that describes the mask functions which getMasks()
-       can then apply to the data to generate masks. Called with no arguments, it will attempt to
-       read `self.sys_test.objects_list` for the list of objects (and will raise an error if that
-       does not exist).
-     - a function getMasks() that will apply the masks in self.mask_funcs to the data.  It also
-       requires a corresponding self.objects_list with the same length as self.mask_funcs,
-       containing a list of the object types that are in self.mask_funcs (this is used to 
-       distinguish stars, where we want raw shapes, from galaxies, where we want PSF-corrected
-       shapes).
-     - a function getRequiredColumns() that will return the list of required columns from
-       self.sys_test.required_quantities if it exists, and raise an error otherwise.
+    ``BaseSysTestAdapter`` makes some of these functions easier.  In particular, it defines:
+
+     - a function ``setupMasks()`` that can take a list of strings corresponding to object types and
+       generate an attribute, ``self.mask_funcs``, that describes the mask functions which
+       ``getMasks()`` can then apply to the data to generate masks. Called with no arguments, it
+       will attempt to read ``self.sys_test.objects_list`` for the list of objects (and will raise
+       an error if that does not exist).
+     - a function ``getMasks()`` that will apply the masks in ``self.mask_funcs`` to the data.  It
+       also requires a corresponding ``self.objects_list`` with the same length as
+       ``self.mask_funcs``, containing a list of the object types that are in ``self.mask_funcs``
+       (this is used to distinguish stars, where we want raw shapes, from galaxies, where we want
+       PSF-corrected shapes).
+     - a function ``getRequiredColumns()`` that will return the list of required columns from
+       ``self.sys_test.required_quantities`` if it exists, and raise an error otherwise.
+
     Of course, any of these can be overridden if desired.
     """
     # As long as we're not actually doing anything with the config object, we can just use the
@@ -118,8 +120,8 @@ class BaseSysTestAdapter(object):
 
     def setupMasks(self, objects_list=None):
         """
-        Generate a list of mask functions to match `objects_list`.  If no such list is given, will
-        attempt to read the objects_list from self.sys_test, and raise an error if that is not
+        Generate a list of mask functions to match ``objects_list``.  If no such list is given, will
+        attempt to read the objects_list from ``self.sys_test``, and raise an error if that is not
         found.
         """
         if objects_list == None:
@@ -136,14 +138,15 @@ class BaseSysTestAdapter(object):
 
     def getMasks(self, data, config):
         """
-        Given data, a source catalog from the LSST pipeline, return a list of masks.  Each element
-        of the list is a mask corresponding to a particular object type, such as "star" or "galaxy."
-        @param data  An LSST source catalog.
-        @returns     A list of NumPy arrays; each array is made up of Bools that can be broadcast
-                     to index the data, returning only the rows that meet the requirements of the
-                     mask.
+        Given ``data``, a source catalog from the LSST pipeline, return a list of masks.  Each
+        element of the list is a mask corresponding to a particular object type, such as "star" or
+        "galaxy."
+        :param data:  An LSST source catalog.
+        :returns:     A list of NumPy arrays; each array is made up of bools that can be broadcast
+                      to index the data, returning only the rows that meet the requirements of the
+                      mask.
         """
-        return [(obj, mask_func(data, config)) 
+        return [(obj, mask_func(data, config))
                 for obj, mask_func in zip(self.objects_list, self.mask_funcs)]
 
 
@@ -151,18 +154,18 @@ class BaseSysTestAdapter(object):
         """
         Return a list of tuples of the specific quantities needed for the test, with each tuple in
         the list matching the data from the corresponding element of the list returned by
-        getMasks().  For example, if the masks returned were a star mask and a galaxy mask, and we
-        wanted to know the shear signal around galaxies, this should return
+        :func:`getMasks()`.  For example, if the masks returned were a star mask and a galaxy mask,
+        and we wanted to know the shear signal around galaxies, this should return
         >>> [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
         since we need to know the positions of the stars and the positions, shears, and weights of
         the galaxies.
 
-        This particular implementation just returns the list of this form from self.sys_test, but
-        that choice can be overridden by child classes.
+        This particular implementation just returns the list of this form from ``self.sys_test``,
+        but that choice can be overridden by child classes.
 
-        @returns  A list of tuples, one per mask returned by the method getMasks().  The elements
-                  of the tuples are strings corresponding to known quantities from the LSST
-                  pipeline.
+        :returns:  A list of tuples, one per mask returned by the method :func:`getMasks()`.  The
+                   elements of the tuples are strings corresponding to known quantities from the
+                   LSST pipeline.
         """
         return self.sys_test.required_quantities
 
@@ -178,12 +181,12 @@ class BaseSysTestAdapter(object):
 class ShapeSysTestAdapter(BaseSysTestAdapter):
     shape_fields = ['g1', 'g2', 'sigma', 'g1_err', 'g2_err', 'sigma_err',
                     'psf_g1', 'psf_g2', 'psf_sigma', 'psf_g1_err', 'psf_g2_err', 'psf_sigma_err']
-                    
+
     def getRequiredColumns(self):
         reqs = self.sys_test.required_quantities
         return_reqs = []
         for req in reqs:
-            return_reqs.append([r+'_'+self.shape_type if r in self.shape_fields else r 
+            return_reqs.append([r+'_'+self.shape_type if r in self.shape_fields else r
                                 for r in req])
         return return_reqs
 
@@ -204,8 +207,8 @@ class ShapeSysTestAdapter(BaseSysTestAdapter):
 
 class GalaxyShearAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the GalaxyShearSysTest.  See the documentation for that class or
-    BaseSysTestAdapter for more information.
+    Adapter for the :class:`GalaxyShearSysTest`.  See the documentation for that class or
+    :class:`BaseSysTestAdapter` for more information.
     """
     def __init__(self, config):
         self.shape_type = 'sky'
@@ -224,8 +227,8 @@ class GalaxyShearAdapter(ShapeSysTestAdapter):
 
 class BrightStarShearAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the BrightStarShearSysTest.  See the documentation for that class or
-    BaseSysTestAdapter for more information.
+    Adapter for the :class:`BrightStarShearSysTest`.  See the documentation for that class or
+    :class:`BaseSysTestAdapter` for more information.
     """
     def __init__(self, config):
         self.shape_type = 'sky'
@@ -244,8 +247,8 @@ class BrightStarShearAdapter(ShapeSysTestAdapter):
 
 class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the StarXGalaxyShearSysTest.  See the documentation for that class or
-    BaseSysTestAdapter for more information.
+    Adapter for the :class:`StarXGalaxyShearSysTest`.  See the documentation for that class or
+    :class:`BaseSysTestAdapter` for more information.
     """
     def __init__(self, config):
         self.shape_type = 'sky'
@@ -264,8 +267,8 @@ class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
 
 class StarXStarShearAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the StarXStarShearSysTest.  See the documentation for that class or
-    BaseSysTestAdapter for more information.
+    Adapter for the :class:`StarXStarShearSysTest`.  See the documentation for that class or
+    :class:`BaseSysTestAdapter` for more information.
     """
     def __init__(self, config):
         self.shape_type = 'sky'
@@ -284,8 +287,8 @@ class StarXStarShearAdapter(ShapeSysTestAdapter):
 
 class StarXStarSizeResidualAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the StarXStarSizeResidualSysTest.  See the documentation for that class or
-    BaseSysTestAdapter for more information.
+    Adapter for the :class:`StarXStarSizeResidualSysTest`.  See the documentation for that class or
+    :class:`BaseSysTestAdapter` for more information.
     """
     def __init__(self, config):
         self.shape_type = 'sky'
@@ -297,8 +300,8 @@ class StarXStarSizeResidualAdapter(ShapeSysTestAdapter):
 
 class Rho1Adapter(ShapeSysTestAdapter):
     """
-    Adapter for the StarPSFResidXStarPSFResidShearSysTest.  See the documentation for that class or
-    BaseSysTestAdapter for more information.
+    Adapter for the :class:`StarPSFResidXStarPSFResidShearSysTest`.  See the documentation for that
+    class or :class:`BaseSysTestAdapter` for more information.
     """
     def __init__(self, config):
         self.shape_type = 'sky'
@@ -317,8 +320,9 @@ class Rho1Adapter(ShapeSysTestAdapter):
 
 class StatsPSFFluxAdapter(ShapeSysTestAdapter):
     """
-    Adapter for the StatSysTest.  See the documentation for that class or BaseSysTestAdapter for
-    more information.  In this case, we specifically request 'flux.psf' and object_type 'galaxy'.
+    Adapter for the :class:`StatSysTest`.  See the documentation for that class or
+    :class:`BaseSysTestAdapter` for more information.  In this case, we specifically request
+    'flux.psf' and object_type 'galaxy'.
 
     In the future, we plan to have this be more configurable; for now, this works as a test.
     """
@@ -377,7 +381,7 @@ class WhiskerPlotPSFAdapter(ShapeSysTestAdapter):
                               xlim=task_config.whiskerplot_xlim,
                               ylim=task_config.whiskerplot_ylim)
 
-                              
+
 class WhiskerPlotResidualAdapter(ShapeSysTestAdapter):
     def __init__(self, config):
         self.shape_type = 'chip'
@@ -534,5 +538,5 @@ adapter_registry.register("ScatterPlotStarVsPSFSigma", ScatterPlotStarVsPSFSigma
 adapter_registry.register("ScatterPlotResidualVsPSFG1", ScatterPlotResidualVsPSFG1Adapter)
 adapter_registry.register("ScatterPlotResidualVsPSFG2", ScatterPlotResidualVsPSFG2Adapter)
 adapter_registry.register("ScatterPlotResidualVsPSFSigma", ScatterPlotResidualVsPSFSigmaAdapter)
-adapter_registry.register("ScatterPlotResidualSigmaVsPSFMag", 
+adapter_registry.register("ScatterPlotResidualSigmaVsPSFMag",
                           ScatterPlotResidualSigmaVsPSFMagAdapter)
