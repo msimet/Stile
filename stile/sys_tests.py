@@ -1543,7 +1543,8 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
     
     def __call__(self, array, x_field=None, y_field=None, yerr_field=None, w_field=None, 
                  method=None, binning=None, xlabel=None, ylabel=None, zlabel=None, color = "",
-                 lim=None, equal_axis=False, linear_regression=False, reference_line = None):
+                 lim=None, equal_axis=False, linear_regression=False, reference_line = None,
+                 area=None, area_units=None):
         """
         Draw a binned scatter plot and return a `matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which are
@@ -1566,7 +1567,10 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                                Can be a string ('mean', 'median', 'rms' or 'count'), or a callable
                                function which operates on the given array and returns either the
                                desired value for the (already-binned) data, or a tuple of the value
-                               and its error.  [default: 'mean']
+                               and its error.  If 'count' is passed, the user can also pass the
+                               kwarg 'area' to instead return a number density, and optionally also
+                               a kwarg 'area_unit' for use in axis and column labels.
+                               [default: 'mean']
         @param binning         The way to bin the values based on `array[x_field]`.  If not given,
                                ten equally-sized bins will be used; if given, should be a number 
                                indicating the number of requested equally-sized bins (will be
@@ -1603,27 +1607,31 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
             if self.x_field:
                 x_field = self.x_field
             else:
-                raise ValueError('Must pass x_field kwarg if not defined when initializing object')
+                raise RuntimeError('Must pass x_field kwarg if not defined when initializing object')
         if not y_field:
             if self.y_field:
                 y_field = self.y_field
             elif not hasattr(method, '__call__') and not method=='count':
-                raise ValueError('Must pass y_field kwarg if not defined when initializing object')
+                raise RuntimeError('Must pass y_field kwarg if not defined when initializing object')
         if not yerr_field:
             yerr_field = self.yerr_field
         if not w_field:
             w_field = self.w_field
         if w_field and yerr_field:
             raise RuntimeError("Cannot pass both a yerr_field and a w_field")
+        if area is not None and method is not 'count':
+            raise RuntimeError('Can only pass keyword argument area if method is "count"')
+        if area_units is not None and area is None:
+            raise RuntimeError('Can only pass keyword argument area_units if also passing area')
         nans = numpy.isnan(array[x_field])
-	if y_field:
-	    nans = nans | numpy.isnan(array[y_field])
+        if y_field:
+            nans = nans | numpy.isnan(array[y_field])
         if w_field:
             nans = nans | numpy.isnan(array[w_field])
         if yerr_field:
             nans = nans | numpy.isnan(array[yerr_field])
         print "Skipping", numpy.sum(nans), "nans out of", len(array)
-	array = array[numpy.invert(nans)]
+        array = array[numpy.invert(nans)]
         if not binning:
             binning = self.binning
         if not isinstance(binning, 
@@ -1637,7 +1645,7 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                 raise RuntimeError("Cannot understand binning argument: %s. Must be a "
                                    "stile.BinStep, stile.BinList, or stile.BinFunction, or "
                                    "a number"%str(binning))
-	
+        
         x_vals = []
         y_vals = []
         yerr_vals = []
@@ -1684,11 +1692,13 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                 yerr_vals.append(
                     1.253*numpy.std(masked_array[y_field])/
                     numpy.sqrt(len(masked_array)))
-                    
             elif method=='count':
                 # I think there is a better method of weighted counting we could be using?
                 y_vals.append(numpy.sum(weights))
                 yerr_vals.append(numpy.sqrt(numpy.sum(weights)))
+                if area is not None:
+                    y_vals /= area
+                    yerr_vals /= area
             elif hasattr(method, '__call__'):
                 val = method(masked_array)
                 if hasattr(val, 'len'):
@@ -1702,8 +1712,14 @@ class BinnedScatterPlotSysTest(ScatterPlotSysTest):
                     y_vals.append(val)
         if hasattr(method, '__call__'):
             y_name = "f(data)"
-	elif method=='count':
-	    y_name = 'number of objects'
+        elif method=='count':
+            if area:
+                if area_units:
+                    y_name = "number density [1/%s]"%area_units
+                else:
+                    y_name = "number density"
+            else:
+                y_name = 'number of objects'
         else:
             y_name = method + " of " + y_field
         if isinstance(binning, stile.binning.BinFunction):
