@@ -569,7 +569,39 @@ class CountPerMagnitudeAdapter(BaseSysTestAdapter):
         self.name = 'count_per_mag'
         self.setupMasks(['galaxy'])
         
-    
+class RMSESkyAdapter(ShapeSysTestAdapter):
+    def __init__(self, config):
+        self.shape_type = 'sky'
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', y_field='g', w_field='w', method='rms')
+        self.name = 'rms_e_sky'
+        self.setupMasks(['galaxy'])
+
+    def __call__(self, task_config, *data, **kwargs):
+        new_data = []
+        for d in data:
+            if d is None:
+                new_data.append(d)
+            else:
+                # We'll just make a new array using numpy.rec.fromarrays that includes |g|.
+                # First collect everything else, with a placeholder [] for |g|
+                list_of_arrays = [d[field] if field is not 'g' else [] for field in self.sys_test.required_quantities]
+                shape_col_1 = 'g1_'+self.shape_type
+                shape_col_2 = 'g2_'+self.shape_type
+                # Then replace that empty list with |g|
+                list_of_arrays[self.sys_test.required_quantities.index('g')] = (
+                    numpy.sqrt(d[shape_col_1]**2+d[shape_col_2]**2))
+                new_data.append(numpy.rec.fromarrays(list_of_arrays, self.sys_test.required_quantities))
+        return self.sys_test(*new_data, **kwargs)
+
+class RMSEChipAdapter(RMSESkyAdapter):
+    # We can use the same __call__ as RMSESKY, we just need to switch self.shape_type to 'chip'
+    def __init__(self, config):
+        self.shape_type = 'chip'
+        self.config = config
+        self.sys_test = sys_tests.BinnedScatterPlotSysTest(x_field='mag', y_field='g', w_field='w', method='rms')
+        self.name = 'rms_e_sky'
+        self.setupMasks(['galaxy'])    
         
 adapter_registry.register("StatsPSFFlux", StatsPSFFluxAdapter)
 adapter_registry.register("GalaxyShear", GalaxyShearAdapter)
@@ -594,3 +626,5 @@ adapter_registry.register("RMSE2Sky", RMSE2SkyAdapter)
 adapter_registry.register("RMSE1Chip", RMSE1ChipAdapter)
 adapter_registry.register("RMSE2Chip", RMSE2ChipAdapter)
 adapter_registry.register("CountPerMagnitude", CountPerMagnitudeAdapter)
+adapter_registry.register("RMSESky", RMSE1SkyAdapter)
+adapter_registry.register("RMSEChip", RMSE1ChipAdapter)

@@ -74,7 +74,7 @@ class CCDSingleEpochStileConfig(lsst.pex.config.Config):
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
                              "ScatterPlotResidualSigmaVsPSFMag",
-                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
+                             "RMSESky", "RMSEChip", "CountPerMagnitude"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
                         keytype=str, itemtype=str,
@@ -744,7 +744,7 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
                              "ScatterPlotResidualSigmaVsPSFMag",
-                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
+                             "RMSESky", "RMSEChip", "CountPerMagnitude"
                              ])
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
                         keytype=str, itemtype=str,
@@ -1059,7 +1059,7 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
                              "ScatterPlotResidualSigmaVsPSFMag",
-                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
+                             "RMSESky", "RMSEChip", "CountPerMagnitude"
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control TreeCorr",
@@ -1156,7 +1156,7 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
                              "ScatterPlotStarVsPSFSigma", "ScatterPlotResidualVsPSFG1",
                              "ScatterPlotResidualVsPSFG2", "ScatterPlotResidualVsPSFSigma",
                              "ScatterPlotResidualSigmaVsPSFMag",
-                             "RMSE1Sky", "RMSE2Sky", "RMSE1Chip", "RMSE2Chip", "CountPerMagnitude"
+                             "RMSESky", "RMSEChip", "CountPerMagnitude"
                              ])
     do_hsm = lsst.pex.config.Field(dtype=bool, default=True, doc="Use HSM shapes for galaxies?")
     treecorr_kwargs = lsst.pex.config.DictField(doc="extra kwargs to control treecorr",
