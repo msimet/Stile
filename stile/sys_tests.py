@@ -1574,7 +1574,7 @@ class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualSigmaVsPSFMagSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_sigma_vs_psf_magnitude'
     long_name = 'Make a scatter plot of residual sigma vs PSF magnitude'
     objects_list = ['star PSF']
