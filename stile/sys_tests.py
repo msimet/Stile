@@ -608,7 +608,7 @@ class StarXStarShearSysTest(BaseCorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
+class StarXStarSizeResidualSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto correlation of star-PSF size residuals.
     """
@@ -631,7 +631,7 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
         return self.getCF('kk', config=config, *data_list, **new_kwargs)
 
 
-class Rho1SysTest(CorrelationFunctionSysTest):
+class Rho1SysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
     """
@@ -1560,7 +1560,7 @@ class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualSigmaVsPSFMagSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_sigma_vs_psf_magnitude'
     long_name = 'Make a scatter plot of residual sigma vs PSF magnitude'
     objects_list = ['star PSF']
