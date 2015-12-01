@@ -4,8 +4,15 @@ Contains the class definitions of the Stile systematics tests.
 import numpy
 import stile
 import stile_utils
-import treecorr
-from treecorr.corr2 import corr2_valid_params
+try:
+    import treecorr
+    from treecorr.corr2 import corr2_valid_params
+except ImportError:
+    import warnings
+    warnings.warn("treecorr package cannot be imported. You may "+
+                  "wish to install it if you would like to use the correlation functions within "+
+                  "Stile.")
+
 try:
     import matplotlib
     # We should decide which backend to use (this line allows running matplotlib even on sessions
