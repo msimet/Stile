@@ -144,6 +144,17 @@ def CorrelationFunctionSysTest(type=None):
           slightly different call signature than the other methods (with the correlation function
           type given as the first argument) and that it lacks many of the convenience variables the
           other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+    
+    Shear-shear correlation functions are usually xi_+ and xi_-.  Xi_+ is, nominally, g1 times g2*.  Specifically:
+    xi_+ = Re(g1)*Re(g2)+Im(g1)*Im(g2)
+    xi_+,im = Im(g1)*Re(g2) - Re(g1)*Im(g2)
+    xi_+,im should be consistent with 0 to within noise.
+    
+    Xi_- on the other hand is g1 times g2.
+    xi_- = Re(g1)*Re(g2)-Im(g1)*Im(g2)
+    xi_-,im = Im(g1)*Re(g2) + Re(g1)*Im(g2)
+    Similarly, xi_-,im should be 0.
+    
     """
     if type is None:
         return BaseCorrelationFunctionSysTest()
