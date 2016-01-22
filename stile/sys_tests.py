@@ -7,7 +7,9 @@ import stile_utils
 try:
     import treecorr
     from treecorr.corr2 import corr2_valid_params
+    has_treecorr = True
 except ImportError:
+    has_treecorr = False
     import warnings
     warnings.warn("treecorr package cannot be imported. You may "+
                   "wish to install it if you would like to use the correlation functions within "+
@@ -103,7 +105,7 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-if treecorr.version < '3.1':
+if has_treecorr and treecorr.version < '3.1':
     treecorr_func_dict = {'gg': treecorr.G2Correlation,
                           'm2': treecorr.G2Correlation,
                           'ng': treecorr.NGCorrelation,
@@ -113,7 +115,7 @@ if treecorr.version < '3.1':
                           'kk': treecorr.K2Correlation,
                           'nk': treecorr.NKCorrelation,
                           'kg': treecorr.KGCorrelation}
-else:
+elif has_treecorr:
     treecorr_func_dict = {'gg': treecorr.GGCorrelation,
                           'm2': treecorr.GGCorrelation,
                           'ng': treecorr.NGCorrelation,
@@ -133,6 +135,7 @@ def CorrelationFunctionSysTest(type=None):
         - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
           type objects
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
+        - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
         - StarXStarShear: autocorrelation of the shapes of 'star' type objects
         - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to PSF sizes
         - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
@@ -1089,6 +1092,7 @@ def ScatterPlotSysTest(type=None):
         - ResidualVsPSFG1: (star - PSF) g1 vs PSF g1
         - ResidualVsPSFG2: (star - PSF) g1 vs PSF g2
         - ResidualVsPSFSigma: (star - PSF) g1 vs PSF sigma
+        - ResidualSigmaVsPSFMag: (star - PSF)/PSF sigma vs PSF magnitude
         - None: an empty BaseScatterPlotSysTest class instance, which can be used for multiple types
           of scatter plots.  See the documentation for BaseScatterPlotSysTest (especially the method
           scatterPlot) for more details.  Note that this type has a different call signature than
