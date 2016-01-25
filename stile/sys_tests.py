@@ -130,34 +130,51 @@ def CorrelationFunctionSysTest(type=None):
     """
     Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg 
     given.  Options are:
-        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
-          type objects
-        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
-          type objects
-        - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
+          type objects (point-shear)
+        - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects (point-point)
         - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
-        - StarXStarShear: autocorrelation of the shapes of 'star' type objects
-        - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to PSF sizes
-        - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
-        - StarDensityCorrelation: position autocorrelation of 'star' type objects
-        - Rho1: rho1 statistics (autocorrelation of residual star shapes)
+          (shear-shear)
+        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
+        - (point-shear)
+        - StarXStarShear: autocorrelation of the shapes of 'star' type objects (shear-shear)
+        - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to
+          PSF sizes (scalar-scalar)
+        - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects (point-point)
+        - StarDensityCorrelation: position autocorrelation of 'star' type objects (point-point)
+        - Rho1: rho1 statistics (autocorrelation of residual star shapes, shear-shear)
         - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
           multiple types of correlation functions.  See the documentation for 
           BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
           slightly different call signature than the other methods (with the correlation function
           type given as the first argument) and that it lacks many of the convenience variables the
           other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+
+    These produce different estimators depending on the type.  Point-point estimates by default use
+    the Landy-Szalay estimator:
+        xi = (DD-2DR+RR)/RR
+    and must include a random catalog.
     
-    Shear-shear correlation functions are usually xi_+ and xi_-.  Xi_+ is, nominally, g1 times g2*.  Specifically:
-    xi_+ = Re(g1)*Re(g2)+Im(g1)*Im(g2)
-    xi_+,im = Im(g1)*Re(g2) - Re(g1)*Im(g2)
-    xi_+,im should be consistent with 0 to within noise.
+    All shears in the following descriptions are the complex form in the frame aligned with the
+    vector between the two points, that is, g = gamma_t + i*gamma_x. 
     
-    Xi_- on the other hand is g1 times g2.
-    xi_- = Re(g1)*Re(g2)-Im(g1)*Im(g2)
-    xi_-,im = Im(g1)*Re(g2) + Re(g1)*Im(g2)
-    Similarly, xi_-,im should be 0.
+    Point-shear estimates are equivalent to average tangential shear, returned as real <gamma_t>
+    and imaginary <gamma_x>.  If random catalogs are given, they are used as random lenses, and
+    data*shear-random*shear is returned instead.
     
+    Shear-shear correlation functions are xi_+ and xi_-.  Xi_+ is, nominally, g1 times g2*, and is
+    given as both the real and imaginary components.  xi_+,im should be consistent with 0 to within
+    noise. Xi_- on the other hand is g1 times g2 (not complex conjugate).  Similarly, xi_-,im should
+    be 0.  (Note that g1 and g2 here are two *complex* shears g1_t + i*g1_x and g1_t+i*g2_x from the
+    two catalogs, not the two components of a single shear in sky coordinates or chip frame.)
+    
+    Point-scalar (point-kappa) estimates are equivalent to <scalar>; scalar-shear estimates are
+    equivalent to <scalar*Re(shear)> with a corresponding imaginary case; scalar-scalar estimates
+    are <scalar1*scalar2>.  Random catalogs result in compensated estimators as in the point-shear
+    case.  
+    
+    Aperture mass statistics of various kinds are also available via the
+    BaseCorrelationFunctionSysTest class; as we do not implement those for any standard Stile tests,
+    interested users are directed to the TreeCorr documentation for further information.
     """
     if type is None:
         return BaseCorrelationFunctionSysTest()
