@@ -1522,7 +1522,7 @@ class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None):
-        return super(ScatterPlotStarVsPSFG1SysTest,
+        return super(BaseScatterPlotStarVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
                                     ylabel=r'$g^{\rm star}_1$', color=color, lim=lim,
@@ -1537,7 +1537,7 @@ class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None):
-        return super(ScatterPlotStarVsPSFG2SysTest,
+        return super(BaseScatterPlotStarVsPSFG2SysTest,
                      self).__call__(array, 'psf_g2', 'g2', 'g2_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_2$',
                                     ylabel=r'$g^{\rm star}_2$', color=color, lim=lim,
@@ -1552,7 +1552,7 @@ class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None):
-        return super(ScatterPlotStarVsPSFSigmaSysTest,
+        return super(BaseScatterPlotStarVsPSFSigmaSysTest,
                      self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err', residual=False,
                                     per_ccd_stat=per_ccd_stat,
                                     xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
@@ -1568,7 +1568,7 @@ class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None):
-        return super(ScatterPlotResidualVsPSFG1SysTest,
+        return super(BaseScatterPlotResidualVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=True,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
                                     ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
@@ -1583,7 +1583,7 @@ class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None):
-        return super(ScatterPlotResidualVsPSFG2SysTest,
+        return super(BaseScatterPlotResidualVsPSFG2SysTest,
                      self).__call__(array, 'psf_g2', 'g2', 'g2_err', residual=True,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_2$',
                                     ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
@@ -1598,7 +1598,7 @@ class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None):
-        return super(ScatterPlotResidualVsPSFSigmaSysTest,
+        return super(BaseScatterPlotResidualVsPSFSigmaSysTest,
                      self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err', residual=True,
                                     per_ccd_stat=per_ccd_stat,
                                     xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
@@ -1624,7 +1624,7 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
         use_array = numpy.lib.recfunctions.append_fields(use_array, 'sigma_residual_frac_err',
                                                          use_array['sigma_err']
                                                          /use_array['psf_sigma'])
-        return super(ScatterPlotResidualSigmaVsPSFMagSysTest,
+        return super(BaseScatterPlotResidualSigmaVsPSFMagSysTest,
                      self).__call__(use_array, 'mag_inst', 'sigma_residual_frac',
                                     'sigma_residual_frac_err', residual=False,
                                     per_ccd_stat=self.per_ccd_stat,
