@@ -12,8 +12,8 @@ Contents:
    :maxdepth: 2
 
    intro
-   systests
-   binning
+   systest_basics
+   binning_basics
    data
    codedoc
 

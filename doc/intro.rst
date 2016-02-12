@@ -1,3 +1,7 @@
+============
+Introduction
+============
+
 Stile is the Systematics Tests In LEnsing package.  It's designed to run systematics tests on lensing data; it's especially designed for tests that you run on the data itself, such as PSF-galaxy shape correlation functions, as opposed to tests you run against an external data set, although you can do that too.
 
 The tests we've coded up live in the :module:sys_tests module and we call them SysTests (for systematics tests, to distinguish from e.g. unit testing on the software).  They're all objects that you call to run a test; all have a plotting function as well (which doesn't do anything if there's nothing to plot), and possibly other helper functions. We've structured the code so that all the tests have the same kind of call signature: a dataset or datasets in a specific format described below, then any kwargs that control specific operation or plotting.  The tests are defined in rough categories such as correlation functions, whisker plots, etc, and you can create either a flexible generic one or a use-specific version that requires fewer inputs on each run.  For example, you could say:

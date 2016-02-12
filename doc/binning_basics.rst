@@ -1,0 +1,2 @@
+Using the binning module
+========================
