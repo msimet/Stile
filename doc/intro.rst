@@ -8,11 +8,11 @@ The tests we've coded up live in the :module:sys_tests module and we call them S
 
 >>> sys_test = stile.CorrelationFunctionSysTest()
 
-and then you have an object you could call with
+and then you have an object you could call with :
 
 >> corr_func = sys_test('gg', galaxy_data)
 
-to get a shear-shear correlation function of galaxies, or 
+to get a shear-shear correlation function of galaxies, or :
 
 >> corr_func = sys_test('ng', lens_data, galaxy_data)
 
@@ -20,7 +20,7 @@ to get tangential shear around the data in ``lens_data``.  Alternately, you coul
 
 >> sys_test = stile.CorrelationFunctionSysTest('galaxy shear')
 
-and then that object would *only* perform galaxy shear-shear correlations, but the call signature is simply
+and then that object would *only* perform galaxy shear-shear correlations, but the call signature is simply :
 
 >> corr_func = sys_test(galaxy_data)
 
