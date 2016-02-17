@@ -98,21 +98,4 @@ class TestCorrelationFunctions(unittest.TestCase):
     
 if __name__=='__main__':
     unittest.main()
->>>>>>> Test new generator functionality (#32a)
 
-    def test_generator(self):
-        """Make sure the CorrelationFunctionSysTest() generator returns the right objects"""
-        object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyDensity',  'StarXGalaxyShear',
-                       'StarXStarShear', 'GalaxyDensityCorrelation', 'StarDensityCorrelation']
-        for object_type in object_list:
-            object_1 = stile.CorrelationFunctionSysTest(object_type)
-            object_2 = eval('stile.sys_tests.'+object_type+'SysTest()')
-            self.assertEqual(type(object_1), type(object_2))
-
-        self.assertRaises(ValueError, stile.CorrelationFunctionSysTest, 'hello')
-        self.assertEqual(type(stile.sys_tests.BaseCorrelationFunctionSysTest()),
-                         type(stile.CorrelationFunctionSysTest()))
-
-
-if __name__ == '__main__':
-    unittest.main()
