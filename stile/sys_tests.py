@@ -454,6 +454,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
         names = results.dtype.names
         # Add the sep units to the column names of radial bins from TreeCorr outputs
         names = [n+' [%s]'%treecorr_kwargs['sep_units'] if 'R' in n else n for n in names]
+        results.dtype.names = names
         return results
 
     def compensateDefault(self, data, data2, random, random2, both=False):
