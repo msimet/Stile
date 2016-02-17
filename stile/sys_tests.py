@@ -130,12 +130,13 @@ def CorrelationFunctionSysTest(type=None):
     """
     Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg 
     given.  Options are:
+        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
+          type objects (point-shear correlation function)
+        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
           type objects (point-shear)
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects (point-point)
-        - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
+        - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects 
           (shear-shear)
-        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
-        - (point-shear)
         - StarXStarShear: autocorrelation of the shapes of 'star' type objects (shear-shear)
         - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to
           PSF sizes (scalar-scalar)
