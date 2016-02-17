@@ -45,7 +45,7 @@ class TestCorrelationFunctions(unittest.TestCase):
                     (0.68766, 0.68766, 0.0, 0.0, 0.0, 0.0, 0.0),
                     (0.79877, 0.79877, 0.0, 0.0, 0.0, 0.0, 0.0),
                     (0.92784, 0.92784, 0.0, 0.0, 0.0, 0.0, 0.0)],
-                    dtype=[("R_nom", float), ("<R>", float), ("<gamT>", float), ("<gamX>", float),
+                    dtype=[("R_nom [deg]", float), ("<R> [deg]", float), ("<gamT>", float), ("<gamX>", float),
                            ("sigma", float), ("weight", float), ("npairs", float)])
 
     def test_getCF(self):
