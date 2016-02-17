@@ -8,7 +8,7 @@ def main():
     dh = dummy.DummyDataHandler()
     bin_list = [stile.BinStep('ra',low=-1,high=1,step=1),
                 stile.BinStep('dec',low=-1,high=1,step=1)]
-    sys_test = stile.GalaxyShearSysTest()
+    sys_test = stile.CorrelationFunctionSysTest(type='GalaxyShear')
     
     stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees',
                   'min_sep': 0.05, 'max_sep': 1, 'sep_units': 'degrees', 'nbins': 20}
