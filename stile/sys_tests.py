@@ -4,8 +4,17 @@ Contains the class definitions of the Stile systematics tests.
 import numpy
 import stile
 import stile_utils
-import treecorr
-from treecorr.corr2 import corr2_valid_params
+try:
+    import treecorr
+    from treecorr.corr2 import corr2_valid_params
+    has_treecorr = True
+except ImportError:
+    has_treecorr = False
+    import warnings
+    warnings.warn("treecorr package cannot be imported. You may "+
+                  "wish to install it if you would like to use the correlation functions within "+
+                  "Stile.")
+
 try:
     import matplotlib
     # We should decide which backend to use (this line allows running matplotlib even on sessions
@@ -101,7 +110,7 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-if treecorr.version < '3.1':
+if has_treecorr and treecorr.version < '3.1':
     treecorr_func_dict = {'gg': treecorr.G2Correlation,
                           'm2': treecorr.G2Correlation,
                           'ng': treecorr.NGCorrelation,
@@ -111,7 +120,7 @@ if treecorr.version < '3.1':
                           'kk': treecorr.K2Correlation,
                           'nk': treecorr.NKCorrelation,
                           'kg': treecorr.KGCorrelation}
-else:
+elif has_treecorr:
     treecorr_func_dict = {'gg': treecorr.GGCorrelation,
                           'm2': treecorr.GGCorrelation,
                           'ng': treecorr.NGCorrelation,
@@ -122,12 +131,58 @@ else:
                           'nk': treecorr.NKCorrelation,
                           'kg': treecorr.KGCorrelation}
 
-class CorrelationFunctionSysTest(SysTest):
+def CorrelationFunctionSysTest(type=None):
+    """
+    Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg 
+    given.  Options are:
+        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
+          type objects
+        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
+          type objects
+        - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
+        - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
+        - StarXStarShear: autocorrelation of the shapes of 'star' type objects
+        - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to PSF sizes
+        - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
+        - StarDensityCorrelation: position autocorrelation of 'star' type objects
+        - Rho1: rho1 statistics (autocorrelation of residual star shapes)
+        - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
+          multiple types of correlation functions.  See the documentation for 
+          BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
+          slightly different call signature than the other methods (with the correlation function
+          type given as the first argument) and that it lacks many of the convenience variables the
+          other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+    """
+    if type is None:
+        return BaseCorrelationFunctionSysTest()
+    elif type=='GalaxyShear':
+        return GalaxyShearSysTest()
+    elif type=='BrightStarShear':
+        return BrightStarShearSysTest()
+    elif type=='StarXGalaxyDensity':
+        return StarXGalaxyDensitySysTest()
+    elif type=='StarXGalaxyShear':
+        return StarXGalaxyShearSysTest()
+    elif type=='StarXStarShear':
+        return StarXStarShearSysTest()
+    elif type=='StarXStarSize':
+        return StarXStarSizeSysTest()
+    elif type=='GalaxyDensityCorrelation':
+        return GalaxyDensityCorrelationSysTest()
+    elif type=='StarDensityCorrelation':
+        return StarDensityCorrelationSysTest()
+    elif type=='Rho1':
+        return Rho1SysTest()
+    else:
+        raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
+    
+                          
+class BaseCorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method ``getCF()`` which runs a TreeCorr correlation function on a given set of data.
-    Exact arguments to this method should be created by child classes of CorrelationFunctionSysTest;
-    see the docstring for :func:`CorrelationFunctionSysTest.getCF` for information on how to write
+    Exact arguments to this method should be created by child classes of BaseCorrelationFunctionSysTest;
+    see the docstring for :func:`BaseCorrelationFunctionSysTest.getCF` for information on how to write
     further tests using it.
     """
     short_name = 'corrfunc'
@@ -511,8 +566,11 @@ class CorrelationFunctionSysTest(SysTest):
         ax.set_xlabel(r)
         return fig
 
+    def __call__(self, *args, **kwargs):
+        return self.getCF(*args, **kwargs)
+        
 
-class GalaxyShearSysTest(CorrelationFunctionSysTest):
+class GalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of real galaxies.
     """
@@ -524,7 +582,7 @@ class GalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
-class BrightStarShearSysTest(CorrelationFunctionSysTest):
+class BrightStarShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of bright stars.
     """
@@ -536,7 +594,7 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
-class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
+class StarXGalaxyDensitySysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the number density of galaxies around stars.
     """
@@ -548,7 +606,7 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
-class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
+class StarXGalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the cross-correlation of galaxy and star shapes.
     """
@@ -560,7 +618,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarShearSysTest(CorrelationFunctionSysTest):
+class StarXStarShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of star shapes.
     """
@@ -572,7 +630,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
+class StarXStarSizeResidualSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto correlation of star-PSF size residuals.
     """
@@ -595,7 +653,7 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
         return self.getCF('kk', config=config, *data_list, **new_kwargs)
 
 
-class Rho1SysTest(CorrelationFunctionSysTest):
+class Rho1SysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
     """
@@ -629,7 +687,7 @@ class Rho1SysTest(CorrelationFunctionSysTest):
         return self.getCF('gg', new_data, new_data2, new_random, new_random2,
                           config=config, **kwargs)
 
-class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
+class GalaxyDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the galaxy position autocorrelations.
     """
@@ -641,7 +699,7 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
-class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
+class StarDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the star position autocorrelations.
     """
@@ -828,13 +886,37 @@ class StatSysTest(SysTest):
         # Return.
         return result
 
-class WhiskerPlotSysTest(SysTest):
+def WhiskerPlotSysTest(type=None):        
+    """
+    Initialize an instance of a BaseWhiskerPlotSysTest class, based on the 'type' kwarg given.
+    Options are:
+        - Star: whisker plot of shapes of PSF stars
+        - PSF: whisker plot of PSF shapes at the location of PSF stars
+        - Residual: whisker plot of (star shape-PSF shape)
+        - None: an empty BaseWhiskerPlotSysTest class instance, which can be used for multiple types
+          of whisker plots.  See the documentation for BaseWhiskerPlotSysTest (especially the method
+          whiskerPlot) for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the other
+          WhiskerPlots have, such as self.objects_list and self.required_quantities.
+    """
+    if type=='Star':
+        return WhiskerPlotStarSysTest()
+    elif type=='PSF':
+        return WhiskerPlotPSFSysTest()
+    elif type=='Residual':
+        return WhiskerPlotResidualSysTest()
+    elif type is None:
+        return BaseWhiskerPlotSysTest()
+    else:
+        raise ValueError('Unknown whisker plot type %s given to type kwarg'%type)
+        
+class BaseWhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     """
     A base class for Stile systematics tests that generate whisker plots. This implements the class
-    method :func:`WhiskerPlotSysTest.whiskerPlot`. Every child class of ``WhiskerPlotSysTest``
-    should use ``WhiskerPlotSysTest.whiskerPlot`` through ``__call__``. See the docstring for
-    :func:`WhiskerPlotSysTest.whiskerPlot` for information on how to write further tests using it.
+    method :func:`BaseWhiskerPlotSysTest.whiskerPlot`. Every child class of ``WhiskerPlotSysTest``
+    should use ``BaseWhiskerPlotSysTest.whiskerPlot`` through ``__call__``. See the docstring for
+    :func:`BaseWhiskerPlotSysTest.whiskerPlot` for information on how to write further tests using it.
     """
 
     def whiskerPlot(self, x, y, g1, g2, size=None, linewidth=0.01, scale=None,
@@ -925,12 +1007,13 @@ class WhiskerPlotSysTest(SysTest):
         if ylim is not None:
             ax.set_ylim(*ylim)
         return fig
-
+    def __call__(self, *args, **kwargs):
+        return self.whiskerPlot(*args, **kwargs)
     def getData(self):
         return self.data
 
 
-class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
+class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
     objects_list = ['star PSF']
@@ -950,7 +1033,7 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
 
-class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
+class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_psf'
     long_name = 'Make a Whisker plot of PSFs'
     objects_list = ['star PSF']
@@ -970,7 +1053,7 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
 
-class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
+class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
     long_name = 'Make a Whisker plot of residuals'
     objects_list = ['star PSF']
@@ -992,14 +1075,47 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 size_label=r'$\sigma$ [pixel]',
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
+def ScatterPlotSysTest(type=None):                                
+    """
+    Initialize an instance of a ``BaseScatterPlotSysTest`` class, based on the ``type`` kwarg given.
+    Options are:
+        - StarVsPSFG1: star vs PSF g1
+        - StarVsPSFG2: star vs PSF g2
+        - StarVsPSFSigma: star vs PSF sigma
+        - ResidualVsPSFG1: (star - PSF) g1 vs PSF g1
+        - ResidualVsPSFG2: (star - PSF) g1 vs PSF g2
+        - ResidualVsPSFSigma: (star - PSF) g1 vs PSF sigma
+        - ResidualSigmaVsPSFMag: (star - PSF)/PSF sigma vs PSF magnitude
+        - None: an empty BaseScatterPlotSysTest class instance, which can be used for multiple types
+          of scatter plots.  See the documentation for BaseScatterPlotSysTest (especially the method
+          scatterPlot) for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the other
+          ScatterPlots have, such as self.objects_list and self.required_quantities.
+    """
+    if type=='StarVsPSFG1':
+        return ScatterPlotStarVsPSFG1SysTest()
+    elif type=='StarVsPSFG2':
+        return ScatterPlotStarVsPSFG2SysTest()
+    elif type=='StarVsPSFSigma':
+        return ScatterPlotStarVsPSFSigmaSysTest()
+    elif type=='ResidualVsPSFG1':
+        return ScatterPlotResidualVsPSFG1SysTest()
+    elif type=='ResidualVsPSFG2':
+        return ScatterPlotResidualVsPSFG2SysTest()
+    elif type=='ResidualVsPSFSigma':
+        return ScatterPlotResidualVsPSFSigmaSysTest()
+    elif type is None:
+        return BaseScatterPlotSysTest()
+    else:
+        raise ValueError('Unknown scatter plot type %s given to type kwarg'%type)
 
-class ScatterPlotSysTest(SysTest):
+class BaseScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     """
     A base class for Stile systematics tests that generate scatter plots. This implements the class
-    method ``scatterPlot``. Every child class of ``ScatterPlotSysTest`` should use
-    ``ScatterPlotSysTest.scatterPlot`` through ``__call__``. See the docstring for
-    :func:`ScatterPlotSysTest.scatterPlot` for information on how to write further tests using it.
+    method ``scatterPlot``. Every child class of ``BaseScatterPlotSysTest`` should use
+    ``BaseScatterPlotSysTest.scatterPlot`` through ``__call__``. See the docstring for
+    :func:`BaseScatterPlotSysTest.scatterPlot` for information on how to write further tests using it.
     """
     def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual=False,
                  per_ccd_stat=None, xlabel=None, ylabel=None, zlabel=None, color="",
@@ -1376,7 +1492,7 @@ class ScatterPlotSysTest(SysTest):
             raise ValueError('stat should be mean or median.')
 
 
-class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
     long_name = 'Make a scatter plot of star g1 vs psf g1'
     objects_list = ['star PSF']
@@ -1391,7 +1507,7 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
                                     reference_line='one-to-one')
 
 
-class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
     long_name = 'Make a scatter plot of star g2 vs psf g2'
     objects_list = ['star PSF']
@@ -1406,7 +1522,7 @@ class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
                                     reference_line='one-to-one')
 
 
-class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_sigma'
     long_name = 'Make a scatter plot of star sigma vs psf sigma'
     objects_list = ['star PSF']
@@ -1422,7 +1538,7 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='one-to-one')
 
 
-class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g1'
     long_name = 'Make a scatter plot of residual g1 vs psf g1'
     objects_list = ['star PSF']
@@ -1437,7 +1553,7 @@ class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g2'
     long_name = 'Make a scatter plot of residual g2 vs psf g2'
     objects_list = ['star PSF']
@@ -1452,7 +1568,7 @@ class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_sigma'
     long_name = 'Make a scatter plot of residual sigma vs psf sigma'
     objects_list = ['star PSF']
@@ -1468,7 +1584,7 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualSigmaVsPSFMagSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_sigma_vs_psf_magnitude'
     long_name = 'Make a scatter plot of residual sigma vs PSF magnitude'
     objects_list = ['star PSF']
