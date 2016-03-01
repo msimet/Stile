@@ -591,6 +591,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
             ax.set_ylabel(pd.y_title)
             ax.legend()
         ax.set_xlabel(r)
+        plt.tight_layout()
         return fig
 
     def __call__(self, *args, **kwargs):
