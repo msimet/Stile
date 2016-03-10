@@ -8,17 +8,17 @@ import numpy
 
 class BinList:
     """
-    An object which, when called, returns bin definitions (a list of :class:`SingleBins`) following
+    An object which, when called, returns bin definitions (a list of :class:`SingleBin`\s) following
     the bin edge definitions given as the input ``bin_list``.  The bins are defined as an input
-    iterable, which is taken to contain the bin edges in order.
+    iterable, which is assumed to contain the bin edges in order.
 
-    :param field:     Data field to which the binning system should be applied.
+    :param field:     Data field to which the binning system should be applied, such as ``ra`` or ``z``.
     :param bin_list:  A list of bin endpoints such that
                       ``bin_list[0] <= (bin 0 data) < bin_list[1]``,
                       ``bin_list[1] <= (bin 1 data) < bin_list[2]`` if the ``bin_list`` is
                       monotonically increasing, or ``bin_list[0] > (bin 0 data) >= bin_list[1]``,
                       ``bin_list[1] > (bin 1 data) >= bin_list[2]`` if the ``bin_list`` is
-                      monotonically decreasing.
+                      monotonically decreasing.  Nonmonotonic `bin_list`\s will raise an error.
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
@@ -54,7 +54,7 @@ class BinList:
 
 class BinStep:
     """
-    An object which, when called, returns bin definitions (a list of :class:`SingleBin`s) following
+    An object which, when called, returns bin definitions (a list of :class:`SingleBin`\s) following
     the simple constant-step bins described by the input arguments. Can handle linear-space and log-
     space binning (default is linear). AT LEAST THREE of the arguments (``low``, ``high``, ``step``,
     ``n_bins``) must be passed; if all four are passed they will be checked for consistency.  If
@@ -69,8 +69,8 @@ class BinStep:
                       regardless of ``use_log`` [default: ``None``].
     :param step:      The width of each bin (in linear space if ``use_log=False``, in base-e log
                       space if ``use_log=True``) [default: ``None``].
-    :param n_bins:    The total number of bins requested; if float, will be converted to the next
-                      largest integer [default: ``None``].
+    :param n_bins:    The total number of bins requested; if float, will be converted to an
+                      integer with ``numpy.ceil()``.  [default: ``None``].
     :param use_log:   If ``True``, bin in log space; else bin in linear space. Even when
                       ``use_log=True``, all arguments except ``step`` should be given in linear
                       space, and the returned bin edges will also be in linear space.
@@ -158,11 +158,11 @@ class BinStep:
 class SingleBin:
     """
     A class that contains the information for one particular bin generated from one of the ``Bin*``
-    classes. The attributes can be accessed directly for :class:`DataHandler`s that read in the data
+    classes. The attributes can be accessed directly for :class:`DataHandler`\s that read in the data
     selectively. The class can also be called with a data array to bin it to the correct data
     range: ``SingleBin(array)`` will return only the data within the bounds of the particular
     instance of the class.  The endpoints are assumed to be ``[low,high)``, that is,
-    ``low <= data < high``, with defined relational operators.
+    ``low <= data < high``\, with defined relational operators.
 
     :param field:      The index of the field containing the data to be binned (must be a string).
     :param low:        The lower edge of the bin (inclusive).
@@ -203,13 +203,13 @@ class SingleBin:
 
 class BinFunction:
     """
-    An object which returns bin definitions (a list of :class:`SingleFunctionBin`s) following the
-    definitions given in initialization.  Note that unlike other ``SingleBin``s, the
-    ``SingleFunctionBin``s created by ``BinFunction`` do not have public ``field``, ``low``, or
+    An object which returns bin definitions (a list of :class:`SingleFunctionBin`\s) following the
+    definitions given in initialization.  Note that unlike other ``SingleBin``\s, the
+    ``SingleFunctionBin``\s created by ``BinFunction`` do not have public ``field``, ``low``, or
     ``high`` attributes, since the function is assumed to be too complex for such parameterization.
 
     :param function:       The function to be applied to the data (an entire array, not just a
-                           field).  The function should return an array of ``int``s corresponding to
+                           field).  The function should return an array of ``int`` s corresponding to
                            the bin numbers of the data rows (unless ``returns_bools`` is set, see
                            below). The function should take a data array as its only argument,
                            unless ``return_bools`` is set to True, in which case it should take a
@@ -245,7 +245,7 @@ class SingleFunctionBin(SingleBin):
     """
     A class that contains the information for one particular bin generated from a function. The
     class can be called with a data array to return only the data within the bounds of the
-    particular instance of the class.  Unlike :class:`SingleBin`s, there are no public ``field``,
+    particular instance of the class.  Unlike :class:`SingleBin`\s, there are no public ``field``,
     ``low``, or ``high`` attributes, as these are assumed to be insufficient to describe the
     behavior of the binning scheme.
 
@@ -306,8 +306,8 @@ def ExpandBinList(bin_list):
     intersection of each of those bins for the data set (for example, if they pass a magnitude bin
     scheme and a color bin scheme, we want to do magnitude bin 0 with color bin 0, then magnitude
     bin 0 with color bin 1, etc).  This function takes the ``Bin*`` objects, generates their lists
-    of :class:`SingleBin`s, and then nests them in a way that makes sure the final list of lists of
-    ``SingleBin``s contains every possible set of (``SingleBin`` from ``Bin*`` object 0,
+    of :class:`SingleBin`\s, and then nests them in a way that makes sure the final list of lists of
+    ``SingleBin``\s contains every possible set of (``SingleBin`` from ``Bin*`` object 0,
     ``SingleBin`` from ``Bin*`` object 1, ...).  In particular, we make sure that the first
     ``SingleBin`` corresponds to the first ``Bin*`` object, the second to the second, etc, and that
     the first ``SingleBin`` changes most slowly, then the second, etc.
@@ -316,7 +316,7 @@ def ExpandBinList(bin_list):
     to call this function with whatever they receive as a binning specification without typechecking
     first.
 
-    Or in short, take a list of `Bin*` objects, and expand them to return a list of ``SingleBins``
+    Or in short, take a list of ``Bin*`` objects, and expand them to return a list of ``SingleBin``\s
     to step through.  E.g., if the user passes a list :
         >>> bin_list = [BinList0, BinStep1]
     where ``BinList0.n_bins = 2`` and ``BinStep1.n_bins = 3``, then calling this function will
@@ -329,9 +329,9 @@ def ExpandBinList(bin_list):
              [SingleBinObject_0_1, SingleBinObject_1_2]].
 
     :param bin_list:  A list of ``Bin``-type objects, such as the ones in ``binning.py``, which when
-                      called return a list of items which behave like :class:`SingleBin`s.  (No
-                      checks are made in this function that these are valid ``SingleBin``s.)
-    :returns:         A list of lists of :class:`SingleBin`s (or other items returned by calling the
+                      called return a list of items which behave like :class:`SingleBin`\s.  (No
+                      checks are made in this function that these are valid ``SingleBin``\s.)
+    :returns:         A list of lists of :class:`SingleBin`\s (or other items returned by calling the
                       input items in ``bin_list``), properly nested.
     """
     if not bin_list:

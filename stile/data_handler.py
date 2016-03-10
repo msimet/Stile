@@ -8,24 +8,28 @@ import glob
 
 class DataHandler:
     """
+    .. warning::
+       The behavior of this class is still under development; we do not suggest using or relying
+       on ``DataHandler`` instances at this time.
+    
     A class which contains information about the data set Stile is to be run on.  This is used for
     the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).
 
     The class needs to be able to do two things:
-      * List some data given a set of requirements (:func:`DataHandler.listData`).  The
+      * List some data given a set of requirements (:func:`listData`).  The
         requirements generally follow the form:
 
          * object_types: a list of strings such as ``"star"``, ``"PSF star"``, ``"galaxy"`` or
-              ``"galaxy random"`` describing the objects that are needed for the tests.
+           ``"galaxy random"`` describing the objects that are needed for the tests.
          * epoch: whether this is a single/summary catalog, or a multiepoch time series. (Coadded
-              catalogs with no per-epoch information count as a single/summary catalog!)
+           catalogs with no per-epoch information count as a single/summary catalog!)
          * extent: ``"CCD"``, ``"field"``, ``"patch"`` or ``"tract"``.  This can be ignored if you
-              don't mind running some extra inappropriate tests!  ``"CCD"`` should be a CCD-type
-              dataset, ``"field"`` a single pointing/field-of-view, ``"patch"`` an intermediate-size
-              area, and ``"tract"`` a large area.  (These terms have specific meanings in the LSST
-              pipeline, but are used for convenience here.)
+           don't mind running some extra inappropriate tests!  ``"CCD"`` should be a CCD-type
+           dataset, ``"field"`` a single pointing/field-of-view, ``"patch"`` an intermediate-size
+           area, and ``"tract"`` a large area.  (These terms have specific meanings in the LSST
+           pipeline, but are used for convenience here.)
          * data_format: ``"image"`` or ``"catalog"``.  Right now no image-level tests are
-              implemented but we request this kwarg for future development.
+           implemented but we request this kwarg for future development.
 
       * Take each element of the data list from :func:`DataHandler.listData` and retrieve it for use
         (:func:`DataHandler.getData`), optionally with bins defined.  (Bins can also be defined on a
@@ -57,6 +61,7 @@ class DataHandler:
         """
         Return a path to an output file given a list of strings that should appear in the output
         filename, taking care not to clobber other files (unless requested).
+
         :param args:       A list of strings to appear in the file name
         :param extension:  The file extension to be used
         :param multi_file: Whether multiple files with the same args will be created within a single

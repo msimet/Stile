@@ -1,5 +1,5 @@
 """
-Simple file input/output.
+file_io.py: Simple file input/output.
 """
 
 try:
@@ -57,13 +57,13 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
 def ReadASCIITable(file_name, **kwargs):
     """
     Read an ASCII table from disk.  This is a small wrapper for ``numpy.genfromtxt()`` that returns
-    the kind of array we expect.  **kwargs should be suitable kwargs from ``numpy.genfromtxt()``.
+    the kind of array we expect.  The kwargs should be suitable kwargs from ``numpy.genfromtxt()``.
 
     :param file_name: A path leading to a valid FITS file.
     :param fields:    A valid dict or list description of the fields in the file.  The list must
                       have the same number of items as there are fields; the dict takes the form
                       ``{'new_name': old_column_number}`` and can skip some fields.
-    :param kwargs:    Other kwargs to be used by ``numpy.genfromtxt().``
+    :param kwargs:    Other kwargs to be used by ``numpy.genfromtxt()``\.
     :returns:         The contents of the requested file.
     """
     if 'fields' in kwargs:
@@ -145,10 +145,11 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     columns not indicated by the dict will be moved around to fill in any gaps.  If you specify,
     say, columns 0, 1, and 3, you may be surprised by what is in column 2!
 
-    At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-    of fields in the ``data_array``, an error will occur.  Also, if you send an object in the array
-    (that is, something with ``numpy.dtype=object``) whose string representation is >60 characters,
-    it will be truncated to 60.
+    .. note::
+       At the moment, if your maximum column number in the ``fields`` dict is greater than the number
+       of fields in the ``data_array``, an error will occur.  Also, if you send an object in the array
+       (that is, something with ``numpy.dtype=object``) whose string representation is >60 characters,
+       it will be truncated to 60.
 
     Setting the keyword ``print_header`` to ``True`` will cause the file to have a header line
     starting with a hash sign and then containing a comma-separated list of the fields.  If you have
@@ -199,8 +200,9 @@ def WriteFITSTable(file_name, data_array, fields=None):
     the dict will be moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3,
     you may be surprised by what is in column 2!
 
-    At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-    of fields in the ``data_array``, an error will occur.
+    .. note::
+       At the moment, if your maximum column number in the ``fields`` dict is greater than the number
+       of fields in the ``data_array``, an error will occur.
     """
     if not has_fits:
         raise ImportError('FITS-type table requested, but no FITS handler found')
@@ -229,9 +231,10 @@ def WriteTable(file_name, data_array, fields=None):
     the dict will be moved around to fill in any gaps.  If you specify, say, columns 0, 1, and 3,
     you may be surprised by what is in column 2!
 
-    At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-    of fields in ``data_array``, an error will occur.  Also see the docstring for
-    :func:`WriteASCIITable` for further caveats on its behavior.
+    .. note::
+       At the moment, if your maximum column number in the ``fields`` dict is greater than the number
+       of fields in ``data_array``, an error will occur.  Also see the docstring for
+       :func:`WriteASCIITable` for further caveats on its behavior.
     """
     ext = os.path.splitext(file_name)[1]
     if not ext:

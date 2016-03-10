@@ -22,9 +22,9 @@ def FormatArray(d, fields=None):
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name
     description.
 
-    This function uses the dtype that the array ``d`` comes with.  This means that arrays of
-    heterogeneous objects may not return the dtype you expect (for example, ``int``s will be
-    converted to ``float``s if there are floats in the array, or all numbers will be converted to
+    This function uses the existing dtype of the array ``d``.  This means that arrays of
+    heterogeneous objects may not return the dtype you expect (for example, ``int``\s will be
+    converted to ``float``\s if there are floats in the array, or all numbers will be converted to
     strings if there are any strings in the array).  Predefining the format or using a function like
     ``numpy.genfromtxt()`` will prevent these issues, as will reading from a FITS file.
 
@@ -102,7 +102,7 @@ class Stats:
 
     (2) Percentiles: the value at a given percentile level.
 
-    The :class:`StatSysTest` class can be used to create and populate values for one of
+    The :class:`StatSysTest <stile.sys_tests.StatSysTest>` class can be used to create and populate values for one of
     these objects.  If you want to change the list of simple statistics, it's only necessary to
     change the code there, not here.
     """
