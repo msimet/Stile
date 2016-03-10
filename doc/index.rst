@@ -16,6 +16,7 @@ Contents:
    binning_basics
    data
    codedoc
+   hsc
 
 
 Indices and tables
