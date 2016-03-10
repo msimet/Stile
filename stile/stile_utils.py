@@ -1,5 +1,5 @@
 """
-Various utilities for the Stile pipeline.  Includes input parsing and some numerical helper
+stile_utils.py: Various utilities for the Stile pipeline.  Includes input parsing and some numerical helper
 functions.
 """
 
