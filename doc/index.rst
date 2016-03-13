@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Stile's documentation!
-=================================
+Stile documentation
+===================
 
 Contents:
 
@@ -12,9 +12,9 @@ Contents:
    :maxdepth: 2
 
    intro
+   data
    systest_basics
    binning_basics
-   data
    codedoc
    hsc
 
