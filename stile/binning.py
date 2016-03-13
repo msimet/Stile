@@ -317,10 +317,13 @@ def ExpandBinList(bin_list):
     first.
 
     Or in short, take a list of ``Bin*`` objects, and expand them to return a list of ``SingleBin``\s
-    to step through.  E.g., if the user passes a list :
+    to step through.  E.g., if the user passes a list:
+
         >>> bin_list = [BinList0, BinStep1]
+
     where ``BinList0.n_bins = 2`` and ``BinStep1.n_bins = 3``, then calling this function will
     return
+
         >>> [[SingleBinObject_0_0, SingleBinObject_1_0],
              [SingleBinObject_0_0, SingleBinObject_1_1],
              [SingleBinObject_0_0, SingleBinObject_1_2],

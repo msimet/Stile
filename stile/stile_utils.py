@@ -152,3 +152,14 @@ fieldNames = {
     'psf_sigma': 'the sigma of the psf at the location of this object',
     'w': 'the weight to apply per object',
     'z': 'the redshift of the object'}
+
+objectNames = {
+    'galaxy': 'galaxy data',
+    'star': 'star data',
+    'galaxy lens': 'galaxies to be used as lenses in galaxy-galaxy lensing',
+    'star PSF': 'stars used in PSF determination',
+    'star bright': 'especially bright stars',
+    'galaxy random': 'random catalog corresponding to the "galaxy" sample',
+    'star random': 'random catalog corresponding to the "star" sample'
+}
+

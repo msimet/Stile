@@ -138,8 +138,9 @@ elif has_treecorr:
 
 def CorrelationFunctionSysTest(type=None):
     """
-    Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the ``type`` kwarg 
+    Initialize an instance of a :class:`BaseCorrelationFunctionSysTest` type, based on the ``type`` kwarg 
     given.  Options are:
+
         - **GalaxyShear**: tangential and cross shear of ``galaxy`` type objects around ``galaxy lens`` 
           type objects
         - **BrightStarShear**: tangential and cross shear of ``galaxy`` type objects around ``star bright``
@@ -287,6 +288,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
             * ``nm``: an <N aperture mass> measurement
             * ``norm``: ``nm`` properly normalized by the average values of n and aperture mass to
               return something like a correlation coefficient.
+
         More details can be found in the ``Readme.md`` for TreeCorr.
 
         Additionally, for the ``'nn'``, ``'ng'``, ``'nk'``, ``'nm'`` and ``'norm'`` options, the
@@ -749,8 +751,7 @@ class StatSysTest(SysTest):
     will revert back to the original value from the time of initialization.
 
     By default, this object will simply return a Stats object for the user.  However,
-    calling it with ``verbose=True`` will result in the statistics being printed directly using the
-    :func:`Stats.prettyPrint` function.
+    calling it with ``verbose=True`` will result in the statistics being printed directly.
 
     Ordinarily, a StatSysTest object will throw an exception if asked to run on an array that has
     any ``NaN``\s or infinite values.  The ``ignore_bad`` keyword (at the time when the ``StatSytTest``
@@ -902,6 +903,7 @@ def WhiskerPlotSysTest(type=None):
     """
     Initialize an instance of a :class:`BaseWhiskerPlotSysTest` class, based on the ``type`` kwarg given.
     Options are:
+
         - **Star**: whisker plot of shapes of PSF stars
         - **PSF**: whisker plot of PSF shapes at the location of PSF stars
         - **Residual**: whisker plot of (star shape-PSF shape)
@@ -1099,6 +1101,7 @@ def ScatterPlotSysTest(type=None):
     """
     Initialize an instance of a :class:`BaseScatterPlotSysTest` class, based on the ``type`` kwarg given.
     Options are:
+
         - **StarVsPSFG1**: star vs PSF g1
         - **StarVsPSFG2**: star vs PSF g2
         - **StarVsPSFSigma**: star vs PSF sigma
