@@ -547,6 +547,8 @@ class BaseCorrelationFunctionSysTest(SysTest):
         ax.set_xscale('log')
         ax.set_yscale(yscale)
         ax.set_xlim(xlim)
+        # To prevent too-long decimal y-axis ticklabels that push the label out of frame
+        ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
         ax.set_ylabel(pd.y_title)
         ax.legend()
         if pd.x_field and plot_bmode and pd.t_im_field:
@@ -559,6 +561,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
                         label=pd.x_im_title)
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
@@ -573,6 +576,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
                         color=colors[1], label=pd.datarandom_x_title+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
@@ -587,6 +591,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
                         color=colors[1], label=pd.datarandom_x_title+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
