@@ -1,5 +1,5 @@
-﻿"""sys_test_adapters.py
-Contains classes to wrap Stile systematics tests with functions necessary to run the tests via the
+﻿"""
+sys_test_adapters.py: Contains classes to wrap Stile systematics tests with functions necessary to run the tests via the
 HSC/LSST pipeline.
 """
 import lsst.pex.config
@@ -83,31 +83,33 @@ class BaseSysTestAdapter(object):
     This is an abstract class, implementing a couple of useful masking and column functions for
     reuse in child classes.
 
-    The basic function of a ``BaseSysTestAdapter`` is to wrap a Stile ``SysTest`` object in a way
-    that makes it easy to use with the LSST drivers found in base_tasks.py.  It should always have:
-    an attribute ``sys_test`` that is a SysTest object; an attribute ``name`` that we can use to
-    generate output filenames; a function ``__call__()`` that will run the test; a function
-    ``getMasks()`` that returns a set of masks (one for each object type--such as "star" or
-    "galaxy"--that is expected for the test) if given a source catalog and config object; and a
-    function ``getRequiredColumns()`` that returns a list of tuples of required quantities (such as
-    "ra" or "g1"), one tuple corresponding to each mask returned from ``getMasks()``.
+    The basic function of a :class:`BaseSysTestAdapter` is to wrap a Stile :class:`SysTest <stile.sys_tests.SysTest>` object in a way
+    that makes it easy to use with the LSST drivers found in ``base_tasks.py``.  It should always have:
+    
+    - an attribute ``sys_test`` that is a :class:`SysTest <stile.sys_tests.SysTest` object
+    - an attribute ``name`` that we can use to generate output filenames
+    - a function :func:`__call__()` that will run the test
+    - a function :func:`getMasks` that returns a set of masks (one for each object type--such as "star" or
+      "galaxy"--that is expected for the test) if given a source catalog and config object
+    - a function :func:`getRequiredColumns` that returns a list of tuples of required quantities (such as
+      "ra" or "g1"), one tuple corresponding to each mask returned from :func:`getMasks()`.
 
     (More complete lists of the exact expected names for object types and required columns can be
-    found in the documentation for the class ``Stile.sys_tests.SysTest``.)
+    found in :doc:`systest_basics`.)
 
-    ``BaseSysTestAdapter`` makes some of these functions easier.  In particular, it defines:
+    :class:`BaseSysTestAdapter` makes some of these functions easier.  In particular, it defines:
 
-     - a function ``setupMasks()`` that can take a list of strings corresponding to object types and
+     - a function :func:`setupMasks()` that can take a list of strings corresponding to object types and
        generate an attribute, ``self.mask_funcs``, that describes the mask functions which
-       ``getMasks()`` can then apply to the data to generate masks. Called with no arguments, it
+       :func:`getMasks` can then apply to the data to generate masks. Called with no arguments, it
        will attempt to read ``self.sys_test.objects_list`` for the list of objects (and will raise
        an error if that does not exist).
-     - a function ``getMasks()`` that will apply the masks in ``self.mask_funcs`` to the data.  It
+     - a function :func:`getMasks` that will apply the masks in ``self.mask_funcs`` to the data.  It
        also requires a corresponding ``self.objects_list`` with the same length as
-       ``self.mask_funcs``, containing a list of the object types that are in ``self.mask_funcs``
-       (this is used to distinguish stars, where we want raw shapes, from galaxies, where we want
-       PSF-corrected shapes).
-     - a function ``getRequiredColumns()`` that will return the list of required columns from
+       ``self.mask_funcs``, containing a list of the object types that are in ``self.mask_funcs``.
+       (This is used to distinguish stars, where we want raw shapes, from galaxies, where we want
+       PSF-corrected shapes.)
+     - a function :func:`getRequiredColumns()` that will return the list of required columns from
        ``self.sys_test.required_quantities`` if it exists, and raise an error otherwise.
 
     Of course, any of these can be overridden if desired.
@@ -141,6 +143,7 @@ class BaseSysTestAdapter(object):
         Given ``data``, a source catalog from the LSST pipeline, return a list of masks.  Each
         element of the list is a mask corresponding to a particular object type, such as "star" or
         "galaxy."
+        
         :param data:  An LSST source catalog.
         :returns:     A list of NumPy arrays; each array is made up of bools that can be broadcast
                       to index the data, returning only the rows that meet the requirements of the
@@ -156,7 +159,9 @@ class BaseSysTestAdapter(object):
         the list matching the data from the corresponding element of the list returned by
         :func:`getMasks()`.  For example, if the masks returned were a star mask and a galaxy mask,
         and we wanted to know the shear signal around galaxies, this should return
+        
         >>> [('ra', 'dec'), ('ra', 'dec', 'g1', 'g2', 'w')]
+        
         since we need to know the positions of the stars and the positions, shears, and weights of
         the galaxies.
 
@@ -179,10 +184,20 @@ class BaseSysTestAdapter(object):
 
 
 class ShapeSysTestAdapter(BaseSysTestAdapter):
+    """
+    A child class of :class:`BaseSysTestAdapter` for tests which require galaxy or star shapes.
+    This class redefines :func:`getRequiredColumns` to allow for shapes in either sky or
+    chip coords, and also copies the correct columns into the base shape columns of the array
+    (in case of both chip and sky coords being present).
+    """
     shape_fields = ['g1', 'g2', 'sigma', 'g1_err', 'g2_err', 'sigma_err',
                     'psf_g1', 'psf_g2', 'psf_sigma', 'psf_g1_err', 'psf_g2_err', 'psf_sigma_err']
 
     def getRequiredColumns(self):
+        """
+        Get required columns, specifying "sky" or "chip" coords (which the base :class:`SysTest`
+        objects don't do).
+        """
         reqs = self.sys_test.required_quantities
         return_reqs = []
         for req in reqs:
@@ -206,90 +221,39 @@ class ShapeSysTestAdapter(BaseSysTestAdapter):
 
 
 class GalaxyShearAdapter(ShapeSysTestAdapter):
-    """
-    Adapter for the :class:`GalaxyShearSysTest`.  See the documentation for that class or
-    :class:`BaseSysTestAdapter` for more information.
-    """
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.GalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-    def __call__(self, task_config, *data, **kwargs):
-        """
-        Call this object's sys_test with the given data and kwargs, and return whatever the
-        sys_test itself returns.
-        """
-        new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
-
 
 class BrightStarShearAdapter(ShapeSysTestAdapter):
-    """
-    Adapter for the :class:`BrightStarShearSysTest`.  See the documentation for that class or
-    :class:`BaseSysTestAdapter` for more information.
-    """
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.BrightStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-    def __call__(self, task_config, *data, **kwargs):
-        """
-        Call this object's sys_test with the given data and kwargs, and return whatever the
-        sys_test itself returns.
-        """
-        new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(task_config.treecorr_kwargs, *data, **kwargs)
-
 
 class StarXGalaxyShearAdapter(ShapeSysTestAdapter):
-    """
-    Adapter for the :class:`StarXGalaxyShearSysTest`.  See the documentation for that class or
-    :class:`BaseSysTestAdapter` for more information.
-    """
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.StarXGalaxyShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-    def __call__(self, task_config, *data, **kwargs):
-        """
-        Call this object's sys_test with the given data and kwargs, and return whatever the
-        sys_test itself returns.
-        """
-        new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
-
 
 class StarXStarShearAdapter(ShapeSysTestAdapter):
-    """
-    Adapter for the :class:`StarXStarShearSysTest`.  See the documentation for that class or
-    :class:`BaseSysTestAdapter` for more information.
-    """
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.StarXStarShearSysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-    def __call__(self, task_config, *data, **kwargs):
-        """
-        Call this object's sys_test with the given data and kwargs, and return whatever the
-        sys_test itself returns.
-        """
-        new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 
 class StarXStarSizeResidualAdapter(ShapeSysTestAdapter):
-    """
-    Adapter for the :class:`StarXStarSizeResidualSysTest`.  See the documentation for that class or
-    :class:`BaseSysTestAdapter` for more information.
-    """
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
@@ -299,23 +263,12 @@ class StarXStarSizeResidualAdapter(ShapeSysTestAdapter):
 
 
 class Rho1Adapter(ShapeSysTestAdapter):
-    """
-    Adapter for the :class:`StarPSFResidXStarPSFResidShearSysTest`.  See the documentation for that
-    class or :class:`BaseSysTestAdapter` for more information.
-    """
     def __init__(self, config):
         self.shape_type = 'sky'
         self.config = config
         self.sys_test = sys_tests.Rho1SysTest()
         self.name = self.sys_test.short_name
         self.setupMasks()
-    def __call__(self, task_config, *data, **kwargs):
-        """
-        Call this object's sys_test with the given data and kwargs, and return whatever the
-        sys_test itself returns.
-        """
-        new_data = [self.fixArray(d) for d in data]
-        return self.sys_test(config=task_config.treecorr_kwargs, *data, **kwargs)
 
 
 class StatsPSFFluxAdapter(ShapeSysTestAdapter):
@@ -326,7 +279,6 @@ class StatsPSFFluxAdapter(ShapeSysTestAdapter):
 
     In the future, we plan to have this be more configurable; for now, this works as a test.
     """
-
     def __init__(self, config):
         self.config = config
         self.sys_test = sys_tests.StatSysTest(field='flux.psf')
