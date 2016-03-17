@@ -16,7 +16,7 @@ Then those objects can be called with some data to get the result:
 
 >>> rho1_result = rho1_test(star_data)
 
-And most objects have a ``.plot()`` method to then plot this data, which you call using the result as the argument:
+And most objects have a :func:`.plot` method to then plot this data, which you call using the result as the argument:
 
 >>> rho1_plot = rho1_test.plot(rho1_result)
 >>> rho1_plot.savefig('rho1.png')
@@ -67,12 +67,12 @@ the g1 of the psf at the location of this object
 >>> print stile.fieldNames['w']
 the weight to apply per object
 
-We detail the correlation function types (:class:`CorrelationFunctionSysTest`, :class:`WhiskerPlotSysTest`, :class:`ScatterPlotSysTest`, :class:`HistogramSysTest`, and :class:`StatSysTest`) below.
+We detail the correlation function types (:func:`stile.CorrelationFunctionSysTest <stile.sys_tests.CorrelationFunctionSysTest>`, :func:`stile.WhiskerPlotSysTest <stile.sys_tests.WhiskerPlotSysTest>`, :func:`stile.ScatterPlotSysTest <stile.sys_tests.ScatterPlotSysTest>`, :class:`stile.HistogramSysTest <stile.sys_tests.HistogramSysTest>`, and :class:`StatSysTest <stile.sys_tests.StatSysTest>`) below.
 
 Correlation functions
 ---------------------
 
-Correlation functions are child classes of :class:`BaseCorrelationFunctionSysTest`; you use the function :func:`CorrelationFunctionSysTest` to create them.  They're all wrappers for
+Correlation functions are child classes of :class:`stile.sys_tests.BaseCorrelationFunctionSysTest`. You use the function :func:`stile.CorrelationFunctionSysTest <stile.sys_tests.CorrelationFunctionSysTest>` to create them.  They're all wrappers for
 Mike Jarvis's `TreeCorr <https://github.com/rmjarvis/TreeCorr/>`_ code, so you'll need to have that installed to use them.  The predefined types are:
 
 - **GalaxyShear**: tangential and cross shear of galaxies around lenses (point-shear)
@@ -89,8 +89,14 @@ Mike Jarvis's `TreeCorr <https://github.com/rmjarvis/TreeCorr/>`_ code, so you'l
   be a TreeCorr correlation function type (such as ``gg`` or ``ng``).  This object also won't
   have the ``.objects_list`` and ``.required_quantities`` described above.
   
-Calling these objects returns a formatted NumPy array of the correlation functions.  The plotting
-method returns a ``matplotlib.figure.Figure`` instance that can be saved by ``.savefig`` or further
+Calling these objects returns a formatted NumPy array of the correlation functions.  If the order of the data sets
+matters--eg for **GalaxyShear**--any data set that only needs positions should go first, and any data set with
+a scalar value you're using should go last.  For example:
+
+>>> bright_star_shear = stile.CorrelationFunctionSysTest('BrightStarShear')
+>>> results = bright_star_shear(bright_star_data, galaxy_data)
+
+The plotting method returns a :class:`matplotlib.figure.Figure` instance that can be saved by :func`.savefig` or further
 altered if you like.  
   
 The estimators are different depending on the type.  Point-point estimates by default use
@@ -122,25 +128,25 @@ case.
 Whisker plots
 -------------
 
-Whisker plots are child classes of :class:`BaseWhiskerPlotSysTest`.  They're the standard weak lensing whisker plots: visualizations of the shear field using headless arrows.  
+Whisker plots are child classes of :class:`stile.sys_tests.BaseWhiskerPlotSysTest`.  They're the standard weak lensing whisker plots: visualizations of the shear field using headless arrows.  
 The predefined types are:
 
 - **Star**: whisker plot of shapes of PSF stars
 - **PSF**: whisker plot of PSF shapes at the location of PSF stars
 - **Residual**: whisker plot of (star shape-PSF shape)
-- **None**: an empty :class:`BaseWhiskerPlotSysTest` class instance, which can be used for multiple types
-  of whisker plots.  See the documentation for :class:`BaseWhiskerPlotSysTest` (especially the method
-  :func:`whiskerPlot`) for more details.  Note that this type has a different call signature than
+- **None**: an empty :class:`stile.sys_tests.BaseWhiskerPlotSysTest` class instance, which can be used for multiple types
+  of whisker plots.  See the documentation for :class:`stile.sys_tests.BaseWhiskerPlotSysTest` (especially the method
+  :func:`whiskerPlot <stile.sys_tests.BaseWhiskerPlotSysTest.whiskerPlot>`) for more details.  Note that this type has a different call signature than
   the other methods and that it lacks many of the convenience variables the other
   WhiskerPlots have, such as self.objects_list and self.required_quantities.
 
-Calls to child classes of :class:`BaseWhiskerPlotSysTest` return ``matplotlib.figure.Figure`` instances and can be saved directly as images, but a ``.plot()`` attribute is included
-(that just returns the figure passed to it) so the plotting interface is the same as other :class:`SysTests <SysTest>`.
+Calls to child classes of :class:`stile.sys_tests.BaseWhiskerPlotSysTest` return :class:`matplotlib.figure.Figure` instances and can be saved directly as images, but a :func:`.plot` method is included
+(that just returns the figure passed to it) so the plotting interface is the same as other :class:`SysTests <stile.sys_tests.SysTest>`.
 
 Scatter plots
 -------------
 
-Scatter plots are child classes of :class:`BaseScatterPlotSysTest`.  They generate scatter plots of the data plus a linear regression fit through the scattered points.  There is also an optional comparison trendline at :math:`y=0` or :math:`x=y` (or a user-defined function).  The predefined types are:
+Scatter plots are child classes of :class:`stile.sys_tests.BaseScatterPlotSysTest`.  They generate scatter plots of the data plus a linear regression fit through the scattered points.  There is also an optional comparison trendline at :math:`y=0` or :math:`x=y` (or a user-defined function).  The predefined types are:
 
 - **StarVsPSFG1**: star vs PSF g1
 - **StarVsPSFG2**: star vs PSF g2
@@ -149,14 +155,14 @@ Scatter plots are child classes of :class:`BaseScatterPlotSysTest`.  They genera
 - **ResidualVsPSFG2**: (star - PSF) g1 vs PSF g2
 - **ResidualVsPSFSigma**: (star - PSF) g1 vs PSF sigma
 - **ResidualSigmaVsPSFMag**: (star - PSF)/PSF sigma vs PSF magnitude
-- **None**: an empty :class:`BaseScatterPlotSysTest` class instance, which can be used for multiple types
-  of scatter plots.  See the documentation for :class:`BaseScatterPlotSysTest` (especially the method
-  :func:`scatterPlot <BaseScatterPlotSysTest.scatterPlot>`) for more details.  Note that this type has a different call signature than
+- **None**: an empty :class:`stile.sys_tests.BaseScatterPlotSysTest` class instance, which can be used for multiple types
+  of scatter plots.  See the documentation for :class:`stile.sys_tests.BaseScatterPlotSysTest` (especially the method
+  :func:`scatterPlot <stile.sys_tests.BaseScatterPlotSysTest.scatterPlot>`) for more details.  Note that this type has a different call signature than
   the other methods and that it lacks many of the convenience variables the other
   ScatterPlots have, such as self.objects_list and self.required_quantities.
 
-Calls to child classes of :class:`BaseScatterPlotSysTest` return ``matplotlib.figure.Figure`` instances and can be saved directly as images, but a ``.plot()`` attribute is included
-(that just returns the figure passed to it) so the plotting interface is the same as other :class:`SysTests <SysTest>`.  
+Calls to child classes of :class:`stile.sys_tests.BaseScatterPlotSysTest` return :class:`matplotlib.figure.Figure` instances and can be saved directly as images, but a :func:`.plot` method is included
+(that just returns the figure passed to it) so the plotting interface is the same as other :class:`SysTests <stile.sys_tests.SysTest>`.  
 
 You can turn the trendlines on and off with the kwarg ``reference_line='zero'`` (at :math:`y=0`), ``reference_line='one-to-one'`` (at :math:`x=y`), or ``reference_line=function`` (to
 overplot the line given by ``function(x)``, which must return a 1D NumPy array given a vector ``x``).  Results binned on the basis of a data field labeled ``'CCD'`` can be generated
@@ -168,7 +174,7 @@ Histograms
 Basic statistical quantities
 ----------------------------
 
-The :class:`StatSysTest` systematics tests are designed to measure basic statistical quantities on a vector of data or on a field from a data array.  To operate on a data vector:
+The :class:`StatSysTest <stile.sys_tests.StatSysTest>` systematics tests are designed to measure basic statistical quantities on a vector of data or on a field from a data array.  To operate on a data vector:
 
 >>> stat_sys_test_vector = stile.StatSysTest()
 
@@ -180,6 +186,6 @@ or pass the field at runtime:
 
 >>> results = stat_sys_test_vector(data, field='g1')
 
-Currently, a :class:`StatSysTest` will compute min, max, median, median absolute deviation (MAD), mean, standard deviation, variance, and number of objects, and will additionally compute the skew and kurtosis if ``scipy.stats`` can be imported.  It will also compute percentiles in the data: by default, 1, 2, and 3 sigma values around the median, but this can be changed with the ``percentiles`` kwarg.
+Currently, a :class:`stile.StatSysTest <stile.sys_tests.StatSysTest>` will compute min, max, median, median absolute deviation (MAD), mean, standard deviation, variance, and number of objects, and will additionally compute the skew and kurtosis if ``scipy.stats`` can be imported.  It will also compute percentiles in the data: by default, 1, 2, and 3 sigma values around the median, but this can be changed with the ``percentiles`` kwarg.
 
-:class:`StatSysTests <StatSysTest>` return a :class:`stile.Stats` object, with all of the above quantities available as attributes (with names given above, except for mad [MAD], stddev [standard deviation], and N [number of points]). You can call a ``.plot()`` method, but it won't do anything.  Printing the object results in a nicely-formatted summary; results will be automatically printed if you pass the kwarg ``verbose=True``.
+:class:`StatSysTests <stile.sys_tests.StatSysTest>` return a :class:`stile.Stats <stile.stile_utils.Stats>` object, with all of the above quantities available as attributes (with names given above, except for mad [MAD], stddev [standard deviation], and N [number of points]). You can call a :func:`.plot` method, but it won't do anything.  Printing the object results in a nicely-formatted summary.  Results will be automatically printed if you pass the kwarg ``verbose=True``.

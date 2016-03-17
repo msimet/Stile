@@ -12,11 +12,10 @@ Contents:
    :maxdepth: 2
 
    intro
-   data
    systest_basics
+   data
    binning_basics
    codedoc
-   hsc
 
 
 Indices and tables
