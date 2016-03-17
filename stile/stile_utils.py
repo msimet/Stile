@@ -1,6 +1,6 @@
 """
-stile_utils.py: Various utilities for the Stile pipeline.  Includes input parsing and some numerical helper
-functions.
+stile_utils.py: Various utilities for the Stile pipeline.  Includes input parsing and some 
+numerical helper functions.
 """
 
 import numpy
@@ -102,9 +102,9 @@ class Stats:
 
     (2) Percentiles: the value at a given percentile level.
 
-    The :class:`StatSysTest <stile.sys_tests.StatSysTest>` class can be used to create and populate values for one of
-    these objects.  If you want to change the list of simple statistics, it's only necessary to
-    change the code there, not here.
+    The :class:`StatSysTest <stile.sys_tests.StatSysTest>` class can be used to create and populate
+    values for one of these objects.  If you want to change the list of simple statistics, it's
+    only necessary to change the code there, not here.
     """
 
     def __init__(self, simple_stats):

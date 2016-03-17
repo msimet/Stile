@@ -52,7 +52,7 @@ class SysTest(object):
         * ``required_quantities``: a list of tuples.  Each tuple is the list of fields/quantities
           that should be given for the corresponding object from the objects_list.  We expect the
           quantities to be from the list::
-            
+
                 ['ra', 'dec',         # Position on the sky
                  'x', 'y',            # Position in CCD/detector coords (or any flat projection)
                  'g1', 'g1_err',      # Two components of shear and their errors
@@ -79,10 +79,10 @@ class SysTest(object):
         raise NotImplementedError()
     def plot(self, results):
         """
-        If the results returned from the :func:`__call__` function of this class have a :func:`.savefig`
-        method, return that object.  Otherwise, return an object with a :func:`.savefig` method that
-        doesn't do anything.  :func:`plot` should be overridden by child classes to actually generate
-        plots if desired.
+        If the results returned from the :func:`__call__` function of this class have
+        a :func:`.savefig` method, return that object.  Otherwise, return an object with
+        a :func:`.savefig` method that doesn't do anything.  :func:`plot` should be overridden by
+        child classes to actually generate plots if desired.
         """
         if hasattr(results, 'savefig'):
             return results
@@ -138,30 +138,33 @@ elif has_treecorr:
 
 def CorrelationFunctionSysTest(type=None):
     """
-    Initialize an instance of a :class:`BaseCorrelationFunctionSysTest` type, based on the ``type`` kwarg 
-    given.  Options are:
+    Initialize an instance of a :class:`BaseCorrelationFunctionSysTest` type, based on the ``type``
+    kwarg  given.  Options are:
 
-        - **GalaxyShear**: tangential and cross shear of ``galaxy`` type objects around ``galaxy lens`` 
-          type objects
-        - **BrightStarShear**: tangential and cross shear of ``galaxy`` type objects around ``star bright``
-          type objects
+        - **GalaxyShear**: tangential and cross shear of ``galaxy`` type objects around
+          ``galaxy lens``  type objects
+        - **BrightStarShear**: tangential and cross shear of ``galaxy`` type objects around
+          ``star bright`` type objects
         - **StarXGalaxyDensity**: number density of ``galaxy`` objects around ``star`` objects
-        - **StarXGalaxyShear**: shear-shear cross correlation of ``galaxy`` and ``star`` type objects
+        - **StarXGalaxyShear**: shear-shear cross correlation of ``galaxy`` and ``star`` type
+          objects
         - **StarXStarShear**: autocorrelation of the shapes of ``star`` type objects
-        - **StarXStarSize**: autocorrelation of the size residuals for ``star`` type objects relative to PSF sizes
+        - **StarXStarSize**: autocorrelation of the size residuals for ``star`` type objects
+          relative to PSF sizes
         - **GalaxyDensityCorrelation**: position autocorrelation of ``galaxy`` type objects
         - **StarDensityCorrelation**: position autocorrelation of ``star`` type objects
         - **Rho1**: rho1 statistics (autocorrelation of residual star shapes)
-        - **None**: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
-          multiple types of correlation functions.  See the documentation for 
-          BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
+        - **None**: an empty BaseCorrelationFunctionSysTest class instance, which can be used for
+          multiple types of correlation functions.  See the documentation for
+          BaseCorrelationFunctionSysTest for more details.  Note that this type has a
           slightly different call signature than the other methods (with the correlation function
           type given as the first argument) and that it lacks many of the convenience variables the
           other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
-    
-    Users who are writing their own code can of course pass other data types to these functions than the ones given
-    (eg sending galaxy data to a StarXStarSize correlation function); we include options for A) automatic processing, 
-    B) ease of understanding code, and C) suggesting tests that are useful to run.
+
+    Users who are writing their own code can of course pass other data types to these functions
+    than the ones given (eg sending galaxy data to a StarXStarSize correlation function); we
+    include options for A) automatic processing,  B) ease of understanding code, and C) suggesting
+    tests that are useful to run.
     """
     if type is None:
         return BaseCorrelationFunctionSysTest()
@@ -185,8 +188,8 @@ def CorrelationFunctionSysTest(type=None):
         return Rho1SysTest()
     else:
         raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
-    
-                          
+
+
 class BaseCorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
@@ -316,7 +319,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
                               TreeCorr--see above.
         :param data:          NumPy array of data with fields using the field name
                               strings given in the ``stile.fieldNames`` dict.
-        :param data2:         Optional cross-correlation data set 
+        :param data2:         Optional cross-correlation data set
         :param random:        Optional random dataset corresponding to `data`
         :param random2:       Optional random dataset corresponding to `data2`
         :param kwargs:        Any other TreeCorr parameters (will silently supercede anything in
@@ -468,8 +471,8 @@ class BaseCorrelationFunctionSysTest(SysTest):
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
                    plot_bmode=True, plot_data_only=True, plot_random_only=True):
         """
-        Plot the data returned from a :class:`BaseCorrelationFunctionSysTest` object.  This chooses some
-        sensible defaults, but much of its behavior can be changed.
+        Plot the data returned from a :class:`BaseCorrelationFunctionSysTest` object.  This chooses
+        some sensible defaults, but much of its behavior can be changed.
 
         :param data:       The data returned from a :class:`BaseCorrelationFunctionSysTest`, as-is.
         :param colors:     A tuple of 2 colors, used for the first and second lines on any given
@@ -582,7 +585,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
 
     def __call__(self, *args, **kwargs):
         return self.getCF(*args, **kwargs)
-        
+
 
 class GalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
@@ -754,8 +757,9 @@ class StatSysTest(SysTest):
     calling it with ``verbose=True`` will result in the statistics being printed directly.
 
     Ordinarily, a StatSysTest object will throw an exception if asked to run on an array that has
-    any ``NaN``\s or infinite values.  The ``ignore_bad`` keyword (at the time when the :class:`StatSytTest`
-    is called, not initialized) changes this behavior so these bad values are quietly ignored.
+    any ``NaN``\s or infinite values.  The ``ignore_bad`` keyword (at the time when
+    the :class:`StatSytTest` is called, not initialized) changes this behavior so these bad values
+    are quietly ignored.
 
     Options to consider adding in future: weighted sums and other weighted statistics; outlier
     rejection.
@@ -778,9 +782,9 @@ class StatSysTest(SysTest):
         self.field = field
 
     def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False):
-        """Calling a :class:`StatSysTest` with a given array argument as ``array`` will cause it to carry
-        out all the statistics tests and populate a :class:`stile.Stats` object with the results,
-        which it returns to the user.
+        """Calling a :class:`StatSysTest` with a given array argument as ``array`` will cause it to
+        carry out all the statistics tests and populate a :class:`stile.Stats` object with the
+        results, which it returns to the user.
 
         :param array:           The tuple, list, NumPy array, or structured NumPy array/catalog on
                                 which to carry out the calculations.
@@ -791,7 +795,8 @@ class StatSysTest(SysTest):
                                 [default: None, meaning use whatever field was defined when
                                 initializing this :class:`StatSysTest` object]
         :param verbose:         If True, print the calculated statistics of the input ``array``
-                                to screen.  If False, silently return the :class:`Stats <stile.stile_utils.Stats>` object.
+                                to screen.  If False, silently return the
+                                :class:`Stats <stile.stile_utils.Stats>` object.
                                 [default: False.]
         :param ignore_bad:      If True, search for values that are ``NaN`` or ``Inf``, and
                                 remove them before doing calculations.  [default: False.]
@@ -899,19 +904,20 @@ class StatSysTest(SysTest):
         # Return.
         return result
 
-def WhiskerPlotSysTest(type=None):        
+def WhiskerPlotSysTest(type=None):
     """
-    Initialize an instance of a :class:`BaseWhiskerPlotSysTest` class, based on the ``type`` kwarg given.
-    Options are:
+    Initialize an instance of a :class:`BaseWhiskerPlotSysTest` class, based on the ``type`` kwarg
+    given. Options are:
 
         - **Star**: whisker plot of shapes of PSF stars
         - **PSF**: whisker plot of PSF shapes at the location of PSF stars
         - **Residual**: whisker plot of (star shape-PSF shape)
-        - **None**: an empty :class:`BaseWhiskerPlotSysTest` class instance, which can be used for multiple types
-          of whisker plots.  See the documentation for :class:`BaseWhiskerPlotSysTest` (especially the method
-          :func:`whiskerPlot`) for more details.  Note that this type has a different call signature than
-          the other methods and that it lacks many of the convenience variables the other
-          WhiskerPlots have, such as self.objects_list and self.required_quantities.
+        - **None**: an empty :class:`BaseWhiskerPlotSysTest` class instance, which can be used for
+          multiple types of whisker plots.  See the documentation
+          for :class:`BaseWhiskerPlotSysTest` (especially the method
+          :func:`whiskerPlot`) for more details.  Note that this type has a different call
+          signature than the other methods and that it lacks many of the convenience variables the
+          other WhiskerPlots have, such as self.objects_list and self.required_quantities.
     """
     if type=='Star':
         return WhiskerPlotStarSysTest()
@@ -923,7 +929,7 @@ def WhiskerPlotSysTest(type=None):
         return BaseWhiskerPlotSysTest()
     else:
         raise ValueError('Unknown whisker plot type %s given to type kwarg'%type)
-        
+
 class BaseWhiskerPlotSysTest(SysTest):
     """
     A base class for Stile systematics tests that generate whisker plots. This implements the class
@@ -938,10 +944,10 @@ class BaseWhiskerPlotSysTest(SysTest):
         """
         Draw a whisker plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling the appearance of a plot, which are
-        explained below. To implement a child class, call this function 
-        within the :func:`__call__` method of the child class and return the :class:`matplotlib.figure.Figure` that
-        it returns.
-        
+        explained below. To implement a child class, call this function
+        within the :func:`__call__` method of the child class and return
+        the :class:`matplotlib.figure.Figure` that it returns.
+
         :param x:               The tuple, list, or NumPy array for the x-position of objects.
         :param y:               The tuple, list, or NumPy array for the y-position of objects.
         :param g1:              The tuple, list, or Numpy array for the 1st ellipticity component
@@ -1097,10 +1103,10 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
                                 size_label=r'$\sigma$ [pixel]',
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
-def ScatterPlotSysTest(type=None):                                
+def ScatterPlotSysTest(type=None):
     """
-    Initialize an instance of a :class:`BaseScatterPlotSysTest` class, based on the ``type`` kwarg given.
-    Options are:
+    Initialize an instance of a :class:`BaseScatterPlotSysTest` class, based on the ``type`` kwarg
+    given. Options are:
 
         - **StarVsPSFG1**: star vs PSF g1
         - **StarVsPSFG2**: star vs PSF g2
@@ -1109,11 +1115,13 @@ def ScatterPlotSysTest(type=None):
         - **ResidualVsPSFG2**: (star - PSF) g1 vs PSF g2
         - **ResidualVsPSFSigma**: (star - PSF) g1 vs PSF sigma
         - **ResidualSigmaVsPSFMag**: (star - PSF)/PSF sigma vs PSF magnitude
-        - **None**: an empty :class:`BaseScatterPlotSysTest` class instance, which can be used for multiple types
-          of scatter plots.  See the documentation for :class:`BaseScatterPlotSysTest` (especially the method
-          :func:`scatterPlot <BaseScatterPlotSysTest.scatterPlot>`) for more details.  Note that this type has a different call signature than
-          the other methods and that it lacks many of the convenience variables the other
-          ScatterPlots have, such as self.objects_list and self.required_quantities.
+        - **None**: an empty :class:`BaseScatterPlotSysTest` class instance, which can be used for
+          multiple types of scatter plots.  See the documentation
+          for :class:`BaseScatterPlotSysTest` (especially the method
+          :func:`scatterPlot <BaseScatterPlotSysTest.scatterPlot>`) for more details.  Note that
+          this type has a different call signature than the other methods and that it lacks many of
+          the convenience variables the other ScatterPlots have, such as self.objects_list and
+          self.required_quantities.
     """
     if type=='StarVsPSFG1':
         return ScatterPlotStarVsPSFG1SysTest()
@@ -1135,7 +1143,7 @@ def ScatterPlotSysTest(type=None):
 class BaseScatterPlotSysTest(SysTest):
     """
     A base class for Stile systematics tests that generate scatter plots. This implements the class
-    method :func:`scatterPlot` and a :func:`__call__` method that sets up the data. 
+    method :func:`scatterPlot` and a :func:`__call__` method that sets up the data.
     Child classes should use :func:`super()` to access this call method; see examples in the
     existing code base.
     """
@@ -1147,7 +1155,7 @@ class BaseScatterPlotSysTest(SysTest):
         Draw a scatter plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
         explained below.
-        
+
         :param array:           A structured NumPy array which contains data to be plotted.
         :param x_field:         The name of the field in ``array`` to be used for x.
         :param y_field:         The name of the field in ``array`` to be used for y.
@@ -1237,7 +1245,7 @@ class BaseScatterPlotSysTest(SysTest):
     def getData(self):
         """
         Returns data used for scatter plot.
-        
+
         :returns: :func:`stile_utils.FormatArray <stile.stile_utils.FormatArray>` object
         """
 
@@ -1248,8 +1256,8 @@ class BaseScatterPlotSysTest(SysTest):
         """
         Draw a scatter plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
-        explained below. 
-        
+        explained below.
+
         :param x:               The tuple, list, or NumPy array for x-axis.
         :param y:               The tuple, list, or NumPy array for y-axis.
         :param yerr:            The tuple, list, or Numpy array for error of the y values.
@@ -1435,7 +1443,7 @@ class BaseScatterPlotSysTest(SysTest):
     def linearRegression(self, x, y, err=None):
         """
         Perform linear regression (y=mx+c). If error is given, it returns covariance.
-        
+
         :param x:               NumPy array for x.
         :param y:               NumPy array for y.
         :param err:             Numpy array for y error.
@@ -1463,7 +1471,7 @@ class BaseScatterPlotSysTest(SysTest):
     def getStatisticsPerCCD(self, ccds, x, y, yerr=None, z=None, stat="median"):
         """
         Calculate median or mean for x and y (and z if specified) for each ccd.
-        
+
         :param ccds:       NumPy array for ccds, an array in which each element indicates
                            ccd id of each data point.
         :param x:          NumPy array for x.
@@ -1655,3 +1663,4 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
                                     r'$(\sigma^{\rm star} - \sigma^{\rm PSF})/\sigma^{\rm PSF}$',
                                     color=color, lim=lim, equal_axis=False,
                                     linear_regression=True, reference_line='zero')
+

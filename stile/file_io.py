@@ -56,8 +56,9 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
 
 def ReadASCIITable(file_name, **kwargs):
     """
-    Read an ASCII table from disk.  This is a small wrapper for :func:`numpy.genfromtxt` that returns
-    the kind of array we expect.  The kwargs should be suitable kwargs from :func:`numpy.genfromtxt`.
+    Read an ASCII table from disk.  This is a small wrapper for :func:`numpy.genfromtxt` that
+    returns the kind of array we expect.  The kwargs should be suitable kwargs
+    from :func:`numpy.genfromtxt`.
 
     :param file_name: A path leading to a valid FITS file.
     :param fields:    A valid dict or list description of the fields in the file.  The list must
@@ -146,10 +147,10 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     say, columns 0, 1, and 3, you may be surprised by what is in column 2!
 
     .. note::
-       At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-       of fields in the ``data_array``, an error will occur.  Also, if you send an object in the array
-       (that is, something with ``numpy.dtype=object``) whose string representation is >60 characters,
-       it will be truncated to 60.
+       At the moment, if your maximum column number in the ``fields`` dict is greater than the
+       number of fields in the ``data_array``, an error will occur.  Also, if you send an object in
+       the array (that is, something with ``numpy.dtype=object``) whose string representation is
+       >60 characters, it will be truncated to 60.
 
     Setting the keyword ``print_header`` to True will cause the file to have a header line
     starting with a hash sign and then containing a comma-separated list of the fields.  If you have
@@ -201,8 +202,8 @@ def WriteFITSTable(file_name, data_array, fields=None):
     you may be surprised by what is in column 2!
 
     .. note::
-       At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-       of fields in the ``data_array``, an error will occur.
+       At the moment, if your maximum column number in the ``fields`` dict is greater than the
+       number of fields in the ``data_array``, an error will occur.
     """
     if not has_fits:
         raise ImportError('FITS-type table requested, but no FITS handler found')
@@ -232,8 +233,8 @@ def WriteTable(file_name, data_array, fields=None):
     you may be surprised by what is in column 2!
 
     .. note::
-       At the moment, if your maximum column number in the ``fields`` dict is greater than the number
-       of fields in ``data_array``, an error will occur.  Also see the docstring for
+       At the moment, if your maximum column number in the ``fields`` dict is greater than the
+       number of fields in ``data_array``, an error will occur.  Also see the docstring for
        :func:`WriteASCIITable` for further caveats on its behavior.
     """
     ext = os.path.splitext(file_name)[1]
@@ -269,3 +270,4 @@ def ReadTable(file_name, **kwargs):
         return ReadFITSTable(file_name, **kwargs)
     else:
         return ReadASCIITable(file_name, **kwargs)
+

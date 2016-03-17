@@ -11,7 +11,7 @@ class DataHandler:
     .. warning::
        The behavior of this class is still under development; we do not suggest using or relying
        on ``DataHandler`` instances at this time.
-    
+
     A class which contains information about the data set Stile is to be run on.  This is used for
     the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).
 

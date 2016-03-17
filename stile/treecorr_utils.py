@@ -1,5 +1,6 @@
 """
-treecorr_utils.py: Contains elements of Stile needed to interface with Mike Jarvis's TreeCorr program.
+treecorr_utils.py: Contains elements of Stile needed to interface with Mike Jarvis's TreeCorr
+program.
 """
 import numpy
 import file_io
