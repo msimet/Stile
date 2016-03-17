@@ -1,6 +1,23 @@
 """@file sys_tests.py
 Contains the class definitions of the Stile systematics tests.
 """
+
+"""
+This file contains some code from the AstroML package (http://github.com/astroML/astroML).
+For that code:
+
+Copyright (c) 2012-2013, Jacob Vanderplas
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+    Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+
 import numpy
 import stile
 import stile_utils
@@ -981,18 +998,53 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
 class HistogramSysTest(SysTest):
-
-    short_name = 'histogram'
-
     """
     A base class for Stile systematics tests that generate histograms.
+    
+    Like the :class:`StatSysTest`, :class:`HistogramSysTest` has a number of options which can be 
+    set either upon initialization or at runtime.  When set at initialization, the options will hold
+    for any call to the object that doesn't explicitly override them; when set during a call, the
+    options will hold only for that call.
+    
+    See the documentation for the method :func:`HistoPlot` for a list of available kwargs.
     """
 
-    """
-    The Scott rule for bin size
-    This function is directly copied from the astroML library
-    (astroMl/density_estimation/histtool.py)
-    """
+    short_name = 'histogram'
+    def __init__(self, binning_style='manual', nbins=50,
+                 weights=None, limits=None, figsize=None, normed=False,
+                 histtype='stepfilled', xlabel=None, ylabel=None,
+                 xlim=None, ylim=None, hide_x=False, hide_y=False,
+                 cumulative=False, align='mid', rwidth=0.9,
+                 log=False, color='k', alpha=1.0,
+                 text=None, text_x=0.90, text_y=0.90, fontsize=12,
+                 linewidth=2.0, vlines=None, vcolor='k'):
+        self.binning_style = binning_style
+        self.nbins = nbins
+        self.weights = weights
+        self.limits = limits
+        self.figsize = figsize
+        self.normed = normed
+        self.histtype = histtype
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.xlim = xlim
+        self.ylim = ylim
+        self.hide_x = hide_x
+        self.hide_y = hide_y
+        self.cumulative = cumulative
+        self.align = align
+        self.rwidth = rwidth
+        self.log = log
+        self.color = color
+        self.alpha = alpha
+        self.text = text
+        self.text_x = text_x
+        self.text_y = text_y
+        self.fontsize = fontsize
+        self.linewidth = linewidth
+        self.vlines = vlines
+        self.vcolor = vcolor
+
     def get_param_value(self, param, ii, data_dim, multihist=False):
         if type(param) is list and multihist:
             if len(param) == data_dim:
@@ -1005,6 +1057,11 @@ class HistogramSysTest(SysTest):
             param_use = param
         return param_use
 
+    """
+    The Scott rule for bin size
+    This function is directly copied from the astroML library
+    (astroMl/density_estimation/histtool.py)
+    """
     def scotts_bin_width(self, data, return_bins=False):
         r"""Return the optimal histogram bin width using Scott's rule:
 
@@ -1119,24 +1176,23 @@ class HistogramSysTest(SysTest):
     """
     Generate the histogram
     """
-    def HistoPlot(self, data_list, binning_style='manual', nbins=50,
-                  weights=None, limits=None, figsize=None, normed=False,
-                  histtype='step', xlabel=None, ylabel=None,
-                  xlim=None, ylim=None, hide_x=False, hide_y=False,
-                  cumulative=False, align='mid', rwidth=0.9,
-                  log=False, color='k', alpha=1.0,
-                  text=None, text_x=0.90, text_y=0.90, fontsize=12,
-                  linewidth=2.0, vlines=None, vcolor='k' ):
+    # All of these defaults are None because they're set in the initalization and we want to be able
+    # to tell the difference between "I don't care, use the default" and "override initialization,
+    # use this value". Otherwise there could be a conflict for kwargs that have non-None defaults.
+    def HistoPlot(self, data_list, binning_style=None, nbins=None,
+                  weights=None, limits=None, figsize=None, normed=None,
+                  histtype=None, xlabel=None, ylabel=None,
+                  xlim=None, ylim=None, hide_x=None, hide_y=None,
+                  cumulative=None, align=None, rwidth=None,
+                  log=None, color=None, alpha=None,
+                  text=None, text_x=None, text_y=None, fontsize=None,
+                  linewidth=None, vlines=None, vcolor=None):
 
         """
         Draw a histogram and return a `matplotlib.figure.Figure` object.
 
         This method has a bunch of options for controlling the appearance of
         the histogram, which are explained below.
-
-        To implement a child class of HistogramSysTest, call HistoPlot within
-        __call__ of the child class and return the `matplotlib.figure.Figure`
-        that HistoPlot returns.
 
         @param data_list     The 1-Dimension NumPy array or a list of Numpy arrays
                              for plotting histograms.
@@ -1148,9 +1204,10 @@ class HistogramSysTest(SysTest):
                = 'manual' :  Manually select a fixed number of bins.
                              [default: binning_style='manual']
 
-        @param nbins         The number of bins if binning_style = 3 is selected.
+        @param nbins         The number of bins if binning_style = 'manual' is selected.
                              [Default: nbins = 50]
-        @param weights       An array of weights.
+        @param weights       An array of weights, or True to use the 'w' column from
+                             the data array. [Default: None]
         @param limits        The [min, max] limits to trim the data before the
                              histogram is made.
                              [Default: limits = None]
@@ -1173,7 +1230,7 @@ class HistogramSysTest(SysTest):
         @param log           If True, the histogram axis will be set to a log scale.
                              [Default = False]
         @param color         Color of the histogram.
-                             [Default = None]
+                             [Default = None, which will use the standard color sequence]
         @param figsize       Size of a figure (x, y) in units of inches..
                              [Default: None, meaning use the default value of matplotlib]
         @param xlabel        The x-axis label.
@@ -1209,6 +1266,13 @@ class HistogramSysTest(SysTest):
         @returns a matplotlib.figure.Figure object.
         """
 
+        # Get defaults from the class attributes if necessary
+        for key_name in ['binning_style', 'nbins', 'weights', 'limits', 'figsize', 'normed',
+                         'histtype', 'xlabel', 'ylabel', 'xlim', 'ylim', 'hide_x', 'hide_y',
+                         'cumulative', 'align', 'rwidth', 'log', 'color', 'alpha', 'text',
+                         'text_x', 'text_y', 'fontsize', 'linewidth', 'vlines', 'vcolor']:
+            exec('if %s is None: %s = self.%s'%(key_name, key_name, key_name))
+        
         ## Define the plot
         hist = plt.figure(figsize=figsize)
         ax   = hist.add_subplot(1, 1, 1)
@@ -1232,22 +1296,25 @@ class HistogramSysTest(SysTest):
                 data = data[(data >= limits[0]) & (data <= limits[1])]
 
             # decide which bin style to use
-            style_use = self.get_param_value(self, binning_style, ii, data_dim,
+            style_use = self.get_param_value(binning_style, ii, data_dim,
                                              multihist=multihist)
 
             # now support constant bin size, Scott rule, and Freedman rule
             if style_use in ['scott', 'freedman', 'manual']:
-                if (style_use is 1):
+                if (style_use is 'scott'):
                     "Use the Scott rule"
                     dx, bins = self.scotts_bin_width(data, True)
-                elif style_use is 2:
+                elif style_use is 'freedman':
                     "Use the Freedman rule"
                     dx, bins = self.freedman_bin_width(data, True)
-                elif style_use is 3:
+                elif style_use is 'manual':
                     bins = nbins
             else:
                 print "Unrecognized code for binning style, use default instead!"
                 bins = nbins
+                
+            if weights is True:
+                weights = data['w']
 
             # decide if weight is presented
             if weights is not None and multihist:
@@ -1266,23 +1333,23 @@ class HistogramSysTest(SysTest):
                     weight_use = None
             else:
                 import warnings
-                warnings.warn("The format of given weights can not be understand! No weight is used!")
+                warnings.warn("The format of given weights cannot be understood! No weight is used!")
                 weight_use = None
 
             # decide which histtype to use
-            hist_use = self.get_param_value(self, histtype, ii, data_dim,
+            hist_use = self.get_param_value(histtype, ii, data_dim,
                                             multihist=multihist)
             # the color of the histogram
-            color_use = self.get_param_value(self, color, ii, data_dim,
+            color_use = self.get_param_value(color, ii, data_dim,
                                              multihist=multihist)
             # the transparency of the histogram
-            alpha_use = self.get_param_value(self, alpha, ii, data_dim,
+            alpha_use = self.get_param_value(alpha, ii, data_dim,
                                              multihist=multihist)
             # the relative width of the bar
-            rwidth_use = self.get_param_value(self, rwidth, ii, data_dim,
+            rwidth_use = self.get_param_value(rwidth, ii, data_dim,
                                               multihist=multihist)
             # the width of the vertical line
-            lwidth_use = self.get_param_value(self, linewidth, ii, data_dim,
+            lwidth_use = self.get_param_value(linewidth, ii, data_dim,
                                               multihist=multihist)
 
             # make the histogram
@@ -1357,7 +1424,8 @@ class HistogramSysTest(SysTest):
             ax.yaxis.set_major_formatter(plt.NullFormatter())
 
         return hist
-
+    def __call__(self, *args, **kwargs):
+        return self.HistoPlot(*args, **kwargs)
 
 class ScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
