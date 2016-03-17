@@ -64,17 +64,17 @@ class BinStep:
 
     :param field:     Data field to which the binning system should be applied.
     :param low:       The low edge of the lowest bin, inclusive; should be in linear space
-                      regardless of ``use_log`` [default: ``None``].
+                      regardless of ``use_log`` [default: None].
     :param high:      The high edge of the highest bin, exclusive; should be in linear space
-                      regardless of ``use_log`` [default: ``None``].
+                      regardless of ``use_log`` [default: None].
     :param step:      The width of each bin (in linear space if ``use_log=False``, in base-e log
-                      space if ``use_log=True``) [default: ``None``].
+                      space if ``use_log=True``) [default: None].
     :param n_bins:    The total number of bins requested; if float, will be converted to an
-                      integer with ``numpy.ceil()``.  [default: ``None``].
-    :param use_log:   If ``True``, bin in log space; else bin in linear space. Even when
+                      integer with ``numpy.ceil()``.  [default: None].
+    :param use_log:   If True, bin in log space; else bin in linear space. Even when
                       ``use_log=True``, all arguments except ``step`` should be given in linear
                       space, and the returned bin edges will also be in linear space.
-                      [default: ``False``]
+                      [default: False]
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
@@ -157,12 +157,12 @@ class BinStep:
 
 class SingleBin:
     """
-    A class that contains the information for one particular bin generated from one of the ``Bin*``
+    A class that contains the information for one particular bin generated from one of the :class:`Bin*`
     classes. The attributes can be accessed directly for :class:`DataHandler`\s that read in the data
     selectively. The class can also be called with a data array to bin it to the correct data
     range: ``SingleBin(array)`` will return only the data within the bounds of the particular
     instance of the class.  The endpoints are assumed to be ``[low,high)``, that is,
-    ``low <= data < high``\, with defined relational operators.
+    ``low <= data < high``\.
 
     :param field:      The index of the field containing the data to be binned (must be a string).
     :param low:        The lower edge of the bin (inclusive).
@@ -204,8 +204,8 @@ class SingleBin:
 class BinFunction:
     """
     An object which returns bin definitions (a list of :class:`SingleFunctionBin`\s) following the
-    definitions given in initialization.  Note that unlike other ``SingleBin``\s, the
-    ``SingleFunctionBin``\s created by ``BinFunction`` do not have public ``field``, ``low``, or
+    definitions given in initialization.  Note that unlike other :class:`SingleBin`\s, the
+    :class:`SingleFunctionBin`\s created by :class:`BinFunction` do not have public ``field``, ``low``, or
     ``high`` attributes, since the function is assumed to be too complex for such parameterization.
 
     :param function:       The function to be applied to the data (an entire array, not just a
@@ -214,12 +214,12 @@ class BinFunction:
                            below). The function should take a data array as its only argument,
                            unless ``return_bools`` is set to True, in which case it should take a
                            bin number as its second argument.
-    :param n_bins:         The maximum number of bins returned by the input function.  If ``None``,
+    :param n_bins:         The maximum number of bins returned by the input function.  If None,
                            the function will be checked for an ``n_bins`` attribute; if it does not
                            exist an error will be raised.
-    :param returns_bools:  ``True`` if the function will return an array of bools corresponding to a
-                           mask to the bin number in question; ``False`` otherwise.
-                           [default: ``False``]
+    :param returns_bools:  True if the function will return an array of bools corresponding to a
+                           mask to the bin number in question; False otherwise.
+                           [default: False]
     :returns:              A list of :class:`SingleFunctionBin` objects determined by the input
                            criteria.
     """
@@ -250,9 +250,9 @@ class SingleFunctionBin(SingleBin):
     behavior of the binning scheme.
 
     :param function:       The function that returns the bin information.
-    :param n:              Which bin this ``SingleFunctionBin`` considers.
-    :param returns_bools:  ``True`` if the function returns bools, ``False`` if it returns bin
-                           numbers [default: ``False``].
+    :param n:              Which bin this :class:`SingleFunctionBin` considers.
+    :param returns_bools:  True if the function returns bools, False if it returns bin
+                           numbers [default: False].
     :param short_name:     A string denoting this bin in filenames [default: ``str(n)``].
     :param long_name:      A string denoting this bin in program outputs/plots
                            [default: ``short_name``].
@@ -302,21 +302,21 @@ class SingleFunctionBin(SingleBin):
 
 def ExpandBinList(bin_list):
     """
-    If the user has indicated more than one ``Bin*`` object, we assume that they want to do the
+    If the user has indicated more than one :class:`Bin*` object, we assume that they want to do the
     intersection of each of those bins for the data set (for example, if they pass a magnitude bin
     scheme and a color bin scheme, we want to do magnitude bin 0 with color bin 0, then magnitude
-    bin 0 with color bin 1, etc).  This function takes the ``Bin*`` objects, generates their lists
+    bin 0 with color bin 1, etc).  This function takes the :class:`Bin*` objects, generates their lists
     of :class:`SingleBin`\s, and then nests them in a way that makes sure the final list of lists of
-    ``SingleBin``\s contains every possible set of (``SingleBin`` from ``Bin*`` object 0,
-    ``SingleBin`` from ``Bin*`` object 1, ...).  In particular, we make sure that the first
-    ``SingleBin`` corresponds to the first ``Bin*`` object, the second to the second, etc, and that
-    the first ``SingleBin`` changes most slowly, then the second, etc.
+    :class:`SingleBin`\s contains every possible set of (:class:`SingleBin` from :class:`Bin*` object 0,
+    :class:`SingleBin` from :class:`Bin*` object 1, ...).  In particular, we make sure that the first
+    :class:`SingleBin` corresponds to the first :class:`Bin*` object, the second to the second, etc, and that
+    the first :class:`SingleBin` changes most slowly, then the second, etc.
 
-    This function also works to expand a single ``Bin*`` object, so it's fine for different modules
+    This function also works to expand a single :class:`Bin*` object, so it's fine for different modules
     to call this function with whatever they receive as a binning specification without typechecking
     first.
 
-    Or in short, take a list of ``Bin*`` objects, and expand them to return a list of ``SingleBin``\s
+    Or in short, take a list of :class:`Bin*` objects, and expand them to return a list of :class:`SingleBin`\s
     to step through.  E.g., if the user passes a list:
 
         >>> bin_list = [BinList0, BinStep1]
@@ -333,7 +333,7 @@ def ExpandBinList(bin_list):
 
     :param bin_list:  A list of ``Bin``-type objects, such as the ones in ``binning.py``, which when
                       called return a list of items which behave like :class:`SingleBin`\s.  (No
-                      checks are made in this function that these are valid ``SingleBin``\s.)
+                      checks are made in this function that these are valid :class:`SingleBin`\s.)
     :returns:         A list of lists of :class:`SingleBin`\s (or other items returned by calling the
                       input items in ``bin_list``), properly nested.
     """

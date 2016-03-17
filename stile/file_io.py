@@ -56,14 +56,14 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
 
 def ReadASCIITable(file_name, **kwargs):
     """
-    Read an ASCII table from disk.  This is a small wrapper for ``numpy.genfromtxt()`` that returns
-    the kind of array we expect.  The kwargs should be suitable kwargs from ``numpy.genfromtxt()``.
+    Read an ASCII table from disk.  This is a small wrapper for :func:`numpy.genfromtxt` that returns
+    the kind of array we expect.  The kwargs should be suitable kwargs from :func:`numpy.genfromtxt`.
 
     :param file_name: A path leading to a valid FITS file.
     :param fields:    A valid dict or list description of the fields in the file.  The list must
                       have the same number of items as there are fields; the dict takes the form
                       ``{'new_name': old_column_number}`` and can skip some fields.
-    :param kwargs:    Other kwargs to be used by ``numpy.genfromtxt()``\.
+    :param kwargs:    Other kwargs to be used by :func:`numpy.genfromtxt`\.
     :returns:         The contents of the requested file.
     """
     if 'fields' in kwargs:
@@ -151,7 +151,7 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
        (that is, something with ``numpy.dtype=object``) whose string representation is >60 characters,
        it will be truncated to 60.
 
-    Setting the keyword ``print_header`` to ``True`` will cause the file to have a header line
+    Setting the keyword ``print_header`` to True will cause the file to have a header line
     starting with a hash sign and then containing a comma-separated list of the fields.  If you have
     strings which contain spaces, the column descriptions won't hold properly, and you should
     probably use a FITS file writer or replace the space with underscores or another character.
@@ -193,7 +193,7 @@ def WriteFITSTable(file_name, data_array, fields=None):
     FITS file if there is an available module to do so (``pyfits`` or ``astropy.io.fits``).
     Otherwise, raise an error.
 
-    If ``fields`` is not ``None``, this will rearrange a NumPy formatted array to the field
+    If ``fields`` is not None, this will rearrange a NumPy formatted array to the field
     specification (must be either a list of field names, or a dict of the form ``'field_name':
     field_position/original_order_field_name``.  Note that if ``fields`` is a dict which does not
     completely describe all the fields less than its maximum field number, columns not indicated by

@@ -23,10 +23,10 @@ def FormatArray(d, fields=None):
     description.
 
     This function uses the existing dtype of the array ``d``.  This means that arrays of
-    heterogeneous objects may not return the dtype you expect (for example, ``int``\s will be
-    converted to ``float``\s if there are floats in the array, or all numbers will be converted to
+    heterogeneous objects may not return the dtype you expect (for example, ints will be
+    converted to floats if there are floats in the array, or all numbers will be converted to
     strings if there are any strings in the array).  Predefining the format or using a function like
-    ``numpy.genfromtxt()`` will prevent these issues, as will reading from a FITS file.
+    :func:`numpy.genfromtxt` will prevent these issues, as will reading from a FITS file.
 
     :param d:      A NumPy array.
     :param fields: A dictionary whose keys are the names of the fields you'd like for the output
@@ -144,6 +144,10 @@ class Stats:
         return ret_str
 
 fieldNames = {
+    'dec': 'the declination of the object',
+    'ra': 'the RA of the object',
+    'x': 'the x coordinate of the object',
+    'y': 'the y coordinate of the object',
     'g1': 'g1, a shear component in the ra direction',
     'g2': 'g2, a shear component 45 degrees from the ra direction',
     'sigma': 'a size parameter for objects with dimension [length] in arbitrary units',
