@@ -1,0 +1,7 @@
+Before making a PR:
+ - Run all the tests in the tests/ directory and make sure they run
+ - Run all the example scripts in the examples/ directory and make sure they run
+ - Update any documentation and run `make clean html` to regenerate the docs
+ - Check for line length and whitespace errors (eg with pep8ify)
+ - Add an update to the CHANGELOG.md in the main directory
+ - Check that you've merged the most recent version of master
