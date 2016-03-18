@@ -22,8 +22,8 @@ def main():
     # run the test
     results = sys_test(data, data2=data2, config=stile_args)
     
-    #fig = sys_test.plot(results)
-    #fig.savefig(sys_test.short_name+'.png')
+    fig = sys_test.plot(results)
+    fig.savefig(sys_test.short_name+'.png')
 
     stile.WriteASCIITable('realshear.dat',results)
     print "Done with unbinned systematics test"
