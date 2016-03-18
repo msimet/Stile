@@ -134,7 +134,7 @@ Shear-shear correlation functions are :math:`\xi_+` and :math:`\xi_-`.  :math:`\
 nominally, *g1* times *g2\**, and is given as both the real and imaginary components.
 :math:`\xi_{+,im}` should be consistent with 0 to within noise. :math:`\xi_-` on the other hand is
 *g1* times *g2* (not complex conjugate).  Similarly, :math:`\xi_{-,im}` should be 0.  (Note that
-*g1* and *g2* here are two *complex* shears :math:`g_{1t} + ig_{1x}` and :math:`g_{2t} + ig_{2x}
+*g1* and *g2* here are two *complex* shears :math:`g_{1t} + ig_{1x}` and :math:`g_{2t} + ig_{2x}`
 from the two catalogs, not the two components of a single shear in sky coordinates or chip frame.)
 
 Point-scalar (point-kappa) estimates are equivalent to <scalar>; scalar-shear estimates are
@@ -202,6 +202,60 @@ via the kwarg ``per_ccd_stat=True``.
 Histograms
 ----------
 
+The :class:`HistogramSysTest <stile.sys_tests.HistogramSysTest>` systematics tests generate 
+histograms, optionally using optimized bin widths.  You can pass a one-dimensional dataset to
+display its histogram; a list of one-dimensional datasets to generate histograms on the same axes;
+a formatted array (see :doc:`data`) and a field to generate a histogram for that field; or a list of
+formatted arrays and a field or list of fields to generate multiple histograms on the same axes.
+
+To operate on a data vector:
+
+>>> histogram_sys_test_vector = stile.HistogramSysTest()
+
+To operate on a formatted array,
+
+>>> histogram_sys_test_field = stile.HistogramSysTest('g1')
+
+or pass the field at runtime:
+
+>>> results = histogram_sys_test_vector(data, field='g1')
+
+To operate on multiple data vectors:
+
+>>> results = histogram_sys_test_vector([data, data2])
+
+or on multiple formatted arrays:
+
+>>> results = histogram_sys_test_field([data, data2])
+
+or
+
+>>> results = histogram_sys_test_vector([data, data2], field='g1').
+
+To plot multiple fields from the same array, you'll need to pass the same array multiple times, due
+to implementation details:
+
+>>> results = histogram_sys_test_vector([data, data], field=['g1', 'g2'])
+
+or of course you can just access those fields yourself:
+
+>>> results = histogram_sys_test_vector([data['g1'], data['g2']]).
+
+By default, the :class:`HistogramSysTest <stile.sys_tests.HistogramSysTest>` makes a histogram with
+50 bins.  You probably want to choose different binning.  You can have Stile pick the binning for you
+based on two different algorithms:
+
+>>> scott_rule_hist = stile.HistogramSysTest(binning_style='scott')  # Scott's rule
+>>> freedman_rule_hist = stile.HistogramSysTest(binning_style='freedman')  # Freedman-Diaconis rule
+
+You can also just set your own number of bins.
+
+>>> ten_bins_hist = stile.HistogramSysTest(nbins=10)
+
+These plots are very configurable--you can add vertical lines, colors, text, and you can also change 
+the appearance of the histogram itself.  See the documentation for :class:`HistogramSysTest 
+<stile.sys_tests.HistogramSysTest>` for more information.
+
 Basic statistical quantities
 ----------------------------
 
@@ -211,7 +265,7 @@ data vector:
 
 >>> stat_sys_test_vector = stile.StatSysTest()
 
-To operate on a field,
+To operate on a formatted array,
 
 >>> stat_sys_test_field = stile.StatSysTest('g1')
 
