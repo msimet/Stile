@@ -9,12 +9,23 @@ For that code:
 Copyright (c) 2012-2013, Jacob Vanderplas
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification, are permitted
+provided that the following conditions are met:
 
-    Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+    Redistributions of source code must retain the above copyright notice, this list of conditions
+    and the following disclaimer.
+    Redistributions in binary form must reproduce the above copyright notice, this list of
+    conditions and the following disclaimer in the documentation and/or other materials provided
+    with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 
@@ -1123,14 +1134,14 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
 class HistogramSysTest(SysTest):
     """
     A base class for Stile systematics tests that generate histograms.
-    
-    Like the :class:`StatSysTest`, :class:`HistogramSysTest` has a number of options which can be 
+
+    Like the :class:`StatSysTest`, :class:`HistogramSysTest` has a number of options which can be
     set either upon initialization or at runtime.  When set at initialization, the options will hold
     for any call to the object that doesn't explicitly override them; when set during a call, the
     options will hold only for that call.
-    
+
     See the documentation for the method :func:`HistoPlot` for a list of available kwargs.
-    
+
     This class uses some code from the AstroML package, (c) Jake Vanderplas 2012-2013, under a
     BSD license--please see the code file for the full text of the license.
     """
@@ -1197,7 +1208,7 @@ class HistogramSysTest(SysTest):
         :param array-like data: observed (one-dimensional) data
         :param bool return_bins:  (optional) if True, then return the bin edges
 
-        :returns: width(float), optimal bin width using Scott's rule; bins(ndarray), bin edges 
+        :returns: width(float), optimal bin width using Scott's rule; bins(ndarray), bin edges
                   returned if `return_bins` is True
 
         Notes:
@@ -1241,7 +1252,7 @@ class HistogramSysTest(SysTest):
         :param array-like data: observed (one-dimensional) data
         :param bool return_bins: (optional) if True, then return the bin edges
 
-        :returns: width(float), optimal bin width using the Freedman-Diaconis rule; bins(ndarray), 
+        :returns: width(float), optimal bin width using the Freedman-Diaconis rule; bins(ndarray),
                   bin edges returned if `return_bins` is True
 
         Notes:
@@ -1299,13 +1310,13 @@ class HistogramSysTest(SysTest):
         the histogram, which are explained below.
 
         :param data_list:    The 1-dimensional NumPy array or a list of Numpy arrays
-                             for plotting histograms; or, a formatted array plus a `field` 
+                             for plotting histograms; or, a formatted array plus a `field`
                              parameter (either at class initalization or as a kwarg).
         :param field:        The field of data to be used, if data_list is a formatted array.
                              This can be iterable if multiple formatted arrays are passed to
                              data_list, but must have the same length as data_list.
                              If multiple formatted arrays are passed to data_list but only one
-                             field kwarg is given, the same field will be used in every array. 
+                             field kwarg is given, the same field will be used in every array.
         :param binning_style: Different selections of Histogram bin size.
 
                               - 'scott' :   Use Scott's rule to decide the bin size.
@@ -1326,11 +1337,11 @@ class HistogramSysTest(SysTest):
         :param cumulative:   Whether the cumulative histogram is shown.
                              [Default: cumulative = False]
         :param histtype:     The type of histogram to show.
-        
+
                              - 'bar'        : Tradition bar-type histogram.
                              - 'step'       : Unfilled lineplot-type histogram.
                              - 'stepfilled' : Filled lineplot-type histogram.
-               
+
                              [Default: histtype = 'stepfilled']
         :param align:        Where the bars are centered relative to bin edges
                              = 'left', 'mid', or 'right'.
@@ -1379,13 +1390,13 @@ class HistogramSysTest(SysTest):
         """
 
         # Get defaults from the class attributes if necessary
-        for key_name in ['field', 'binning_style', 'nbins', 'weights', 'limits', 'figsize', 
-                         'normed', 'histtype', 'xlabel', 'ylabel', 'xlim', 'ylim', 'hide_x', 
+        for key_name in ['field', 'binning_style', 'nbins', 'weights', 'limits', 'figsize',
+                         'normed', 'histtype', 'xlabel', 'ylabel', 'xlim', 'ylim', 'hide_x',
                          'hide_y', 'cumulative', 'align', 'rwidth', 'log', 'color', 'alpha', 'text',
                          'text_x', 'text_y', 'fontsize', 'linewidth', 'vlines', 'vcolor']:
             exec('if %s is None: %s = self.%s'%(key_name, key_name, key_name))
 
-        
+
         ## Define the plot
         hist = plt.figure(figsize=figsize)
         ax   = hist.add_subplot(1, 1, 1)
@@ -1434,7 +1445,7 @@ class HistogramSysTest(SysTest):
             else:
                 print "Unrecognized code for binning style, use default instead!"
                 bins = nbins
-                
+
             if weights is True:
                 weights = data['w']
 
@@ -1549,7 +1560,7 @@ class HistogramSysTest(SysTest):
     def __call__(self, *args, **kwargs):
         return self.HistoPlot(*args, **kwargs)
 
-def ScatterPlotSysTest(type=None):                                
+def ScatterPlotSysTest(type=None):
     """
     Initialize an instance of a :class:`BaseScatterPlotSysTest` class, based on the ``type`` kwarg
     given. Options are:
