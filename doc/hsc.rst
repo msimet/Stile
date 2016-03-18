@@ -2,14 +2,11 @@
 The HSC module
 ==============
 
-Documentation for the HSC module of Stile.  This documentation file may be empty if you do not have
-the HSC or LSST pipelines installed.
+The adapters for HSC are most easily run via command-line tasks.  Their arguments look like any
+other HSC/LSST pipeline task; for instance,
+running on a single tract is ::
 
-These adapters are most easily run via command-line tasks.  Their arguments look like any other HSC/
-LSST pipeline task; for instance,
-running on a single tract is
-
->>> StileTract.py $DATA_DIR --rerun=$rerun --id tract=$tract filter=$filter
+> StileTract.py $DATA_DIR --rerun=$rerun --id tract=$tract filter=$filter
 
 The current command-line executables are:
 
