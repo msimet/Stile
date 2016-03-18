@@ -1130,10 +1130,14 @@ class HistogramSysTest(SysTest):
     options will hold only for that call.
     
     See the documentation for the method :func:`HistoPlot` for a list of available kwargs.
+    
+    This class uses some code from the AstroML package, (c) Jake Vanderplas 2012-2013, under a
+    BSD license--please see the code file for the full text of the license.
     """
 
     short_name = 'histogram'
-    def __init__(self, binning_style='manual', nbins=50,
+    # Note: if you change the defaults here, change the docstring for the HistoPlot method.
+    def __init__(self, field=None, binning_style='manual', nbins=50,
                  weights=None, limits=None, figsize=None, normed=False,
                  histtype='stepfilled', xlabel=None, ylabel=None,
                  xlim=None, ylim=None, hide_x=False, hide_y=False,
@@ -1141,6 +1145,7 @@ class HistogramSysTest(SysTest):
                  log=False, color='k', alpha=1.0,
                  text=None, text_x=0.90, text_y=0.90, fontsize=12,
                  linewidth=2.0, vlines=None, vcolor='k'):
+        self.field = field
         self.binning_style = binning_style
         self.nbins = nbins
         self.weights = weights
@@ -1184,26 +1189,18 @@ class HistogramSysTest(SysTest):
     The Scott rule for bin size
     This function is directly copied from the astroML library
     (astroMl/density_estimation/histtool.py)
+    with some updates to the doc style since we're not using numpydoc.
     """
     def scotts_bin_width(self, data, return_bins=False):
         r"""Return the optimal histogram bin width using Scott's rule:
 
-        Parameters
-        ----------
-        data : array-like, ndim=1
-            observed (one-dimensional) data
-        return_bins : bool (optional)
-            if True, then return the bin edges
+        :param array-like data: observed (one-dimensional) data
+        :param bool return_bins:  (optional) if True, then return the bin edges
 
-        Returns
-        -------
-        width : float
-            optimal bin width using Scott's rule
-        bins : ndarray
-            bin edges: returned if `return_bins` is True
+        :returns: width(float), optimal bin width using Scott's rule; bins(ndarray), bin edges 
+                  returned if `return_bins` is True
 
-        Notes
-        -----
+        Notes:
         The optimal bin width is
 
         .. math::
@@ -1212,11 +1209,7 @@ class HistogramSysTest(SysTest):
         where :math:`\sigma` is the standard deviation of the data, and
         :math:`n` is the number of data points.
 
-        See Also
-        --------
-        knuth_bin_width
-        freedman_bin_width
-        astroML.plotting.hist
+        See Also: knuth_bin_width; freedman_bin_width; astroML.plotting.hist
         """
         data = numpy.asarray(data)
         if data.ndim != 1:
@@ -1239,27 +1232,19 @@ class HistogramSysTest(SysTest):
     The Freedman-Diaconis rule of bin size
     This function is directly copied from the astroML library
     (astroMl/density_estimation/histtool.py)
+    with some updates to the doc style since we're not using numpydoc.
     """
     def freedman_bin_width(self, data, return_bins=False):
         r"""Return the optimal histogram bin width using the Freedman-Diaconis
             rule
 
-        Parameters
-        ----------
-        data : array-like, ndim=1
-            observed (one-dimensional) data
-        return_bins : bool (optional)
-            if True, then return the bin edges
+        :param array-like data: observed (one-dimensional) data
+        :param bool return_bins: (optional) if True, then return the bin edges
 
-        Returns
-        -------
-        width : float
-            optimal bin width using Scott's rule
-        bins : ndarray
-            bin edges: returned if `return_bins` is True
+        :returns: width(float), optimal bin width using the Freedman-Diaconis rule; bins(ndarray), 
+                  bin edges returned if `return_bins` is True
 
-        Notes
-        -----
+        Notes:
         The optimal bin width is
 
         .. math::
@@ -1268,11 +1253,7 @@ class HistogramSysTest(SysTest):
         where :math:`q_{N}` is the :math:`N` percent quartile of the data, and
         :math:`n` is the number of data points.
 
-        See Also
-        --------
-        knuth_bin_width
-        scotts_bin_width
-        astroML.plotting.hist
+        See Also: knuth_bin_width; scotts_bin_width; astroML.plotting.hist
         """
         data = numpy.asarray(data)
         if data.ndim != 1:
@@ -1302,7 +1283,7 @@ class HistogramSysTest(SysTest):
     # All of these defaults are None because they're set in the initalization and we want to be able
     # to tell the difference between "I don't care, use the default" and "override initialization,
     # use this value". Otherwise there could be a conflict for kwargs that have non-None defaults.
-    def HistoPlot(self, data_list, binning_style=None, nbins=None,
+    def HistoPlot(self, data_list, field=None, binning_style=None, nbins=None,
                   weights=None, limits=None, figsize=None, normed=None,
                   histtype=None, xlabel=None, ylabel=None,
                   xlim=None, ylim=None, hide_x=None, hide_y=None,
@@ -1312,89 +1293,98 @@ class HistogramSysTest(SysTest):
                   linewidth=None, vlines=None, vcolor=None):
 
         """
-        Draw a histogram and return a `matplotlib.figure.Figure` object.
+        Draw a histogram and return a :class:`matplotlib.figure.Figure` object.
 
         This method has a bunch of options for controlling the appearance of
         the histogram, which are explained below.
 
-        @param data_list     The 1-Dimension NumPy array or a list of Numpy arrays
-                             for plotting histograms.
+        :param data_list:    The 1-dimensional NumPy array or a list of Numpy arrays
+                             for plotting histograms; or, a formatted array plus a `field` 
+                             parameter (either at class initalization or as a kwarg).
+        :param field:        The field of data to be used, if data_list is a formatted array.
+                             This can be iterable if multiple formatted arrays are passed to
+                             data_list, but must have the same length as data_list.
+                             If multiple formatted arrays are passed to data_list but only one
+                             field kwarg is given, the same field will be used in every array. 
+        :param binning_style: Different selections of Histogram bin size.
 
-        @param binning_style Different selections of Histogram bin size:
-               = 'scott' :   Using the Scott's rule to decide the bin size.
-               = 'freedman': Using the Freedman-Diaconis rule to decide the bin
-                             size.
-               = 'manual' :  Manually select a fixed number of bins.
+                              - 'scott' :   Use Scott's rule to decide the bin size.
+                              - 'freedman': Use the Freedman-Diaconis rule to decide the bin
+                                size.
+                              - 'manual' :  Manually select a fixed number of bins.
+
                              [default: binning_style='manual']
-
-        @param nbins         The number of bins if binning_style = 'manual' is selected.
+        :param nbins:        The number of bins if binning_style = 'manual' is selected.
                              [Default: nbins = 50]
-        @param weights       An array of weights, or True to use the 'w' column from
+        :param weights:      An array of weights, or True to use the 'w' column from
                              the data array. [Default: None]
-        @param limits        The [min, max] limits to trim the data before the
+        :param limits:       The [min, max] limits to trim the data before the
                              histogram is made.
                              [Default: limits = None]
-        @param normed        Whether the normalized histogram is shown.
+        :param normed:       Whether the normalized histogram is shown.
                              [Default: normed = False]
-        @param cumulative    Whether the cumulative histogram is shown.
+        :param cumulative:   Whether the cumulative histogram is shown.
                              [Default: cumulative = False]
-        @param histtype      The type of histogram to show:
-               histtype = 'bar'        : Tradition bar-type histogram.
-               histtype = 'step'       : Unfilled lineplot-type histogram.
-               histtype = 'stepfilled' : Filled lineplot-type histogram.
+        :param histtype:     The type of histogram to show.
+        
+                             - 'bar'        : Tradition bar-type histogram.
+                             - 'step'       : Unfilled lineplot-type histogram.
+                             - 'stepfilled' : Filled lineplot-type histogram.
+               
                              [Default: histtype = 'stepfilled']
-        @param align         Where the bars are centered relative to bin edges
+        :param align:        Where the bars are centered relative to bin edges
                              = 'left', 'mid', or 'right'.
                              [Default: align = 'mid' ]
-        @param rwidth        The relative width of the bars as a fraction of the
+        :param rwidth:       The relative width of the bars as a fraction of the
                              bin width. Ignored for histtype = 'step' or
                              'stepfilled'.
                              [Default = None]
-        @param log           If True, the histogram axis will be set to a log scale.
+        :param log:          If True, the histogram axis will be set to a log scale.
                              [Default = False]
-        @param color         Color of the histogram.
+        :param color:        Color of the histogram.
                              [Default = None, which will use the standard color sequence]
-        @param figsize       Size of a figure (x, y) in units of inches..
+        :param figsize:      Size of a figure (x, y) in units of inches..
                              [Default: None, meaning use the default value of matplotlib]
-        @param xlabel        The x-axis label.
+        :param xlabel:       The x-axis label.
                              [Default: None, meaning do not show a label for the x-axis]
-        @param ylabel        The y-axis label.
+        :param ylabel:       The y-axis label.
                              [Default: None, meaning do not show a label for the y-axis]
-        @param xlim          Limits of x-axis (min, max).
+        :param xlim:         Limits of x-axis (min, max).
                              [Default: None, meaning do not set any limits for x]
-        @param ylim          Limits of y-axis (min, max).
+        :param ylim:         Limits of y-axis (min, max).
                              [Default: None, meaning do not set any limits for y]
-        @param hide_x        Whether hide the labels for x-axis.
+        :param hide_x:       Whether hide the labels for x-axis.
                              [Default: hide_x = False]
-        @param hide_y        Whether hide the labels for y-axis.
+        :param hide_y:       Whether hide the labels for y-axis.
                              [Default: hide_y = False]
-        @param alpha         0.0 transparent through 1.0 opaque
+        :param alpha:        0.0 transparent through 1.0 opaque
                              [Default: alpha = 1.0]
-        @param linewidth     With of the vertical lines
+        :param linewidth:    With of the vertical lines
                              [Default: linewidth = 2.0]
-        @param text          Text to put on the figure
+        :param text:         Text to put on the figure
                              [Default: None]
-        @param text_x        The X-coordinate of the text on the plot
+        :param text_x:       The X-coordinate of the text on the plot
                              [Default: text_x = 0.9]
-        @param text_y        The Y-coordinate of the test on the plot
+        :param text_y:       The Y-coordinate of the test on the plot
                              [Default: text_y = 0.9]
-        @param fontsize      Font size of the text
+        :param fontsize:     Font size of the text
                              [Default: fontsize = 12]
-        @param vlines        Locations to plot vertical lines to indicate interesting
+        :param vlines:       Locations to plot vertical lines to indicate interesting
                              values.
                              [Default: None]
-        @param vcolor        Color or a list of color for vertical lines to plot.
+        :param vcolor:       Color or a list of color for vertical lines to plot.
                              [Default: 'k']
 
-        @returns a matplotlib.figure.Figure object.
+        :returns: a :class:`matplotlib.figure.Figure` object.
         """
 
         # Get defaults from the class attributes if necessary
-        for key_name in ['binning_style', 'nbins', 'weights', 'limits', 'figsize', 'normed',
-                         'histtype', 'xlabel', 'ylabel', 'xlim', 'ylim', 'hide_x', 'hide_y',
-                         'cumulative', 'align', 'rwidth', 'log', 'color', 'alpha', 'text',
+        for key_name in ['field', 'binning_style', 'nbins', 'weights', 'limits', 'figsize', 
+                         'normed', 'histtype', 'xlabel', 'ylabel', 'xlim', 'ylim', 'hide_x', 
+                         'hide_y', 'cumulative', 'align', 'rwidth', 'log', 'color', 'alpha', 'text',
                          'text_x', 'text_y', 'fontsize', 'linewidth', 'vlines', 'vcolor']:
             exec('if %s is None: %s = self.%s'%(key_name, key_name, key_name))
+
         
         ## Define the plot
         hist = plt.figure(figsize=figsize)
@@ -1409,6 +1399,15 @@ class HistogramSysTest(SysTest):
             else:
                 multihist = False
                 data = data_list
+
+            if field is not None:
+                if not isinstance(field, str) and hasattr(field, '__iter__'):
+                    if len(field)!=data_dim or not multihist:
+                        raise RuntimeError('Different length lists of data & lists of fields!')
+                    data = data[field][ii]
+                else:
+                    data = data[field]
+
 
             # mask data with NaN
             data = data[numpy.isnan(data) == False]
