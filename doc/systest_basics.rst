@@ -112,7 +112,7 @@ first, and any data set with a scalar value you're using should go last.  For ex
 >>> results = bright_star_shear(bright_star_data, galaxy_data)
 
 The plotting method returns a :class:`matplotlib.figure.Figure` instance that can be saved
-by :func`.savefig` or further altered if you like.
+by :func:`.savefig` or further altered if you like.
 
 The estimators are different depending on the type.  Point-point estimates by default use
 the Landy-Szalay estimator:
