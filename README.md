@@ -6,7 +6,8 @@ Stile: the Systematics Tests In LEnsing pipeline
 -------------------------------------
 #### Installation instructions ####
 
-Stile is a pure python package, no compilation needed.  We do not currently have a utility that will install it in your system path for you, but as long as this directory is in your $PYTHONPATH, you should be able to import and run.
+Stile is a pure python package, no compilation needed.  You can install it using:
+> python setup.py install
 
 #### Dependencies ####
 To run Stile, you must have:
