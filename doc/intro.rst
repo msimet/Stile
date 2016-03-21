@@ -5,7 +5,9 @@ Introduction
 Stile is the **Systematics Tests In LEnsing package**.  It's designed to run systematics tests on
 lensing data; it's especially designed for tests that you run on the data itself, such as PSF-
 galaxy shape correlation functions, as opposed to tests you run against an external data set,
-although you can do that too.
+although you can do that too.  The outputs of Stile are the systematic test results themselves;
+these can be compared against requirements that are set based on considerations and
+calculations that are external to Stile.
 
 The tests we've coded up live in the :mod:`sys_tests` module and we call them SysTests (for
 systematics tests, to distinguish from other kinds of tests).  They're all objects that you call to
