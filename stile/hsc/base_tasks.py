@@ -1131,14 +1131,14 @@ class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd", help="data ID, with patch/tract information",
+        parser.add_id_argument("--id", "deepCoadd_calexp", help="data ID, with patch/tract information",
                                ContainerClass=ExistingCoaddDataIdContainer)
         parser.description = parser_description
         return parser
 
     def getCalibData(self, dataRef, shape_cols):
         calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_md", immediate=True)
+        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate=True)
         calib_type = "calexp"  # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
@@ -1303,14 +1303,14 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd", help="data ID, with patch/tract information",
+        parser.add_id_argument("--id", "deepCoadd_calexp", help="data ID, with patch/tract information",
                                ContainerClass=ExistingCoaddDataIdContainer)
         parser.description = parser_description
         return parser
 
     def getCalibData(self, dataRef, shape_cols):
         calib_metadata_shape = None
-        calib_metadata = dataRef.get("deepCoadd_md", immediate=True)
+        calib_metadata = dataRef.get("deepCoadd_calexp_md", immediate=True)
         calib_type = "calexp"  # This is just so computeShapes knows the format
         if shape_cols:
             calib_metadata_shape = calib_metadata
@@ -1390,7 +1390,7 @@ class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd", help="data ID, with patch/tract information",
+        parser.add_id_argument("--id", "deepCoadd_calexp", help="data ID, with patch/tract information",
                                ContainerClass=ExistingCoaddDataIdContainer)
         parser.description = parser_description
         return parser

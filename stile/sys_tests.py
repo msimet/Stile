@@ -1,11 +1,37 @@
 """@file sys_tests.py
 Contains the class definitions of the Stile systematics tests.
 """
+
+"""
+This file contains some code from the AstroML package (http://github.com/astroML/astroML).
+For that code:
+
+Copyright (c) 2012-2013, Jacob Vanderplas
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+    Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+
 import numpy
 import stile
 import stile_utils
-import treecorr
-from treecorr.corr2 import corr2_valid_params
+try:
+    import treecorr
+    from treecorr.corr2 import corr2_valid_params
+    has_treecorr = True
+except ImportError:
+    has_treecorr = False
+    import warnings
+    warnings.warn("treecorr package cannot be imported. You may "+
+                  "wish to install it if you would like to use the correlation functions within "+
+                  "Stile.")
+
 try:
     import matplotlib
     # We should decide which backend to use (this line allows running matplotlib even on sessions
@@ -96,7 +122,7 @@ class PlotDetails(object):
         self.sigma_field = sigma_field  # 1-sigma error bar field
         self.y_title = y_title  # y-axis label
 
-if treecorr.version < '3.1':
+if has_treecorr and treecorr.version < '3.1':
     treecorr_func_dict = {'gg': treecorr.G2Correlation,
                           'm2': treecorr.G2Correlation,
                           'ng': treecorr.NGCorrelation,
@@ -106,7 +132,7 @@ if treecorr.version < '3.1':
                           'kk': treecorr.K2Correlation,
                           'nk': treecorr.NKCorrelation,
                           'kg': treecorr.KGCorrelation}
-else:
+elif has_treecorr:
     treecorr_func_dict = {'gg': treecorr.GGCorrelation,
                           'm2': treecorr.GGCorrelation,
                           'ng': treecorr.NGCorrelation,
@@ -117,13 +143,59 @@ else:
                           'nk': treecorr.NKCorrelation,
                           'kg': treecorr.KGCorrelation}
 
-class CorrelationFunctionSysTest(SysTest):
+def CorrelationFunctionSysTest(type=None):
+    """
+    Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg 
+    given.  Options are:
+        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
+          type objects
+        - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
+          type objects
+        - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
+        - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
+        - StarXStarShear: autocorrelation of the shapes of 'star' type objects
+        - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to PSF sizes
+        - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
+        - StarDensityCorrelation: position autocorrelation of 'star' type objects
+        - Rho1: rho1 statistics (autocorrelation of residual star shapes)
+        - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
+          multiple types of correlation functions.  See the documentation for 
+          BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
+          slightly different call signature than the other methods (with the correlation function
+          type given as the first argument) and that it lacks many of the convenience variables the
+          other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
+    """
+    if type is None:
+        return BaseCorrelationFunctionSysTest()
+    elif type=='GalaxyShear':
+        return GalaxyShearSysTest()
+    elif type=='BrightStarShear':
+        return BrightStarShearSysTest()
+    elif type=='StarXGalaxyDensity':
+        return StarXGalaxyDensitySysTest()
+    elif type=='StarXGalaxyShear':
+        return StarXGalaxyShearSysTest()
+    elif type=='StarXStarShear':
+        return StarXStarShearSysTest()
+    elif type=='StarXStarSize':
+        return StarXStarSizeSysTest()
+    elif type=='GalaxyDensityCorrelation':
+        return GalaxyDensityCorrelationSysTest()
+    elif type=='StarDensityCorrelation':
+        return StarDensityCorrelationSysTest()
+    elif type=='Rho1':
+        return Rho1SysTest()
+    else:
+        raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
+    
+                          
+class BaseCorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact
-    arguments to this method should be created by child classes of CorrelationFunctionSysTest; see
-    the docstring for CorrelationFunctionSysTest.getCF() for information on how to write further
-    tests using it.
+    arguments to this method should be created by child classes of BaseCorrelationFunctionSysTest; 
+    see the docstring for BaseCorrelationFunctionSysTest.getCF() for information on how to write 
+    further tests using it.
     """
     short_name = 'corrfunc'
     # Set the details (such as field names and titles) for all the possible plots generated by
@@ -499,8 +571,11 @@ class CorrelationFunctionSysTest(SysTest):
         ax.set_xlabel(r)
         return fig
 
+    def __call__(self, *args, **kwargs):
+        return self.getCF(*args, **kwargs)
+        
 
-class GalaxyShearSysTest(CorrelationFunctionSysTest):
+class GalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of real galaxies.
     """
@@ -512,7 +587,7 @@ class GalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
-class BrightStarShearSysTest(CorrelationFunctionSysTest):
+class BrightStarShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the tangential and cross shear around a set of bright stars.
     """
@@ -524,7 +599,7 @@ class BrightStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('ng', data, data2, random, random2, config=config, **kwargs)
 
-class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
+class StarXGalaxyDensitySysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the number density of galaxies around stars.
     """
@@ -536,7 +611,7 @@ class StarXGalaxyDensitySysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
-class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
+class StarXGalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the cross-correlation of galaxy and star shapes.
     """
@@ -548,7 +623,7 @@ class StarXGalaxyShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarShearSysTest(CorrelationFunctionSysTest):
+class StarXStarShearSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of star shapes.
     """
@@ -560,7 +635,7 @@ class StarXStarShearSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('gg', data, data2, random, random2, config=config, **kwargs)
 
-class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
+class StarXStarSizeResidualSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto correlation of star-PSF size residuals.
     """
@@ -583,7 +658,7 @@ class StarXStarSizeResidualSysTest(CorrelationFunctionSysTest):
         return self.getCF('kk', config=config, *data_list, **new_kwargs)
 
 
-class Rho1SysTest(CorrelationFunctionSysTest):
+class Rho1SysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the auto-correlation of residual star shapes (star shapes - psf shapes).
     """
@@ -617,7 +692,7 @@ class Rho1SysTest(CorrelationFunctionSysTest):
         return self.getCF('gg', new_data, new_data2, new_random, new_random2,
                           config=config, **kwargs)
 
-class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
+class GalaxyDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the galaxy position autocorrelations.
     """
@@ -629,7 +704,7 @@ class GalaxyDensityCorrelationSysTest(CorrelationFunctionSysTest):
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         return self.getCF('nn', data, data2, random, random2, config=config, **kwargs)
 
-class StarDensityCorrelationSysTest(CorrelationFunctionSysTest):
+class StarDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
     Compute the star position autocorrelations.
     """
@@ -816,13 +891,37 @@ class StatSysTest(SysTest):
         # Return.
         return result
 
-class WhiskerPlotSysTest(SysTest):
+def WhiskerPlotSysTest(type=None):        
+    """
+    Initialize an instance of a BaseWhiskerPlotSysTest class, based on the 'type' kwarg given.
+    Options are:
+        - Star: whisker plot of shapes of PSF stars
+        - PSF: whisker plot of PSF shapes at the location of PSF stars
+        - Residual: whisker plot of (star shape-PSF shape)
+        - None: an empty BaseWhiskerPlotSysTest class instance, which can be used for multiple types
+          of whisker plots.  See the documentation for BaseWhiskerPlotSysTest (especially the method
+          whiskerPlot) for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the other
+          WhiskerPlots have, such as self.objects_list and self.required_quantities.
+    """
+    if type=='Star':
+        return WhiskerPlotStarSysTest()
+    elif type=='PSF':
+        return WhiskerPlotPSFSysTest()
+    elif type=='Residual':
+        return WhiskerPlotResidualSysTest()
+    elif type is None:
+        return BaseWhiskerPlotSysTest()
+    else:
+        raise ValueError('Unknown whisker plot type %s given to type kwarg'%type)
+        
+class BaseWhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     """
     A base class for Stile systematics tests that generate whisker plots. This implements the class
-    method whiskerPlot. Every child class of WhiskerPlotSysTest should use
-    WhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
-    WhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
+    method whiskerPlot. Every child class of BaseWhiskerPlotSysTest should use
+    BaseWhiskerPlotSysTest.whiskerPlot through __call__. See the docstring for
+    BaseWhiskerPlotSysTest.whiskerPlot for information on how to write further tests using it.
     """
 
     def whiskerPlot(self, x, y, g1, g2, size=None, linewidth=0.01, scale=None,
@@ -913,12 +1012,13 @@ class WhiskerPlotSysTest(SysTest):
         if ylim is not None:
             ax.set_ylim(*ylim)
         return fig
-
+    def __call__(self, *args, **kwargs):
+        return self.whiskerPlot(*args, **kwargs)
     def getData(self):
         return self.data
 
 
-class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
+class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_star'
     long_name = 'Make a Whisker plot of stars'
     objects_list = ['star PSF']
@@ -938,7 +1038,7 @@ class WhiskerPlotStarSysTest(WhiskerPlotSysTest):
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
 
-class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
+class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_psf'
     long_name = 'Make a Whisker plot of PSFs'
     objects_list = ['star PSF']
@@ -958,7 +1058,7 @@ class WhiskerPlotPSFSysTest(WhiskerPlotSysTest):
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
 
-class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
+class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
     short_name = 'whiskerplot_residual'
     long_name = 'Make a Whisker plot of residuals'
     objects_list = ['star PSF']
@@ -980,13 +1080,477 @@ class WhiskerPlotResidualSysTest(WhiskerPlotSysTest):
                                 size_label=r'$\sigma$ [pixel]',
                                 xlim=xlim, ylim=ylim, equal_axis=True)
 
-class ScatterPlotSysTest(SysTest):
+class HistogramSysTest(SysTest):
+    """
+    A base class for Stile systematics tests that generate histograms.
+    
+    Like the :class:`StatSysTest`, :class:`HistogramSysTest` has a number of options which can be 
+    set either upon initialization or at runtime.  When set at initialization, the options will hold
+    for any call to the object that doesn't explicitly override them; when set during a call, the
+    options will hold only for that call.
+    
+    See the documentation for the method :func:`HistoPlot` for a list of available kwargs.
+    """
+
+    short_name = 'histogram'
+    def __init__(self, binning_style='manual', nbins=50,
+                 weights=None, limits=None, figsize=None, normed=False,
+                 histtype='stepfilled', xlabel=None, ylabel=None,
+                 xlim=None, ylim=None, hide_x=False, hide_y=False,
+                 cumulative=False, align='mid', rwidth=0.9,
+                 log=False, color='k', alpha=1.0,
+                 text=None, text_x=0.90, text_y=0.90, fontsize=12,
+                 linewidth=2.0, vlines=None, vcolor='k'):
+        self.binning_style = binning_style
+        self.nbins = nbins
+        self.weights = weights
+        self.limits = limits
+        self.figsize = figsize
+        self.normed = normed
+        self.histtype = histtype
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.xlim = xlim
+        self.ylim = ylim
+        self.hide_x = hide_x
+        self.hide_y = hide_y
+        self.cumulative = cumulative
+        self.align = align
+        self.rwidth = rwidth
+        self.log = log
+        self.color = color
+        self.alpha = alpha
+        self.text = text
+        self.text_x = text_x
+        self.text_y = text_y
+        self.fontsize = fontsize
+        self.linewidth = linewidth
+        self.vlines = vlines
+        self.vcolor = vcolor
+
+    def get_param_value(self, param, ii, data_dim, multihist=False):
+        if type(param) is list and multihist:
+            if len(param) == data_dim:
+                param_use = param[ii]
+            else:
+                param_use = param[0]
+        elif type(param) is list:
+            param_use = param[0]
+        else:
+            param_use = param
+        return param_use
+
+    """
+    The Scott rule for bin size
+    This function is directly copied from the astroML library
+    (astroMl/density_estimation/histtool.py)
+    """
+    def scotts_bin_width(self, data, return_bins=False):
+        r"""Return the optimal histogram bin width using Scott's rule:
+
+        Parameters
+        ----------
+        data : array-like, ndim=1
+            observed (one-dimensional) data
+        return_bins : bool (optional)
+            if True, then return the bin edges
+
+        Returns
+        -------
+        width : float
+            optimal bin width using Scott's rule
+        bins : ndarray
+            bin edges: returned if `return_bins` is True
+
+        Notes
+        -----
+        The optimal bin width is
+
+        .. math::
+            \Delta_b = \frac{3.5\sigma}{n^{1/3}}
+
+        where :math:`\sigma` is the standard deviation of the data, and
+        :math:`n` is the number of data points.
+
+        See Also
+        --------
+        knuth_bin_width
+        freedman_bin_width
+        astroML.plotting.hist
+        """
+        data = numpy.asarray(data)
+        if data.ndim != 1:
+            raise ValueError("data should be one-dimensional")
+
+        n = data.size
+        sigma = numpy.std(data)
+
+        dx = 3.5 * sigma * 1. / (n ** (1. / 3))
+
+        if return_bins:
+            Nbins = numpy.ceil((data.max() - data.min()) * 1. / dx)
+            Nbins = max(1, Nbins)
+            bins = data.min() + dx * numpy.arange(Nbins + 1)
+            return dx, bins
+        else:
+            return dx
+
+    """
+    The Freedman-Diaconis rule of bin size
+    This function is directly copied from the astroML library
+    (astroMl/density_estimation/histtool.py)
+    """
+    def freedman_bin_width(self, data, return_bins=False):
+        r"""Return the optimal histogram bin width using the Freedman-Diaconis
+            rule
+
+        Parameters
+        ----------
+        data : array-like, ndim=1
+            observed (one-dimensional) data
+        return_bins : bool (optional)
+            if True, then return the bin edges
+
+        Returns
+        -------
+        width : float
+            optimal bin width using Scott's rule
+        bins : ndarray
+            bin edges: returned if `return_bins` is True
+
+        Notes
+        -----
+        The optimal bin width is
+
+        .. math::
+            \Delta_b = \frac{2(q_{75} - q_{25})}{n^{1/3}}
+
+        where :math:`q_{N}` is the :math:`N` percent quartile of the data, and
+        :math:`n` is the number of data points.
+
+        See Also
+        --------
+        knuth_bin_width
+        scotts_bin_width
+        astroML.plotting.hist
+        """
+        data = numpy.asarray(data)
+        if data.ndim != 1:
+            raise ValueError("data should be one-dimensional")
+
+        n = data.size
+        if n < 4:
+            raise ValueError("data should have more than three entries")
+
+        dsorted = numpy.sort(data)
+        v25 = dsorted[n / 4 - 1]
+        v75 = dsorted[(3 * n) / 4 - 1]
+
+        dx = 2 * (v75 - v25) * 1. / (n ** (1. / 3))
+
+        if return_bins:
+            Nbins = numpy.ceil((dsorted[-1] - dsorted[0]) * 1. / dx)
+            Nbins = max(1, Nbins)
+            bins = dsorted[0] + dx * numpy.arange(Nbins + 1)
+            return dx, bins
+        else:
+            return dx
+
+    """
+    Generate the histogram
+    """
+    # All of these defaults are None because they're set in the initalization and we want to be able
+    # to tell the difference between "I don't care, use the default" and "override initialization,
+    # use this value". Otherwise there could be a conflict for kwargs that have non-None defaults.
+    def HistoPlot(self, data_list, binning_style=None, nbins=None,
+                  weights=None, limits=None, figsize=None, normed=None,
+                  histtype=None, xlabel=None, ylabel=None,
+                  xlim=None, ylim=None, hide_x=None, hide_y=None,
+                  cumulative=None, align=None, rwidth=None,
+                  log=None, color=None, alpha=None,
+                  text=None, text_x=None, text_y=None, fontsize=None,
+                  linewidth=None, vlines=None, vcolor=None):
+
+        """
+        Draw a histogram and return a `matplotlib.figure.Figure` object.
+
+        This method has a bunch of options for controlling the appearance of
+        the histogram, which are explained below.
+
+        @param data_list     The 1-Dimension NumPy array or a list of Numpy arrays
+                             for plotting histograms.
+
+        @param binning_style Different selections of Histogram bin size:
+               = 'scott' :   Using the Scott's rule to decide the bin size.
+               = 'freedman': Using the Freedman-Diaconis rule to decide the bin
+                             size.
+               = 'manual' :  Manually select a fixed number of bins.
+                             [default: binning_style='manual']
+
+        @param nbins         The number of bins if binning_style = 'manual' is selected.
+                             [Default: nbins = 50]
+        @param weights       An array of weights, or True to use the 'w' column from
+                             the data array. [Default: None]
+        @param limits        The [min, max] limits to trim the data before the
+                             histogram is made.
+                             [Default: limits = None]
+        @param normed        Whether the normalized histogram is shown.
+                             [Default: normed = False]
+        @param cumulative    Whether the cumulative histogram is shown.
+                             [Default: cumulative = False]
+        @param histtype      The type of histogram to show:
+               histtype = 'bar'        : Tradition bar-type histogram.
+               histtype = 'step'       : Unfilled lineplot-type histogram.
+               histtype = 'stepfilled' : Filled lineplot-type histogram.
+                             [Default: histtype = 'stepfilled']
+        @param align         Where the bars are centered relative to bin edges
+                             = 'left', 'mid', or 'right'.
+                             [Default: align = 'mid' ]
+        @param rwidth        The relative width of the bars as a fraction of the
+                             bin width. Ignored for histtype = 'step' or
+                             'stepfilled'.
+                             [Default = None]
+        @param log           If True, the histogram axis will be set to a log scale.
+                             [Default = False]
+        @param color         Color of the histogram.
+                             [Default = None, which will use the standard color sequence]
+        @param figsize       Size of a figure (x, y) in units of inches..
+                             [Default: None, meaning use the default value of matplotlib]
+        @param xlabel        The x-axis label.
+                             [Default: None, meaning do not show a label for the x-axis]
+        @param ylabel        The y-axis label.
+                             [Default: None, meaning do not show a label for the y-axis]
+        @param xlim          Limits of x-axis (min, max).
+                             [Default: None, meaning do not set any limits for x]
+        @param ylim          Limits of y-axis (min, max).
+                             [Default: None, meaning do not set any limits for y]
+        @param hide_x        Whether hide the labels for x-axis.
+                             [Default: hide_x = False]
+        @param hide_y        Whether hide the labels for y-axis.
+                             [Default: hide_y = False]
+        @param alpha         0.0 transparent through 1.0 opaque
+                             [Default: alpha = 1.0]
+        @param linewidth     With of the vertical lines
+                             [Default: linewidth = 2.0]
+        @param text          Text to put on the figure
+                             [Default: None]
+        @param text_x        The X-coordinate of the text on the plot
+                             [Default: text_x = 0.9]
+        @param text_y        The Y-coordinate of the test on the plot
+                             [Default: text_y = 0.9]
+        @param fontsize      Font size of the text
+                             [Default: fontsize = 12]
+        @param vlines        Locations to plot vertical lines to indicate interesting
+                             values.
+                             [Default: None]
+        @param vcolor        Color or a list of color for vertical lines to plot.
+                             [Default: 'k']
+
+        @returns a matplotlib.figure.Figure object.
+        """
+
+        # Get defaults from the class attributes if necessary
+        for key_name in ['binning_style', 'nbins', 'weights', 'limits', 'figsize', 'normed',
+                         'histtype', 'xlabel', 'ylabel', 'xlim', 'ylim', 'hide_x', 'hide_y',
+                         'cumulative', 'align', 'rwidth', 'log', 'color', 'alpha', 'text',
+                         'text_x', 'text_y', 'fontsize', 'linewidth', 'vlines', 'vcolor']:
+            exec('if %s is None: %s = self.%s'%(key_name, key_name, key_name))
+        
+        ## Define the plot
+        hist = plt.figure(figsize=figsize)
+        ax   = hist.add_subplot(1, 1, 1)
+
+        data_dim = len(data_list)
+        for ii in range(data_dim):
+
+            if type(data_list[0]) is list or type(data_list[0]) is numpy.ndarray:
+                multihist = True
+                data = data_list[ii]
+            else:
+                multihist = False
+                data = data_list
+
+            # mask data with NaN
+            data = data[numpy.isnan(data) == False]
+            data = numpy.asarray(data)
+
+            # trim the data if necessary
+            if limits is not None:
+                data = data[(data >= limits[0]) & (data <= limits[1])]
+
+            # decide which bin style to use
+            style_use = self.get_param_value(binning_style, ii, data_dim,
+                                             multihist=multihist)
+
+            # now support constant bin size, Scott rule, and Freedman rule
+            if style_use in ['scott', 'freedman', 'manual']:
+                if (style_use is 'scott'):
+                    "Use the Scott rule"
+                    dx, bins = self.scotts_bin_width(data, True)
+                elif style_use is 'freedman':
+                    "Use the Freedman rule"
+                    dx, bins = self.freedman_bin_width(data, True)
+                elif style_use is 'manual':
+                    bins = nbins
+            else:
+                print "Unrecognized code for binning style, use default instead!"
+                bins = nbins
+                
+            if weights is True:
+                weights = data['w']
+
+            # decide if weight is presented
+            if weights is not None and multihist:
+                if len(weights) == data_dim:
+                    weight_use = weights[ii]
+                else:
+                    import warnings
+                    warnings.warn("Inconsistent shape between data and weights! No weight is used!")
+                    weight_use = None
+            elif weights is not None:
+                if len(weights) == len(data):
+                    weight_use = weights
+                else:
+                    import warnings
+                    warnings.warn("Inconsistent shape between data and weights! No weight is used!")
+                    weight_use = None
+            else:
+                import warnings
+                warnings.warn("The format of given weights cannot be understood! No weight is used!")
+                weight_use = None
+
+            # decide which histtype to use
+            hist_use = self.get_param_value(histtype, ii, data_dim,
+                                            multihist=multihist)
+            # the color of the histogram
+            color_use = self.get_param_value(color, ii, data_dim,
+                                             multihist=multihist)
+            # the transparency of the histogram
+            alpha_use = self.get_param_value(alpha, ii, data_dim,
+                                             multihist=multihist)
+            # the relative width of the bar
+            rwidth_use = self.get_param_value(rwidth, ii, data_dim,
+                                              multihist=multihist)
+            # the width of the vertical line
+            lwidth_use = self.get_param_value(linewidth, ii, data_dim,
+                                              multihist=multihist)
+
+            # make the histogram
+            counts, edges, patches = ax.hist(data, bins,
+                                             weights = weight_use,
+                                             histtype = hist_use,
+                                             color = color_use,
+                                             normed = normed,
+                                             cumulative = cumulative,
+                                             alpha = alpha_use,
+                                             rwidth = rwidth_use,
+                                             log = log,
+                                             align = align,
+                                             linewidth = lwidth_use
+                                            )
+
+            # outline the filled region
+            if hist_use is 'stepfilled':
+                counts, edges, patches = ax.hist(data, bins,
+                                                 weights = weight_use,
+                                                 histtype = 'step',
+                                                 color = 'k',
+                                                 normed = normed,
+                                                 cumulative = cumulative,
+                                                 alpha = 1.0,
+                                                 rwidth = rwidth_use,
+                                                 log = log,
+                                                 align = align,
+                                                 linewidth = 1.0
+                                                )
+
+            ymin, ymax = ax.get_ylim()
+
+            if not multihist:
+                break
+
+        # add the text when necessary
+        if text is not None:
+            ax.text(text_x, text_y, text, transform=ax.transAxes,
+                    ha='right', va='top', fontsize=fontsize)
+
+        # add vertical lines when necessary
+        if vlines is not None and not hasattr(vlines, '__iter__'):
+            for jj in range(len(vlines)):
+                vline_use = vlines[jj]
+
+                if type(vcolor) == list:
+                    if len(vcolor) == len(vlines):
+                        vcolor_use = vcolor[jj]
+                    else:
+                        vcolor_use = vcolor[0]
+                else:
+                    vcolor_use = vcolor
+
+                ax.vlines(vline_use, ymin, ymax, colors=vcolor_use,
+                          linestyle='dashed',
+                          linewidth=1.8)
+
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        if xlim is not None:
+            ax.set_xlim(*xlim)
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+
+        if hide_x:
+            ax.xaxis.set_major_formatter(plt.NullFormatter())
+        if hide_y:
+            ax.yaxis.set_major_formatter(plt.NullFormatter())
+
+        return hist
+    def __call__(self, *args, **kwargs):
+        return self.HistoPlot(*args, **kwargs)
+
+def ScatterPlotSysTest(type=None):                                
+    """
+    Initialize an instance of a BaseScatterPlotSysTest class, based on the 'type' kwarg given.
+    Options are:
+        - StarVsPSFG1: star vs PSF g1
+        - StarVsPSFG2: star vs PSF g2
+        - StarVsPSFSigma: star vs PSF sigma
+        - ResidualVsPSFG1: (star - PSF) g1 vs PSF g1
+        - ResidualVsPSFG2: (star - PSF) g1 vs PSF g2
+        - ResidualVsPSFSigma: (star - PSF) g1 vs PSF sigma
+        - ResidualSigmaVsPSFMag: (star - PSF)/PSF sigma vs PSF magnitude
+        - None: an empty BaseScatterPlotSysTest class instance, which can be used for multiple types
+          of scatter plots.  See the documentation for BaseScatterPlotSysTest (especially the method
+          scatterPlot) for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the other
+          ScatterPlots have, such as self.objects_list and self.required_quantities.
+    """
+    if type=='StarVsPSFG1':
+        return ScatterPlotStarVsPSFG1SysTest()
+    elif type=='StarVsPSFG2':
+        return ScatterPlotStarVsPSFG2SysTest()
+    elif type=='StarVsPSFSigma':
+        return ScatterPlotStarVsPSFSigmaSysTest()
+    elif type=='ResidualVsPSFG1':
+        return ScatterPlotResidualVsPSFG1SysTest()
+    elif type=='ResidualVsPSFG2':
+        return ScatterPlotResidualVsPSFG2SysTest()
+    elif type=='ResidualVsPSFSigma':
+        return ScatterPlotResidualVsPSFSigmaSysTest()
+    elif type is None:
+        return BaseScatterPlotSysTest()
+    else:
+        raise ValueError('Unknown scatter plot type %s given to type kwarg'%type)
+
+class BaseScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     """
     A base class for Stile systematics tests that generate scatter plots. This implements the class
-    method scatterPlot. Every child class of ScatterPlotSysTest should use
-    ScatterPlotSysTest.scatterPlot through __call__. See the docstring for
-    ScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
+    method scatterPlot. Every child class of BaseScatterPlotSysTest should use
+    BaseScatterPlotSysTest.scatterPlot through __call__. See the docstring for
+    BaseScatterPlotSysTest.scatterPlot for information on how to write further tests using it.
     """
 
     def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual=False,
@@ -1362,7 +1926,7 @@ class ScatterPlotSysTest(SysTest):
             raise ValueError('stat should be mean or median.')
 
 
-class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g1'
     long_name = 'Make a scatter plot of star g1 vs psf g1'
     objects_list = ['star PSF']
@@ -1377,7 +1941,7 @@ class ScatterPlotStarVsPSFG1SysTest(ScatterPlotSysTest):
                                     reference_line='one-to-one')
 
 
-class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_g2'
     long_name = 'Make a scatter plot of star g2 vs psf g2'
     objects_list = ['star PSF']
@@ -1392,7 +1956,7 @@ class ScatterPlotStarVsPSFG2SysTest(ScatterPlotSysTest):
                                     reference_line='one-to-one')
 
 
-class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_star_vs_psf_sigma'
     long_name = 'Make a scatter plot of star sigma vs psf sigma'
     objects_list = ['star PSF']
@@ -1408,7 +1972,7 @@ class ScatterPlotStarVsPSFSigmaSysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='one-to-one')
 
 
-class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g1'
     long_name = 'Make a scatter plot of residual g1 vs psf g1'
     objects_list = ['star PSF']
@@ -1423,7 +1987,7 @@ class ScatterPlotResidualVsPSFG1SysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_g2'
     long_name = 'Make a scatter plot of residual g2 vs psf g2'
     objects_list = ['star PSF']
@@ -1438,7 +2002,7 @@ class ScatterPlotResidualVsPSFG2SysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_vs_psf_sigma'
     long_name = 'Make a scatter plot of residual sigma vs psf sigma'
     objects_list = ['star PSF']
@@ -1454,7 +2018,7 @@ class ScatterPlotResidualVsPSFSigmaSysTest(ScatterPlotSysTest):
                                     linear_regression=True, reference_line='zero')
 
 
-class ScatterPlotResidualSigmaVsPSFMagSysTest(ScatterPlotSysTest):
+class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
     short_name = 'scatterplot_residual_sigma_vs_psf_magnitude'
     long_name = 'Make a scatter plot of residual sigma vs PSF magnitude'
     objects_list = ['star PSF']
