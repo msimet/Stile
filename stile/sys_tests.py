@@ -154,7 +154,8 @@ def CorrelationFunctionSysTest(type=None):
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
         - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
         - StarXStarShear: autocorrelation of the shapes of 'star' type objects
-        - StarXStarSize: autocorrelation of the size residuals for 'star' type objects relative to PSF sizes
+        - StarXStarSizeResidual: autocorrelation of the size residuals for 'star' type objects 
+          relative to PSF sizes
         - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
         - StarDensityCorrelation: position autocorrelation of 'star' type objects
         - Rho1: rho1 statistics (autocorrelation of residual star shapes)
@@ -177,14 +178,22 @@ def CorrelationFunctionSysTest(type=None):
         return StarXGalaxyShearSysTest()
     elif type=='StarXStarShear':
         return StarXStarShearSysTest()
-    elif type=='StarXStarSize':
-        return StarXStarSizeSysTest()
+    elif type=='StarXStarSizeResidual':
+        return StarXStarSizeResidualSysTest()
     elif type=='GalaxyDensityCorrelation':
         return GalaxyDensityCorrelationSysTest()
     elif type=='StarDensityCorrelation':
         return StarDensityCorrelationSysTest()
     elif type=='Rho1':
         return Rho1SysTest()
+    elif type=='Rho2':
+        return Rho2SysTest()
+    elif type=='Rho3':
+        return Rho3SysTest()
+    elif type=='Rho4':
+        return Rho4SysTest()
+    elif type=='Rho5':
+        return Rho5SysTest()
     else:
         raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
     
@@ -691,6 +700,161 @@ class Rho1SysTest(BaseCorrelationFunctionSysTest):
             new_random2 = random2
         return self.getCF('gg', new_data, new_data2, new_random, new_random2,
                           config=config, **kwargs)
+
+class Rho2SysTest(BaseCorrelationFunctionSysTest):
+    """
+    Compute the correlation of star shapes with residual star shapes (star shapes - psf shapes).
+    """
+    short_name = 'rho2'
+    long_name = 'Rho2 statistics (Auto-correlation of star-PSF shapes)'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w')]
+
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        if not data2:
+            data2 = data
+        new_data2 = numpy.rec.fromarrays(data2['ra'], data2['dec'], data2['g1']-data2['psf_g1'],
+                                          data2['g2']-data2['psf_g2'], data2['w'],
+                                          names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        if not random2:
+            random2 = random
+        if random2 is not None:
+            new_random2 = numpy.rec.fromarrays(data2['ra'], data2['dec'], data2['g1']-data2['psf_g1'],
+                                              data2['g2']-data2['psf_g2'], data2['w'],
+                                              names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        return self.getCF('gg', data, new_data2, random, new_random2,
+                          config=config, **kwargs)
+
+
+class Rho3SysTest(BaseCorrelationFunctionSysTest):
+    """
+    Compute the correlation of star shapes weighted by the residual shape trace (ixx+iyy).
+    """
+    short_name = 'rho3'
+    long_name = 'Rho3 statistics (Auto-correlation of star shapes weighted by the residual trace)'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w',
+                            'ixx', 'iyy', 'psf_ixx', 'psf_iyy')]
+
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        tpsf = data['psf_ixx']+data['psf_iyy']
+        dtpsf = data['ixx']+data['iyy']-tpsf
+        new_data = numpy.rec.fromarrays(data['ra'], data['dec'], data['psf_g1']*dtpsf/tpsf,
+                                        data['psf_g2']*dtpsf/tpsf, data['w'],
+                                        names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        if data2 is not None:
+            tpsf = data2['psf_ixx']+data2['psf_iyy']
+            dtpsf = data2['ixx']+data2['iyy']-tpsf
+            new_data2 = numpy.rec.fromarrays(data2['ra'], data2['dec'], data2['psf_g1']*dtpsf/tpsf,
+                                             data2['psf_g2']*dtpsf/tpsf, data2['w'],
+                                             names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_data2 = data2
+        if random is not None:
+            tpsf = random['psf_ixx']+random['psf_iyy']
+            dtpsf = random['ixx']+random['iyy']-tpsf
+            new_random = numpy.rec.fromarrays(random['ra'], random['dec'], 
+                                              random['psf_g1']*dtpsf/tpsf,
+                                              random['psf_g2']*dtpsf/tpsf, random['w'],
+                                              names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random = random
+
+        if random2 is not None:
+            tpsf = random2['psf_ixx']+random2['psf_iyy']
+            dtpsf = random2['ixx']+random2['iyy']-tpsf
+            new_random2 = numpy.rec.fromarrays(random2['ra'], random2['dec'], 
+                                               random2['psf_g1']*dtpsf/tpsf,
+                                               random2['psf_g2']*dtpsf/tpsf, random2['w'],
+                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random2 = random2
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2,
+                          config=config, **kwargs)
+
+class Rho4SysTest(BaseCorrelationFunctionSysTest):
+    """
+    Compute the correlation of star shapes weighted by the residual shape trace (ixx+iyy).
+    """
+    short_name = 'rho4'
+    long_name = 'Rho4 statistics (Correlation of residual star shapes with star shapes weighted by the residual trace)'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w',
+                            'ixx', 'iyy', 'psf_ixx', 'psf_iyy')]
+
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_data = numpy.rec.fromarrays(data['ra'], data['dec'], data['g1'] - data['psf_g1'],
+                                        data['g2']-data['psf_g2'], data['w'],
+                                        names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        if data2 is None:
+            data2 = data
+        tpsf = data2['psf_ixx']+data2['psf_iyy']
+        dtpsf = data2['ixx']+data2['iyy']-tpsf
+        new_data2 = numpy.rec.fromarrays(data2['ra'], data2['dec'], data2['psf_g1']*dtpsf/tpsf,
+                                         data2['psf_g2']*dtpsf/tpsf, data2['w'],
+                                         names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        if random is not None:
+            new_random = numpy.rec.fromarrays(random['ra'], random['dec'], 
+                                              random['g1']-random['psf_g1'],
+                                              random['g2']-random['psf_g2'], random['w'],
+                                              names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random = random
+        if random2 is None:
+            random2 = random
+        if random2 is not None:
+            tpsf = random2['psf_ixx']+random2['psf_iyy']
+            dtpsf = random2['ixx']+random2['iyy']-tpsf
+            new_random2 = numpy.rec.fromarrays(random2['ra'], random2['dec'], 
+                                               random2['psf_g1']*dtpsf/tpsf,
+                                               random2['psf_g2']*dtpsf/tpsf, random2['w'],
+                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random2 = random2
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2,
+                          config=config, **kwargs)
+
+class Rho5SysTest(BaseCorrelationFunctionSysTest):
+    """
+    Compute the correlation of star shapes weighted by the residual shape trace (ixx+iyy).
+    """
+    short_name = 'rho5'
+    long_name = 'Rho5 statistics (Correlation of star shapes with star shapes weighted by the residual trace)'
+    objects_list = ['star PSF']
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w',
+                            'ixx', 'iyy', 'psf_ixx', 'psf_iyy')]
+
+    def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_data = numpy.rec.fromarrays(data['ra'], data['dec'],data['psf_g1'],
+                                        data['psf_g2'], data['w'],
+                                        names = ['ra', 'dec', 'g1', 'g2', 'w'])                        
+        if data2 is None:
+            data2 = data
+        tpsf = data2['psf_ixx']+data2['psf_iyy']
+        dtpsf = data2['ixx']+data2['iyy']-tpsf
+        new_data2 = numpy.rec.fromarrays(data2['ra'], data2['dec'], data2['psf_g1']*dtpsf/tpsf,
+                                         data2['psf_g2']*dtpsf/tpsf, data2['w'],
+                                         names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        if random is not None:
+            new_random = numpy.rec.fromarrays(random['ra'], random['dec'], 
+                                              random['psf_g1'], random['psf_g2'], random['w'],
+                                              names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random = random
+        if random2 is None:
+            random2 = random
+        if random2 is not None:
+            tpsf = random2['psf_ixx']+random2['psf_iyy']
+            dtpsf = random2['ixx']+random2['iyy']-tpsf
+            new_random2 = numpy.rec.fromarrays(random2['ra'], random2['dec'], 
+                                               random2['psf_g1']*dtpsf/tpsf,
+                                               random2['psf_g2']*dtpsf/tpsf, random2['w'],
+                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random2 = random2
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2,
+                          config=config, **kwargs)
+
 
 class GalaxyDensityCorrelationSysTest(BaseCorrelationFunctionSysTest):
     """
