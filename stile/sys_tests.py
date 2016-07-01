@@ -719,12 +719,12 @@ class Rho2SysTest(BaseCorrelationFunctionSysTest):
         if not random2:
             random2 = random
         if random2 is not None:
-            new_random2 = numpy.rec.fromarrays([data2['ra'], data2['dec'], 
+            new_random2 = numpy.rec.fromarrays([data2['ra'], data2['dec'],
                                                 data2['g1']-data2['psf_g1'],
                                                 data2['g2']-data2['psf_g2'], data2['w']],
                                                 names = ['ra', 'dec', 'g1', 'g2', 'w'])
         else:
-            new_random2 = random2                                        
+            new_random2 = random2
         return self.getCF('gg', data, new_data2, random, new_random2,
                           config=config, **kwargs)
 
@@ -736,17 +736,17 @@ class Rho3SysTest(BaseCorrelationFunctionSysTest):
     short_name = 'rho3'
     long_name = 'Rho3 statistics (Auto-correlation of star shapes weighted by the residual size)'
     objects_list = ['star PSF']
-    required_quantities = [('ra', 'dec', 'sigma', 
+    required_quantities = [('ra', 'dec', 'sigma',
                             'psf_g1', 'psf_g2', 'psf_sigma', 'w')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
-        new_data = numpy.rec.fromarrays([data['ra'], data['dec'], 
+        new_data = numpy.rec.fromarrays([data['ra'], data['dec'],
                                  data['psf_g1']*(data['sigma']-data['psf_sigma'])/data['psf_sigma'],
                                  data['psf_g2']*(data['sigma']-data['psf_sigma'])/data['psf_sigma'],
                                  data['w']],
                                  names = ['ra', 'dec', 'g1', 'g2', 'w'])
         if data2 is not None:
-            new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'], 
+            new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'],
                              data2['psf_g1']*(data2['sigma']-data2['psf_sigma'])/data2['psf_sigma'],
                              data2['psf_g2']*(data2['sigma']-data2['psf_sigma'])/data2['psf_sigma'],
                              data2['w']],
@@ -754,19 +754,20 @@ class Rho3SysTest(BaseCorrelationFunctionSysTest):
         else:
             new_data2 = data2
         if random is not None:
-            new_random = numpy.rec.fromarrays([random['ra'], random['dec'], 
+            new_random = numpy.rec.fromarrays([random['ra'], random['dec'],
                          random['psf_g1']*(random['sigma']-random['psf_sigma'])/random['psf_sigma'],
-                         random['psf_g2']*(random['sigma']-random['psf_sigma'])/random['psf_sigma'], 
+                         random['psf_g2']*(random['sigma']-random['psf_sigma'])/random['psf_sigma'],
                          random['w']],
                          names = ['ra', 'dec', 'g1', 'g2', 'w'])
         else:
             new_random = random
 
         if random2 is not None:
-            new_random2 = numpy.rec.fromarrays([random2['ra'], random2['dec'], 
-                                                random2['psf_g1']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
-                                                random2['psf_g2']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'], random2['w']],
-                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
+            new_random2 = numpy.rec.fromarrays([random2['ra'], random2['dec'],
+                    random2['psf_g1']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
+                    random2['psf_g2']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
+                    random2['w']],
+                    names = ['ra', 'dec', 'g1', 'g2', 'w'])
         else:
             new_random2 = random2
         return self.getCF('gg', new_data, new_data2, new_random, new_random2,
@@ -777,9 +778,9 @@ class Rho4SysTest(BaseCorrelationFunctionSysTest):
     Compute the correlation of star shapes weighted by the residual size.
     """
     short_name = 'rho4'
-    long_name = 'Rho4 statistics (Correlation of residual star shapes weighted by the residual size)'
+    long_name = 'Rho4 statistics (Correlation of residual star shapes weighted by residual size)'
     objects_list = ['star PSF']
-    required_quantities = [('ra', 'dec', 'g1', 'g2', 'sigma', 
+    required_quantities = [('ra', 'dec', 'g1', 'g2', 'sigma',
                             'psf_g1', 'psf_g2', 'psf_sigma', 'w')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
@@ -788,13 +789,13 @@ class Rho4SysTest(BaseCorrelationFunctionSysTest):
                                         names = ['ra', 'dec', 'g1', 'g2', 'w'])
         if data2 is None:
             data2 = data
-        new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'], 
+        new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'],
                              data2['psf_g1']*(data2['sigma']-data2['psf_sigma'])/data2['psf_sigma'],
                              data2['psf_g2']*(data2['sigma']-data2['psf_sigma'])/data2['psf_sigma'],
                              data2['w']],
                              names = ['ra', 'dec', 'g1', 'g2', 'w'])
         if random is not None:
-            new_random = numpy.rec.fromarrays([random['ra'], random['dec'], 
+            new_random = numpy.rec.fromarrays([random['ra'], random['dec'],
                                                random['g1']-random['psf_g1'],
                                                random['g2']-random['psf_g2'], random['w']],
                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
@@ -803,7 +804,7 @@ class Rho4SysTest(BaseCorrelationFunctionSysTest):
         if random2 is None:
             random2 = random
         if random2 is not None:
-            new_random2 = numpy.rec.fromarrays([random2['ra'], random2['dec'], 
+            new_random2 = numpy.rec.fromarrays([random2['ra'], random2['dec'],
                     random2['psf_g1']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
                     random2['psf_g2']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
                     random2['w']],
@@ -820,22 +821,22 @@ class Rho5SysTest(BaseCorrelationFunctionSysTest):
     short_name = 'rho5'
     long_name = 'Rho5 statistics (Correlation of star shapes weighted by the residual size)'
     objects_list = ['star PSF']
-    required_quantities = [('ra', 'dec', 'sigma', 
+    required_quantities = [('ra', 'dec', 'sigma',
                             'psf_g1', 'psf_g2', 'psf_sigma', 'w')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
         new_data = numpy.rec.fromarrays([data['ra'], data['dec'],data['psf_g1'],
                                          data['psf_g2'], data['w']],
-                                        names = ['ra', 'dec', 'g1', 'g2', 'w'])                        
+                                        names = ['ra', 'dec', 'g1', 'g2', 'w'])
         if data2 is None:
             data2 = data
-        new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'], 
+        new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'],
                              data2['psf_g1']*(data2['sigma']-data2['psf_sigma'])/data2['psf_sigma'],
                              data2['psf_g2']*(data2['sigma']-data2['psf_sigma'])/data2['psf_sigma'],
                              data2['w']],
                              names = ['ra', 'dec', 'g1', 'g2', 'w'])
         if random is not None:
-            new_random = numpy.rec.fromarrays([random['ra'], random['dec'], 
+            new_random = numpy.rec.fromarrays([random['ra'], random['dec'],
                                                random['psf_g1'], random['psf_g2'], random['w']],
                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
         else:
@@ -843,9 +844,9 @@ class Rho5SysTest(BaseCorrelationFunctionSysTest):
         if random2 is None:
             random2 = random
         if random2 is not None:
-            new_random2 = numpy.rec.fromarrays([random2['ra'], random2['dec'], 
+            new_random2 = numpy.rec.fromarrays([random2['ra'], random2['dec'],
                     random2['psf_g1']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
-                    random2['psf_g2']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'], 
+                    random2['psf_g2']*(random2['sigma']-random2['psf_sigma'])/random2['psf_sigma'],
                     random2['w']],
                    names = ['ra', 'dec', 'g1', 'g2', 'w'])
         else:
