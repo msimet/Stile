@@ -723,6 +723,8 @@ class Rho2SysTest(BaseCorrelationFunctionSysTest):
                                                 data2['g1']-data2['psf_g1'],
                                                 data2['g2']-data2['psf_g2'], data2['w']],
                                                 names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        else:
+            new_random2 = random2                                        
         return self.getCF('gg', data, new_data2, random, new_random2,
                           config=config, **kwargs)
 
