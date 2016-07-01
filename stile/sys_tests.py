@@ -145,23 +145,27 @@ elif has_treecorr:
 
 def CorrelationFunctionSysTest(type=None):
     """
-    Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg 
+    Initialize an instance of a BaseCorrelationFunctionSysTest type, based on the 'type' kwarg
     given.  Options are:
-        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens' 
+        - GalaxyShear: tangential and cross shear of 'galaxy' type objects around 'galaxy lens'
           type objects
         - BrightStarShear: tangential and cross shear of 'galaxy' type objects around 'star bright'
           type objects
         - StarXGalaxyDensity: number density of 'galaxy' objects around 'star' objects
         - StarXGalaxyShear: shear-shear cross correlation of 'galaxy' and 'star' type objects
         - StarXStarShear: autocorrelation of the shapes of 'star' type objects
-        - StarXStarSizeResidual: autocorrelation of the size residuals for 'star' type objects 
+        - StarXStarSizeResidual: autocorrelation of the size residuals for 'star' type objects
           relative to PSF sizes
         - GalaxyDensityCorrelation: position autocorrelation of 'galaxy' type objects
         - StarDensityCorrelation: position autocorrelation of 'star' type objects
         - Rho1: rho1 statistics (autocorrelation of residual star shapes)
-        - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for 
-          multiple types of correlation functions.  See the documentation for 
-          BaseCorrelationFunctionSysTest for more details.  Note that this type has a 
+        - Rho2: rho2 statistics (correlation of star and PSF shapes)
+        - Rho3: rho3 statistics (autocorrelation of star shapes weighted by the residual size)
+        - Rho4: rho4 statistics (correlation of residual star shapes weighted by residual size)
+        - Rho5: rho5 statistics (correlation of star and PSF shapes weighted by the residual size)
+        - None: an empty BaseCorrelationFunctionSysTest class instance, which can be used for
+          multiple types of correlation functions.  See the documentation for
+          BaseCorrelationFunctionSysTest for more details.  Note that this type has a
           slightly different call signature than the other methods (with the correlation function
           type given as the first argument) and that it lacks many of the convenience variables the
           other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
@@ -196,14 +200,14 @@ def CorrelationFunctionSysTest(type=None):
         return Rho5SysTest()
     else:
         raise ValueError('Unknown correlation function type %s given to type kwarg'%type)
-    
-                          
+
+
 class BaseCorrelationFunctionSysTest(SysTest):
     """
     A base class for the Stile systematics tests that use correlation functions. This implements the
     class method getCF(), which runs a TreeCorr correlation function on a given set of data. Exact
-    arguments to this method should be created by child classes of BaseCorrelationFunctionSysTest; 
-    see the docstring for BaseCorrelationFunctionSysTest.getCF() for information on how to write 
+    arguments to this method should be created by child classes of BaseCorrelationFunctionSysTest;
+    see the docstring for BaseCorrelationFunctionSysTest.getCF() for information on how to write
     further tests using it.
     """
     short_name = 'corrfunc'
@@ -582,7 +586,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
 
     def __call__(self, *args, **kwargs):
         return self.getCF(*args, **kwargs)
-        
+
 
 class GalaxyShearSysTest(BaseCorrelationFunctionSysTest):
     """
@@ -819,7 +823,7 @@ class Rho5SysTest(BaseCorrelationFunctionSysTest):
     Compute the correlation of star shapes weighted by the residual size.
     """
     short_name = 'rho5'
-    long_name = 'Rho5 statistics (Correlation of star shapes weighted by the residual size)'
+    long_name = 'Rho5 statistics (Correlation of star and PSF shapes weighted by residual size)'
     objects_list = ['star PSF']
     required_quantities = [('ra', 'dec', 'sigma',
                             'psf_g1', 'psf_g2', 'psf_sigma', 'w')]
@@ -1054,7 +1058,7 @@ class StatSysTest(SysTest):
         # Return.
         return result
 
-def WhiskerPlotSysTest(type=None):        
+def WhiskerPlotSysTest(type=None):
     """
     Initialize an instance of a BaseWhiskerPlotSysTest class, based on the 'type' kwarg given.
     Options are:
@@ -1077,7 +1081,7 @@ def WhiskerPlotSysTest(type=None):
         return BaseWhiskerPlotSysTest()
     else:
         raise ValueError('Unknown whisker plot type %s given to type kwarg'%type)
-        
+
 class BaseWhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     """
@@ -1246,12 +1250,12 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
 class HistogramSysTest(SysTest):
     """
     A base class for Stile systematics tests that generate histograms.
-    
-    Like the :class:`StatSysTest`, :class:`HistogramSysTest` has a number of options which can be 
+
+    Like the :class:`StatSysTest`, :class:`HistogramSysTest` has a number of options which can be
     set either upon initialization or at runtime.  When set at initialization, the options will hold
     for any call to the object that doesn't explicitly override them; when set during a call, the
     options will hold only for that call.
-    
+
     See the documentation for the method :func:`HistoPlot` for a list of available kwargs.
     """
 
@@ -1518,7 +1522,7 @@ class HistogramSysTest(SysTest):
                          'cumulative', 'align', 'rwidth', 'log', 'color', 'alpha', 'text',
                          'text_x', 'text_y', 'fontsize', 'linewidth', 'vlines', 'vcolor']:
             exec('if %s is None: %s = self.%s'%(key_name, key_name, key_name))
-        
+
         ## Define the plot
         hist = plt.figure(figsize=figsize)
         ax   = hist.add_subplot(1, 1, 1)
@@ -1558,7 +1562,7 @@ class HistogramSysTest(SysTest):
             else:
                 print "Unrecognized code for binning style, use default instead!"
                 bins = nbins
-                
+
             if weights is True:
                 weights = data['w']
 
@@ -1673,7 +1677,7 @@ class HistogramSysTest(SysTest):
     def __call__(self, *args, **kwargs):
         return self.HistoPlot(*args, **kwargs)
 
-def ScatterPlotSysTest(type=None):                                
+def ScatterPlotSysTest(type=None):      
     """
     Initialize an instance of a BaseScatterPlotSysTest class, based on the 'type' kwarg given.
     Options are:
