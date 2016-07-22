@@ -1,5 +1,6 @@
 import numpy
 from sys_tests import BaseCorrelationFunctionSysTest
+from sys_tests import StatSysTest
 
 class CosmoSet(object):
     """ A class that holds the outputs & configuration parameters for a number of SysTets which
@@ -8,15 +9,15 @@ class CosmoSet(object):
     
 class XiSet(CosmoSet):
     required_tests = {'CorrelationFunctionSysTest': ['Rho1', 'Rho2', 'Rho3', 'Rho4', 'Rho5'],
-                      'StatSysTest': ['psf_size', 'size']}
+                      'StatSysTest': ['psf_sigma', 'sigma']}
     def __init__(self, star_data, galaxy_data, config, list_of_outputs):
         self.star_data = star_data
         self.galaxy_data = galaxy_data
         self.list_of_outputs = list_of_outputs
         self.config = config
-    def computeTraces(self):
-        trace_1_arr = self.galaxy_data['psf_size']/self.galaxy_data['size']
-        sst = stile.StatSysTest()
+    def computeTrace(self):
+        trace_1_arr = self.galaxy_data['psf_sigma']/self.galaxy_data['sigma']
+        sst = StatSysTest()
         res = sst(trace_1_arr)
         trace = res.mean
         return trace
@@ -43,9 +44,9 @@ class XiSet(CosmoSet):
         trace = self.computeTrace()
         alpha = self.computeAlpha()
         rho1, rho2, rho3, rho4, rho5 = self.list_of_outputs[:5]
-        return (trace_1**2*rho1
-                -alpha*trace_1*rho2+trace_1**2*rho3
-                +trace_1**2*rho4 - alpha*trace_1*rho5)
+        return (trace**2*rho1['xi+']
+                -alpha*trace*rho2['xi+']+trace**2*rho3['xi+']
+                +trace**2*rho4['xi+'] - alpha*trace*rho5['xi+'])
 
 
 class GalaxyCorrelationFunction(BaseCorrelationFunctionSysTest):
