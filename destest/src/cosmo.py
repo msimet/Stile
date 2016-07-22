@@ -600,6 +600,139 @@ class run(object):
 
     return
 
+
+  @staticmethod
+  def submit_rho_leakage_test(
+    deltaxi,
+    optdict,
+    test='rho_leakage',
+    workdir='',
+    procs=1,
+    hr=3,
+    cosmosisrootdir='',
+    cosmosissource='source my-source',
+    inifile='cosmosis.ini',
+    valuefile='values.ini',
+    priorfile='priors.ini'):
+    """
+    A wrapper to submit cosmosis runs specifically for delta xi+ systematic contamination. Could also make it optional which (xi vs cl) to use.
+
+    Use:
+
+    ....
+
+
+    """
+
+    def to_fits(theta,xip,xim,fileout,filein=workdir+'/ini/default_lsst.fits'):
+
+      import twopoint
+
+      # Setup xi extensions
+      xipext = twopoint.SpectrumMeasurement(
+        'xip', # hdu name
+        ([0],[0]), # tomographic bins
+        (twopoint.Types.galaxy_shear_plus_real, twopoint.Types.galaxy_shear_plus_real), # type of 2pt statistic
+        ('nofz', 'nofz'), # associated nofz
+        "SAMPLE", # window function
+        np.arange(len(theta)), # id
+        xip, # value
+        theta) # theta value
+
+      ximext = twopoint.SpectrumMeasurement(
+        'xim',
+        ([0],[0]), 
+        (twopoint.Types.galaxy_shear_minus_real, twopoint.Types.galaxy_shear_minus_real), 
+        ('nofz', 'nofz'), 
+        "SAMPLE", 
+        np.arange(len(theta)), 
+        xim,
+        theta)
+
+      # write to fits file
+      data = twopoint.TwoPointFile.from_fits(filein)
+      data.get_spectrum.append(xipext)
+      data.get_spectrum.append(ximext)
+      data.to_fits(fileout, clobber=True)
+
+      return
+
+    if inifile not in os.listdir(workdir+'/ini'):
+      print 'Missing ini file'
+    if valuefile not in os.listdir(workdir+'/ini'):
+      print 'Missing value file'
+    if priorfile not in os.listdir(workdir+'/ini'):
+      print 'Missing prior file'
+
+    if submit:
+      import subprocess as sp
+
+    if submit:
+      # setup header of submit file and assign subprocess
+      p = sp.Popen('qsub', shell=True, bufsize=1, stdin=sp.PIPE, stdout=sp.PIPE, close_fds=True, cwd=workdir)
+      output,input = p.stdout, p.stdin
+
+      jobstring0="""#!/bin/bash
+      #PBS -l nodes=1:ppn=%s
+      #PBS -l walltime=%s:00:00
+      #PBS -N %s
+      #PBS -o %s.log
+      #PBS -j oe
+      #PBS -m abe 
+      #PBS -M michael.troxel@manchester.ac.uk
+      module use /home/zuntz/modules/module-files
+      module load python
+      module use /etc/modulefiles/
+      cd /home/troxel/cosmosis/
+      source my-source
+      cd %s
+      """ % (str(procs),str(hr),test,test,workdir)
+    else:
+      # setup header of bash script
+      jobstring0="""#!/bin/bash
+      cd %s
+      %s
+      cd %s
+      """ % (cosmosisrootdir,cosmosissource,workdir)
+
+    # initialise final jobstring
+    jobstring=jobstring0
+
+    # call theory xip, xim
+    c0=corr._cosmosis(inifile=workdir+'/ini/cosmosis.ini')
+    xi0=c0.xi(0,0,theta=deltaxi['meanr'])
+
+    # write modified xip, xim to twopoint fits file for cosmosis
+    to_fits(deltaxi['meanr'],xi0.xip+deltaxi['xi'],xi0.xim,workdir+test+'/xi_plus_dxi.fits')
+
+    # setup file paths
+    infile=workdir+'/ini/rho_cosmosis.ini'
+    outfile=workdir+test+'/output.txt'
+    nzinfile=workdir+test+'/xi_plus_dxi.fits'
+    savedir="""''"""
+
+    # setup data block names
+    datablocks='xip xim'
+    nzdatablocks='nofz'
+
+    # setup cosmosis call
+    jobstring+="""mpirun -n %s cosmosis --mpi %srho_cosmosis.ini -p output.filename=%s test.save_dir=%s fits_nz.nz_file=%s fits_nz.data_sets=%s 2pt_like.data_file=%s 2pt_like.data_sets=%s
+    """ % (procs,workdir,outfile,savedir,nzinfile,nzdatablocks,infile,datablocks)
+    jobstring+="""mpirun -n 1 postprocess %s -o %s -p %s --no-plots
+    """ % (outfile,config.pztestdir+test+'/out',testtype+'_spec_'+nofz[:-8]+'_'+nofz[:-8])
+
+    # submit job or print bash script
+    if submit:
+      print jobstring
+      output,outputerr=p.communicate(input=jobstring)
+      time.sleep(0.1)
+    else:
+      print jobstring
+      with open('cosmosis_rho.submit','w') as f:
+        f.write(jobstring)
+
+    return
+
 class make(object):
 
   @staticmethod
