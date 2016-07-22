@@ -15,14 +15,11 @@ class XiSet(CosmoSet):
         self.list_of_outputs = list_of_outputs
         self.config = config
     def computeTraces(self):
-        trace_plus_arr = (self.galaxy_data['psf_size']-self.galaxy_data['size'])/self.galaxy_data['size']
         trace_1_arr = self.galaxy_data['psf_size']/self.galaxy_data['size']
         sst = stile.StatSysTest()
-        res = sst(trace_plus_arr)
-        trace_plus = res.mean
         res = sst(trace_1_arr)
-        trace_1 = res.mean
-        return trace_plus, trace_gal
+        trace = res.mean
+        return trace
     def computeAlpha(self):
         gp = GalaxyPSFCorrelationFunction()
         gp_res = gp(self.star_data, self.galaxy_data, config=self.config)
@@ -40,12 +37,13 @@ class XiSet(CosmoSet):
         # todo: check imaginary parts
         return (gp_res['xi+']-(e1_gal*e1_psf + e2_gal*e2_psf))/(pp_res['xi+']-e1_psf**2-e2_psf**2)
     def computeError(self):
-        gg = GalaxyCorrelationFunction()
-        gg_res = gg(self.galaxy_data, self.config)
-        trace_mean, trace_1 = self.computeTraces()
+        #gg = GalaxyCorrelationFunction()
+        #gg_res = gg(self.galaxy_data, self.config)
+        # Assume the first term in eq. 3.17 is 0.
+        trace = self.computeTrace()
         alpha = self.computeAlpha()
         rho1, rho2, rho3, rho4, rho5 = self.list_of_outputs[:5]
-        return (2*trace_mean*gg_res['xi+'] + trace_1**2*rho1
+        return (trace_1**2*rho1
                 -alpha*trace_1*rho2+trace_1**2*rho3
                 +trace_1**2*rho4 - alpha*trace_1*rho5)
 
