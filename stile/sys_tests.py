@@ -710,16 +710,26 @@ class Rho2SysTest(BaseCorrelationFunctionSysTest):
     Compute the correlation of star shapes with residual star shapes (star shapes - psf shapes).
     """
     short_name = 'rho2'
-    long_name = 'Rho2 statistics (Auto-correlation of star-PSF shapes)'
+    long_name = 'Rho2 statistics (Correlation PSF shapes with star-PSF shapes)'
     objects_list = ['star PSF']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w')]
 
     def __call__(self, data, data2=None, random=None, random2=None, config=None, **kwargs):
+        new_data = numpy.rec.fromarrays([data['ra'], data['dec'], data['psf_g1'],
+                                         data['psf_g2'], data['w']],
+                                         names = ['ra', 'dec', 'g1', 'g2', 'w'])
         if not data2:
             data2 = data
         new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'], data2['g1']-data2['psf_g1'],
                                           data2['g2']-data2['psf_g2'], data2['w']],
                                           names = ['ra', 'dec', 'g1', 'g2', 'w'])
+        if random:
+            new_random = numpy.rec.fromarrays([random['ra'], random['dec'], random['psf_g1'],
+                                               random['psf_g2'], random['w']],
+                                               names = ['ra', 'dec', 'g1', 'g2', 'w'])
+
+        else:
+	    new_random = random
         if not random2:
             random2 = random
         if random2 is not None:
