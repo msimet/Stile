@@ -739,7 +739,7 @@ class Rho2SysTest(BaseCorrelationFunctionSysTest):
                                                 names = ['ra', 'dec', 'g1', 'g2', 'w'])
         else:
             new_random2 = random2
-        return self.getCF('gg', data, new_data2, random, new_random2,
+        return self.getCF('gg', new_data, new_data2, new_random, new_random2,
                           config=config, **kwargs)
 
 
