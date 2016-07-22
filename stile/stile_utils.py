@@ -80,7 +80,7 @@ def FormatArray(d, fields=None):
         if isinstance(fields, dict):
             names = list(d.dtype.names)
             for key in fields:
-                names[fields[key]] = key
+                names[names.index(fields[key])] = key
             d.dtype.names = names
         elif len(fields) == len(d.dtype.names):
             d.dtype.names = fields

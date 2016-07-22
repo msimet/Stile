@@ -9,7 +9,7 @@ class CosmoSet(object):
 class XiSet(CosmoSet):
     required_tests = {'CorrelationFunctionSysTest': ['Rho1', 'Rho2', 'Rho3', 'Rho4', 'Rho5'],
                       'StatSysTest': ['psf_size', 'size']}
-    def __init__(star_data, galaxy_data, config, list_of_outputs):
+    def __init__(self, star_data, galaxy_data, config, list_of_outputs):
         self.star_data = star_data
         self.galaxy_data = galaxy_data
         self.list_of_outputs = list_of_outputs
