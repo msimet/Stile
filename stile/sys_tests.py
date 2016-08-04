@@ -707,10 +707,10 @@ class Rho1SysTest(BaseCorrelationFunctionSysTest):
 
 class Rho2SysTest(BaseCorrelationFunctionSysTest):
     """
-    Compute the correlation of star shapes with residual star shapes (star shapes - psf shapes).
+    Compute the correlation of PSF shapes with residual star shapes (star shapes - psf shapes).
     """
     short_name = 'rho2'
-    long_name = 'Rho2 statistics (Correlation PSF shapes with star-PSF shapes)'
+    long_name = 'Rho2 statistics (Correlation of PSF shapes with star-PSF shapes)'
     objects_list = ['star PSF']
     required_quantities = [('ra', 'dec', 'g1', 'g2', 'psf_g1', 'psf_g2', 'w')]
 
