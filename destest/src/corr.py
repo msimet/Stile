@@ -475,6 +475,7 @@ class _cosmosis(object):
     ini=Inifile(infile)
     if fitsfile is not None:
       ini.set('fits_nz', 'nz_file', fitsfile)
+      ini.set('2pt_like', 'data_file', fitsfile)
     self.pipeline=LikelihoodPipeline(ini)
     self.data=self.pipeline.run_parameters([])
 
