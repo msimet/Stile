@@ -624,7 +624,7 @@ class run(object):
 
     """
 
-    def to_fits(theta,xip,xim,fileout,filein=workdir+'/ini/default_lsst.fits'):
+    def to_fits(theta,xip,xim,fileout,filein=workdir+'/lsst_default.fits'):
 
       # From github.com/joezuntz/2point
       import twopoint
