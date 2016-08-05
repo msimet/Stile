@@ -477,6 +477,7 @@ class _cosmosis(object):
       ini.set('fits_nz', 'nz_file', fitsfile)
       ini.set('2pt_like', 'data_file', fitsfile)
     ini.set('pipeline','modules',ini.get('pipeline','modules').replace('2pt_like',''))
+    print ini.get('pipeline','values')
     self.pipeline=LikelihoodPipeline(ini)
     self.data=self.pipeline.run_parameters([])
 
