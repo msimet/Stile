@@ -701,7 +701,7 @@ class run(object):
     jobstring=jobstring0
 
     # call theory xip, xim
-    c0=corr._cosmosis(inifile=workdir+'/cosmosis.ini')
+    c0=corr._cosmosis(infile=workdir+'/cosmosis.ini',fitsfile=workdir+'/lsst_default.fits')
     xi0=c0.xi(0,0,theta=deltaxi['meanr'])
 
     # Check for and make output dir

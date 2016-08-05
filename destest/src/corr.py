@@ -468,11 +468,13 @@ class xi_2pt(object):
 
 class _cosmosis(object):
 
-  def __init__(self,infile='/home/troxel/destest/params.ini'):
+  def __init__(self,infile='/home/troxel/destest/params.ini',fitsfile=None):
     from cosmosis.runtime.config import Inifile
     from cosmosis.runtime.pipeline import LikelihoodPipeline
 
     ini=Inifile(infile)
+    if fitsfile is not None:
+      ini.set('fits_nz', 'nz_file', fitsfile)
     self.pipeline=LikelihoodPipeline(ini)
     self.data=self.pipeline.run_parameters([])
 
