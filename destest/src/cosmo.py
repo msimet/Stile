@@ -610,7 +610,7 @@ class run(object):
     procs=1,
     hr=3,
     cosmosisrootdir='',
-    cosmosissource='source my-source',
+    cosmosissource='source '+config.cosmosisnerscdir+'setup-cosmosis-nersc-edison', 
     inifile='cosmosis.ini',
     valuefile='values.ini',
     priorfile='priors.ini'):
@@ -626,6 +626,7 @@ class run(object):
 
     def to_fits(theta,xip,xim,fileout,filein=workdir+'/ini/default_lsst.fits'):
 
+      # From github.com/joezuntz/2point
       import twopoint
 
       # Setup xi extensions
@@ -657,11 +658,12 @@ class run(object):
 
       return
 
-    if inifile not in os.listdir(workdir+'/ini'):
+    # Check for required cosmosis files
+    if inifile not in os.listdir(workdir):
       print 'Missing ini file'
-    if valuefile not in os.listdir(workdir+'/ini'):
+    if valuefile not in os.listdir(workdir):
       print 'Missing value file'
-    if priorfile not in os.listdir(workdir+'/ini'):
+    if priorfile not in os.listdir(workdir):
       print 'Missing prior file'
 
     if submit:
@@ -699,27 +701,33 @@ class run(object):
     jobstring=jobstring0
 
     # call theory xip, xim
-    c0=corr._cosmosis(inifile=workdir+'/ini/cosmosis.ini')
+    c0=corr._cosmosis(inifile=workdir+'/cosmosis.ini')
     xi0=c0.xi(0,0,theta=deltaxi['meanr'])
+
+    # Check for and make output dir
+    try:
+      os.listdir(workdir+test)
+    except:
+      os.mkdir(workdir+test)
 
     # write modified xip, xim to twopoint fits file for cosmosis
     to_fits(deltaxi['meanr'],xi0.xip+deltaxi['xi'],xi0.xim,workdir+test+'/xi_plus_dxi.fits')
 
     # setup file paths
-    infile=workdir+'/ini/rho_cosmosis.ini'
+    infile=workdir+'/cosmosis.ini'
+    savedir="""''"""
     outfile=workdir+test+'/output.txt'
     nzinfile=workdir+test+'/xi_plus_dxi.fits'
-    savedir="""''"""
 
     # setup data block names
     datablocks='xip xim'
     nzdatablocks='nofz'
 
     # setup cosmosis call
-    jobstring+="""mpirun -n %s cosmosis --mpi %srho_cosmosis.ini -p output.filename=%s test.save_dir=%s fits_nz.nz_file=%s fits_nz.data_sets=%s 2pt_like.data_file=%s 2pt_like.data_sets=%s
-    """ % (procs,workdir,outfile,savedir,nzinfile,nzdatablocks,infile,datablocks)
-    jobstring+="""mpirun -n 1 postprocess %s -o %s -p %s --no-plots
-    """ % (outfile,config.pztestdir+test+'/out',testtype+'_spec_'+nofz[:-8]+'_'+nofz[:-8])
+    jobstring+="""mpirun -n %s cosmosis --mpi %s -p output.filename=%s test.save_dir=%s fits_nz.nz_file=%s fits_nz.data_sets=%s 2pt_like.data_file=%s 2pt_like.data_sets=%s
+    """ % (procs,infile,outfile,savedir,nzinfile,nzdatablocks,nzinfile,datablocks)
+    jobstring+="""mpirun -n 1 postprocess %s -o %s 
+    """ % (outfile,workdir+test)#--no-plots
 
     # submit job or print bash script
     if submit:
