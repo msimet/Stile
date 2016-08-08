@@ -4,7 +4,6 @@ import scipy.interpolate as interp
 import fitsio as fio
 
 import catalog
-import corr
 import config
 import fig
 import txt
@@ -700,7 +699,7 @@ class run(object):
     jobstring=jobstring0
 
     # call theory xip, xim
-    c0=corr._cosmosis(infile=workdir+'/cosmosis.ini',fitsfile=workdir+'/lsst_default.fits')
+    c0=_cosmosis(infile=workdir+'cosmosis.ini',fitsfile=workdir+'lsst_default.fits',values=workdir+'values_fixed.ini')
     c0.xi(0,0,theta=deltaxi['meanr'])
 
     # Check for and make output dir
