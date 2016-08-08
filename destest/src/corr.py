@@ -519,6 +519,7 @@ class _cosmosis(object):
       self.theta=theta
       self.xip=f(theta)
       self.xim=f2(theta)
+      print self.xip,self.xim
 
     return
 
