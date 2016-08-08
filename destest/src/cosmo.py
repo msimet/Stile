@@ -1,6 +1,6 @@
 import numpy as np
 import os
-import scipy.interpolate as interp
+import scipy
 import fitsio as fio
 
 import catalog
@@ -965,7 +965,7 @@ class make(object):
     tmp=np.zeros((pz0.tomo,nbins))
     for i in range(len(pz0.pz)):
 
-      f=interp.interp1d(pz0.bin,pz0.pz[i],kind='cubic',fill_value=0.)
+      f=scipy.interpolate.interp1d(pz0.bin,pz0.pz[i],kind='cubic',fill_value=0.)
       f2=extrap1d(f)
       tmp[i]=f2(np.linspace(np.min(pz0.bin),zmax,nbins))
 
