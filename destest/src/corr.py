@@ -510,10 +510,11 @@ class _cosmosis(object):
     print xip0,xim0
 
     if theta is None:
-      self.theta=theta0
+      self.theta=theta0/np.pi*180.*60.
       self.xip=xip0
       self.xim=xim0
     else:
+      theta=theta*np.pi/180./60.
       f=scipy.interpolate.interp1d(theta0,xip0)
       f2=scipy.interpolate.interp1d(theta0,xim0)
       self.theta=theta
