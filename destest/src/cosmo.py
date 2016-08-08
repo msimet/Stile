@@ -638,7 +638,8 @@ class run(object):
         "SAMPLE", # window function
         np.arange(len(theta)), # id
         xip, # value
-        theta) # theta value
+        angle=theta, # theta value
+        angle_unit='arcmin') # units
 
       ximext = twopoint.SpectrumMeasurement(
         'xim',
@@ -648,7 +649,8 @@ class run(object):
         "SAMPLE", 
         np.arange(len(theta)), 
         xim,
-        theta)
+        angle=theta,
+        angle_unit='arcmin')
 
       # write to fits file
       data = twopoint.TwoPointFile.from_fits(filein)
