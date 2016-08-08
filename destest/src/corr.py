@@ -479,6 +479,7 @@ class _cosmosis(object):
     if values is not None:
       ini.set('pipeline', 'values', values)
     ini.set('pipeline','modules',ini.get('pipeline','modules').replace('2pt_like',''))
+    ini.set('runtime','sampler','test')
     print ini.get('pipeline', 'values')
     self.pipeline=LikelihoodPipeline(ini)
     self.data=self.pipeline.run_parameters([])
