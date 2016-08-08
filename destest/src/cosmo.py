@@ -624,7 +624,7 @@ class run(object):
 
     """
 
-    def to_fits(theta,xip,xim,fileout,filein=workdir+'/lsst_default.fits'):
+    def to_fits(theta,xip,xim,fileout,filein=workdir+'lsst_default.fits'):
 
       # From github.com/joezuntz/2point
       import twopoint
@@ -653,9 +653,9 @@ class run(object):
         angle_unit='arcmin')
 
       # write to fits file
-      data = twopoint.TwoPointFile.from_fits(filein)
-      data.spectra.append(xipext)
-      data.spectra.append(ximext)
+      nofz=twopoint.NumberDensity.from_fits('nofz')
+      covmat=twopoint.CovarianceMatrixInfo.from_fits('covmat')
+      data=twopoint.TwoPointFile([xipext,ximext],[nofz],None,covmat)
       data.to_fits(fileout, clobber=True)
 
       return
@@ -714,7 +714,7 @@ class run(object):
     to_fits(deltaxi['meanr'],c0.xip+deltaxi['xi'],c0.xim,workdir+test+'/xi_plus_dxi.fits')
 
     # setup file paths
-    infile=workdir+'/cosmosis.ini'
+    infile=workdir+'cosmosis.ini'
     savedir="""''"""
     outfile=workdir+test+'/output.txt'
     nzinfile=workdir+test+'/xi_plus_dxi.fits'
