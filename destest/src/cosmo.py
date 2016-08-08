@@ -653,8 +653,9 @@ class run(object):
         angle_unit='arcmin')
 
       # write to fits file
-      nofz=twopoint.NumberDensity.from_fits('nofz')
-      covmat=twopoint.CovarianceMatrixInfo.from_fits('covmat')
+      fits=fio.FITS(filein)
+      nofz=twopoint.NumberDensity.from_fits(fits['nofz'])
+      covmat=twopoint.CovarianceMatrixInfo.from_fits(fits['covmat'])
       data=twopoint.TwoPointFile([xipext,ximext],[nofz],None,covmat)
       data.to_fits(fileout, clobber=True)
 
