@@ -650,7 +650,7 @@ class run(object):
         np.arange(len(theta)), 
         xim,
         angle=theta,
-        angle_unit='arcmin')
+        angle_unit='arcmin') 
 
       # write to fits file
       fits=fio.FITS(filein)
