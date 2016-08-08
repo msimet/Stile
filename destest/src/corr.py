@@ -505,8 +505,8 @@ class _cosmosis(object):
   def xi(self,i,j,theta=None):
 
     theta0=self.data['shear_xi','theta']
-    xip0=self.data['shear_xi','xiplus_'+str(i)+'_'+str(j)]
-    xim0=self.data['shear_xi','ximinus_'+str(i)+'_'+str(j)]
+    xip0=self.data['shear_xi','xiplus_'+str(i+1)+'_'+str(j+1)]
+    xim0=self.data['shear_xi','ximinus_'+str(i+1)+'_'+str(j+1)]
 
     if theta is None:
       self.theta=theta0
