@@ -654,8 +654,8 @@ class run(object):
 
       # write to fits file
       data = twopoint.TwoPointFile.from_fits(filein)
-      data.get_spectrum.append(xipext)
-      data.get_spectrum.append(ximext)
+      data.spectra.append(xipext)
+      data.spectra.append(ximext)
       data.to_fits(fileout, clobber=True)
 
       return
