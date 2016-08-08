@@ -4,6 +4,7 @@ import scipy.interpolate as interp
 import fitsio as fio
 
 import catalog
+import corr
 import config
 import fig
 import txt
@@ -970,3 +971,75 @@ class make(object):
       tmp[i]=f2(np.linspace(np.min(pz0.bin),zmax,nbins))
 
     return tmp
+
+
+class _cosmosis(object):
+
+  def __init__(self,infile='/home/troxel/destest/params.ini',fitsfile=None,values=None):
+    from cosmosis.runtime.config import Inifile
+    from cosmosis.runtime.pipeline import LikelihoodPipeline
+
+    ini=Inifile(infile)
+    if fitsfile is not None:
+      ini.set('fits_nz', 'nz_file', fitsfile)
+      ini.set('2pt_like', 'data_file', fitsfile)
+    if values is not None:
+      ini.set('pipeline', 'values', values)
+    ini.set('pipeline','modules',ini.get('pipeline','modules').replace('2pt_like',''))
+    ini.set('runtime','sampler','test')
+    print ini.get('pipeline', 'values')
+    self.pipeline=LikelihoodPipeline(ini)
+    self.data=self.pipeline.run_parameters([])
+
+  def cls(self,i,j,ell=None,interpout=False):
+
+    ell0=self.data['shear_cl','ell']
+    cl0=self.data['shear_cl','bin_'+str(i)+'_'+str(j)]
+
+    if ell is None:
+      self.ell=ell0
+      self.cl=cl0
+    else:
+      f=scipy.interpolate.interp1d(ell0,cl0)
+      self.ell=ell
+      self.cl=f(ell)
+
+    if interpout:
+      return f
+    else:
+      return
+
+  def xi(self,i,j,theta=None):
+
+    theta0=self.data['shear_xi','theta']
+    xip0=self.data['shear_xi','xiplus_'+str(i+1)+'_'+str(j+1)]
+    xim0=self.data['shear_xi','ximinus_'+str(i+1)+'_'+str(j+1)]
+
+    if theta is None:
+      self.theta=theta0/np.pi*180.*60.
+      self.xip=xip0
+      self.xim=xim0
+    else:
+      theta=theta*np.pi/180./60.
+      f=scipy.interpolate.interp1d(theta0,xip0)
+      f2=scipy.interpolate.interp1d(theta0,xim0)
+      self.theta=theta
+      self.xip=f(theta)
+      self.xim=f2(theta)
+
+    return
+
+  def xiobs(self,bandpowers):
+
+    f=scipy.interpolate.interp1d(self.theta,self.xip)
+    f2=scipy.interpolate.interp1d(self.theta,self.xim)
+    def func(t,f,i):
+      return bandpowers.window_theta_geometric(t,i)*f(t)
+
+    self.xipobs=np.zeros(bandpowers.nt)
+    self.ximobs=np.zeros(bandpowers.nt)
+    for i in range(bandpowers.nt):
+      self.xipobs[i]=scipy.integrate.quad(func,bandpowers.tmin[i],bandpowers.tmax[i],args=(f,i))[0]
+      self.ximobs[i]=scipy.integrate.quad(func,bandpowers.tmin[i],bandpowers.tmax[i],args=(f2,i))[0]
+
+    return
