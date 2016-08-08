@@ -613,7 +613,7 @@ class run(object):
     cosmosissource='source '+config.cosmosisnerscdir+'setup-cosmosis-nersc-edison', 
     inifile='cosmosis.ini',
     valuefile='values.ini',
-    priorfile='priors.ini'):
+    submit=False):
     """
     A wrapper to submit cosmosis runs specifically for delta xi+ systematic contamination. Could also make it optional which (xi vs cl) to use.
 
@@ -663,8 +663,6 @@ class run(object):
       print 'Missing ini file'
     if valuefile not in os.listdir(workdir):
       print 'Missing value file'
-    if priorfile not in os.listdir(workdir):
-      print 'Missing prior file'
 
     if submit:
       import subprocess as sp
@@ -702,7 +700,7 @@ class run(object):
 
     # call theory xip, xim
     c0=corr._cosmosis(infile=workdir+'/cosmosis.ini',fitsfile=workdir+'/lsst_default.fits')
-    xi0=c0.xi(0,0,theta=deltaxi['meanr'])
+    c0.xi(0,0,theta=deltaxi['meanr'])
 
     # Check for and make output dir
     try:
@@ -711,7 +709,7 @@ class run(object):
       os.mkdir(workdir+test)
 
     # write modified xip, xim to twopoint fits file for cosmosis
-    to_fits(deltaxi['meanr'],xi0.xip+deltaxi['xi'],xi0.xim,workdir+test+'/xi_plus_dxi.fits')
+    to_fits(deltaxi['meanr'],c0.xip+deltaxi['xi'],c0.xim,workdir+test+'/xi_plus_dxi.fits')
 
     # setup file paths
     infile=workdir+'/cosmosis.ini'
