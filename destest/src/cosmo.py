@@ -653,9 +653,10 @@ class run(object):
         angle_unit='arcmin') 
 
       # write to fits file
-      fits=fio.FITS(filein)
-      nofz=twopoint.NumberDensity.from_fits(fits['nofz'])
-      covmat=twopoint.CovarianceMatrixInfo.from_fits(fits['covmat'])
+      from astropy.io import fits
+      data=fits.open(filein)
+      nofz=twopoint.NumberDensity.from_fits(data['nofz'])
+      covmat=twopoint.CovarianceMatrixInfo.from_fits(data['covmat'])
       data=twopoint.TwoPointFile([xipext,ximext],[nofz],None,covmat)
       data.to_fits(fileout, clobber=True)
 
