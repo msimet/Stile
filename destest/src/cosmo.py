@@ -722,7 +722,7 @@ class run(object):
     nzinfile=workdir+test+'/xi_plus_dxi.fits'
 
     # setup data block names
-    datablocks='xip xim'
+    datablocks="""'xip xim'"""
     nzdatablocks='nofz'
 
     # setup cosmosis call
