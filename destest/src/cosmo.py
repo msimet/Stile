@@ -632,7 +632,7 @@ class run(object):
       # Setup xi extensions
       xipext = twopoint.SpectrumMeasurement(
         'xip', # hdu name
-        ([0],[0]), # tomographic bins
+        ([1],[1]), # tomographic bins
         (twopoint.Types.galaxy_shear_plus_real, twopoint.Types.galaxy_shear_plus_real), # type of 2pt statistic
         ('nofz', 'nofz'), # associated nofz
         "SAMPLE", # window function
@@ -643,7 +643,7 @@ class run(object):
 
       ximext = twopoint.SpectrumMeasurement(
         'xim',
-        ([0],[0]), 
+        ([1],[1]), 
         (twopoint.Types.galaxy_shear_minus_real, twopoint.Types.galaxy_shear_minus_real), 
         ('nofz', 'nofz'), 
         "SAMPLE", 
