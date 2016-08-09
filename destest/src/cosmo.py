@@ -713,7 +713,7 @@ class run(object):
       os.mkdir(workdir+test)
 
     # write modified xip, xim to twopoint fits file for cosmosis
-    to_fits(deltaxi['meanr'],c0.xip+deltaxi['xi'],c0.xim+deltaxi['xi'],workdir+test+'/xi_plus_dxi.fits')
+    to_fits(deltaxi['meanr'],c0.xip,c0.xim,workdir+test+'/xi_plus_dxi.fits')#+deltaxi['xi']
 
     # setup file paths
     infile=workdir+'cosmosis.ini'
