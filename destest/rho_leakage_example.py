@@ -16,6 +16,7 @@ if __name__=='__main__':
   c0.xi(1,1,theta=deltaxi['meanr'])
   # Simulate 5% PSF leakage into xi+
   deltaxi['xi']=c0.xip*.05
+  # Everything above this will be replaced by the output of example_cosmo.py.
 
   # Where all the work happens. This function: 
   # 1) takes the psf leakage and adds it to a theory xi+ that is the same theory that the leakage is made from
