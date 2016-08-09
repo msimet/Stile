@@ -704,7 +704,7 @@ class run(object):
 
     # call theory xip, xim for testing
     c0=_cosmosis(infile=workdir+'cosmosis.ini',fitsfile=workdir+'lsst_default.fits',values=workdir+'values_fixed.ini')
-    c0.xi(0,0,theta=deltaxi['meanr'])
+    c0.xi(1,1,theta=deltaxi['meanr'])
 
     # Check for and make output dir
     try:
