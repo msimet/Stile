@@ -206,7 +206,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
                     datarandom_t_field='gamT_', datarandom_t_title='$\gamma_{T',
                     datarandom_x_field='gamX_', datarandom_x_title='$\gamma_{X',
                     sigma_field='sigma', y_title="$\gamma$"),  # ng
-        PlotDetails(t_field='xip', t_title=r'$\xi_+$', x_field='xi-', x_title=r'$\xi_-$',
+        PlotDetails(t_field='xip', t_title=r'$\xi_+$', x_field='xim', x_title=r'$\xi_-$',
                     t_im_field='xip_im', t_im_title=r'$\xi_{+,im}$',
                     x_im_field='xip_im', x_im_title=r'$\xi_{-,im}$',
                     sigma_field='sigma_xi', y_title=r"$\xi$"),  # gg
