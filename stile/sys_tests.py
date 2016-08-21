@@ -750,7 +750,7 @@ class Rho2SysTest(BaseCorrelationFunctionSysTest):
         new_data2 = numpy.rec.fromarrays([data2['ra'], data2['dec'], data2['g1']-data2['psf_g1'],
                                           data2['g2']-data2['psf_g2'], data2['w']],
                                           names = ['ra', 'dec', 'g1', 'g2', 'w'])
-        if random is None:
+        if random is not None:
             new_random = numpy.rec.fromarrays([random['ra'], random['dec'], random['psf_g1'],
                                                random['psf_g2'], random['w']],
                                                names = ['ra', 'dec', 'g1', 'g2', 'w'])
