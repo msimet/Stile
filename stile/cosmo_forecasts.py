@@ -36,7 +36,13 @@ class XiSet(CosmoSet):
         res = stat(self.star_data['psf_g2'])
         e2_psf = res.mean
         # todo: check imaginary parts
-        return (gp_res['xi+']-(e1_gal*e1_psf + e2_gal*e2_psf))/(pp_res['xi+']-e1_psf**2-e2_psf**2)
+        if 'xi+' in rho1.dtype.names:
+            xi_name = 'xi+'
+            r_name = '<R>'
+        else:
+            xi_name = 'xip'
+            r_name = 'meanr'
+        return (gp_res[xi_name]-(e1_gal*e1_psf + e2_gal*e2_psf))/(pp_res[xi_name]-e1_psf**2-e2_psf**2)
     def computeError(self):
         #gg = GalaxyCorrelationFunction()
         #gg_res = gg(self.galaxy_data, self.config)
@@ -44,9 +50,15 @@ class XiSet(CosmoSet):
         trace = self.computeTrace()
         alpha = self.computeAlpha()
         rho1, rho2, rho3, rho4, rho5 = self.list_of_outputs[:5]
-        return numpy.rec.fromarrays([rho1['<R>'], trace**2*rho1['xi+']
-                -alpha*trace*rho2['xi+']+trace**2*rho3['xi+']
-                +trace**2*rho4['xi+'] - alpha*trace*rho5['xi+']],
+        if 'xi+' in rho1.dtype.names:
+            xi_name = 'xi+'
+            r_name = '<R>'
+        else:
+            xi_name = 'xip'
+            r_name = 'meanr'
+        return numpy.rec.fromarrays([rho1[r_name], trace**2*rho1[xi_name]
+                -alpha*trace*rho2[xi_name]+trace**2*rho3[xi_name]
+                +trace**2*rho4[xi_name] - alpha*trace*rho5[xi_name]],
                 names=['meanr', 'xi'])
 
 
