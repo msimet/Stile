@@ -36,7 +36,7 @@ class XiSet(CosmoSet):
         res = stat(self.star_data['psf_g2'])
         e2_psf = res.mean
         # todo: check imaginary parts
-        if 'xi+' in rho1.dtype.names:
+        if 'xi+' in gp_res.dtype.names:
             xi_name = 'xi+'
             r_name = '<R>'
         else:
