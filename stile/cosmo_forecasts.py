@@ -44,9 +44,10 @@ class XiSet(CosmoSet):
         trace = self.computeTrace()
         alpha = self.computeAlpha()
         rho1, rho2, rho3, rho4, rho5 = self.list_of_outputs[:5]
-        return (trace**2*rho1['xi+']
+        return numpy.rec.fromarrays([rho1['<R>'], trace**2*rho1['xi+']
                 -alpha*trace*rho2['xi+']+trace**2*rho3['xi+']
-                +trace**2*rho4['xi+'] - alpha*trace*rho5['xi+'])
+                +trace**2*rho4['xi+'] - alpha*trace*rho5['xi+']],
+                names=['meanr', 'xi'])
 
 
 class GalaxyCorrelationFunction(BaseCorrelationFunctionSysTest):
