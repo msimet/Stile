@@ -41,7 +41,7 @@ class XiSet(CosmoSet):
             r_name = '<R>'
         else:
             xi_name = 'xip'
-            r_name = 'meanr'
+            r_name = 'meanR'
         return (gp_res[xi_name]-(e1_gal*e1_psf + e2_gal*e2_psf))/(pp_res[xi_name]-e1_psf**2-e2_psf**2)
     def computeError(self):
         #gg = GalaxyCorrelationFunction()
@@ -55,7 +55,7 @@ class XiSet(CosmoSet):
             r_name = '<R>'
         else:
             xi_name = 'xip'
-            r_name = 'meanr'
+            r_name = 'meanR'
         return numpy.rec.fromarrays([rho1[r_name], trace**2*rho1[xi_name]
                 -alpha*trace*rho2[xi_name]+trace**2*rho3[xi_name]
                 +trace**2*rho4[xi_name] - alpha*trace*rho5[xi_name]],
