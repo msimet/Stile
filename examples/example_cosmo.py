@@ -15,7 +15,7 @@ def main():
     if True:
         # Run on a subset of CFHTLenS data
         data = stile.ReadTable(#'/homes/m/msimet/CFHTLenS/CFHTLens_W1_passed.fits', 
-                               '/physics2/msimet/lustre/cfhtlens/CFHTLens_W2_reject0.fits',
+                               '/global/homes/m/msimet/CFHTLens_W2_reject0.fits',
                                fields={'psf_g1': 'PSF_e1', 'psf_g2': 'PSF_e2', 'w': 'weight', 'g1': 'e1', 'g2': 'e2',
                                        'sigma': 'scalelength', 'psf_sigma': 'FLUX_RADIUS'})
         data = numpy.array(data)[:1000]
