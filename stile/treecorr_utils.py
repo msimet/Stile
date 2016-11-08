@@ -3,8 +3,11 @@ Contains elements of Stile needed to interface with Mike Jarvis's TreeCorr progr
 """
 import numpy
 import file_io
-import treecorr
-from treecorr.corr2 import corr2_valid_params
+try:
+    import treecorr
+    from treecorr.corr2 import corr2_valid_params
+except ImportError:
+    pass
 
 def Parser():
     import argparse
