@@ -172,6 +172,11 @@ _fits_dict = {'b': 'L',  # boolean
               'c': 'M',  # complex-floating point,
              }
 def _coerceFitsFormat(fmt):
+    if fmt.subdtype:
+        if len(fmt.subdtype[1])>1:
+            raise RuntimeError("Cannot make a FITS table with a column containing arrays "+
+                               "of greater than one dimension")
+        return str(fmt.subdtype[1][0])+_coerceFitsFormat(fmt.subdtype[0])
     if 'S' in fmt.str or 'a' in fmt.str or 'U' in fmt.str:
         return 'A'+fmt.str.split('S')[1]
     elif fmt.str[1] in _fits_dict:  # first character is probably a byte-order flag
