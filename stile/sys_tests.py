@@ -1102,6 +1102,10 @@ def WhiskerPlotSysTest(type=None):
         - Star: whisker plot of shapes of PSF stars
         - PSF: whisker plot of PSF shapes at the location of PSF stars
         - Residual: whisker plot of (star shape-PSF shape)
+        - BinnedStar: whisker plot of shapes of PSF stars, based on averages in pixels
+        - BinnedPSF: whisker plot of PSF shapes at the location of PSF stars, based on averages in 
+          pixels
+        - BinnedResidual: whisker plot of (star shape-PSF shape), based on averages in pixels
         - None: an empty BaseWhiskerPlotSysTest class instance, which can be used for multiple types
           of whisker plots.  See the documentation for BaseWhiskerPlotSysTest (especially the method
           whiskerPlot) for more details.  Note that this type has a different call signature than
@@ -1114,6 +1118,12 @@ def WhiskerPlotSysTest(type=None):
         return WhiskerPlotPSFSysTest()
     elif type=='Residual':
         return WhiskerPlotResidualSysTest()
+    elif type=='BinnedStar':
+        return BinnedWhiskerPlotStarSysTest()
+    elif type=='BinnedPSF':
+        return BinnedWhiskerPlotPSFSysTest()
+    elif type=='BinnedResidual':
+        return BinnedWhiskerPlotResidualSysTest()
     elif type is None:
         return BaseWhiskerPlotSysTest()
     else:
@@ -1283,6 +1293,69 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
                                 figsize=figsize, xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
                                 xlim=xlim, ylim=ylim, equal_axis=True)
+
+class BinnedWhiskerPlotSysTest(BaseWhiskerPlotSysTest):
+    def whiskerPlot(self, x, y, g1, g2, sigma, n_x=30, n_y=30, split_by_objects=True, 
+                                **kwargs):
+        """
+        A method for making whisker plots where the whiskers represent the average value in pixels.
+        Most of the arguments and keywords are the same as for 
+        :func:`BaseWhiskerPlotSysTest.whiskerPlot`, with the following additional keywords:
+        
+        @param n_x              Number of pixels to use in the x-coordinate [default: 30]
+        @param n_y              Number of pixels to use in the y-coordinate [default: 30]
+        @param split_by_objects If True, make the pixels so there are an equal number of objects
+                                in each column or row. (Note this doesn't guarantee equal number
+                                in each pixel, just each column or row of pixels in total.)  If 
+                                False, instead use equal binning in the x- or y-coordinate, eg
+                                (0, 10, 20, 30...) for the bin endpoints.  [default: True]
+        """
+        new_x = []
+        new_y = []
+        new_g1 = []
+        new_g2 = []
+        new_sigma = []
+        if split_by_objects:
+            bin_x = numpy.percentile(x, numpy.linspace(0, 100, num=n_x+1, endpoint=True))
+            bin_y = numpy.percentile(y, numpy.linspace(0, 100, num=n_y+1, endpoint=True))
+        else:
+            bin_x = numpy.linspace(numpy.min(x), numpy.max(x), num=n_x, endpoint=True)
+            bin_y = numpy.linspace(numpy.min(y), numpy.max(y), num=n_y, endpoint=True)
+        for lo_x, hi_x in zip(bin_x[:-1], bin_x[1:]):
+            for lo_y, hi_y in zip(bin_y[:-1], bin_y[1:]):
+                mask = (x>lo_x) & (x<=hi_x) & (y>lo_y) & (y<=hi_y)
+                if numpy.any(mask): # guard against objectless pixells
+                    new_x.append(numpy.mean(x[mask]))
+                    new_y.append(numpy.mean(y[mask]))
+                    new_g1.append(numpy.mean(g1[mask]))
+                    new_g2.append(numpy.mean(g2[mask]))
+                    new_sigma.append(numpy.mean(sigma[mask]))
+        new_x = numpy.asarray(new_x)
+        new_y = numpy.asarray(new_y)
+        new_g1 = numpy.asarray(new_g1)
+        new_g2 = numpy.asarray(new_g2)
+        new_sigma = numpy.asarray(new_sigma)
+        return super(BinnedWhiskerPlotSysTest, self).whiskerPlot(
+                                        new_x, new_y, new_g1, new_g2, new_sigma, **kwargs)             
+            
+class BinnedWhiskerPlotStarSysTest(BinnedWhiskerPlotSysTest, WhiskerPlotStarSysTest):
+    short_name = 'binned_whiskerplot_star'
+    long_name = 'Make a binned whisker plot of stars'
+    objects_list = ['star PSF']
+    required_quantities = [('x', 'y', 'g1', 'g2', 'sigma')]
+        
+class BinnedWhiskerPlotPSFSysTest(BinnedWhiskerPlotSysTest, WhiskerPlotPSFSysTest):
+    short_name = 'binned_whiskerplot_psf'
+    long_name = 'Make a binned whisker plot of PSFs'
+    objects_list = ['star PSF']
+    required_quantities = [('x', 'y', 'psf_g1', 'psf_g2', 'psf_sigma')]
+        
+class BinnedWhiskerPlotResidualSysTest(BinnedWhiskerPlotSysTest, WhiskerPlotResidualSysTest):
+    short_name = 'whiskerplot_residual'
+    long_name = 'Make a Whisker plot of residuals'
+    objects_list = ['star PSF']
+    required_quantities = [('x', 'y', 'g1', 'g2', 'sigma', 'psf_g1', 'psf_g2', 'psf_sigma')]
+
 
 class HistogramSysTest(SysTest):
     """
