@@ -50,8 +50,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Stile'
-copyright = u'2015, Melanie Simet, Hironao Miyatake, and the Stile development team'
-author = u'Melanie Simet, Hironao Miyatake, and the Stile development team'
+copyright = u'2015, Melanie Simet, Hironao Miyatake,\nand the Stile development team'
+author = u'Melanie Simet, Hironao Miyatake,\nand the Stile development team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
