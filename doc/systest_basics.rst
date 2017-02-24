@@ -31,17 +31,18 @@ To figure out which specific types of each test are available, you can look at t
 
 >>> help(stile.WhiskerPlotSysTest)
 WhiskerPlotSysTest(type=None)
-    Initialize an instance of a :class:`BaseWhiskerPlotSysTest` class, based on the ``type`` kwarg
-    given.  Options are:
+    Initialize an instance of a :class:`BaseWhiskerPlotSysTest` class, based on the
+    ``type`` kwarg given.  Options are:
         - **Star**: whisker plot of shapes of PSF stars
         - **PSF**: whisker plot of PSF shapes at the location of PSF stars
         - **Residual**: whisker plot of (star shape-PSF shape)
-        - **None**: an empty :class:`BaseWhiskerPlotSysTest` class instance, which can be used for
-          multiple types of whisker plots.  See the documentation for
-          :class:`BaseWhiskerPlotSysTest` (especially the method :func:`whiskerPlot`) for more
-          details.  Note that this type has a different call signature than
-          the other methods and that it lacks many of the convenience variables the other
-          WhiskerPlots have, such as self.objects_list and self.required_quantities.
+        - **None**: an empty :class:`BaseWhiskerPlotSysTest` class instance, which
+          can be used for multiple types of whisker plots.  See the documentation for
+          :class:`BaseWhiskerPlotSysTest` (especially the method :func:`whiskerPlot`)
+          for more details.  Note that this type has a different call signature than
+          the other methods and that it lacks many of the convenience variables the
+          other WhiskerPlots have, such as self.objects_list and 
+          self.required_quantities.
 
 or, alternately, head over to the :doc:`sys_tests` documentation page, which has nicer formatting.
 
@@ -132,15 +133,15 @@ catalogs are given, they are used as random lenses, and
 
 Shear-shear correlation functions are :math:`\xi_+` and :math:`\xi_-`.  They are functions of the
 spatial correlation of the shears and their complex conjugates in sky coordinates; see e.g.
-[Jarvis et al. 2016](http://adsabs.harvard.edu/abs/2016MNRAS.460.2245J) for complete definitions
-of :math:`\xi_+` and :math:`\xi_-`.  These should be completely real (within noise), although
-the results will include the imaginary portions as a cross-check.
+`Jarvis et al. 2016 <http://adsabs.harvard.edu/abs/2016MNRAS.460.2245J>`_ for complete definitions
+of :math:`\xi_+` and :math:`\xi_-`.  The :math:`\xi`s should be completely real (within noise), 
+although the results will include the imaginary portions as a cross-check.
 
-Point-scalar (point-kappa) estimates are equivalent to <scalar>; scalar-shear estimates are
-equivalent to <scalar*Re(shear)> with a corresponding imaginary case <scalar*Im(shear)>,
+Point-scalar (point-kappa) estimates are equivalent to ``<scalar>``. Scalar-shear estimates are
+equivalent to ``<scalar*Re(shear)>`` with a corresponding imaginary case ``<scalar*Im(shear)>``,
 corresponding to the correlation between the scalar value at that point and the tangential 
-shear (real) or the shear at 45 degrees from the tangent (imaginary); scalar-scalar estimates are
-<scalar1*scalar2>.  Random catalogs result in compensated estimators as in the point-shear case.
+shear (real) or the shear at 45 degrees from the tangent (imaginary). Scalar-scalar estimates are
+``<scalar1*scalar2>``.  Random catalogs result in compensated estimators as in the point-shear case.
 
 Whisker plots
 -------------
@@ -245,11 +246,14 @@ By default, the :class:`HistogramSysTest <stile.sys_tests.HistogramSysTest>` mak
 50 bins.  You probably want to choose different binning.  You can have Stile pick the binning for you
 based on two different algorithms:
 
->>> scott_rule_hist = stile.HistogramSysTest(binning_style='scott')  # Scott's rule
->>> freedman_rule_hist = stile.HistogramSysTest(binning_style='freedman')  # Freedman-Diaconis rule
+>>> # Scott's rule
+>>> scott_rule_hist = stile.HistogramSysTest(binning_style='scott')  
+>>> # Freedman-Diaconis rule
+>>> freedman_rule_hist = stile.HistogramSysTest(binning_style='freedman')
 
 Scott's rule chooses bins based on the sample size and the sample standard deviation, while the
-Freedman-Diaconis rule uses the interquartile range instead, which is less sensitive to outliers.
+Freedman-Diaconis rule uses the interquartile range instead of the sample standard deviation,
+so it is less sensitive to outliers.
 
 You can also just set your own number of bins.
 
@@ -279,7 +283,7 @@ or pass the field at runtime:
 Currently, a :class:`stile.StatSysTest <stile.sys_tests.StatSysTest>` will compute min, max,
 median, median absolute deviation (MAD), mean, standard deviation, variance, and number of
 objects, and will additionally compute the skew and kurtosis if ``scipy.stats`` can be imported.
-It will also compute percentiles in the data: by default, the percentiles corresponding to 1, 2,
+It will also compute percentiles in the data: by default, the percentiles correspond to 1, 2,
 and 3 sigma values around the median for a Gaussian function, but this can be changed with the
 ``percentiles`` kwarg.
 
