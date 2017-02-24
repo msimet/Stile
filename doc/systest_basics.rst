@@ -134,8 +134,8 @@ catalogs are given, they are used as random lenses, and
 Shear-shear correlation functions are :math:`\xi_+` and :math:`\xi_-`.  They are functions of the
 spatial correlation of the shears and their complex conjugates in sky coordinates; see e.g.
 `Jarvis et al. 2016 <http://adsabs.harvard.edu/abs/2016MNRAS.460.2245J>`_ for complete definitions
-of :math:`\xi_+` and :math:`\xi_-`.  The :math:`\xi`s should be completely real (within noise), 
-although the results will include the imaginary portions as a cross-check.
+of :math:`\xi_+` and :math:`\xi_-`.  The :math:`\xi` functions should be completely real (within 
+noise), although the results will include the imaginary portions as a cross-check.
 
 Point-scalar (point-kappa) estimates are equivalent to ``<scalar>``. Scalar-shear estimates are
 equivalent to ``<scalar*Re(shear)>`` with a corresponding imaginary case ``<scalar*Im(shear)>``,
