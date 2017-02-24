@@ -1,15 +1,25 @@
 Using the binning module
 ========================
 
-Stile contains some simple functions to bin your data.  Two of them--:class:`stile.BinStep
-<stile.binning.BinStep>` and :class:`stile.BinList <stile.binning.BinList>`--have simple,
-predefined ways of acting on your data set; the third, :class:`stile.BinFunction
-<stile.binning.BinFunction>`, uses user-defined functions to split your data.
+Some systematics tests will benefit from being performed on subsamples of the data binned in some 
+way. For example, PSF models may be more accurate in regions of high stellar density, so producing
+PSF characterization tests as a function of galactic latitude might be useful.  Shape measurement
+may be more likely to fail for low signal-to-noise objects or objects which are small relative to
+the PSF, so checking shape measurement accuracy in signal-to-noise or size bins may reveal problems
+that cannot be seen when most of the signal comes from larger or more well-resolved objects.  Some
+tests may also benefit from selection cuts, which you can also think of as a single broad bin with
+a defined lower edge and an infinite upper edge.
+
+To make these tests easier, Stile contains some simple functions to bin your data.  Two of
+them--:class:`stile.BinStep <stile.binning.BinStep>` and 
+:class:`stile.BinList <stile.binning.BinList>`--have simple, predefined ways of acting on your
+data set. The third, :class:`stile.BinFunction <stile.binning.BinFunction>`, uses user-defined
+functions to split your data.
 
 Basic interface
 ---------------
 
-To start binning your data, you create a :class:`Bin*` object that will contain a binning
+To start binning your data, you create a :class:`Bin*` object that will contain binning
 definitions.  For instance, if you wanted to bin the ``ra`` column in 10 bins:
 
 >>> bin_object = stile.BinStep(field='ra', n_bins=10, low=0, high=360)
@@ -20,11 +30,13 @@ produce properly binned subsets.
 >>> for single_bin in bin_object():
 >>>     binned_data = single_bin(data)
 
+``binned_data`` has the same format as ``data``, just with fewer rows if any of the rows were
+outside the boundaries of the `single_bin` object.
+
 The ``single_bin`` above is actually another class called a :class:`stile.binning.SingleBin`.  It
 knows its boundaries and it also contains a string you can use in program outputs.
 
 >>> single_bin = bin_object()[0]
->>> type(single_bin)
 >>> print single_bin.low
 0.0
 >>> print single_bin.hi
@@ -39,7 +51,8 @@ The :class:`stile.BinList <stile.binning.BinList>` is the simplest class.  To cr
 with a list of bin edges and a field name (see the :doc:`data` documentation for more information
 on field names).
 
->>> bin_list_object = stile.BinList(field='g1', bin_list=[-10, -1, -0.5, -0.3, -0.1, -0.05, 0, 0.05, 0.1, 0.3, 0.5, 1, 10])
+>>> bin_list_object = stile.BinList(field='g1', 
+      bin_list=[-10, -1, -0.5, -0.3, -0.1, -0.05, 0, 0.05, 0.1, 0.3, 0.5, 1, 10])
 
 :class:`stile.BinStep <stile.binning.BinStep>` is also fairly simple.  It generates bins that are
 equally spaced in linear or log space based on the provided arguments.  It is created using at
@@ -69,7 +82,8 @@ if the function returns a vector of bin indices, or
 if it returns Boolean masks.  This object can be called like any other :class:`Bin*` object to
 create a list of callable objects, and it will work with :func:`stile.ExpandBinList
 <stile.binning.ExpandBinList>` as well.  However, the child objects it creates when you call it
-don't have ``.low`` or ``.high`` attributes!
+don't have ``.low`` or ``.high`` attributes, so any automatic processing or looping that assumes
+these attributes exist (such as for naming files) will fail.
 
 Combining binning schemes
 -------------------------
