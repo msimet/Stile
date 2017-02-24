@@ -22,8 +22,8 @@ To run Stile, you must have:
 
 We also recommend:
 
-- TreeCorr, Mike Jarvis's 2-point correlation function code. All of our correlation function tests
-  involve calls to this package.
+- `TreeCorr <https://github.com/rmjarvis/TreeCorr>`_, Mike Jarvis's 2-point correlation function code. 
+  All of our correlation function tests involve calls to this package.
 - PyFITS/Astropy to handle FITS tables and images. Stile can run on ASCII tables, but is much slower.
 - matplotlib to generate plots.
 
