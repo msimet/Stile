@@ -21,6 +21,12 @@ to get the right ascension of your data.  There is a standard set of Stile colum
 - **w**, the weight to apply per object
 - **z**, the redshift of the object
 
+``g1`` and ``g2`` may be defined in either sky coordinates or in chip coordinates. Stile leaves it
+to the user to make sure that the appropriate coordinate system is chosen for the test the user
+wishes to do.  But in general, if ``x`` coordinates appear in the data array, ``g1`` and ``g2``
+should be measured relative to the ``x`` direction, and if ``ra`` and ``dec`` appear in the data
+array, ``g1`` and ``g2`` should be measured relative to the ``ra`` direction.
+
 Of course, not every data array needs to include all of these columns!
 
 For some tests, a dict would be okay. However, we usually assume that the data is in a contiguous
