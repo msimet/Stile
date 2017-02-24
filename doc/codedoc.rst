@@ -2,6 +2,8 @@
 Code documentation
 ==================
 
+This section contains the docstrings for the main classes and functions that users will see.
+
 .. toctree::
    :maxdepth: 2
 
