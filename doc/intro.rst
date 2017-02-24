@@ -9,6 +9,34 @@ although you can do that too.  The outputs of Stile are the systematic test resu
 these can be compared against requirements that are set based on considerations and
 calculations that are external to Stile.
 
+Installation
+============
+Stile is a pure python package, no compilation needed.  You can install it using:
+
+>>> python setup.py install
+
+To run Stile, you must have:
+
+- Python 2.7
+- NumPy
+
+We also recommend:
+
+- TreeCorr, Mike Jarvis's 2-point correlation function code. All of our correlation function tests
+  involve calls to this package.
+- PyFITS/Astropy to handle FITS tables and images. Stile can run on ASCII tables, but is much slower.
+- matplotlib to generate plots.
+
+While these are not requirements to import the Stile package and use its functionality, they *are* 
+requirements for certain tests.  None of the correlation function tests will run without 
+TreeCorr, for example, and none of the whisker plots or scatter plots will run without
+matplotlib.
+
+More dependencies may be added in the future.
+
+Usage overview
+==============
+
 The tests we've coded up live in the :mod:`sys_tests` module and we call them SysTests (for
 systematics tests, to distinguish from other kinds of tests).  They're all objects that you call to
 run a test.  All have a plotting function as well (which doesn't do anything if there's nothing to
