@@ -130,17 +130,17 @@ Point-shear estimates are equivalent to average tangential shear, returned as re
 catalogs are given, they are used as random lenses, and
 :math:`\langle \gamma_t \rangle-\langle \gamma_{t, {\rm rand}} \rangle` is returned instead.
 
-Shear-shear correlation functions are :math:`\xi_+` and :math:`\xi_-`.  :math:`\xi_+` is,
-nominally, *g1* times *g2\**, and is given as both the real and imaginary components.
-:math:`\xi_{+,im}` should be consistent with 0 to within noise. :math:`\xi_-` on the other hand is
-*g1* times *g2* (not complex conjugate).  Similarly, :math:`\xi_{-,im}` should be 0.  (Note that
-*g1* and *g2* here are two *complex* shears :math:`g_{1t} + ig_{1x}` and :math:`g_{2t} + ig_{2x}`
-from the two catalogs, not the two components of a single shear in sky coordinates or chip frame.)
+Shear-shear correlation functions are :math:`\xi_+` and :math:`\xi_-`.  They are functions of the
+spatial correlation of the shears and their complex conjugates in sky coordinates; see e.g.
+[Jarvis et al. 2016](http://adsabs.harvard.edu/abs/2016MNRAS.460.2245J) for complete definitions
+of :math:`\xi_+` and :math:`\xi_-`.  These should be completely real (within noise), although
+the results will include the imaginary portions as a cross-check.
 
 Point-scalar (point-kappa) estimates are equivalent to <scalar>; scalar-shear estimates are
-equivalent to <scalar*Re(shear)> with a corresponding imaginary case; scalar-scalar estimates
-are <scalar1*scalar2>.  Random catalogs result in compensated estimators as in the point-shear
-case.
+equivalent to <scalar*Re(shear)> with a corresponding imaginary case <scalar*Im(shear)>,
+corresponding to the correlation between the scalar value at that point and the tangential 
+shear (real) or the shear at 45 degrees from the tangent (imaginary); scalar-scalar estimates are
+<scalar1*scalar2>.  Random catalogs result in compensated estimators as in the point-shear case.
 
 Whisker plots
 -------------
@@ -248,6 +248,9 @@ based on two different algorithms:
 >>> scott_rule_hist = stile.HistogramSysTest(binning_style='scott')  # Scott's rule
 >>> freedman_rule_hist = stile.HistogramSysTest(binning_style='freedman')  # Freedman-Diaconis rule
 
+Scott's rule chooses bins based on the sample size and the sample standard deviation, while the
+Freedman-Diaconis rule uses the interquartile range instead, which is less sensitive to outliers.
+
 You can also just set your own number of bins.
 
 >>> ten_bins_hist = stile.HistogramSysTest(nbins=10)
@@ -276,8 +279,9 @@ or pass the field at runtime:
 Currently, a :class:`stile.StatSysTest <stile.sys_tests.StatSysTest>` will compute min, max,
 median, median absolute deviation (MAD), mean, standard deviation, variance, and number of
 objects, and will additionally compute the skew and kurtosis if ``scipy.stats`` can be imported.
-It will also compute percentiles in the data: by default, 1, 2, and 3 sigma values around the
-median, but this can be changed with the ``percentiles`` kwarg.
+It will also compute percentiles in the data: by default, the percentiles corresponding to 1, 2,
+and 3 sigma values around the median for a Gaussian function, but this can be changed with the
+``percentiles`` kwarg.
 
 :class:`StatSysTests <stile.sys_tests.StatSysTest>` return a :class:`stile.Stats
 <stile.stile_utils.Stats>` object, with all of the above quantities available as attributes (with
