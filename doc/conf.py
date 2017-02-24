@@ -208,6 +208,7 @@ htmlhelp_basename = 'Stiledoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
+  'classoptions': ',openany,oneside',
 # The paper size ('letterpaper' or 'a4paper').
 #'papersize': 'letterpaper',
 
