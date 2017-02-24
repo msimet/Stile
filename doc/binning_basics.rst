@@ -30,8 +30,7 @@ produce properly binned subsets.
 >>> for single_bin in bin_object():
 >>>     binned_data = single_bin(data)
 
-``binned_data`` has the same format as ``data``, just with fewer rows if any of the rows were
-outside the boundaries of the ``single_bin`` object.
+``binned_data`` is a subset of ``data`` with the same format.
 
 The ``single_bin`` above is actually another class called a :class:`stile.binning.SingleBin`.  It
 knows its boundaries and it also contains a string you can use in program outputs.

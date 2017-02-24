@@ -139,9 +139,10 @@ although the results will include the imaginary portions as a cross-check.
 
 Point-scalar (point-kappa) estimates are equivalent to ``<scalar>``. Scalar-shear estimates are
 equivalent to ``<scalar*Re(shear)>`` with a corresponding imaginary case ``<scalar*Im(shear)>``,
-corresponding to the correlation between the scalar value at that point and the tangential 
-shear (real) or the shear at 45 degrees from the tangent (imaginary). Scalar-scalar estimates are
-``<scalar1*scalar2>``.  Random catalogs result in compensated estimators as in the point-shear case.
+corresponding to the correlation between the scalar value of the first sample at that point and the
+tangential shear (real) or the shear at 45 degrees from the tangent (imaginary) from the
+second sample. Scalar-scalar estimates are ``<scalar1*scalar2>``.  Random catalogs result in
+compensated estimators as in the point-shear case.
 
 Whisker plots
 -------------
