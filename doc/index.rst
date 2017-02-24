@@ -6,8 +6,6 @@
 Stile documentation
 ===================
 
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
@@ -17,11 +15,4 @@ Contents:
    binning_basics
    codedoc
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
