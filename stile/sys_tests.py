@@ -1771,8 +1771,8 @@ def ScatterPlotSysTest(type=None):
         - **StarVsPSFG2**: star vs PSF g2
         - **StarVsPSFSigma**: star vs PSF sigma
         - **ResidualVsPSFG1**: (star - PSF) g1 vs PSF g1
-        - **ResidualVsPSFG2**: (star - PSF) g1 vs PSF g2
-        - **ResidualVsPSFSigma**: (star - PSF) g1 vs PSF sigma
+        - **ResidualVsPSFG2**: (star - PSF) g2 vs PSF g2
+        - **ResidualVsPSFSigma**: (star - PSF) sigma vs PSF sigma
         - **ResidualSigmaVsPSFMag**: (star - PSF)/PSF sigma vs PSF magnitude
         - **None**: an empty :class:`BaseScatterPlotSysTest` class instance, which can be used for
           multiple types of scatter plots.  See the documentation
