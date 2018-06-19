@@ -45,7 +45,7 @@ class TestCorrelationFunctions(unittest.TestCase):
                     (0.68766, 0.68766, 0.0, 0.0, 0.0, 0.0, 0.0),
                     (0.79877, 0.79877, 0.0, 0.0, 0.0, 0.0, 0.0),
                     (0.92784, 0.92784, 0.0, 0.0, 0.0, 0.0, 0.0)],
-                    dtype=[("R_nom", float), ("<R>", float), ("<gamT>", float), ("<gamX>", float),
+                    dtype=[("R_nom [deg]", float), ("<R> [deg]", float), ("<gamT>", float), ("<gamX>", float),
                            ("sigma", float), ("weight", float), ("npairs", float)])
 
     def test_getCF(self):
@@ -80,20 +80,22 @@ class TestCorrelationFunctions(unittest.TestCase):
         realshear = stile.sys_tests.GalaxyShearSysTest()
         results3 = realshear(lens_data, source_data, config=stile_args)
         numpy.testing.assert_equal(results, results3)
-
+        
+        
     def test_generator(self):
         """Make sure the CorrelationFunctionSysTest() generator returns the right objects"""
-        object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyDensity',  'StarXGalaxyShear',
+        object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyDensity',  'StarXGalaxyShear', 
                        'StarXStarShear', 'GalaxyDensityCorrelation', 'StarDensityCorrelation']
         for object_type in object_list:
             object_1 = stile.CorrelationFunctionSysTest(object_type)
             object_2 = eval('stile.sys_tests.'+object_type+'SysTest()')
-            self.assertEqual(type(object_1), type(object_2))
-
-        self.assertRaises(ValueError, stile.CorrelationFunctionSysTest, 'hello')
-        self.assertEqual(type(stile.sys_tests.BaseCorrelationFunctionSysTest()),
+            self.assertEqual(type(object_1),type(object_2))
+        
+        self.assertRaises(ValueError,stile.CorrelationFunctionSysTest,'hello')
+        self.assertEqual(type(stile.sys_tests.BaseCorrelationFunctionSysTest()), 
                          type(stile.CorrelationFunctionSysTest()))
-
-
-if __name__ == '__main__':
+        
+    
+if __name__=='__main__':
     unittest.main()
+

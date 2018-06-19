@@ -193,6 +193,33 @@ def CorrelationFunctionSysTest(type=None):
           type given as the first argument) and that it lacks many of the convenience variables the
           other CorrelationFunctions have, such as self.objects_list and self.required_quantities.
 
+    These produce different estimators depending on the type.  Point-point estimates by default use
+    the Landy-Szalay estimator:
+        xi = (DD-2DR+RR)/RR
+    and must include a random catalog.
+    
+    All shears in the following descriptions are the complex form in the frame aligned with the
+    vector between the two points, that is, g = gamma_t + i*gamma_x. 
+    
+    Point-shear estimates are equivalent to average tangential shear, returned as real <gamma_t>
+    and imaginary <gamma_x>.  If random catalogs are given, they are used as random lenses, and
+    data*shear-random*shear is returned instead.
+    
+    Shear-shear correlation functions are xi_+ and xi_-.  Xi_+ is, nominally, g1 times g2*, and is
+    given as both the real and imaginary components.  xi_+,im should be consistent with 0 to within
+    noise. Xi_- on the other hand is g1 times g2 (not complex conjugate).  Similarly, xi_-,im should
+    be 0.  (Note that g1 and g2 here are two *complex* shears g1_t + i*g1_x and g1_t+i*g2_x from the
+    two catalogs, not the two components of a single shear in sky coordinates or chip frame.)
+    
+    Point-scalar (point-kappa) estimates are equivalent to <scalar>; scalar-shear estimates are
+    equivalent to <scalar*Re(shear)> with a corresponding imaginary case; scalar-scalar estimates
+    are <scalar1*scalar2>.  Random catalogs result in compensated estimators as in the point-shear
+    case.  
+    
+    Aperture mass statistics of various kinds are also available via the
+    BaseCorrelationFunctionSysTest class; as we do not implement those for any standard Stile tests,
+    interested users are directed to the TreeCorr documentation for further information.
+
     Users who are writing their own code can of course pass other data types to these functions
     than the ones given (eg sending galaxy data to a StarXStarSize correlation function); we
     include options for A) automatic processing,  B) ease of understanding code, and C) suggesting
@@ -281,7 +308,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
         PlotDetails(t_field='<kappa>', t_title=r'$\langle \kappa \rangle$',
                     datarandom_t_field='kappa_', datarandom_t_title='$kappa_{',
                     sigma_field='sigma', y_title="$\kappa$"),  # nk
-        PlotDetails(t_field='xi', t_title=r'$\xi$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
+        PlotDetails(t_field='xi', t_title=r'$\xi_{\mathrm{re}}$', sigma_field='sigma_xi', y_title=r"$\xi$"),  # k2
         PlotDetails(t_field='<kgamT>', t_title=r'$\langle \kappa \gamma_T\rangle$',
                     x_field='<kgamX>', x_title=r'$\langle \kappa \gamma_X\rangle$',
                     datarandom_t_field='kgamT_', datarandom_t_title=r'$\kappa \gamma_{T',
@@ -516,6 +543,10 @@ class BaseCorrelationFunctionSysTest(SysTest):
         results = stile.ReadTreeCorrResultsFile(output_file)
         os.close(handle)
         os.remove(output_file)
+        names = results.dtype.names
+        # Add the sep units to the column names of radial bins from TreeCorr outputs
+        names = [n+' [%s]'%treecorr_kwargs['sep_units'] if 'R' in n else n for n in names]
+        results.dtype.names = names
         return results
 
     def compensateDefault(self, data, data2, random, random2, both=False):
@@ -596,6 +627,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
         # Plot the first thing
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
+        ax.axhline(0, alpha=0.7, color='gray')
         ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0],
                     label=pd.t_title)
         if pd.x_title and plot_bmode:
@@ -607,23 +639,28 @@ class BaseCorrelationFunctionSysTest(SysTest):
         ax.set_xscale('log')
         ax.set_yscale(yscale)
         ax.set_xlim(xlim)
+        # To prevent too-long decimal y-axis ticklabels that push the label out of frame
+        ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
         ax.set_ylabel(pd.y_title)
         ax.legend()
         if pd.x_field and plot_bmode and pd.t_im_field:
             # Both yb and y_im: plot (y, yb) on one plot and (y_im, yb_im) on the other.
             ax = fig.add_subplot(nrows, 1, 2)
+            ax.axhline(0, alpha=0.7, color='gray')
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[0],
                         label=pd.t_im_title)
             ax.errorbar(data[r], data[pd.x_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.x_im_title)
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
         if plot_data_only and pd.datarandom_t_field:  # Plot the data-only measurements if requested
             curr_plot += 1
             ax = fig.add_subplot(nrows, 1, 2)
+            ax.axhline(0, alpha=0.7, color='gray')
             ax.errorbar(data[r], data[pd.datarandom_t_field+'d'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'d}$')
             if plot_bmode and pd.datarandom_x_field:
@@ -631,12 +668,14 @@ class BaseCorrelationFunctionSysTest(SysTest):
                         color=colors[1], label=pd.datarandom_x_title+'d}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
         # Plot the randoms-only measurements if requested
         if plot_random_only and pd.datarandom_t_field:
             ax = fig.add_subplot(nrows, 1, nrows)
+            ax.axhline(0, alpha=0.7, color='gray')
             ax.errorbar(data[r], data[pd.datarandom_t_field+'r'], yerr=data[pd.sigma_field],
                         color=colors[0], label=pd.datarandom_t_title+'r}$')
             if plot_bmode and pd.datarandom_x_field:
@@ -644,10 +683,12 @@ class BaseCorrelationFunctionSysTest(SysTest):
                         color=colors[1], label=pd.datarandom_x_title+'r}$')
             ax.set_xscale('log')
             ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
             ax.set_xlim(xlim)
             ax.set_ylabel(pd.y_title)
             ax.legend()
         ax.set_xlabel(r)
+        plt.tight_layout()
         return fig
 
     def __call__(self, *args, **kwargs):
@@ -1262,7 +1303,6 @@ class BaseWhiskerPlotSysTest(SysTest):
         return self.whiskerPlot(*args, **kwargs)
     def getData(self):
         return self.data
-
 
 class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     """
@@ -2181,7 +2221,6 @@ class BaseScatterPlotSysTest(SysTest):
                 return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
-
 
 class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     """
