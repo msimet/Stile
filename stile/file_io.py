@@ -11,6 +11,12 @@ except ImportError:
         has_fits = True
     except ImportError:
         has_fits = False
+try:
+    import astropy.table
+    has_astropy = True
+    from .stile_utils import Table
+except ImportError:
+    has_astropy = False
 import numpy
 import os
 import stile_utils
@@ -51,7 +57,10 @@ def ReadFITSTable(file_name, hdu=1, fields=None):
                       skip some fields.
     :returns:         The contents of the requested HDU.
     """
-    return stile_utils.FormatArray(ReadFITSImage(file_name, hdu), fields=fields)
+    if has_astropy:
+        return stile_utils.FormatArray(Table.read(file_name, hdu), fields=fields)
+    else:
+        return stile_utils.FormatArray(ReadFITSImage(file_name, hdu), fields=fields)
 
 
 def ReadASCIITable(file_name, **kwargs):
@@ -167,7 +176,7 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
             warnings.warn('No named data type, so requested header cannot be printed.')
             numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
     else:
-        numpy.savetxt(file_name, data, fmt=_format_str(data.dtype))
+        numpy.savetxt(file_name, data, fmt=' '.join(_format_str(data.dtype)))
 
 # And, of course, PyFITS *also* uses a different format specification character set.
 _fits_dict = {'b': 'L',  # boolean
@@ -210,11 +219,15 @@ def WriteFITSTable(file_name, data_array, fields=None):
     data = _handleFields(data_array, fields)
     cols = [fits_handler.Column(name=data.dtype.names[i], format=_coerceFitsFormat(data.dtype[i]),
                                 array=data[data.dtype.names[i]]) for i in range(len(data.dtype))]
-    table = fits_handler.new_table(cols)
-    hdulist = fits_handler.HDUList(fits_handler.PrimaryHDU(), table)
-    hdulist.append(table)
-    hdulist.verify()
-    hdulist.writeto(file_name)
+    if hasattr(fits_handler, 'new_table'):
+        table = fits_handler.new_table(cols)
+        hdulist = fits_handler.HDUList(fits_handler.PrimaryHDU(), table)
+        hdulist.append(table)
+        hdulist.verify()
+        hdulist.writeto(file_name)
+    else:
+        table = fits_handler.TableHDU.from_columns(cols)
+        table.writeto(file_name)
 
 
 def WriteTable(file_name, data_array, fields=None):
