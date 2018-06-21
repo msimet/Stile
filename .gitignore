@@ -39,3 +39,7 @@ nosetests.xml
 *.aux
 *.log
 
+# Sphinx build directories
+doc/_build
+doc/html
+doc/latex

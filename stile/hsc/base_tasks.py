@@ -1,5 +1,5 @@
-""" base_tasks.py
-Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
+""" 
+base_tasks.py: Contains the Task classes that interface between the LSST/HSC pipeline and the systematics tests
 described by Stile.  At the moment, we use some functionality that is only available on the HSC
 side of the pipeline, but eventually this will be usable for both.
 """
@@ -31,30 +31,32 @@ parser_description = """
 This is a script to run Stile through the LSST/HSC pipeline.
 
 You can configure which systematic tests to run by setting the following option.
-From command line, add
--c "sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]"
+From command line, add ::
+    -c "sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]"
 
-You can also specify this option by writing a file, e.g.,
+You can also specify this option by writing a file, e.g., ::
 
-====================== config.py ======================
-import stile.lsst.base_tasks
-root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
-=======================================================
+    ====================== config.py ======================
+    import stile.lsst.base_tasks
+    root.sys_tests.names=['TEST_NAME1', 'TEST_NAME2', ...]
+    =======================================================
 
-and then adding an option
--C config.py
+and then adding an option ::
+
+    -C config.py
+
 to the command line.
 
-If you use a file, you can add and remove tests from a default by the following option
-root.sys_tests.names.add('TEST_NAME')
-root.sys_tests.names.remove('TEST_NAME')
+If you use a file, you can add and remove tests from a default by the following option::
+    root.sys_tests.names.add('TEST_NAME')
+    root.sys_tests.names.remove('TEST_NAME')
 """
 
 
 class SysTestData(object):
     """
     A simple container object holding the name of a sys_test, plus the corresponding masks and
-    columns from the getMasks() and getRequiredColumns() methods of the sys_test.
+    columns from the :func:`.getMasks` and :func:`.getRequiredColumns` methods of the sys_test.
     """
 
     def __init__(self):
@@ -119,12 +121,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     """
     A basic Task class to run CCD-level single-epoch tests.  Inheriting from
     lsst.pipe.base.CmdLineTask() lets us use the already-built command-line interface for the data
-    ID, rather than reimplementing this ourselves.  Calling
+    ID, rather than reimplementing this ourselves.  Calling ::
 
-    >>> CCDSingleEpochStileTask.parseAndRun()
+        CCDSingleEpochStileTask.parseAndRun()
 
     from within a script will send all the command-line arguments through the argument parser, then
-    call the run() method sequentially, once per CCD defined by the input arguments.
+    call the :func:`run()` method sequentially, once per CCD defined by the input arguments.
     """
     # lsst magic
     ConfigClass = CCDSingleEpochStileConfig
@@ -252,12 +254,12 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         Remove objects which have certain flags we consider unrecoverable failures for weak lensing.
         Currently set to be quite conservative--we may want to relax this in the future.  The actual
         flags are set in the config object for this class and can be accessed as the variable
-        self.config.flags.  They can be altered on the command line or via configuration files as
-        described in the parser help.
+        ``self.config.flags``.  They can be altered on the command line or via configuration files
+        as described in the parser help.
 
-        @param catalog A source catalog pulled from the LSST pipeline.
-        @returns       The source catalog, masked to the rows which don't have any of our defined
-                       flags set.
+        :param catalog: A source catalog pulled from the LSST pipeline.
+        :returns:       The source catalog, masked to the rows which don't have any of our defined
+                        flags set.
         """
         masks = []
         if self.config.flags_keep_false:
@@ -292,21 +294,21 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
     def generateColumns(self, dataRef, catalog, mask_tuple, raw_cols, extra_col_dict):
         """
         Generate required columns which are not already in the data array,  and update
-        `extra_col_dict` to include them.  Also update the mask (mask_tuple[1]) to exclude any
+        ``extra_col_dict`` to include them.  Also update the mask (``mask_tuple[1]``) to exclude any
         objects which have specific failures for the requested quantities, such as flux measurement
         failures for flux/magnitude measurements.
 
-        @param dataRef        A dataRef that is the source of the following data
-        @param catalog        A source catalog from the LSST pipeline.
-        @param mask_tuple     A 2-item tuple, with the mask name/type in the first element, and the
-                              mask indicating which rows to generate columns for in the second
-                              element.  `mask_tuple[1]` is updated by this function.
-        @param cols           An iterable of strings indicating which quantities are needed.
-        @param extra_col_dict A dict whose keys are quantity names and whose values are
-                              NumPy arrays of those quantities.  "nan" is used to indicate
-                              as-yet uncomputed results; elements which are something other than
-                              "nan" are not recomputed.  `extra_col_dict` is updated by this
-                              function.
+        :param dataRef:        A ``dataRef`` that is the source of the following data
+        :param catalog:        A source catalog from the LSST pipeline.
+        :param mask_tuple:     A 2-item tuple, with the mask name/type in the first element, and the
+                               mask indicating which rows to generate columns for in the second
+                               element.  ``mask_tuple[1]`` is updated by this function.
+        :param cols:           An iterable of strings indicating which quantities are needed.
+        :param extra_col_dict: A dict whose keys are quantity names and whose values are
+                               NumPy arrays of those quantities.  ``nan`` is used to indicate
+                               as-yet uncomputed results; elements which are something other than
+                               ``nan`` are not recomputed.  ``extra_col_dict`` is updated by this
+                               function.
         """
         cols = list(raw_cols) # so we can pop items and not mess up our column description elsewhere
         # The moments measurement is slow enough to make a difference if we're processing many
@@ -419,7 +421,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
     def _computeShapeMask(self, data, mask_type):
         """
-        Compute and return the mask for `data` that excludes pernicious shape measurement failures.
+        Compute and return the mask for ``data`` that excludes pernicious shape measurement
+        failures.
         """
         masks = list()
         if 'galaxy' in mask_type and self.config.do_hsm:
@@ -436,24 +439,25 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         return mask
 
     def computeShapes(self, data, calib, do_shape=True, do_err=True, do_psf=True, do_psf_err=True,
-                            sky_coords=True, mask_type=None):
+                             sky_coords=True, mask_type=None):
         """
-        Compute the shapes for the given `data`, an LSST source catalog, with the associated
-        `calib` calibrated exposure metadata ('calexp_md' or 'fcr_md', either works).
+        Compute the shapes for the given ``data``, an LSST source catalog, with the associated
+        ``calib`` calibrated exposure metadata (``'calexp'`` or ``'fcr'``, either works).
 
-        @param data       An LSST source catalog whose shape moments you would like to retrieve.
-        @param calib      The metadata from a calibrated exposure ('calexp_md' or 'fcr_md').  If
-                          `sky_coords=False` (see below) this can be None.
-        @param do_shape   A bool indicating whether to compute (g1, g2, sigma).
-        @param do_err     A bool indicating whether to compute (g1_err, g2_err, sigma_err).
-        @param do_psf     A bool indicating whether to compute (psf_g1, psf_g2, psf_sigma).
-        @param do_psf_err A bool indicating whether to compute (psf_g1_err, psf_g2_err,
-                          psf_sigma_err).
-        @param sky_coords If True, compute the moments in ra, dec coordinates; else compute in
-                          native coordinates (x, y for CCD).
-        @param mask_type  The object type corresponding to the data in `data` [Default: None]
-        @returns          A tuple consisting of:
-                              - A dict whose keys are column names ('g1', 'psf_sigma', etc) and
+        :param data:       An LSST source catalog whose shape moments you would like to retrieve.
+        :param calib:      The metadata from a calibrated exposure (``'calexp'`` or ``'fcr'``).  If
+                           ``sky_coords=False`` (see below) this can be None.
+        :param do_shape:   A bool indicating whether to compute ``(g1, g2, sigma)``.
+        :param do_err:     A bool indicating whether to compute ``(g1_err, g2_err, sigma_err)``.
+        :param do_psf:     A bool indicating whether to compute ``(psf_g1, psf_g2, psf_sigma)``.
+        :param do_psf_err: A bool indicating whether to compute ``(psf_g1_err, psf_g2_err,
+                           psf_sigma_err)``.
+        :param sky_coords: If True, compute the moments in ra, dec coordinates; else compute in
+                           native coordinates (x, y for CCD).
+        :param mask_type:  The object type corresponding to the data in ``data`` [default: ``None``]
+        :returns:          A tuple consisting of:
+        
+                              - A dict whose keys are column names (``'g1', 'psf_sigma'``, etc) and
                                 whose values are a NumPy array of those quantities
                               - None if no new mask was needed, or a NumPy array of bools indicating
                                 which rows had valid measurements.
@@ -614,20 +618,19 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
     def computeExtraColumn(self, col, data, calib_data, calib_type, xy0=None, mask_type=None):
         """
-        Compute the quantity `col` for the given `data`.
+        Compute the quantity ``col`` for the given ``data``.
 
-        @param col        A string indicating the quantity needed.
-        @param data       A (subset of a) source catalog from the LSST pipeline.
-        @param calib_data Photometric calibration data for flux/magnitude measurements.
-        @param calib_type Which type of calibration calib_data is ("fcr" or "calexp"--"fcr" for
-                          coadds where available, else "calexp").
-        @param xy0        Offset of a CCD
-                          [Default: None, meaning do not add any offset.]
-        @param mask_type  The object type corresponding to the data in `data` [Default: None]
-        @returns          A 2-element tuple.  The first element is a list or NumPy array of the
-                          quantity indicated by `col`. The second is either None (if no further
-                          masking is needed) or a NumPy array of boolean values indicating where the
-                          quantity is reliable (True) or unusable in some way (False).
+        :param col:        A string indicating the quantity needed.
+        :param data:       A (subset of a) source catalog from the LSST pipeline.
+        :param calib_data: Photometric calibration data for flux/magnitude measurements.
+        :param calib_type: Which type of calibration calib_data is ("fcr" or "calexp"--"fcr" for
+                           coadds where available, else "calexp").
+        :param xy0:        Offset of a CCD. [default: None, meaning do not add any offset]
+        :param mask_type:  The object type corresponding to the data in ``data`` [default: None]
+        :returns:          A 2-element tuple.  The first element is a list or NumPy array of the
+                           quantity indicated by ``col``. The second is either None (if no further
+                           masking is needed) or a NumPy array of boolean values indicating where
+                           the quantity is reliable (True) or unusable in some way (False).
 
         """
         if col == "ra":
@@ -690,8 +693,8 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
         pass
 
 class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
-    """Like CCDSingleEpochStileTask, but we use a different argument parser that doesn't require
-    an available coadd to run on the CCD level."""
+    """Like :class:`CCDSingleEpochStileTask`, but we use a different argument parser that doesn't
+    require an available coadd to run on the CCD level."""
     _DefaultName = "CCDNoTractSingleEpochStile"
 
     @classmethod
@@ -703,17 +706,17 @@ class CCDNoTractSingleEpochStileTask(CCDSingleEpochStileTask):
 
 
 class StileVisitRunner(lsst.pipe.base.TaskRunner):
-    """Subclass of TaskRunner for Stile visit tasks.  Most of this code (incl this docstring)
-    pulled from measMosaic.
+    """Subclass of :class:`TaskRunner` for Stile visit tasks.  Most of this code (incl this docstring)
+    pulled from :class:`measMosaic`.
 
-    VisitSingleEpochStileTask.run() takes a number of arguments, one of which is a list of dataRefs
-    extracted from the command line (whereas most CmdLineTasks' run methods take a single dataRef,
-    and are called repeatedly).  This class transforms the processed arguments generated by the
-    ArgumentParser into the arguments expected by VisitSingleEpochStileTask.run().  It will still
-    call run() once per visit if multiple visits are present, but not once per CCD as would
-    otherwise occur.
+    :class:`VisitSingleEpochStileTask.run` takes a number of arguments, one of which is a list of
+    dataRefs extracted from the command line (whereas most :class:`CmdLineTask`\s' run methods take a
+    single dataRef, and are called repeatedly).  This class transforms the processed arguments
+    generated by the ArgumentParser into the arguments expected by
+    :func:`VisitSingleEpochStileTask.run`.  It will still call :func:`run` once per visit if multiple
+    visits are present, but not once per CCD as would otherwise occur.
 
-    See pipeBase.TaskRunner for more information.
+    See :class:`pipeBase.TaskRunner` for more information.
     """
 
     @staticmethod
@@ -766,11 +769,13 @@ class VisitSingleEpochStileConfig(CCDSingleEpochStileConfig):
 class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
     """
     A basic Task class to run visit-level single-epoch tests.  Inheriting from
-    lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
-    data ID, rather than reimplementing this ourselves.  Calling
-    >>> VisitSingleEpochStileTask.parseAndRun()
+    :class:`lsst.pipe.base.CmdLineTask` lets us use the already-built command-line interface for the
+    data ID, rather than reimplementing this ourselves.  Calling ::
+
+        VisitSingleEpochStileTask.parseAndRun()
+
     from within a script will send all the command-line arguments through the argument parser, then
-    call the run() method sequentially, once per CCD defined by the input arguments.
+    call the :func:`.run` method sequentially, once per CCD defined by the input arguments.
 
     The "Visit" version of this class is different from the "CCD" level of the task in that we will
     have to combine catalogs from each CCD in the visit, and do some trickery with iterables to keep
@@ -954,8 +959,8 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
 
 
 class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
-    """Like VisitSingleEpochStileTask, but we use a different argument parser that doesn't require
-    an available coadd to run on the CCD level."""
+    """Like :class:`VisitSingleEpochStileTask`, but we use a different argument parser that doesn't
+    require an available coadd to run on the CCD level."""
     _DefaultName = "VisitNoTractSingleEpochStile"
 
     @classmethod
@@ -966,17 +971,17 @@ class VisitNoTractSingleEpochStileTask(VisitSingleEpochStileTask):
         return parser
 
 class StileMultiVisitRunner(lsst.pipe.base.TaskRunner):
-    """Subclass of TaskRunner for Stile multiple-visit tasks.  Most of this code (incl this
+    """Subclass of :class:`TaskRunner` for Stile multiple-visit tasks.  Most of this code (incl this
     docstring) pulled from measMosaic.
 
-    VisitSingleEpochStileTask.run() takes a number of arguments, one of which is a list of dataRefs
-    extracted from the command line (whereas most CmdLineTasks' run methods take a single dataRef,
-    and are called repeatedly).  This class transforms the processed arguments generated by the
-    ArgumentParser into the arguments expected by VisitSingleEpochStileTask.run().  It will still
-    call run() once per visit if multiple visits are present, but not once per CCD as would
-    otherwise occur.
+    :func:`VisitSingleEpochStileTask.run` takes a number of arguments, one of which is a list of
+    dataRefs extracted from the command line (whereas most ``CmdLineTask``\s' run methods take a
+    single dataRef, and are called repeatedly).  This class transforms the processed arguments
+    generated by the ArgumentParser into the arguments expected by
+    :func:`VisitSingleEpochStileTask.run()`.  It will still call :func:`.run()` once per visit if multiple
+    visits are present, but not once per CCD as would otherwise occur.
 
-    See pipeBase.TaskRunner for more information.
+    See :class:`pipeBase.TaskRunner` for more information.
     """
 
     @staticmethod
@@ -990,11 +995,13 @@ class StileMultiVisitRunner(lsst.pipe.base.TaskRunner):
 class MultiVisitSingleEpochStileTask(VisitSingleEpochStileTask):
     """
     A basic Task class to run visit-level single-epoch tests.  Inheriting from
-    lsst.pipe.base.CmdLineTask lets us use the already-built command-line interface for the
-    data ID, rather than reimplementing this ourselves.  Calling
-    >>> VisitSingleEpochStileTask.parseAndRun()
+    :class:`lsst.pipe.base.CmdLineTask` lets us use the already-built command-line interface for the
+    data ID, rather than reimplementing this ourselves.  Calling ::
+
+        VisitSingleEpochStileTask.parseAndRun()
+
     from within a script will send all the command-line arguments through the argument parser, then
-    call the run() method sequentially, once per CCD defined by the input arguments.
+    call the :func:`run()` method sequentially, once per CCD defined by the input arguments.
 
     The "Visit" version of this class is different from the "CCD" level of the task in that we will
     have to combine catalogs from each CCD in the visit, and do some trickery with iterables to keep
@@ -1099,7 +1106,8 @@ class PatchSingleEpochStileConfig(CCDSingleEpochStileConfig):
                  'flags.pixel.clipped.any'])
 
 class PatchSingleEpochStileTask(CCDSingleEpochStileTask):
-    """Like CCDSingleEpochStileTask, but for use on single coadd patches instead of single CCDs."""
+    """Like :class:`CCDSingleEpochStileTask`, but for use on single coadd patches instead of
+    single CCDs."""
     _DefaultName = "PatchSingleEpochStile"
     ConfigClass = PatchSingleEpochStileConfig
 
@@ -1198,17 +1206,17 @@ class TractSingleEpochStileConfig(CCDSingleEpochStileConfig):
     ccd_type = 'S7'  # NumPy string dtype, 7 characters long
 
 class StileTractRunner(lsst.pipe.base.TaskRunner):
-    """Subclass of TaskRunner for Stile tract tasks.  Most of this code (incl this docstring)
-    pulled from measMosaic.
+    """Subclass of :class:`TaskRunner` for Stile tract tasks.  Most of this code (incl this docstring)
+    pulled from :class:`measMosaic`.
 
-    TractSingleEpochStileTask.run() takes a number of arguments, one of which is a list of dataRefs
-    extracted from the command line (whereas most CmdLineTasks' run methods take a single dataRef,
-    and are called repeatedly).  This class transforms the processed arguments generated by the
-    ArgumentParser into the arguments expected by TractSingleEpochStileTask.run().  It will still
-    call run() once per visit if multiple visits are present, but not once per patch as would
-    otherwise occur.
+    :func:`TractSingleEpochStileTask.run` takes a number of arguments, one of which is a list of
+    dataRefs extracted from the command line (whereas most CmdLineTasks' run methods take a single
+    dataRef, and are called repeatedly).  This class transforms the processed arguments generated
+    by the ArgumentParser into the arguments expected by :func:`TractSingleEpochStileTask.run()`.  It
+    will still call :func:`.run` once per visit if multiple visits are present, but not once per patch
+    as would otherwise occur.
 
-    See pipeBase.TaskRunner for more information.
+    See :class:`pipeBase.TaskRunner` for more information.
     """
 
     @staticmethod
@@ -1227,13 +1235,13 @@ class StileTractRunner(lsst.pipe.base.TaskRunner):
         result = task.run(*args)
 
 class TractSingleEpochStileTask(VisitSingleEpochStileTask):
-    """Like VisitSingleEpochStileTask, but with individual elements being patches instead of
-    CCDs.  Since the code layout is different, we inherit from Visit, and then make the changes
+    """Like :class:`VisitSingleEpochStileTask`, but with individual elements being patches instead
+    of CCDs.  Since the code layout is different, we inherit from Visit, and then make the changes
     to the filename and calibration data information as we did for the Patch-level Task.
 
     The patch names, which are strings, are sent to the various SysTests as a fake 'CCD'
     column in the data array (in analogy to the real 'CCD' column created by
-    VisitSingleEpochStileTask), so we can use the existing architecture to split by patch
+    :class:`VisitSingleEpochStileTask`), so we can use the existing architecture to split by patch
     instead of CCD."""
     RunnerClass = StileTractRunner
     _DefaultName = "TractSingleEpochStile"
@@ -1319,16 +1327,16 @@ class TractSingleEpochStileTask(VisitSingleEpochStileTask):
 
 
 class StileMultiTractRunner(lsst.pipe.base.TaskRunner):
-    """Subclass of TaskRunner for Stile multi-tract tasks.  Most of this code (incl this docstring)
-    pulled from measMosaic.
+    """Subclass of :class:`TaskRunner` for Stile multi-tract tasks.  Most of this code (incl this
+    docstring) pulled from :class:`measMosaic`.
 
-    MultiTractSingleEpochStileTask.run() takes a number of arguments, one of which is a list of
+    :func:`MultiTractSingleEpochStileTask.run` takes a number of arguments, one of which is a list of
     dataRefs extracted from the command line (whereas most CmdLineTasks' run methods take a single
     dataRef, and are called repeatedly).  This class transforms the processed arguments generated by
-    the ArgumentParser into the arguments expected by TractSingleEpochStileTask.run().  It will
-    only call run() once per command line, regardless of how many tracts are passed.
+    the ArgumentParser into the arguments expected by :func:`TractSingleEpochStileTask.run`.  It will
+    only call :func:`.run` once per command line, regardless of how many tracts are passed.
 
-    See pipeBase.TaskRunner for more information.
+    See `pipeBase.TaskRunner` for more information.
     """
     @staticmethod
     def getTargetList(parsedCmd, **kwargs):
@@ -1340,7 +1348,8 @@ class StileMultiTractRunner(lsst.pipe.base.TaskRunner):
 
 
 class MultiTractSingleEpochStileTask(TractSingleEpochStileTask):
-    """Like TractSingleEpochStileTask, but analyzes multiple tracts per call instead of just one."""
+    """Like :class:`TractSingleEpochStileTask`, but analyzes multiple tracts per call instead of
+    just one."""
     RunnerClass = StileMultiTractRunner
     _DefaultName = "MultiTractSingleEpochStile"
     ConfigClass = TractSingleEpochStileConfig
