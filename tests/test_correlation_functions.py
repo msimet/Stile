@@ -95,6 +95,21 @@ class TestCorrelationFunctions(unittest.TestCase):
         self.assertEqual(type(stile.sys_tests.BaseCorrelationFunctionSysTest()), 
                          type(stile.CorrelationFunctionSysTest()))
         
+    def test_randoms(self):
+        """ Run some correlation functions with random catalogs to make sure that also works. """
+        stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
+                      'sep_units': 'degrees', 'nbins': 20}
+        lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+
+        object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyDensity',  'StarXGalaxyShear', 
+                       'StarXStarShear', 'GalaxyDensityCorrelation', 'StarDensityCorrelation']
+        for object_type in object_list:
+            object_1 = stile.CorrelationFunctionSysTest(object_type)
+            results = object_1(lens_data, source_data, lens_data, source_data, config=stile_args)
+        
     
 if __name__=='__main__':
     unittest.main()
