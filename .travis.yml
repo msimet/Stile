@@ -1,0 +1,22 @@
+branches:
+    only:
+        - master
+
+language: python
+python:
+    - 2.7
+
+install:
+    - pip install numpy scipy astropy codecov matplotlib TreeCorr
+
+script:
+    - cd tests
+    - "nosetests test*.py --with-coverage --cover-package=stile --with-doctest --cover-erase"
+
+after_success:
+    # The multiprocessing stages don't get properly incorporated into the .coverage file unless
+    # we do this command.  (Some of the .coverage.* files are in the ../examples directory.)
+    - coverage xml
+    - codecov
+
+
