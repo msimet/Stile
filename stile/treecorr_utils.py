@@ -7,7 +7,6 @@ import file_io
 import treecorr
 from treecorr.corr2 import corr2_valid_params
 use_2form = any([key[:2]=='n2' for key in corr2_valid_params])
-print use_2form, "use2form"
 
 def Parser():
     import argparse

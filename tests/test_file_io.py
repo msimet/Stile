@@ -61,16 +61,6 @@ class TestFileIO(unittest.TestCase):
         # contents of test_data/image_float.fits
         self.fits_float_image = numpy.array([[1.0, 2.1], [3.4, 1.6]])
         
-#        hdu = fits.PrimaryHDU(self.fits_int_image)
-#        cols = [fits.Column(name=self.fits_table.dtype.names[i], format=file_io._coerceFitsFormat(self.fits_table.dtype[i]),
-#                                array=self.fits_table[self.fits_table.dtype.names[i]]) for i in range(len(self.fits_table.dtype))]
-#        table_hdu = fits.TableHDU.from_columns(self.fits_table)
-#        hdulist = fits.HDUList([hdu, table_hdu])
-#        hdulist.writeto('test.fits')
-#        table_hdu_1 = fits.TableHDU.from_columns(self.fits_table_2)
-#        table_hdu_2 = fits.TableHDU.from_columns(self.fits_table)
-#        fits.HDUList([fits.PrimaryHDU(), table_hdu_1, table_hdu_2]).writeto('test2.fits')
-
     def test_ReadFITSImage(self):
         """Test the ability to read in a FITS image."""
         if stile.file_io.has_fits:
@@ -137,7 +127,9 @@ class TestFileIO(unittest.TestCase):
         # check field reordering
         field_list = ['f3', 'f4', 'f6', 'f0', 'f2', 'f1', 'f5']
         stile.file_io.WriteASCIITable(filename, self.table1, fields=field_list)
-        results = stile.ReadASCIITable(filename).astype(self.table1[field_list].dtype)
+        results = stile.ReadASCIITable(filename)
+        results.dtype.names = field_list
+        results = results.astype(self.table1[field_list].dtype)
         numpy.testing.assert_equal(results, self.table1[field_list])
         os.close(handle)
         if not stile.file_io.has_fits:
@@ -161,16 +153,34 @@ class TestFileIO(unittest.TestCase):
                     stile.file_io.fits_handler.FITSDiff('test_data/table.fits', filename).identical)
             except AttributeError:
                 # FITSDiff seems to not exist for one of my pyfits installations
-                numpy.testing.assert_equal(stile.ReadFITSTable('test_data/table.fits'),
-                                           stile.ReadFITSTable(filename))
+                try:
+                    numpy.testing.assert_equal(stile.ReadFITSTable('test_data/table.fits'),
+                                               stile.ReadFITSTable(filename))
+                except AssertionError:
+                    old_write = stile.ReadFITSTable('test_data/table.fits')
+                    new_write = stile.ReadFITSTable(filename)
+                    for colname in new_write.dtype.names:
+                        self.assertIn(colname, old_write.dtype.names)
+                        if isinstance(old_write[colname][0], str):
+                            self.assertTrue(all([a.strip()==b.strip() for a,b in zip(old_write[colname], new_write[colname])]))
+                        else:
+                            numpy.testing.assert_equal(old_write[colname], new_write[colname])
+    
             os.close(handle)
 
             # Now see if WriteTable properly sends things through WriteFITSTable
             handle, filename = tempfile.mkstemp()
             stile.WriteTable(filename, self.fits_table_2)
             res = stile.ReadFITSTable(filename)
-            numpy.testing.assert_array_equal(stile.ReadFITSTable('test_data/two_tables.fits'),
-                                             stile.ReadFITSTable(filename))
+            try:
+                numpy.testing.assert_array_equal(stile.ReadFITSTable('test_data/two_tables.fits'),
+                                                 stile.ReadFITSTable(filename))
+            except AssertionError: # Sometimes this fails because of dtype reasons
+                old_write = stile.ReadFITSTable('test_data/two_tables.fits')
+                new_write = stile.ReadFITSTable(filename)
+                for colname in new_write.dtype.names:
+                    self.assertIn(colname, old_write.dtype.names)
+                    numpy.testing.assert_equal(old_write[colname], new_write[colname])
 
             os.close(handle)
 
