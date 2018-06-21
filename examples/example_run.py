@@ -8,7 +8,7 @@ def main():
     dh = dummy.DummyDataHandler()
     bin_list = [stile.BinStep('ra',low=-1,high=1,step=1),
                 stile.BinStep('dec',low=-1,high=1,step=1)]
-    sys_test = stile.GalaxyShearSysTest()
+    sys_test = stile.CorrelationFunctionSysTest(type='GalaxyShear')
     
     stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees',
                   'min_sep': 0.05, 'max_sep': 1, 'sep_units': 'degrees', 'nbins': 20}
@@ -27,7 +27,7 @@ def main():
 
     stile.WriteASCIITable('realshear.dat',results)
     print "Done with unbinned systematics test"
-    
+
     # do with binning
     data = dh.getData(data_ids[0],'galaxy lens','single','field','table')
     # turns a list of binning schemes into a pseudo-nested list of single bins
@@ -38,7 +38,6 @@ def main():
     for bin_list in expanded_bin_list:
         bins_name = '-'.join([bl.short_name for bl in bin_list])
         data2 = dh.getData(data_ids[1],'galaxy','single','field','table',bin_list=bin_list)
-        
         results = sys_test(data, data2=data2, config=stile_args)
         stile.WriteASCIITable('realshear-'+bins_name+'.dat',results)
         fig = sys_test.plot(results)
@@ -47,4 +46,4 @@ def main():
 
 if __name__=='__main__':
     main()
-    
+
