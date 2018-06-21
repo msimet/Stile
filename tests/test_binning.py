@@ -338,7 +338,7 @@ class TestBinning(unittest.TestCase):
         sfb = stile.binning.SingleFunctionBin(binfunction, 1)
         self.assertIsNotNone(sb.long_name)  # check that this was made properly
         self.assertRaises(TypeError, sb, [1, 2, 3, 4])
-        self.assertRaises(ValueError, sb, numpy.array([1, 2, 3, 4]))
+        self.assertRaises((IndexError, ValueError), sb, numpy.array([1, 2, 3, 4]))
         self.assertRaises(ValueError, sb,
                           numpy.array([(1, ), (2, ), (3, ), (4, )], dtype=[('field_1', int)]))
         self.assertRaises(TypeError, sb, 3)
