@@ -6,7 +6,8 @@ Stile: the Systematics Tests In LEnsing pipeline
 -------------------------------------
 #### Installation instructions ####
 
-Stile is a pure python package, no compilation needed.  We do not currently have a utility that will install it in your system path for you, but as long as this directory is in your $PYTHONPATH, you should be able to import and run.
+Stile is a pure python package, no compilation needed.  You can install it using:
+> python setup.py install
 
 #### Dependencies ####
 To run Stile, you must have:
@@ -23,6 +24,11 @@ We also recommend:
 More dependencies may be added in the future.  
  
 -------------------------------------
+#### Documentation ####
+
+The documentation is available online at http://stile.readthedocs.io/.  You can also build it using Sphinx in the `doc/` directory.
+ 
+-------------------------------------
 
 #### Current functionality ####
 
@@ -30,6 +36,9 @@ Right now, Stile can:
 
  - Generate an average shear signal around a set of points (if you've installed corr2), given two catalogs that you specify in a particular way, and plot the results (if you have matplotlib).
  - Perform a number of basic statistics measurements and print the results.
+ - Make whisker plots.
+ - Make scatter plots with trendlines.
+ - Generate histograms.
  - Perform any of the above tests for data with different binning schemes applied, using a simple method of specifying the bins.
  - Interface with sufficiently recent versions of the HSC pipeline.
  
@@ -39,11 +48,8 @@ Right now, Stile can:
 
 Over the upcoming months, we plan to add:
 
- - A number of other systematics tests, including whisker plots, scatter plots/trend-fitting, histograms, and a broader array of correlation function tests.
  - A more flexible way of specifying your data set than hard-coding the file names in your script.
  - Automatic drivers to run as many tests as your data set allows.
  - A larger suite of example code.
- - More robust documentation of both the code and the tests.
- - Installation scripts.
  - Tests on images, and the utilities to make those tests easier.
  
