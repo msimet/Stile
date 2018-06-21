@@ -1,9 +1,10 @@
-"""@file stile_utils.py
-Various utilities for the Stile pipeline.  Includes input parsing and some numerical helper
-functions.
+"""
+stile_utils.py: Various utilities for the Stile pipeline.  Includes input parsing and some
+numerical helper functions.
 """
 
 import numpy
+
 
 def Parser():
     """
@@ -15,26 +16,27 @@ def Parser():
     #TODO: add, obviously, EVERYTHING ELSE
     return p
 
+
 def FormatArray(d, fields=None):
     """
     Turn a regular NumPy array of arbitrary types into a formatted array, with optional field name
     description.
 
-    This function uses the dtype that the array `d` comes with.  This means that arrays of
-    heterogeneous objects may not return the dtype you expect (for example, ints will be converted
-    to floats if there are floats in the array, or all numbers will be converted to strings if there
-    are any strings in the array).  Predefining the format or using a function like
-    numpy.genfromtxt() will prevent these issues, as will reading from a FITS file.
+    This function uses the existing dtype of the array ``d``.  This means that arrays of
+    heterogeneous objects may not return the dtype you expect (for example, ints will be
+    converted to floats if there are floats in the array, or all numbers will be converted to
+    strings if there are any strings in the array).  Predefining the format or using a function like
+    :func:`numpy.genfromtxt` will prevent these issues, as will reading from a FITS file.
 
-    @param d      A NumPy array.
-    @param fields A dictionary whose keys are the names of the fields you'd like for the output
-                  array, and whose values are field numbers (starting with 0) whose names those
-                  keys should replace (or, if the array is already formatted, the existing field
-                  names the keys should replace); alternately, a list with the same length as the
-                  rows of `d`. [default: None]
-    @returns      A formatted numpy array with the same shape as d except that the innermost
-                  dimension has turned into a record field if it was not already one, optionally
-                  with field names appropriately replaced.
+    :param d:      A NumPy array.
+    :param fields: A dictionary whose keys are the names of the fields you'd like for the output
+                   array, and whose values are field numbers (starting with 0) whose names those
+                   keys should replace (or, if the array is already formatted, the existing field
+                   names the keys should replace); alternately, a list with the same length as the
+                   rows of ``d``. [default: None]
+    :returns:      A formatted numpy array with the same shape as ``d`` except that the innermost
+                   dimension has turned into a record field if it was not already one, optionally
+                   with field names appropriately replaced.
     """
     # We want arrays to be numpy.arrays with field access (so we can say d['ra'] or something like
     # that).  In order for these to be created correctly, two conditions have to be met:
@@ -96,14 +98,15 @@ class Stats:
 
     (1) Basic array statistics: typically one would use length (N), min, max, median, mean, standard
         deviation (stddev), variance, median absolute deviation ('mad') as defined using the
-        `simple_stats` option at initialization.
+        ``simple_stats`` option at initialization.
 
     (2) Percentiles: the value at a given percentile level.
 
-    The StatSysTest class in `sys_tests.py` can be used to create and populate values for one of
-    these objects.  If you want to change the list of simple statistics, it's only necessary to
-    change the code there, not here.
+    The :class:`StatSysTest <stile.sys_tests.StatSysTest>` class can be used to create and populate
+    values for one of these objects.  If you want to change the list of simple statistics, it's
+    only necessary to change the code there, not here.
     """
+
     def __init__(self, simple_stats):
         self.simple_stats = simple_stats
         for stat in self.simple_stats:
@@ -114,10 +117,10 @@ class Stats:
         self.values = None
 
     def __str__(self):
-        """This routine will print the contents of the Stats object in a nice format.
+        """This routine will print the contents of the ``Stats`` object in a nice format.
 
-        We assume that the Stats object was created by a StatSysTest, so that certain sanity checks
-        have already been done (e.g., self.percentiles, if not None, is iterable)."""
+        We assume that the ``Stats`` object was created by a :class:`StatSysTest`, so that certain
+        sanity checks have already been done (e.g., self.percentiles, if not None, is iterable)."""
         # Preamble:
         ret_str = 'Summary statistics:\n'
 
@@ -141,6 +144,10 @@ class Stats:
         return ret_str
 
 fieldNames = {
+    'dec': 'the declination of the object',
+    'ra': 'the RA of the object',
+    'x': 'the x coordinate of the object',
+    'y': 'the y coordinate of the object',
     'g1': 'g1, a shear component in the ra direction',
     'g2': 'g2, a shear component 45 degrees from the ra direction',
     'sigma': 'a size parameter for objects with dimension [length] in arbitrary units',
@@ -149,3 +156,14 @@ fieldNames = {
     'psf_sigma': 'the sigma of the psf at the location of this object',
     'w': 'the weight to apply per object',
     'z': 'the redshift of the object'}
+
+objectNames = {
+    'galaxy': 'galaxy data',
+    'star': 'star data',
+    'galaxy lens': 'galaxies to be used as lenses in galaxy-galaxy lensing',
+    'star PSF': 'stars used in PSF determination',
+    'star bright': 'especially bright stars',
+    'galaxy random': 'random catalog corresponding to the "galaxy" sample',
+    'star random': 'random catalog corresponding to the "star" sample'
+}
+
