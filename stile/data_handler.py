@@ -10,8 +10,13 @@ from .binning import BinStep, BinList, ExpandBinList
 from .file_io import ReadASCIITable, ReadFITSTable, ReadFITSImage, ReadTable, ReadImage
 from . import sys_tests
 
+
 class DataHandler:
     """
+    .. warning::
+       The behavior of this class is still under development; we do not suggest using or relying
+       on ``DataHandler`` instances at this time.
+
     A class which contains information about the data set Stile is to be run on.  This is used for
     the default drivers, not necessarily the pipeline-specific drivers (such as HSC/LSST).
 
@@ -47,7 +52,11 @@ class DataHandler:
         (DataHandler.getData()), optionally with bins defined.  (Bins can also be defined on a test-
         by-test basis, depending on which format makes the most sense for your data setup.)
 
-      Additionally, the class can define a .getOutputPath() function to place the data in a more
+      * Take each element of the data list from :func:`DataHandler.listData` and retrieve it for use
+        (:func:`DataHandler.getData`), optionally with bins defined.  (Bins can also be defined on a
+        test-by-test basis, depending on which format makes the most sense for your data setup.)
+
+      Additionally, the class can define a ``.getOutputPath()`` function to place the data in a more
       complex system than the default (all in one directory with long output path names).
       """
     multi_file = True
@@ -64,12 +73,12 @@ class DataHandler:
     def getData(self, ident, object_types=None, epoch=None, extent=None, data_format=None,
                 bin_list=None):
         """
-        Return some data matching the `ident` for the given kwargs.  This can be a numpy array, a
-        tuple (file_name, field_schema) for a file already existing on the filesystem, or a list of
-        either of those things.
+        Return some data matching the ``ident`` for the given kwargs.  This can be a numpy array, a
+        tuple ``(file_name, field_schema)`` for a file already existing on the filesystem, or a list
+        of either of those things.
 
-        If it's a tuple (file_name, field_schema), the assumption is that it can be read by a simple
-        FITS or ASCII reader.  The format will be determined from the file extension.
+        If it's a tuple ``(file_name, field_schema)``, the assumption is that it can be read by a
+        simple FITS or ASCII reader.  The format will be determined from the file extension.
         """
         raise NotImplementedError()
 
@@ -77,8 +86,14 @@ class DataHandler:
         """
         Return a path to an output file given a list of strings that should appear in the output
         filename, taking care not to clobber other files (unless requested).
-        @param args       A list of strings to appear in the file name
-        @returns A path to an output file meeting the input specifications.
+
+        :param args:       A list of strings to appear in the file name
+        :param extension:  The file extension to be used
+        :param multi_file: Whether multiple files with the same args will be created within a single
+                           run of Stile. This appends a number to the file name; if clobbering is
+                           allowed, this argument also prevents Stile from writing over outputs from
+                           the same systematics test during the same run.
+        :returns: A path to an output file meeting the input specifications.
         """
         #TODO: no-clobbering case
         if args[-1][0]=='.':
