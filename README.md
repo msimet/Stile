@@ -20,8 +20,9 @@ We also recommend:
  - [TreeCorr](http://github.com/rmjarvis/TreeCorr), Mike Jarvis's 2-point correlation function code.  All of our correlation function tests involve calls to this package. 
  - PyFITS/Astropy to handle FITS tables and images.  Stile can run on ASCII tables, but is much slower.
  - matplotlib to generate plots.
+ - scipy to calculate some point statistics
 
-More dependencies may be added in the future.  
+More dependencies may be added in the future.
  
 -------------------------------------
 #### Documentation ####
