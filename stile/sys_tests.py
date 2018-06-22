@@ -566,7 +566,10 @@ class BaseCorrelationFunctionSysTest(SysTest):
             return 'compensated'
 
     def plot(self, data, colors=['r', 'b'], log_yscale=False,
-                   plot_bmode=True, plot_data_only=True, plot_random_only=True):
+                   plot_bmode=True, plot_data_only=True, plot_random_only=True,
+                   requirement_x=None, requirement_emode=None, requirement_bmode=None,
+                   requirement_emode_range=None, requirement_bmode_range=None,
+                   requirement_color=['gray', 'green'], requirement_linestyle='dashed'):
         """
         Plot the data returned from a :class:`BaseCorrelationFunctionSysTest` object.  This chooses
         some sensible defaults, but much of its behavior can be changed.
@@ -580,12 +583,67 @@ class BaseCorrelationFunctionSysTest(SysTest):
                                  [default: True]
         :param plot_random_only: Whether to plot the random-only correlation functions, if present
                                  [default: True]
+        :param requirement_x:     The x-axis points of a requirement curve [default: None, meaning
+                                  do not plot a requirement curve]
+        :param requirement_emode: The e-mode points of a requirement curve [default: None, meaning
+                                  do not plot an e-mode requirement curve]
+        :param requirement_bmode: The b-mode points of a requirement curve [default: None, meaning
+                                  do not plot a b-mode requirement curve]
+        :param requirement_emode_range: A 2-item iterable defining the top and bottom (y-axis) edges
+                                        of an e-mode requirement range [default: None, meaning do
+                                        not plot]
+        :param requirement_bmode_range: A 2-item iterable defining the top and bottom (y-axis) edges
+                                        of a b-mode requirement range [default: None, meaning do
+                                        not plot]
+        :param requirement_color:     The color(s) of the requirement plots. If iterable, the first
+                                      item will be used for the e-mode requirements and the second
+                                      for b-mode, if both are plotted; otherwise the first item
+                                      will be used for whichever mode is plotted. [default:
+                                      'gray', 'green']
+        :param requirement_linestyle: The linestyle of the requirements curves. If iterable, this
+                                      will follow the ordering rules of `requirement_color`. 
+                                      [default: 'dashed']
         :returns:          A matplotlib ``Figure`` which may be written to a file with
                            :func:`.savefig()`, if matplotlib can be imported; else None.
         """
 
         if not has_matplotlib:
             return None
+        if requirement_emode_range and len(requirement_emode_range)!=2:
+            raise ValueError("requirement_emode_range must be a 2-item tuple")
+        if requirement_bmode_range and len(requirement_bmode_range)!=2:
+            raise ValueError("requirement_bmode_range must be a 2-item tuple")
+        if requirement_x is None and (requirement_emode is not None or requirement_bmode is not None
+                                  or requirement_emode_range is not None or requirement_bmode_range is not None):
+            print "Cannot plot requirement curves without requirement_x--skipping"
+        if (requirement_emode is not None or requirement_emode_range is not None):
+            if hasattr(requirement_color, '__iter__'):
+                reqecolor = requirement_color[0]
+            else:
+                reqecolor = requirement_color
+            if hasattr(requirement_linestyle, '__iter__') and not isinstance(requirement_linestyle, str):
+                reqels = requirement_linestyle[0]
+            else:
+                reqels = requirement_linestyle
+        else:
+            reqecolor = None
+            reqels = None
+        if (requirement_bmode is not None or requirement_bmode_range is not None):
+            if hasattr(requirement_color, '__iter__'):
+                if reqecolor:
+                    reqbcolor = requirement_color[1]
+                else:
+                    reqbcolor = requirement_color[0]
+            else:
+                reqbcolor = requirement_color
+            if hasattr(requirement_color, '__iter__') and not isinstance(requirement_linestyle, str):
+                if reqels:
+                    reqbls = requirement_linestyle[1]
+                else:
+                    reqbls = requirement_linestyle[0]
+            else:
+                reqbls = requirement_linestyle
+            
         fields = data.dtype.names
         # Pick which radius measurement to use
         # TreeCorr changed the name of the output columns
@@ -635,11 +693,22 @@ class BaseCorrelationFunctionSysTest(SysTest):
         curr_plot = 0
         ax = fig.add_subplot(nrows, 1, 1)
         ax.axhline(0, alpha=0.7, color='gray')
+        if requirement_emode_range is not None:
+            ax.fill_between(requirement_x, requirement_emode_range[0], requirement_emode_range[1],
+                            color=reqecolor, alpha=0.5)
+        if requirement_emode is not None:
+            ax.plot(requirement_x, requirement_emode, color=reqecolor, ls=reqels)
         ax.errorbar(data[r], data[pd.t_field], yerr=data[pd.sigma_field], color=colors[0],
                     label=pd.t_title)
         if pd.x_title and plot_bmode:
+            if requirement_bmode_range is not None:
+                ax.fill_between(requirement_x, requirement_bmode_range[0], requirement_bmode_range[1],
+                                color=reqbcolor, alpha=0.5)
+            if requirement_bmode is not None:
+                ax.plot(requirement_x, requirement_bmode, color=reqbcolor, ls=reqbls)
             ax.errorbar(data[r], data[pd.x_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.x_title)
+            
         elif pd.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
             ax.errorbar(data[r], data[pd.t_im_field], yerr=data[pd.sigma_field], color=colors[1],
                         label=pd.t_im_title)
@@ -2104,10 +2173,10 @@ class BaseScatterPlotSysTest(SysTest):
         if linear_regression:
             if yerr is None:
                 m, c = self.linearRegression(x, y)
-                ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
+                ax.plot(xtmp, m*xtmp+c, linestyle="--", color=used_color)
             else:
                 m, c, cov_m, cov_c, cov_mc = self.linearRegression(x, y, err=yerr)
-                ax.plot(xtmp, m*xtmp+c, "--%s" % used_color)
+                ax.plot(xtmp, m*xtmp+c, linestyle="--", color=used_color)
                 y = m*xtmp+c
                 # calculate yerr using the covariance
                 yerr = numpy.sqrt(xtmp**2*cov_m + 2.*xtmp*cov_mc + cov_c)
@@ -2228,6 +2297,42 @@ class BaseScatterPlotSysTest(SysTest):
                 return x_med, y_med, y_med_std
         else:
             raise ValueError('stat should be mean or median.')
+
+    def plot(self, results, requirement_x=None, requirement_y=None, requirement_y_range=None,
+                   requirement_color='gray', requirement_linestyle='dashed'):
+        """
+        This function can be used to add requirements to a plot generated by a previous call to
+        :class:`BaseScatterPlotSysTest`.  
+
+        :param requirement_x: The x-axis points of a requirement curve [default: None, meaning do
+                              not plot a requirement curve]
+        :param requirement_y: yhe x-axis points of a requirement curve [default: None, meaning do
+                              not plot a requirement curve]
+        :param requirement_y_range: A 2-item iterable defining the top and bottom (y-axis) edges
+                                    the requirement range [default: None, meaning do not plot]
+        :param requirement_color: The color of the requirement curves. [default: 'gray']
+        :param requirement_linestyle: The linestyle of the requirements curves. [default: 'dashed']
+        :returns:          A matplotlib ``Figure`` which may be written to a file with
+                           :func:`.savefig()`, if matplotlib can be imported; else None.
+        """
+        if hasattr(results, 'savefig'):
+            # "is not None" because numpy yells about needing any or all for arrays
+            if requirement_x is not None and (requirement_y is not None or requirement_y_range is not None):
+                ax = results.gca()
+                if requirement_y is not None:
+                    ax.plot(requirement_x, requirement_y, 
+                            color=requirement_color, ls=requirement_linestyle)
+                if requirement_y_range is not None:
+                    if not (hasattr(requirement_y_range, '__iter__') 
+                            and len(requirement_y_range)==2):
+                        raise ValueError("requirement_y_range must be a 2-item iterable")
+                    ax.fill_between(requirement_x, requirement_y_range[0], requirement_y_range[1],
+                                    color=requirement_color, alpha=0.5)
+            return results
+        else:
+            return PlotNone()
+
+
 
 class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     """
