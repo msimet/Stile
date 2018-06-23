@@ -1324,7 +1324,7 @@ class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     required_quantities = [('x', 'y', 'g1', 'g2', 'sigma')]
 
     def __call__(self, array, linewidth=0.01, scale=None, figsize=None,
-                 xlim=None, ylim=None):
+                 xlim=None, ylim=None, **kwargs):
         if 'CCD' in array.dtype.names:
             fields = list(self.required_quantities[0]) + ['CCD']
         else:
@@ -1334,7 +1334,7 @@ class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
                                 linewidth=linewidth, scale=scale, figsize=figsize,
                                 xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
-                                xlim=xlim, ylim=ylim, equal_axis=True)
+                                xlim=xlim, ylim=ylim, equal_axis=True, **kwargs)
 
 
 class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
@@ -1347,7 +1347,7 @@ class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
     required_quantities = [('x', 'y', 'psf_g1', 'psf_g2', 'psf_sigma')]
 
     def __call__(self, array, linewidth=0.01, scale=None, figsize=None,
-                 xlim=None, ylim=None):
+                 xlim=None, ylim=None, **kwargs):
         if 'CCD' in array.dtype.names:
             fields = list(self.required_quantities[0]) + ['CCD']
         else:
@@ -1357,7 +1357,7 @@ class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
                                 array['psf_sigma'], linewidth=linewidth, scale=scale,
                                 figsize=figsize, xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
-                                xlim=xlim, ylim=ylim, equal_axis=True)
+                                xlim=xlim, ylim=ylim, equal_axis=True, **kwargs)
 
 
 class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
@@ -1369,7 +1369,7 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
     required_quantities = [('x', 'y', 'g1', 'g2', 'sigma', 'psf_g1', 'psf_g2', 'psf_sigma')]
 
     def __call__(self, array, linewidth=0.01, scale=None, figsize=None,
-                 xlim=None, ylim=None):
+                 xlim=None, ylim=None, **kwargs):
         data = [array['x'], array['y'], array['g1'] - array['psf_g1'],
                 array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma']]
         fields = ['x', 'y', 'g1-psf_g1', 'g2-psf_g2', 'sigma-psf_sigma']
@@ -1382,7 +1382,7 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
                                 linewidth=linewidth, scale=scale,
                                 figsize=figsize, xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
-                                xlim=xlim, ylim=ylim, equal_axis=True)
+                                xlim=xlim, ylim=ylim, equal_axis=True, **kwargs)
 
 class BinnedWhiskerPlotSysTest(BaseWhiskerPlotSysTest):
     def whiskerPlot(self, x, y, g1, g2, sigma, n_x=30, n_y=30, split_by_objects=True, 
@@ -1426,7 +1426,8 @@ class BinnedWhiskerPlotSysTest(BaseWhiskerPlotSysTest):
         new_g2 = numpy.asarray(new_g2)
         new_sigma = numpy.asarray(new_sigma)
         return super(BinnedWhiskerPlotSysTest, self).whiskerPlot(
-                                        new_x, new_y, new_g1, new_g2, new_sigma, **kwargs)             
+                                        new_x, new_y, new_g1, new_g2, new_sigma, **kwargs)   
+                                                  
             
 class BinnedWhiskerPlotStarSysTest(BinnedWhiskerPlotSysTest, WhiskerPlotStarSysTest):
     short_name = 'binned_whiskerplot_star'

@@ -15,13 +15,19 @@ class TestSysTests(unittest.TestCase):
                     source_data['g2'], source_data['g1']+0.1*source_data['ra'], source_data['g2']+0.05*source_data['dec'],
                     numpy.ones_like(source_data['ra']), numpy.ones_like(source_data['ra'])+0.02],
                     names = ['x', 'y', 'g1', 'g2', 'psf_g1', 'psf_g2', 'sigma', 'psf_sigma'])
-        print data.dtype.names
         obj = stile.WhiskerPlotSysTest("BinnedStar")
         obj(data)
         obj = stile.WhiskerPlotSysTest("BinnedPSF")
         obj(data)
         obj = stile.WhiskerPlotSysTest("BinnedResidual")
         obj(data)
+        data['x'] = numpy.log10(1+data['x'])
+        obj = stile.WhiskerPlotSysTest("BinnedStar")
+        obj(data)
+        obj = stile.WhiskerPlotSysTest("BinnedStar")
+        obj(data, split_by_objects=False, n_x=50, n_y=50)
+        
+        
 
 if __name__=='__main__':
     unittest.main()
