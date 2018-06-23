@@ -19,8 +19,8 @@ class TestSysTests(unittest.TestCase):
                     names = ['x', 'y', 'g1', 'g2', 'psf_g1', 'psf_g2', 'sigma', 'psf_sigma',
                              'g1_err', 'g2_err', 'psf_g1_err', 'psf_g2_err'])
         obj = stile.ScatterPlotSysTest('StarVsPSFG1')
-        obj(data, color='g').savefig('p1.png')
-        obj(data, histogram=True, color='g').savefig('p2.png')
+        obj(data, color='g')
+        obj(data, histogram=True, color='g')
             
     
 if __name__=='__main__':
