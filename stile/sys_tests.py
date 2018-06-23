@@ -1849,7 +1849,8 @@ class BaseScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual=False,
                  per_ccd_stat=None, xlabel=None, ylabel=None, zlabel=None, color="",
-                 lim=None, equal_axis=False, linear_regression=False, reference_line=None):
+                 lim=None, equal_axis=False, linear_regression=False, reference_line=None,
+                 histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         """
         Draw a scatter plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
@@ -1895,6 +1896,15 @@ class BaseScatterPlotSysTest(SysTest):
                                 ``x=y`` is drawn. If ``reference_line == 'zero'``, ``y=0`` is drawn.
                                 A user-specific function can be used by passing an object which
                                 has an attribute :func:`__call__` and returns a 1-d Numpy array.
+        :param histogram:       Plot a 2-d histogram (instead of plotting each point individually)
+                                for crowded plots. Setting `histogram=True` will cause any data
+                                given for `z` to be ignored, and any uncertainty on `y` will not be
+                                plotted (though it will still be used to compute a trendline).
+                                [default: False]
+        :param histogram_n_bins: The number of bins along *each* axis for the histogram; ignored if
+                                `histogram=False`. [default: 40] 
+        :param histogram_cmap:   The matplotlib colormap used for the histogram; ignored if
+                                `histogram=False`. [default: 'Blues'] 
         :returns:               a :class:`matplotlib.figure.Figure` object
         """
         if per_ccd_stat:
@@ -1939,7 +1949,9 @@ class BaseScatterPlotSysTest(SysTest):
         return self.scatterPlot(x, y, yerr, z,
                                 xlabel=xlabel, ylabel=ylabel,
                                 color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line=reference_line)
+                                linear_regression=True, reference_line=reference_line,
+                                histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                histogram_cmap=histogram_cmap)
 
     def getData(self):
         """
@@ -1951,7 +1963,8 @@ class BaseScatterPlotSysTest(SysTest):
         return self.data
 
     def scatterPlot(self, x, y, yerr=None, z=None, xlabel=None, ylabel=None, zlabel=None, color="",
-                    lim=None, equal_axis=False, linear_regression=False, reference_line=None):
+                    lim=None, equal_axis=False, linear_regression=False, reference_line=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         """
         Draw a scatter plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
@@ -1991,11 +2004,20 @@ class BaseScatterPlotSysTest(SysTest):
                                 A user-specific function can be used by passing an object which has
                                 an attribute :func:`__call__` and returns a 1-d Numpy array.
                                 [default: False]
+        :param histogram:       Plot a 2-d histogram (instead of plotting each point individually)
+                                for crowded plots. Setting `histogram=True` will cause any data
+                                given for `z` to be ignored, and any uncertainty on `y` will not be
+                                plotted (though it will still be used to compute a trendline).
+                                [default: False]
+        :param histogram_n_bins: The number of bins along *each* axis for the histogram; ignored if
+                                `histogram=False`. [default: 40] 
+        :param histogram_cmap:   The matplotlib colormap used for the histogram; ignored if
+                                `histogram=False`. [default: 'Blues'] 
         :returns:                a :class:`matplotlib.figure.Figure` object
         """
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-
+        print histogram, "histogram"
         # mask data with nan. Emit a warning if an array has nan in it.
         x_isnan = numpy.isnan(x)
         y_isnan = numpy.isnan(y)
@@ -2012,6 +2034,8 @@ class BaseScatterPlotSysTest(SysTest):
                              % (numpy.sum(yerr_isnan), len(yerr_isnan)))
             sel = numpy.logical_and(sel, numpy.invert(yerr_isnan))
         if z is not None:
+            if histogram:
+                warnings.warn('Plotting a histogram - z (color) data will be ignored.')
             z_isnan = numpy.isnan(z)
             if numpy.sum(z_isnan) != 0:
                 warnings.warn('There are %s nans in z, out of %s.'
@@ -2050,19 +2074,24 @@ class BaseScatterPlotSysTest(SysTest):
                 ylim = None
 
         # plot
-        if z is None:
-            if yerr is None:
-                p = ax.plot(x, y, ".%s" % color)
+        if not histogram:
+            if z is None:
+                if yerr is None:
+                    p = ax.plot(x, y, ".%s" % color)
+                else:
+                    p = ax.errorbar(x, y, yerr, fmt=".%s" % color)
+                # store color for latter use
+                used_color = p[0].get_color()
             else:
-                p = ax.errorbar(x, y, yerr, fmt=".%s" % color)
-            # store color for latter use
-            used_color = p[0].get_color()
+                if yerr is not None:
+                    plt.errorbar(x, y, yerr=yerr, linestyle="None", color="k", zorder=0)
+                plt.scatter(x, y, c=z, zorder=1)
+                cb = plt.colorbar()
+                used_color = "b"
         else:
-            if yerr is not None:
-                plt.errorbar(x, y, yerr=yerr, linestyle="None", color="k", zorder=0)
-            plt.scatter(x, y, c=z, zorder=1)
+            plt.hist2d(x, y, bins=histogram_n_bins, cmap=histogram_cmap)
             cb = plt.colorbar()
-            used_color = "b"
+            used_color = color
 
         # make axes ticks equal to each other if specified
         if equal_axis:
@@ -2132,7 +2161,7 @@ class BaseScatterPlotSysTest(SysTest):
             ax.set_xlabel(xlabel)
         if ylabel is not None:
             ax.set_ylabel(ylabel)
-        if zlabel is not None:
+        if zlabel is not None and not histogram:
             cb.set_label(zlabel)
 
         fig.tight_layout()
@@ -2231,13 +2260,17 @@ class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
+        print "lalala", histogram
         return super(ScatterPlotStarVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
                                     ylabel=r'$g^{\rm star}_1$', color=color, lim=lim,
                                     equal_axis=False, linear_regression=True,
-                                    reference_line='one-to-one')
+                                    reference_line='one-to-one',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
 
 class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
@@ -2249,13 +2282,16 @@ class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         return super(ScatterPlotStarVsPSFG2SysTest,
                      self).__call__(array, 'psf_g2', 'g2', 'g2_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_2$',
                                     ylabel=r'$g^{\rm star}_2$', color=color, lim=lim,
                                     equal_axis=False, linear_regression=True,
-                                    reference_line='one-to-one')
+                                    reference_line='one-to-one',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
 
 class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
@@ -2267,14 +2303,17 @@ class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         return super(ScatterPlotStarVsPSFSigmaSysTest,
                      self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err', residual=False,
                                     per_ccd_stat=per_ccd_stat,
                                     xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
                                     ylabel=r'$\sigma^{\rm star}$ [arcsec]',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='one-to-one')
+                                    linear_regression=True, reference_line='one-to-one',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
 
 class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
@@ -2286,13 +2325,16 @@ class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         return super(ScatterPlotResidualVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=True,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
                                     ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
 
 class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
@@ -2304,13 +2346,16 @@ class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         return super(ScatterPlotResidualVsPSFG2SysTest,
                      self).__call__(array, 'psf_g2', 'g2', 'g2_err', residual=True,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_2$',
                                     ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
 
 class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
@@ -2322,14 +2367,17 @@ class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         return super(ScatterPlotResidualVsPSFSigmaSysTest,
                      self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err', residual=True,
                                     per_ccd_stat=per_ccd_stat,
                                     xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
                                     ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$ [arcsec]',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
 
 class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
@@ -2341,7 +2389,8 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma', 'mag_inst')]
 
-    def __call__(self, array, per_ccd_stat='None', color='', lim=None):
+    def __call__(self, array, per_ccd_stat='None', color='', lim=None,
+                    histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
         self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         import numpy.lib.recfunctions
         use_array = numpy.copy(array)
@@ -2360,5 +2409,7 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
                                     ylabel=
                                     r'$(\sigma^{\rm star} - \sigma^{\rm PSF})/\sigma^{\rm PSF}$',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    histogram=histogram, histogram_n_bins=histogram_n_bins,
+                                    histogram_cmap=histogram_cmap)
 
