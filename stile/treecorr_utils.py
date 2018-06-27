@@ -6,7 +6,7 @@ import numpy
 import file_io
 import treecorr
 from treecorr.corr2 import corr2_valid_params
-
+use_2form = any([key[:2]=='n2' for key in corr2_valid_params])
 
 def Parser():
     import argparse
@@ -104,6 +104,16 @@ def ReadTreeCorrResultsFile(file_name):
     fields = [field for field in fields if field != '.']
     return stile_utils.FormatArray(output, fields=fields)
 
+# This next bit of code is so we work with both the 'n2_*' and the 'nn_*' treecorr args
+def fixform(key):
+    if key[-4:]=='_col':
+        return key
+    elif key[1]=='2' and not use_2form and not key[0]=='m':
+        return key[0]+key[0]+key[2:]
+    elif key[0]==key[1] and use_2form:
+        return key[0]+'2'+key[2:]
+    return key
+
 
 def PickTreeCorrKeys(input_dict):
     """
@@ -121,7 +131,10 @@ def PickTreeCorrKeys(input_dict):
         treecorr_dict = input_dict['treecorr_kwargs']
     else:
         treecorr_dict = {}
-    for key in corr2_valid_params:
-        if key in input_dict:
-            treecorr_dict[key] = input_dict[key]
+    for key in input_dict:
+        newkey = fixform(key)
+        if newkey in corr2_valid_params:
+            treecorr_dict[newkey] = input_dict[key]
+    okeys = set(input_dict.keys())
+    nkeys = set(treecorr_dict.keys())
     return treecorr_dict

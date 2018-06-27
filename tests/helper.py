@@ -16,14 +16,12 @@ def FormatSame(arr1,arr2):
     Then return a tuple of the two arrays, which can then be passed to the numpy.testing functions.
     """
     if not arr1.shape==arr2.shape:
-        return False
+        return (arr1, arr2)
     arr1 = numpy.array(arr1) # to protect against FITSrecs
-    if not len(arr1.dtype.names)==len(arr2.dtype.names):
-        return False
-    if not arr1.shape==arr2.shape:
-        return False
+    if not len(arr1.dtype.names)==len(arr2.dtype.names) or not arr1.shape==arr2.shape:
+        return (arr1, arr2)
     arr1 = arr1.astype(arr1.dtype.newbyteorder('='))
     arr2 = arr2.astype(arr2.dtype.newbyteorder('='))
     arr2.dtype.names = arr1.dtype.names
-    return (arr1,arr2)
+    return (arr1, arr2)
 

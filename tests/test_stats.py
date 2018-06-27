@@ -58,7 +58,7 @@ class TestStats(unittest.TestCase):
         self.check_results(result)
         result = test_obj(tuple(test_vec))
         self.check_results(result)
-        result = test_obj(test_vec.reshape((0.5*self.n_points_test, 2)))
+        result = test_obj(test_vec.reshape((int(0.5*self.n_points_test), 2)))
         self.check_results(result)
 
     def test_statsystest_exceptions(self):
