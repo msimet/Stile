@@ -31,7 +31,6 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy
 import stile
-import stile_utils
 try:
     import treecorr
     from treecorr.corr2 import corr2_valid_params
@@ -52,6 +51,9 @@ try:
     has_matplotlib = True
 except ImportError:
     has_matplotlib = False
+
+import stile_utils
+from .stile_utils import CorrFuncResult, PlotResult
 
 class PlotNone(object):
     """
@@ -366,7 +368,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
 
     def getCF(self, correlation_function_type, data, data2=None,
                     random=None, random2=None, use_as_k=None, use_chip_coords=False,
-                    config=None, **kwargs):
+                    config=None, previous_results=None, **kwargs):
         """
         Sets up and calls TreeCorr on the given set of data and possibly randoms.
 
@@ -405,6 +407,14 @@ class BaseCorrelationFunctionSysTest(SysTest):
         the program returns an autocorrelation.  ``Random`` datasets are necessary for the **nn**
         form of the correlation function, and can be used (but are not necessary) for **ng**,
         **nk**, and **kg**.
+        
+        If the data catalog(s) are divided into chunks, you can continue a previous run of
+        CorrFunc by passing the results to the kwarg ``previous_results``.  This may result in 
+        errors if the given TreeCorr keyword arguments are not identical, and the user is 
+        responsible for ensuring this method is called with all the possible data chunks to be
+        properly compared against each other (eg passing [``lens1, source1]``, ``[lens1, source2]``,
+        ``[lens2, source1]``, and ``[lens1, source2]`` to properly account for all
+        cross-correlations).
 
         :param stile_args:    The dict containing the parameters that control Stile's behavior
         :param correlation_function_type: The type of correlation function (``'nn', 'ng', 'gg',
@@ -417,6 +427,8 @@ class BaseCorrelationFunctionSysTest(SysTest):
         :param random2:       Optional random dataset corresponding to `data2`
         :param kwargs:        Any other TreeCorr parameters (will silently supercede anything in
                               ``stile_args``).
+        :param previous_results: The object returned by a previous run of ``.getCF()``, to 
+                              continue a TreeCorr run with additional data.
         :returns:             a numpy array of the TreeCorr outputs.
         """
         import tempfile
@@ -424,6 +436,8 @@ class BaseCorrelationFunctionSysTest(SysTest):
 
         if not correlation_function_type in treecorr_func_dict:
             raise ValueError('Unknown correlation function type: %s'%correlation_function_type)
+        if previous_results is not None and not isinstance(previous_results, CorrFuncResult):
+            raise TypeError("previous_results must be a stile.CorrFuncResult object")
 
         handle, output_file = tempfile.mkstemp()
 
@@ -474,60 +488,110 @@ class BaseCorrelationFunctionSysTest(SysTest):
                                             use_chip_coords=use_chip_coords)
 
         treecorr_kwargs[correlation_function_type+'_file_name'] = output_file
-
-        func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+        
+        if previous_results is not None:
+            func = previous_results.corrfunc_main
+        else:
+            func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
         func.process(data, data2)
         if correlation_function_type in ['ng', 'nm', 'nk']:
             comp_stat = {'ng': 'ng', 'nm': 'ng', 'nk': 'nk'}  # which _statistic kwarg to check
             if treecorr_kwargs.get(comp_stat[correlation_function_type]+'_statistic',
                self.compensateDefault(data, data2, random, random2)) == 'compensated':
-                func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+                if previous_results is not None:
+                    func_random = previous_results.corrfunc_random
+                else:
+                    func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
                 func_random.process(random, data2)
             else:
                 func_random = None
+            func_gg = None
+            func_dd = None
+            func_rr = None
+            func_rd = None
+            func_dr = None
         elif correlation_function_type == 'norm':
-            func_gg = treecorr_func_dict['gg'](treecorr_kwargs)
+            if previous_results is not None:
+                func_gg = previous_results.corrfunc_gg
+            else:
+                func_gg = treecorr_func_dict['gg'](treecorr_kwargs)
             func_gg.process(data2)
-            func_dd = treecorr_func_dict['nn'](treecorr_kwargs)
+            if previous_results is not None:
+                func_dd = previous_results.corrfunc_dd
+            else:
+                func_dd = treecorr_func_dict['nn'](treecorr_kwargs)
             func_dd.process(data)
-            func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+            if previous_results is not None:
+                func_rr = previous_results.corrfunc_rr
+            else:
+                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
             func_rr.process(data)
             if treecorr_kwargs.get('nn_statistic',
                self.compensateDefault(data, data2, random, random2, both=True)) == 'compensated':
-                func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                if previous_results is not None:
+                    func_dr = previous_results.corrfunc_dr
+                else:
+                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_dr.process(data, random)
             else:
                 func_dr = None
+            func_random = None
+            func_rd = None
         elif correlation_function_type == 'nn':
-            func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
+            if previous_results is not None:
+                func_random = previous_results.corrfunc_random
+            else:
+                func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
             if len(random2):
                 func_random.process(random, random2)
             else:
                 func_random.process(random)
             if not len(data2):
-                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+                if previous_results is not None:
+                    func_rr = previous_results.corrfunc_rr
+                else:
+                    func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_rr.process(data, random)
                 if treecorr_kwargs.get(['nn_statistic'],
                    self.compensateDefault(data, data2, random, random2, both=True)
                    ) == 'compensated':
-                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                    if previous_results is not None:
+                        func_dr = previous_results.corrfunc_dr
+                    else:
+                        func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                     func_dr.process(data, random)
                     func_rd = None
                 else:
                     func_dr = None
                     func_rd = None
             else:
-                func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
+                if previous_results is not None:
+                    func_rr = previous_results.corrfunc_rr
+                else:
+                    func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_rr.process(random, random2)
                 if treecorr_kwargs.get(['nn_statistic'],
                    self.compensateDefault(data, data2, random, random2, both=True)
                    ) == 'compensated':
-                    func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
+                    if previous_results is not None:
+                        func_dr = previous_results.corrfunc_dr
+                    else:
+                        func_dr = treecorr_func_dict['nn'](treecorr_kwargs)
                     func_dr.process(data, random2)
-                    func_rd = treecorr_func_dict['nn'](treecorr_kwargs)
+                    if previous_results is not None:
+                        func_rd = previous_results.corrfunc_rd
+                    else:
+                        func_rd = treecorr_func_dict['nn'](treecorr_kwargs)
                     func_rd.process(random, data2)
+            func_gg = None
+            func_dd = None
         else:
             func_random = None
+            func_gg = None
+            func_dd = None
+            func_rr = None
+            func_rd = None
+            func_dr = None
         if correlation_function_type == 'm2':
             func.writeMapSq(output_file)
         elif correlation_function_type == 'nm':
@@ -547,7 +611,9 @@ class BaseCorrelationFunctionSysTest(SysTest):
         # Add the sep units to the column names of radial bins from TreeCorr outputs
         names = [n+' [%s]'%treecorr_kwargs['sep_units'] if 'R' in n else n for n in names]
         results.dtype.names = names
-        return results
+        return CorrFuncResult(results, corrfunc_main=func, corrfunc_random=func_random, 
+            corrfunc_gg=func_gg, corrfunc_dd=func_dd, corrfunc_rr=func_rr, corrfunc_dr=func_dr, 
+            corrfunc_rd=func_rd, plot_details=self.plot_details)
 
     def compensateDefault(self, data, data2, random, random2, both=False):
         """
@@ -583,7 +649,9 @@ class BaseCorrelationFunctionSysTest(SysTest):
         :returns:          A matplotlib ``Figure`` which may be written to a file with
                            :func:`.savefig()`, if matplotlib can be imported; else None.
         """
-
+        import warnings
+        warnings.warn("CorrelationFunctionSysTest.plot() is deprecated and may disappear in the"
+                      "future; please use the .plot() method of the Results object instead")
         if not has_matplotlib:
             return None
         fields = data.dtype.names

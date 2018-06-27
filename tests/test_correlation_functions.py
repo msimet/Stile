@@ -82,7 +82,6 @@ class TestCorrelationFunctions(unittest.TestCase):
         stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
                       'sep_units': 'degrees', 'nbins': 20, 'bin_slop': 1}
         cf = stile.sys_tests.CorrelationFunctionSysTest()
-        dh = temp_data_handler()
         lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
                     fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
         source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
@@ -156,7 +155,29 @@ class TestCorrelationFunctions(unittest.TestCase):
         self.assertEqual(type(stile.sys_tests.BaseCorrelationFunctionSysTest()), 
                          type(stile.CorrelationFunctionSysTest()))
         
-    
+    def test_plot(self):
+        """ Test that plots can run."""
+        stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
+                      'sep_units': 'degrees', 'nbins': 20}
+        cf = stile.sys_tests.CorrelationFunctionSysTest()
+        lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        lens_catalog = treecorr.Catalog(ra=numpy.array([lens_data['ra']]),
+                                        dec=numpy.array([lens_data['dec']]),
+                                        ra_units='degrees', dec_units='degrees')
+        source_catalog = treecorr.Catalog(ra=source_data['ra'], dec=source_data['dec'],
+                                          g1=source_data['g1'], g2=source_data['g2'],
+                                          ra_units='degrees', dec_units='degrees')
+        results = cf.getCF('ng', lens_catalog, source_catalog, **stile_args)
+        results.plot()
+        results2 = cf.getCF('ng', lens_data, source_data, config=stile_args)
+        results2.plot()
+        realshear = stile.sys_tests.GalaxyShearSysTest()
+        results3 = realshear(lens_data, source_data, config=stile_args)
+        results3.plot()
+       
 if __name__=='__main__':
     unittest.main()
 
