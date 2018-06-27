@@ -4,7 +4,11 @@ numerical helper functions.
 """
 
 import numpy
-
+try:
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
 
 def Parser():
     """
@@ -91,7 +95,7 @@ def FormatArray(d, fields=None):
     return d
 
 
-class Stats:
+class Stats(object):
     """A Stats object can carry around and output the statistics of some array.
 
     Currently it can carry around two types of statistics:
@@ -105,6 +109,29 @@ class Stats:
     The :class:`StatSysTest <stile.sys_tests.StatSysTest>` class can be used to create and populate
     values for one of these objects.  If you want to change the list of simple statistics, it's
     only necessary to change the code there, not here.
+    
+    Stats objects can be added together if they contain the same statistics 
+    (attribute ``.simple_stats``).  Note that some statistics (length, min, max, mean, stddev,
+    variance, skew, kurtosis) can be robustly recreated from summary statistics on subcatalogs, but
+    other statistics (median, MAD, and percentiles) require approximations.  In particular:
+        - If the catalog ranges overlap (stats1.min<stats2.max and stats1.max>stats2.min), then
+          the percentiles, median, and MAD are averages of the subcatalogs weighted by N.
+        - If the catalog ranges do NOT overlap, we form a linear interpolation scheme from the given
+          percentiles, modified to account for total catalog length (so the 10th percentile becomes
+          the 5th percentile when combined with a second catalog of the same length but higher
+          data range), and their values.  Then we compute the points corresponding to the requested
+          percentiles, including the 50th percentile for the median.  The MAD values are then given
+          by:
+            MAD_{1+2} = (N_1*(MAD_1+|median_1-median_{1+2}|) + N_2*(MAD_2+|median_2-median{1+2}|))
+                            /(N_1+N_2)
+          which accounts for, on average, the greater distance to the new median compared to the
+          median of the subcatalog.
+    Because of the linear interpolation, this scheme will work better with more densely sampled
+    percentiles.  Still, the user should not expect these values to be exact, and should
+    simulate the performance if robust requirements are needed.
+    
+    The internal adding routine considers only the statistics mentioned above--any additional
+    statistics will need to be computed by hand for the combination of two Stats objects.
     """
 
     def __init__(self, simple_stats):
@@ -142,6 +169,74 @@ class Stats:
                 ret_str += '\t%f %f\n'%(self.percentiles[index], self.values[index])
 
         return ret_str
+
+    def __add__(self, new):
+        if new.simple_stats != self.simple_stats:
+            raise ValueError("To add Stats objects, they must contain the same internal statistics")
+        if new.percentiles != self.percentiles:
+            raise ValueError("To add Stats objects, they must contain the same percentiles")
+        combo = Stats(simple_stats=new.simple_stats)
+        combo.min = numpy.min([new.min, self.min])
+        combo.max = numpy.max([new.max, self.max])
+        combo.N = new.N+self.N
+        combo.mean = ((new.N*new.mean+self.N*self.mean)
+                                /combo.N)
+        combo.variance = (new.N*new.variance + new.N*new.mean**2 +
+                                 self.N*self.variance + 
+                                 self.N*self.mean**2)/combo.N-combo.mean**2
+        combo.stddev = numpy.sqrt(combo.variance) 
+        if 'skew' in new.simple_stats:
+            self_2mom = self.variance + self.mean**2
+            new_2mom = new.variance + new.mean**2
+            self_3mom = self.skew*self.variance**1.5 + 3*self.mean*self_2mom - 2*self.mean**3
+            new_3mom = new.skew*new.variance**1.5 + 3*new.mean*new_2mom - 2*new.mean**3
+            self_4mom = ((self.kurtosis+3)*self.variance**2+4*self.mean*self_3mom
+                        -6*self.mean**2*self_2mom+3*self.mean**4)
+            new_4mom = ((new.kurtosis+3)*new.variance**2+4*new.mean*new_3mom-6*new.mean**2*new_2mom
+                        +3*new.mean**4)
+            combo_2mom = combo.variance + combo.mean**2
+            combo.skew = ((self.N*self_3mom+new.N*new_3mom)/combo.N 
+                            -3*combo.mean*combo_2mom+2*combo.mean**3)/combo.variance**1.5
+            combo_3mom = combo.skew*combo.variance**1.5 + 3*combo.mean*combo_2mom - 2*combo.mean**3
+            combo.kurtosis = (((self.N*self_4mom+new.N*new_4mom)/combo.N
+                               -4*combo.mean*combo_3mom+6*combo.mean**2*combo_2mom-3*combo.mean**4)
+                               /(combo.variance**2))-3
+        if new.min > self.max or new.max < self.min:
+            percentiles = new.percentiles
+            if new.min >= self.max:
+                self_perc_points = numpy.array(self.percentiles)*1.0*self.N/combo.N
+                new_perc_points = 100-((100-numpy.array(new.percentiles))*1.0*new.N/combo.N)
+                current_perc_points = numpy.concatenate([self_perc_points, new_perc_points])
+                current_perc_values = numpy.concatenate([self.values, new.values])
+            elif new.max <= self.min:
+                self_perc_points = 100-((100-numpy.array(self.percentiles))*1.0*self.N/combo.N)
+                new_perc_points = numpy.array(new.percentiles)*1.0*new.N/combo.N
+                current_perc_points = numpy.concatenate([new_perc_points, self_perc_points])
+                current_perc_values = numpy.concatenate([new.values, self.values])
+            if not numpy.any(current_perc_points==0):
+                current_perc_points = numpy.concatenate([[0], current_perc_points])
+                current_perc_values = numpy.concatenate([[combo.min], current_perc_values])
+            if not numpy.any(current_perc_points==100):
+                current_perc_points = numpy.concatenate([current_perc_points, [100]])
+                current_perc_values = numpy.concatenate([current_perc_values, [combo.max]])
+            locs = numpy.digitize(numpy.concatenate([percentiles, [50]]), current_perc_points)
+            vals = (current_perc_values[locs-1] 
+                    + (numpy.concatenate([percentiles, [50]]) - current_perc_points[locs-1])
+                        /(current_perc_points[locs]-current_perc_points[locs-1])
+                    * (current_perc_values[locs]-current_perc_values[locs-1]))
+            combo.percentiles = new.percentiles
+            combo.values = vals[:-1]
+            combo.median = vals[-1]
+            combo.mad = (new.N*(new.mad + numpy.abs(new.median-combo.median))+
+                         self.N*(self.mad + numpy.abs(self.median-combo.median)))/combo.N
+        else:
+            combo.percentiles = new.percentiles
+            combo.values = (new.N*new.values + self.N*self.values)/combo.N
+            combo.median = (new.N*new.median + self.N*self.median)/combo.N
+            combo.mad = (new.N*new.mad + self.N*self.mad)/combo.N
+        return combo
+
+
         
 try:
     import astropy.table
@@ -176,3 +271,162 @@ objectNames = {
     'star random': 'random catalog corresponding to the "star" sample'
 }
 
+
+class CorrFuncResult(numpy.ndarray):
+    def __new__(self, data, corrfunc_main=None, corrfunc_random=None, corrfunc_gg=None,
+                       corrfunc_dd=None, corrfunc_rr=None, corrfunc_dr=None, corrfunc_rd=None,
+                       plot_details=None):
+        obj = numpy.asarray(data).view(self)
+        self.corrfunc_main = corrfunc_main
+        self.corrfunc_random = corrfunc_random
+        self.corrfunc_gg = corrfunc_gg
+        self.corrfunc_dd = corrfunc_dd
+        self.corrfunc_rr = corrfunc_rr
+        self.corrfunc_dr = corrfunc_dr
+        self.corrfunc_rd = corrfunc_rd
+        self.plot_details = plot_details
+        return obj
+    def plot(self, colors=['r', 'b'], log_yscale=False,
+                   plot_bmode=True, plot_data_only=True, plot_random_only=True):
+        """
+        Plot the data returned from a :class:`BaseCorrelationFunctionSysTest` object and stored in
+        this object.  This method chooses some sensible defaults, but much of its behavior can be 
+        changed.
+
+        :param colors:     A tuple of 2 colors, used for the first and second lines on any given
+                           plot
+        :param log_yscale: Whether to use a logarithmic y-scale [default: False]
+        :param plot_bmode: Whether to plot the b-mode signal, if there is one [default: True]
+        :param plot_data_only:   Whether to plot the data-only correlation functions, if present
+                                 [default: True]
+        :param plot_random_only: Whether to plot the random-only correlation functions, if present
+                                 [default: True]
+        :returns:          A matplotlib ``Figure`` which may be written to a file with
+                           :func:`.savefig()`, if matplotlib can be imported; else None.
+        """
+        if not has_matplotlib:
+            return None
+        fields = self.dtype.names
+        # Pick which radius measurement to use
+        # TreeCorr changed the name of the output columns
+        # This catches the case where we added the units to the label
+        fields_no_units = [f.split(' [')[0] for f in fields]
+        for t_r in ['meanR', 'R_nom', '<R>', 'R_nominal', 'R']:
+            if t_r in fields:
+                # Protect underscores since they blow up the plotting routines
+                r = '\\_'.join(t_r.split('\\'))
+                break
+            elif t_r in fields_no_units:
+                t_i = fields_no_units.index(t_r)
+                r = '\\_'.join(fields[t_i].split('\\'))
+                break
+        else:
+            raise ValueError('No radius parameter found in data')
+
+        # Logarithmic x-axes have stupid default ranges: fix this.
+        rstep = self[r][1]/self[r][0]
+        xlim = [min(self[r])/rstep, max(self[r])*rstep]
+        # Check what kind of data is in the array that .plot() received.
+        for plot_details in self.plot_details:
+            # Pick the one the data contains and use it; break before trying the others.
+            if plot_details.t_field in fields:
+                pd = plot_details
+                break
+        else:
+            raise ValueError("No valid y-values found in data")
+        if log_yscale:
+            yscale = 'log'
+        else:
+            yscale = 'linear'
+        fig = plt.figure()
+        fig.subplots_adjust(hspace=0)  # no space between stacked plots
+        plt.subplots(sharex=True)  # share x-axes
+        # Figure out how many plots you'll need--never more than 3, so we just use a stacked column.
+        if pd.datarandom_t_field:
+            plot_data_only &= pd.datarandom_t_field+'d' in fields
+            plot_random_only &= pd.datarandom_t_field+'r' in fields
+        if plot_bmode and pd.x_field and pd.t_im_field:
+            nrows = 2
+        elif pd.datarandom_t_field:
+            nrows = 1 + plot_data_only + plot_random_only
+        else:
+            nrows = 1
+        # Plot the first thing
+        curr_plot = 0
+        ax = fig.add_subplot(nrows, 1, 1)
+        ax.axhline(0, alpha=0.7, color='gray')
+        ax.errorbar(self[r], self[pd.t_field], yerr=self[pd.sigma_field], color=colors[0],
+                    label=pd.t_title)
+        if pd.x_title and plot_bmode:
+            ax.errorbar(self[r], self[pd.x_field], yerr=self[pd.sigma_field], color=colors[1],
+                        label=pd.x_title)
+        elif pd.t_im_title:  # Plot y and y_im if not plotting yb (else it goes on a separate plot)
+            ax.errorbar(self[r], self[pd.t_im_field], yerr=self[pd.sigma_field], color=colors[1],
+                        label=pd.t_im_title)
+        ax.set_xscale('log')
+        ax.set_yscale(yscale)
+        ax.set_xlim(xlim)
+        # To prevent too-long decimal y-axis ticklabels that push the label out of frame
+        ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+        ax.set_ylabel(pd.y_title)
+        ax.legend()
+        if pd.x_field and plot_bmode and pd.t_im_field:
+            # Both yb and y_im: plot (y, yb) on one plot and (y_im, yb_im) on the other.
+            ax = fig.add_subplot(nrows, 1, 2)
+            ax.axhline(0, alpha=0.7, color='gray')
+            ax.errorbar(self[r], self[pd.t_im_field], yerr=self[pd.sigma_field], color=colors[0],
+                        label=pd.t_im_title)
+            ax.errorbar(self[r], self[pd.x_im_field], yerr=self[pd.sigma_field], color=colors[1],
+                        label=pd.x_im_title)
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+            ax.set_xlim(xlim)
+            ax.set_ylabel(pd.y_title)
+            ax.legend()
+        if plot_data_only and pd.datarandom_t_field:  # Plot the data-only measurements if requested
+            curr_plot += 1
+            ax = fig.add_subplot(nrows, 1, 2)
+            ax.axhline(0, alpha=0.7, color='gray')
+            ax.errorbar(self[r], self[pd.datarandom_t_field+'d'], yerr=self[pd.sigma_field],
+                        color=colors[0], label=pd.datarandom_t_title+'d}$')
+            if plot_bmode and pd.datarandom_x_field:
+                ax.errorbar(self[r], self[pd.datarandom_x_field+'d'], yerr=self[pd.sigma_field],
+                        color=colors[1], label=pd.datarandom_x_title+'d}$')
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+            ax.set_xlim(xlim)
+            ax.set_ylabel(pd.y_title)
+            ax.legend()
+        # Plot the randoms-only measurements if requested
+        if plot_random_only and pd.datarandom_t_field:
+            ax = fig.add_subplot(nrows, 1, nrows)
+            ax.axhline(0, alpha=0.7, color='gray')
+            ax.errorbar(self[r], self[pd.datarandom_t_field+'r'], yerr=self[pd.sigma_field],
+                        color=colors[0], label=pd.datarandom_t_title+'r}$')
+            if plot_bmode and pd.datarandom_x_field:
+                ax.errorbar(self[r], self[pd.datarandom_x_field+'r'], yerr=self[pd.sigma_field],
+                        color=colors[1], label=pd.datarandom_x_title+'r}$')
+            ax.set_xscale('log')
+            ax.set_yscale(yscale)
+            ax.ticklabel_format(axis='y', style='sci', scilimits=(-3,5))
+            ax.set_xlim(xlim)
+            ax.set_ylabel(pd.y_title)
+            ax.legend()
+        ax.set_xlabel(r)
+        plt.tight_layout()
+        return fig
+
+if has_matplotlib:
+    import matplotlib.figure
+    class PlotResult(matplotlib.figure.Figure):
+        def __init__(self, plot, data):
+            self.data = data
+            super(PlotResult, self).__init__(plot)
+        
+        def getData(self):
+            return self.data
+else:
+    class PlotResult(object):
+        pass

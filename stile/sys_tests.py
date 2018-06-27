@@ -1108,6 +1108,15 @@ class StatSysTest(SysTest):
     the :class:`StatSytTest` is called, not initialized) changes this behavior so these bad values
     are quietly ignored.
 
+    StatSysTest results can be accumulated from multiple runs by adding a 
+    ``previous_results = Stats_object`` kwarg to the analysis calls, or simply by adding the 
+    resulting Stats objects from different catalogs together.  Note, however, that some of the
+    statistics cannot be robustly recreated from summary statistics on two catalogs.  For example,
+    the percentiles and median will be formed by averaging the percentiles and medians from multiple
+    Stats objects if their data ranges overlap, or by linearly interpolating the percentiles
+    adjusted for catalog length if the data ranges do not overlap.  More detail is given in the
+    docstring for the :class:`stile.stile_utils.Stats` object.
+
     Options to consider adding in future: weighted sums and other weighted statistics; outlier
     rejection.
     """
@@ -1127,11 +1136,14 @@ class StatSysTest(SysTest):
         """
         self.percentiles = percentiles
         self.field = field
-
-    def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False):
+                
+    def __call__(self, array, percentiles=None, field=None, verbose=False, ignore_bad=False,
+                       previous_results=None):
         """Calling a :class:`StatSysTest` with a given array argument as ``array`` will cause it to
         carry out all the statistics tests and populate a :class:`stile.Stats` object with the
         results, which it returns to the user.
+        
+        :class:`stile.Stats` objects can be accumulated over time 
 
         :param array:           The tuple, list, NumPy array, or structured NumPy array/catalog on
                                 which to carry out the calculations.
@@ -1243,6 +1255,9 @@ class StatSysTest(SysTest):
         # Populate the percentiles and values.
         result.percentiles = use_percentiles
         result.values = numpy.percentile(use_array, use_percentiles)
+        
+        if previous_results is not None:
+            result += previous_results
 
         # Print, if verbose=True.
         if verbose:

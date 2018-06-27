@@ -21,7 +21,7 @@ class TestStats(unittest.TestCase):
         self.gaussian_mean = 27.0  # Mean value for the Gaussian from which to draw random points
         self.gaussian_sigma = 4.0  # Sigma value for the Gaussian from which to draw random points
 
-    def check_results(self, stats_obj):
+    def check_results(self, stats_obj, percentile_decimal=2):
         """A utility to check whether a stats object contains results consistent with inputs."""
         numpy.testing.assert_equal(self.n_points_test, stats_obj.N)
         numpy.testing.assert_almost_equal(self.gaussian_mean/stats_obj.mean-1., 0., decimal=3,
@@ -29,16 +29,16 @@ class TestStats(unittest.TestCase):
         numpy.testing.assert_almost_equal(self.gaussian_mean/stats_obj.median-1., 0., decimal=3,
                                        err_msg='Unexpected result for median of random numbers!')
         numpy.testing.assert_almost_equal(self.gaussian_sigma/stats_obj.stddev-1., 0., decimal=3,
-                                       err_msg='Unexpected result for mean of random numbers!')
+                                       err_msg='Unexpected result for stddec of random numbers!')
         numpy.testing.assert_almost_equal(self.gaussian_sigma**2/stats_obj.variance-1., 0.,
                                        decimal=3,
-                                       err_msg='Unexpected result for mean of random numbers!')
+                                       err_msg='Unexpected result for variance of random numbers!')
         for ind in range(len(stats_obj.percentiles)):
             perc = stats_obj.percentiles[ind]
             val = stats_obj.values[ind]
             expected_perc = 50.*(1.0+
                              math.erf((val-self.gaussian_mean)/(math.sqrt(2.)*self.gaussian_sigma)))
-            numpy.testing.assert_almost_equal(expected_perc/perc-1., 0., decimal=2,
+            numpy.testing.assert_almost_equal(expected_perc/perc-1., 0., decimal=percentile_decimal,
                                               err_msg='Unexpected percentile result for randoms!')
 
     def test_statsystest_basic(self):
@@ -119,6 +119,43 @@ class TestStats(unittest.TestCase):
         numpy.testing.assert_almost_equal(0.5*(test_len-1.), res2.mean, decimal=7)
         numpy.testing.assert_almost_equal((test_len-1.), res3.mean, decimal=7)
         numpy.testing.assert_almost_equal(0.5*(test_len-1.), res4.mean, decimal=7)
-
+        
+    def test_systest_accumulations(self):
+        numpy.random.seed(self.rand_seed)
+        test_vec = self.gaussian_sigma*numpy.random.randn(self.n_points_test) + self.gaussian_mean
+        test_vec_randomhalf_1 = test_vec[:self.n_points_test//2]
+        test_vec_randomhalf_2 = test_vec[self.n_points_test//2:]
+        sorted_test_vec = numpy.sort(test_vec)
+        test_vec_sortedhalf_1 = sorted_test_vec[:self.n_points_test//2]
+        test_vec_sortedhalf_2 = sorted_test_vec[self.n_points_test//2:]
+        test_obj = stile.StatSysTest()
+        result = test_obj(test_vec_randomhalf_1)
+        result = test_obj(test_vec_randomhalf_2, previous_results=result)
+        self.check_results(result)
+        result = test_obj(test_vec_sortedhalf_1)
+        result = test_obj(test_vec_sortedhalf_2, previous_results=result)
+        self.check_results(result, percentile_decimal=0)
+        
+        # Next tests should have nonzero skewness and kurtosis!
+        test_vec = test_vec[test_vec>numpy.percentile(test_vec, 20)]
+        npoints = len(test_vec)
+        test_vec_randomhalf_1 = test_vec[:npoints//2]
+        test_vec_randomhalf_2 = test_vec[npoints//2:]
+        sorted_test_vec = numpy.sort(test_vec)
+        test_vec_sortedhalf_1 = sorted_test_vec[:npoints//2]
+        test_vec_sortedhalf_2 = sorted_test_vec[npoints//2:]
+        
+        all_result = test_obj(test_vec)
+        result = test_obj(test_vec_randomhalf_1)
+        result = test_obj(test_vec_randomhalf_2, previous_results=result)
+        numpy.testing.assert_almost_equal(result.skew, all_result.skew, decimal=3)
+        numpy.testing.assert_almost_equal(result.kurtosis, all_result.kurtosis, decimal=3)
+        numpy.testing.assert_almost_equal(result.mad, all_result.mad, decimal=2)
+        result = test_obj(test_vec_sortedhalf_1)
+        result = test_obj(test_vec_sortedhalf_2, previous_results=result)
+        numpy.testing.assert_almost_equal(result.skew, all_result.skew, decimal=5)
+        numpy.testing.assert_almost_equal(result.kurtosis, all_result.kurtosis, decimal=5)
+        numpy.testing.assert_almost_equal(result.mad, all_result.mad, decimal=0)
+        
 if __name__ == '__main__':
     unittest.main()
