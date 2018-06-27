@@ -1302,7 +1302,8 @@ class BaseWhiskerPlotSysTest(SysTest):
     short_name = 'whiskerplot'
     def whiskerPlot(self, x, y, g1, g2, size=None, linewidth=0.01, scale=None,
                     keylength=0.05, figsize=None, xlabel=None, ylabel=None,
-                    size_label=None, xlim=None, ylim=None, equal_axis=False):
+                    size_label=None, xlim=None, ylim=None, equal_axis=False,
+                    data=None):
         """
         Draw a whisker plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling the appearance of a plot, which are
@@ -1388,11 +1389,10 @@ class BaseWhiskerPlotSysTest(SysTest):
             ax.set_xlim(*xlim)
         if ylim is not None:
             ax.set_ylim(*ylim)
-        return fig
+        return PlotResult(fig, data)
+
     def __call__(self, *args, **kwargs):
         return self.whiskerPlot(*args, **kwargs)
-    def getData(self):
-        return self.data
 
 class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     """
@@ -1404,17 +1404,19 @@ class WhiskerPlotStarSysTest(BaseWhiskerPlotSysTest):
     required_quantities = [('x', 'y', 'g1', 'g2', 'sigma')]
 
     def __call__(self, array, linewidth=0.01, scale=None, figsize=None,
-                 xlim=None, ylim=None):
+                 xlim=None, ylim=None, previous_results=None):
         if 'CCD' in array.dtype.names:
             fields = list(self.required_quantities[0]) + ['CCD']
         else:
             fields = list(self.required_quantities[0])
-        self.data = numpy.rec.fromarrays([array[field] for field in fields], names=fields)
-        return self.whiskerPlot(array['x'], array['y'], array['g1'], array['g2'], array['sigma'],
+        data = numpy.rec.fromarrays([array[field] for field in fields], names=fields)
+        if previous_results:
+            data = numpy.concatenate(data, previous_results.getData())
+        return self.whiskerPlot(data['x'], data['y'], data['g1'], data['g2'], data['sigma'],
                                 linewidth=linewidth, scale=scale, figsize=figsize,
                                 xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
-                                xlim=xlim, ylim=ylim, equal_axis=True)
+                                xlim=xlim, ylim=ylim, equal_axis=True, data=data)
 
 
 class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
@@ -1427,17 +1429,19 @@ class WhiskerPlotPSFSysTest(BaseWhiskerPlotSysTest):
     required_quantities = [('x', 'y', 'psf_g1', 'psf_g2', 'psf_sigma')]
 
     def __call__(self, array, linewidth=0.01, scale=None, figsize=None,
-                 xlim=None, ylim=None):
+                 xlim=None, ylim=None, previous_results=None):
         if 'CCD' in array.dtype.names:
             fields = list(self.required_quantities[0]) + ['CCD']
         else:
             fields = list(self.required_quantities[0])
-        self.data = numpy.rec.fromarrays([array[field] for field in fields], names=fields)
-        return self.whiskerPlot(array['x'], array['y'], array['psf_g1'], array['psf_g2'],
-                                array['psf_sigma'], linewidth=linewidth, scale=scale,
+        data = numpy.rec.fromarrays([array[field] for field in fields], names=fields)
+        if previous_results:
+            data = numpy.concatenate(data, previous_results.getData())
+        return self.whiskerPlot(data['x'], data['y'], data['psf_g1'], data['psf_g2'],
+                                data['psf_sigma'], linewidth=linewidth, scale=scale,
                                 figsize=figsize, xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
-                                xlim=xlim, ylim=ylim, equal_axis=True)
+                                xlim=xlim, ylim=ylim, equal_axis=True, data=data)
 
 
 class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
@@ -1456,13 +1460,15 @@ class WhiskerPlotResidualSysTest(BaseWhiskerPlotSysTest):
         if 'CCD' in array.dtype.names:
             data += [array['CCD']]
             fields += ['CCD']
-        self.data = numpy.rec.fromarrays(data, names=fields)
-        return self.whiskerPlot(array['x'], array['y'], array['g1'] - array['psf_g1'],
-                                array['g2'] - array['psf_g2'], array['sigma'] - array['psf_sigma'],
+        data = numpy.rec.fromarrays(data, names=fields)
+        if previous_results:
+            data = numpy.concatenate(data, previous_results.getData())
+        return self.whiskerPlot(data['x'], data['y'], data['g1'] - data['psf_g1'],
+                                data['g2'] - data['psf_g2'], data['sigma'] - data['psf_sigma'],
                                 linewidth=linewidth, scale=scale,
                                 figsize=figsize, xlabel=r'$x$ [pixel]', ylabel=r'$y$ [pixel]',
                                 size_label=r'$\sigma$ [pixel]',
-                                xlim=xlim, ylim=ylim, equal_axis=True)
+                                xlim=xlim, ylim=ylim, equal_axis=True, data=data)
 
 class HistogramSysTest(SysTest):
     """
