@@ -1640,7 +1640,7 @@ class HistogramSysTest(SysTest):
                   cumulative=None, align=None, rwidth=None,
                   log=None, color=None, alpha=None,
                   text=None, text_x=None, text_y=None, fontsize=None,
-                  linewidth=None, vlines=None, vcolor=None):
+                  linewidth=None, vlines=None, vcolor=None, previous_results=None):
 
         """
         Draw a histogram and return a :class:`matplotlib.figure.Figure` object.
@@ -1724,7 +1724,10 @@ class HistogramSysTest(SysTest):
                              [Default: None]
         :param vcolor:       Color or a list of color for vertical lines to plot.
                              [Default: 'k']
-
+        :param previous_results: A previous ``stile.PlotResult`` object from a call to a
+                             ``HistogramSysTest``; this will append the new data to the old
+                             histogram. [Default: None]
+        
         :returns: a :class:`matplotlib.figure.Figure` object.
         """
 
@@ -1739,6 +1742,15 @@ class HistogramSysTest(SysTest):
         hist = plt.figure(figsize=figsize)
         ax   = hist.add_subplot(1, 1, 1)
 
+            
+
+        counts_list = []
+        edges_list = []
+        if previous_results is not None:
+            precomputed = True
+        else:
+            precomputed = False
+            
         data_dim = len(data_list)
         for ii in range(data_dim):
 
@@ -1765,24 +1777,39 @@ class HistogramSysTest(SysTest):
             # trim the data if necessary
             if limits is not None:
                 data = data[(data >= limits[0]) & (data <= limits[1])]
+            if not precomputed:
+                # decide which bin style to use
+                style_use = self.get_param_value(binning_style, ii, data_dim,
+                                                 multihist=multihist)
 
-            # decide which bin style to use
-            style_use = self.get_param_value(binning_style, ii, data_dim,
-                                             multihist=multihist)
-
-            # now support constant bin size, Scott rule, and Freedman rule
-            if style_use in ['scott', 'freedman', 'manual']:
-                if (style_use is 'scott'):
-                    "Use the Scott rule"
-                    dx, bins = self.scotts_bin_width(data, True)
-                elif style_use is 'freedman':
-                    "Use the Freedman rule"
-                    dx, bins = self.freedman_bin_width(data, True)
-                elif style_use is 'manual':
+                # now support constant bin size, Scott rule, and Freedman rule
+                if style_use in ['scott', 'freedman', 'manual']:
+                    if (style_use is 'scott'):
+                        "Use the Scott rule"
+                        dx, bins = self.scotts_bin_width(data, True)
+                    elif style_use is 'freedman':
+                        "Use the Freedman rule"
+                        dx, bins = self.freedman_bin_width(data, True)
+                    elif style_use is 'manual':
+                        bins = nbins
+                else:
+                    print "Unrecognized code for binning style, use default instead!"
                     bins = nbins
             else:
-                print "Unrecognized code for binning style, use default instead!"
-                bins = nbins
+                old_counts = previous_results.getData()['counts'][ii]
+                old_edges = previous_results.getData()['edges'][ii]
+                if numpy.any(data_list[i]<old_edges[0]):
+                    binsize = old_edges[1]-old_edges[0]
+                    n_new_bins = (old_edges[0]-numpy.min(data_list[i]))/binsize
+                    bins = numpy.concatenate([[old_edges[0]-i*binsize for i in range(n_new_bins, 0, -1)], old_edges])
+                    old_counts = numpy.concatenate([[0]*n_new_bins, old_counts])
+                else:
+                    bins = old_edges
+                if numpy.any(data_list[i]>old_edges[1]):
+                    binsize = old_edges[-1]-old_edges[-2]
+                    n_new_bins = (numpy.max(data_list[i])-old_edges[-1])/binsize
+                    bins = numpy.concatenate([bins, [old_edges[-1]+i*binsize for i in range(1, n_new_bins+1)]])
+                    old_counts = numpy.concatenate([old_counts, [0]*n_new_bins])
 
             if weights is True:
                 weights = data['w']
@@ -1822,7 +1849,12 @@ class HistogramSysTest(SysTest):
             # the width of the vertical line
             lwidth_use = self.get_param_value(linewidth, ii, data_dim,
                                               multihist=multihist)
-
+            if precomputed:
+                counts = numpy.histogram(data, bins, weights=weight_use)
+                counts += old_counts
+                data = 0.5*(bins[:-1]+bins[1:])
+                weights_use = counts
+            
             # make the histogram
             counts, edges, patches = ax.hist(data, bins,
                                              weights = weight_use,
@@ -1837,6 +1869,7 @@ class HistogramSysTest(SysTest):
                                              linewidth = lwidth_use
                                             )
 
+            edges_list.append(edges)
             # outline the filled region
             if hist_use is 'stepfilled':
                 counts, edges, patches = ax.hist(data, bins,
@@ -1894,7 +1927,7 @@ class HistogramSysTest(SysTest):
         if hide_y:
             ax.yaxis.set_major_formatter(plt.NullFormatter())
 
-        return hist
+        return PlotResult(hist, data={'edges': edges_list, 'counts': counts_list})
     def __call__(self, *args, **kwargs):
         return self.HistoPlot(*args, **kwargs)
 
