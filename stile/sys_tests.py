@@ -1978,7 +1978,8 @@ class BaseScatterPlotSysTest(SysTest):
     short_name = 'scatterplot'
     def __call__(self, array, x_field, y_field, yerr_field, z_field=None, residual=False,
                  per_ccd_stat=None, xlabel=None, ylabel=None, zlabel=None, color="",
-                 lim=None, equal_axis=False, linear_regression=False, reference_line=None):
+                 lim=None, equal_axis=False, linear_regression=False, reference_line=None,
+                 previous_results=None):
         """
         Draw a scatter plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
@@ -2032,7 +2033,7 @@ class BaseScatterPlotSysTest(SysTest):
                 x, y, yerr = self.getStatisticsPerCCD(array['CCD'], array[x_field],
                                                       array[y_field], yerr=array[yerr_field],
                                                       stat=per_ccd_stat)
-                self.data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
+                data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
                                                   y, yerr],
                                                  names=['ccd',
                                                         x_field,
@@ -2042,7 +2043,7 @@ class BaseScatterPlotSysTest(SysTest):
                 x, y, yerr, z = self.getStatisticsPerCCD(array['CCD'], array[x_field],
                                                       array[y_field], yerr=array[yerr_field],
                                                       z=array[z_field], stat=per_ccd_stat)
-                self.data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
+                data = numpy.rec.fromarrays([list(set(array['CCD'])), x,
                                                   y, yerr, zz],
                                                  names=['ccd',
                                                         x_field,
@@ -2053,22 +2054,31 @@ class BaseScatterPlotSysTest(SysTest):
             if z_field is None:
                 z = None
                 x, y, yerr = array[x_field], array[y_field], array[yerr_field]
-                self.data = numpy.rec.fromarrays([x, y, yerr],
+                data = numpy.rec.fromarrays([x, y, yerr],
                                                  names=[x_field,
                                                         y_field,
                                                         yerr_field])
             else:
                 x, y, yerr, z = array[x_field], array[y_field], array[yerr_field], array[z_field]
-                self.data = numpy.rec.fromarrays([x, y, yerr, z],
+                data = numpy.rec.fromarrays([x, y, yerr, z],
                                                  names=[x_field,
                                                         y_field,
                                                         yerr_field,
                                                         z_field])
+        if previous_results:
+            data = numpy.concatenate([data, previous_results.getData()])
+            x = data[x_field]
+            y = data[y_field]
+            yerr = data[yerr_field]
+            z = data[z_field]
+
         y = y-x if residual else y
+            
         return self.scatterPlot(x, y, yerr, z,
                                 xlabel=xlabel, ylabel=ylabel,
                                 color=color, lim=lim, equal_axis=False,
-                                linear_regression=True, reference_line=reference_line)
+                                linear_regression=True, reference_line=reference_line,
+                                data=data)
 
     def getData(self):
         """
@@ -2076,11 +2086,14 @@ class BaseScatterPlotSysTest(SysTest):
 
         :returns: :func:`stile_utils.FormatArray <stile.stile_utils.FormatArray>` object
         """
-
+        import warnings
+        warnings.warn("Warning: SysTest .getData() methods are deprecated--please use the "
+                      "Results object .getData() instead")
         return self.data
 
     def scatterPlot(self, x, y, yerr=None, z=None, xlabel=None, ylabel=None, zlabel=None, color="",
-                    lim=None, equal_axis=False, linear_regression=False, reference_line=None):
+                    lim=None, equal_axis=False, linear_regression=False, reference_line=None,
+                    data=None):
         """
         Draw a scatter plot and return a :class:`matplotlib.figure.Figure` object.
         This method has a bunch of options for controlling appearance of a plot, which is
@@ -2266,7 +2279,7 @@ class BaseScatterPlotSysTest(SysTest):
 
         fig.tight_layout()
 
-        return fig
+        return PlotResults(fig, data=data)
 
     def linearRegression(self, x, y, err=None):
         """
@@ -2360,13 +2373,13 @@ class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None, previous_results=None):
         return super(ScatterPlotStarVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
                                     ylabel=r'$g^{\rm star}_1$', color=color, lim=lim,
                                     equal_axis=False, linear_regression=True,
-                                    reference_line='one-to-one')
+                                    reference_line='one-to-one', previous_results=previous_results)
 
 
 class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
@@ -2378,13 +2391,13 @@ class ScatterPlotStarVsPSFG2SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None, previous_results=None):
         return super(ScatterPlotStarVsPSFG2SysTest,
                      self).__call__(array, 'psf_g2', 'g2', 'g2_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_2$',
                                     ylabel=r'$g^{\rm star}_2$', color=color, lim=lim,
                                     equal_axis=False, linear_regression=True,
-                                    reference_line='one-to-one')
+                                    reference_line='one-to-one', previous_results=previous_results)
 
 
 class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
@@ -2396,14 +2409,15 @@ class ScatterPlotStarVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None, previous_results=None):
         return super(ScatterPlotStarVsPSFSigmaSysTest,
                      self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err', residual=False,
                                     per_ccd_stat=per_ccd_stat,
                                     xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
                                     ylabel=r'$\sigma^{\rm star}$ [arcsec]',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='one-to-one')
+                                    linear_regression=True, reference_line='one-to-one',
+                                    previous_results=previous_results)
 
 
 class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
@@ -2415,13 +2429,14 @@ class ScatterPlotResidualVsPSFG1SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g1', 'g1_err', 'psf_g1')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None, previous_results=None):
         return super(ScatterPlotResidualVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=True,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
                                     ylabel=r'$g^{\rm star}_1 - g^{\rm PSF}_1$',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    previous_results=previous_results)
 
 
 class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
@@ -2433,13 +2448,14 @@ class ScatterPlotResidualVsPSFG2SysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('g2', 'g2_err', 'psf_g2')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None, previous_results=None):
         return super(ScatterPlotResidualVsPSFG2SysTest,
                      self).__call__(array, 'psf_g2', 'g2', 'g2_err', residual=True,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_2$',
                                     ylabel=r'$g^{\rm star}_2 - g^{\rm PSF}_2$',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    previous_results=previous_results)
 
 
 class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
@@ -2451,14 +2467,15 @@ class ScatterPlotResidualVsPSFSigmaSysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma')]
 
-    def __call__(self, array, per_ccd_stat=None, color='', lim=None):
+    def __call__(self, array, per_ccd_stat=None, color='', lim=None, previous_results=None):
         return super(ScatterPlotResidualVsPSFSigmaSysTest,
                      self).__call__(array, 'psf_sigma', 'sigma', 'sigma_err', residual=True,
                                     per_ccd_stat=per_ccd_stat,
                                     xlabel=r'$\sigma^{\rm PSF}$ [arcsec]',
                                     ylabel=r'$\sigma^{\rm star} - \sigma^{\rm PSF}$ [arcsec]',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    previous_results=previous_results)
 
 
 class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
@@ -2470,7 +2487,7 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
     objects_list = ['star PSF']
     required_quantities = [('sigma', 'sigma_err', 'psf_sigma', 'mag_inst')]
 
-    def __call__(self, array, per_ccd_stat='None', color='', lim=None):
+    def __call__(self, array, per_ccd_stat='None', color='', lim=None, previous_results=None):
         self.per_ccd_stat = None if per_ccd_stat == 'None' else per_ccd_stat
         import numpy.lib.recfunctions
         use_array = numpy.copy(array)
@@ -2489,5 +2506,6 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
                                     ylabel=
                                     r'$(\sigma^{\rm star} - \sigma^{\rm PSF})/\sigma^{\rm PSF}$',
                                     color=color, lim=lim, equal_axis=False,
-                                    linear_regression=True, reference_line='zero')
+                                    linear_regression=True, reference_line='zero',
+                                    previous_results=previous_results)
 
