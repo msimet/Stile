@@ -1,4 +1,4 @@
-Stile [![Build Status](https://travis-ci.org/EiffL/Stile.svg?branch=master)](https://travis-ci.org/EiffL/Stile)
+Stile [![Build Status](https://travis-ci.org/msimet/Stile.svg?branch=master)](https://travis-ci.org/msimet/Stile)
 =====
 
 Stile: the Systematics Tests In LEnsing pipeline

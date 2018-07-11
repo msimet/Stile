@@ -8,10 +8,12 @@ install:
   - pip install .
 
 script:
-  - nosetests tests/test_binning.py tests/test_stile_utils.py
+  - cd tests
+  - nosetests --with-coverage --cover-package=stile --with-doctest --cover-erase tests/test_binning.py tests/test_stile_utils.py
 
 after_success:
-- coveralls
+  - coverage xml
+  - codecov
 
 deploy:
   provider: pypi
