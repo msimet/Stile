@@ -3,20 +3,29 @@ branches:
         - master
 
 language: python
+
 python:
-    - 2.7
+  - "2.7"
+  - "3.6"
 
 install:
-    - pip install numpy scipy astropy codecov matplotlib TreeCorr
+  - pip install coverage
+  - pip install .
 
 script:
-    - cd tests
-    - "nosetests test*.py --with-coverage --cover-package=stile --with-doctest --cover-erase"
+  - cd tests
+  - nosetests --with-coverage --cover-package=stile --with-doctest --cover-erase test_binning.py test_stile_utils.py
 
 after_success:
-    # The multiprocessing stages don't get properly incorporated into the .coverage file unless
-    # we do this command.  (Some of the .coverage.* files are in the ../examples directory.)
-    - coverage xml
-    - codecov
+  - coverage xml
+  - codecov
 
+deploy:
+  provider: pypi
+  user: msimet
+  password:
+    secure: secure_token
+  on:
+    tags: true
+    branch: master
 
