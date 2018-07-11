@@ -1,0 +1,34 @@
+language: python
+
+matrix:
+  include:
+  - os: linux
+    python: 2.7
+    sudo: required
+    env: TOXENV=py27
+  - os: linux
+    sudo: required
+    python: 3.6
+    env: TOXENV=py36
+  - os: osx
+    language: generic
+    env: TOXENV=py27
+  - os: osx
+    language: generic
+    env: TOXENV=py36
+
+script:
+- python setup.py install
+- nosetests tests/test_binning.py tests/test_stile_utils.py
+
+after_success:
+- coveralls
+
+deploy:
+  provider: pypi
+  user: msimet
+  password:
+    secure: secure_token
+  on:
+    tags: true
+    branch: master
