@@ -5,11 +5,12 @@ python:
   - "3.6"
 
 install:
+  - pip install coverage
   - pip install .
 
 script:
   - cd tests
-  - nosetests --with-coverage --cover-package=stile --with-doctest --cover-erase tests/test_binning.py tests/test_stile_utils.py
+  - nosetests --with-coverage --cover-package=stile --with-doctest --cover-erase test_binning.py test_stile_utils.py
 
 after_success:
   - coverage xml
