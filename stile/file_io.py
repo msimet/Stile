@@ -13,7 +13,7 @@ except ImportError:
         has_fits = False
 import numpy
 import os
-import stile_utils
+from . import stile_utils
 
 
 def ReadFITSImage(file_name, hdu=0):
