@@ -43,3 +43,7 @@ nosetests.xml
 doc/_build
 doc/html
 doc/latex
+
+.ropeproject/
+.eggs/
+*.bak
