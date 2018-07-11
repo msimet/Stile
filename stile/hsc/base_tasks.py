@@ -337,8 +337,7 @@ class CCDSingleEpochStileTask(lsst.pipe.base.CmdLineTask):
 
         # offset for (x,y) if extra_col_dict has a column 'CCD'. Currently getMm() returns values
         # in pixel. When the pipeline is updated, we should update this line as well.
-        if dataRef.dataId.has_key('ccd') and extra_col_dict.has_key(
-               'CCD') and ('x' in raw_cols or 'y' in raw_cols):
+        if 'ccd' in dataRef.dataId and 'CCD' in extra_col_dict and ('x' in raw_cols or 'y' in raw_cols):
             xy0 = cameraGeomUtils.findCcd(dataRef.getButler().mapper.camera, cameraGeom.Id(
                 dataRef.dataId.get('ccd'))
                                        ).getPositionFromPixel(afwGeom.PointD(0., 0.)).getMm()
@@ -832,7 +831,7 @@ class VisitSingleEpochStileTask(CCDSingleEpochStileTask):
                 catalogs.append(dataRef.get(self.catalog_type, immediate=True,
                                 flags=afwTable.SOURCE_IO_NO_FOOTPRINTS))
             except RuntimeError as e:
-                print e, ', skip this patch'
+                print(e, ', skip this patch')
         catalogs = [self.removeFlaggedObjects(catalog) for catalog in catalogs]
         sys_data_list = []
         extra_col_dicts = [{} for catalog in catalogs]
