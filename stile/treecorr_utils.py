@@ -3,7 +3,7 @@ treecorr_utils.py: Contains elements of Stile needed to interface with Mike Jarv
 program.
 """
 import numpy
-import file_io
+from . import file_io
 import treecorr
 from treecorr.corr2 import corr2_valid_params
 
@@ -90,7 +90,7 @@ def ReadTreeCorrResultsFile(file_name):
     :param file_name: The location of an output file from TreeCorr.
     :returns:         A numpy array corresponding to the data in ``file_name``.
     """
-    import stile_utils
+    from . import stile_utils
     output = file_io.ReadASCIITable(file_name, comments='#')
 
     if not len(output):
