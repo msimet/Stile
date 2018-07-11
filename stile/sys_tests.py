@@ -31,7 +31,7 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy
 import stile
-import stile_utils
+from . import stile_utils
 try:
     import treecorr
     from treecorr.corr2 import corr2_valid_params
@@ -456,24 +456,24 @@ class BaseCorrelationFunctionSysTest(SysTest):
                                    'data and random, and random2 if data2.')
         elif correlation_function_type in ['gg', 'm2', 'kk']:
             if random or random2:
-                print "Warning: randoms ignored for this correlation function type"
+                print("Warning: randoms ignored for this correlation function type")
         elif correlation_function_type in ['ng', 'nm', 'nk']:
             if data2 is None:
                 raise ValueError('Must include data2 for this correlation function type')
             if random2 is not None:
-                print "Warning: random2 ignored for this correlation function type"
+                print("Warning: random2 ignored for this correlation function type")
         elif correlation_function_type == 'norm':
             if data2 is None:
                 raise ValueError('Must include data2 for this correlation function type')
             if random is None:
                 raise ValueError('Must include random for this correlation function type')
             if random2 is None:
-                print "Warning: random2 ignored for this correlation function type"
+                print("Warning: random2 ignored for this correlation function type")
         elif correlation_function_type == 'kg':
             if data2 is None:
                 raise ValueError('Must include data2 for this correlation function type')
             if random is not None or random2 is not None:
-                print "Warning: randoms ignored for this correlation function type"
+                print("Warning: randoms ignored for this correlation function type")
 
         data = self.makeCatalog(data, config=treecorr_kwargs, use_as_k=use_as_k,
                                       use_chip_coords=use_chip_coords)
@@ -1115,9 +1115,9 @@ class StatSysTest(SysTest):
             # It's a catalog, not a simple array
             if use_field is None:
                 raise RuntimeError('StatSysTest called on a catalog without specifying a field!')
-            if use_field not in use_array.dtype.fields.keys():
+            if use_field not in list(use_array.dtype.fields.keys()):
                 raise RuntimeError('Field %s is not in this catalog, which contains %s!'%
-                                   (use_field, use_array.dtype.fields.keys()))
+                                   (use_field, list(use_array.dtype.fields.keys())))
             # Select the appropriate field for this catalog.
             use_array = use_array[use_field]
         # Now take care of case (b):
@@ -1182,7 +1182,7 @@ class StatSysTest(SysTest):
 
         # Print, if verbose=True.
         if verbose:
-            print result.__str__()
+            print(result.__str__())
 
         # Return.
         return result
@@ -1696,7 +1696,7 @@ class HistogramSysTest(SysTest):
                 elif style_use is 'manual':
                     bins = nbins
             else:
-                print "Unrecognized code for binning style, use default instead!"
+                print("Unrecognized code for binning style, use default instead!")
                 bins = nbins
 
             if weights is True:
