@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from setuptools import setup
+from io import open
 
 # read the contents of the README file
 with open('README.md', encoding="utf-8") as f:
