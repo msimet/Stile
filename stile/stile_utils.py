@@ -10,7 +10,7 @@ def Parser():
     """
     Returns an argparse Parser object with input args used by Stile and TreeCorr.
     """
-    import treecorr_utils
+    from . import treecorr_utils
     import argparse
     p = argparse.Parser(parent=treecorr_utils.Parser())
     #TODO: add, obviously, EVERYTHING ELSE
@@ -111,7 +111,7 @@ class Stats:
         self.simple_stats = simple_stats
         for stat in self.simple_stats:
             init_str = 'self.' + stat + '=None'
-            exec init_str
+            exec(init_str)
 
         self.percentiles = None
         self.values = None
@@ -127,11 +127,11 @@ class Stats:
         # Loop over simple statistics and print them, if not None.  Generically if one is None then
         # all will be, so just check one.
         test_str = "test_val = self."+("%s"%self.simple_stats[0])
-        exec test_str
+        exec(test_str)
         if test_val is not None:
             for stat in self.simple_stats:
                 this_string = 'this_val = self.'+stat
-                exec this_string
+                exec(this_string)
                 ret_str += '\t%s: %f\n'%(stat, this_val)
             ret_str += '\n'
 
