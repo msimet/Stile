@@ -18,7 +18,7 @@ matrix:
     env: TOXENV=py36
 
 script:
-- python setup.py install --user
+- python setup.py install
 - nosetests tests/test_binning.py tests/test_stile_utils.py
 
 after_success:
