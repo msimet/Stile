@@ -186,5 +186,5 @@ class TestFileIO(unittest.TestCase):
 
 if __name__ == '__main__':
     if not stile.file_io.has_fits:
-        print "Skipping FITS tests (no FITS module found)"
+        print("Skipping FITS tests (no FITS module found)")
     unittest.main()
