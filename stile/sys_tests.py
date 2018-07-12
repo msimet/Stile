@@ -2510,7 +2510,7 @@ class BinnedScatterPlotSysTest(BaseScatterPlotSysTest):
             nans = nans | numpy.isnan(array[w_field])
         if yerr_field:
             nans = nans | numpy.isnan(array[yerr_field])
-        print "Skipping", numpy.sum(nans), "nans out of", len(array)
+        print("Skipping", numpy.sum(nans), "nans out of", len(array))
         array = array[numpy.invert(nans)]
         if not binning:
             binning = self.binning
