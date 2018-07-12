@@ -2362,7 +2362,7 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
                                     color=color, lim=lim, equal_axis=False,
                                     linear_regression=True, reference_line='zero')
 
-class BinnedScatterPlotSysTest(ScatterPlotSysTest):
+class BinnedScatterPlotSysTest(BaseScatterPlotSysTest):
     short_name = 'binnedscatterplot'
     """
     A base class for Stile systematics tests that generate scatter plots binned in one variable,
