@@ -71,6 +71,17 @@ def ReadASCIITable(file_name, **kwargs):
         fields = kwargs.pop('fields')
     else:
         fields = None
+    if read_header and not fields:
+        with open(file_name) as f:
+            fields = f.readline()
+        fields = fields.strip()
+        if fields[0]=='#':
+            fields = fields.split('\t')
+            if len(fields)==1:
+                fields = field.split()
+            fields = fields[1:]
+        else:
+            fields = None
     d = numpy.genfromtxt(file_name, dtype=None, **kwargs)
     return stile_utils.FormatArray(d, fields=fields)
 
@@ -160,8 +171,13 @@ def WriteASCIITable(file_name, data_array, fields=None, print_header=False):
     data = _handleFields(data_array, fields)
     if print_header:
         if hasattr(data, 'dtype') and hasattr(data.dtype, 'names') and data.dtype.names:
-            numpy.savetxt(file_name, data, fmt=_format_str(data.dtype),
+            if numpy.__version__>'1.7.0':
+                numpy.savetxt(file_name, data, fmt=_format_str(data.dtype),
                         header=', '.join(data.dtype.names))
+            else:
+                with open(file_name, 'w') as f:
+                    f.write('#\t'+'\t'.join(data.dtype.names)+'\n')
+                    numpy.savetxt(f, data, fmt=_format_str(data.dtype))
         else:
             import warnings
             warnings.warn('No named data type, so requested header cannot be printed.')
@@ -240,15 +256,15 @@ def WriteTable(file_name, data_array, fields=None):
     ext = os.path.splitext(file_name)[1]
     if not ext:
         if has_fits:
-            WriteFITSTable(file_name, data_array, fields)
+            WriteFITSTable(file_name, data_array, fields, **kwargs)
         else:
-            WriteASCIITable(file_name, data_array, fields)
+            WriteASCIITable(file_name, data_array, fields, **kwargs)
     else:
         ext = ext.lower()
         if ext == '.fit' or ext == '.fits':
-            WriteFITSTable(file_name, data_array, fields)
+            WriteFITSTable(file_name, data_array, fields, **kwargs)
         else:
-            WriteASCIITable(file_name, data_array, fields)
+            WriteASCIITable(file_name, data_array, fields, **kwargs)
 
 
 def ReadTable(file_name, **kwargs):

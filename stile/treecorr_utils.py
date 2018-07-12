@@ -6,6 +6,10 @@ import numpy
 from . import file_io
 import treecorr
 from treecorr.corr2 import corr2_valid_params
+try:
+    from treecorr.corr2 import corr2_aliases
+except ImportError:
+    corr2_aliases = {}
 
 
 def Parser():
@@ -121,7 +125,7 @@ def PickTreeCorrKeys(input_dict):
         treecorr_dict = input_dict['treecorr_kwargs']
     else:
         treecorr_dict = {}
-    for key in corr2_valid_params:
+    for key in corr2_valid_params.keys()+corr2_aliases.keys():
         if key in input_dict:
             treecorr_dict[key] = input_dict[key]
     return treecorr_dict

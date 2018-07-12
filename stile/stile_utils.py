@@ -143,6 +143,17 @@ class Stats:
 
         return ret_str
 
+data_formats = ['catalog', # Catalog or table of data
+                'image' # Image
+               ]
+extents = ['CCD', # Single CCD
+           'field', # Single field-of-view or pointing (multiple CCDs)
+           'survey' # A large area 
+          ]
+epochs  = ['single',     # One data measurement per object
+           'coadd',      # One data measurement per object, based on several different observations
+           'multiepoch'  # Multiple measurements of same object at different times
+          ]
 fieldNames = {
     'dec': 'the declination of the object',
     'ra': 'the RA of the object',
@@ -166,4 +177,50 @@ objectNames = {
     'galaxy random': 'random catalog corresponding to the "galaxy" sample',
     'star random': 'random catalog corresponding to the "star" sample'
 }
+
+class Format:
+    def __init__(self,epoch,extent,data_format):
+        self.epoch = epoch
+        self.extent = extent
+        self.data_format = data_format
+    def asKwargs(self):
+        return {'epoch': self.epoch, 'extent': self.extent, 'data_format': self.data_format}
+    @property
+    def str(self):
+        return '-'.join([self.epoch, self.extent, self.data_format])
+
+def EmptyFormatDict(type=list):
+    format_dict = {}
+    for epoch in epochs:
+        for extent in extents:
+            for data_format in data_formats:
+                format_dict[Format(epoch,extent,data_format).str] = type()
+    return format_dict
+
+def Flatten(obj):
+    if hasattr(obj,'__iter__') and not isinstance(obj,dict):
+        return_list = []
+        for o in obj:
+            return_list+=flatten(o)
+        return return_list
+    else:
+        return [obj]
+
+def PopAndCheckFormat(dict,key,type,default=None):
+    """
+    A quick shorthand function to a) pop a key from a dict (with given default) and b) check that
+    it's the right format, and raise a sensible error if it isn't.
+    @param dict     A dict
+    @param key      A key which may or may not be in the dict
+    @param type     What type you expect the result to be (can be a list of types)
+    @param default  What default value to return if the key isn't in the dict (default: None)
+    @returns        The value of the key if it was in the dict, else default
+    """
+    if key in dict:
+        val = dict.pop(key)
+    else:
+        val = default
+    if not isinstance(val,type):
+        raise ValueError("Key %s should be type %s (got %s)"%(key,str(type),str(val)))
+    return val
 

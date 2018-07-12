@@ -472,7 +472,6 @@ class BaseCorrelationFunctionSysTest(SysTest):
                                           use_chip_coords=use_chip_coords)
         random2 = self.makeCatalog(random2, config=treecorr_kwargs, use_as_k=use_as_k,
                                             use_chip_coords=use_chip_coords)
-
         treecorr_kwargs[correlation_function_type+'_file_name'] = output_file
 
         func = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
