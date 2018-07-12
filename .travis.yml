@@ -10,7 +10,7 @@ install:
 
 script:
   - cd tests
-  - nosetests --with-coverage --cover-package=stile --with-doctest --cover-erase test_binning.py test_stile_utils.py
+  - nosetests --with-coverage --cover-package=stile --with-doctest --cover-erase test_*.py
 
 after_success:
   - coverage xml
