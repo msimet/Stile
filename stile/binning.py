@@ -26,7 +26,7 @@ class BinList:
     def __init__(self, field, bin_list):
         if not isinstance(field, str) and field is not None:
             raise TypeError('Field description must be a string or None. Passed value: '+str(field)+
-                              'of type'+type(field))
+                              'of type'+str(type(field)))
         if not bin_list:
             raise TypeError('Must pass a non-empty bin_list')
         self.field = field
