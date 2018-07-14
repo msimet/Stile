@@ -5,6 +5,7 @@ import subprocess
 import helper
 import unittest
 import treecorr
+import matplotlib
 
 try:
     import stile
@@ -113,7 +114,35 @@ class TestCorrelationFunctions(unittest.TestCase):
         results3 = realshear(lens_data, source_data, config=stile_args)
         numpy.testing.assert_equal(results, results3)
         
-        
+    def test_plot(self):
+        """ Test that the plotting routines successfully generate a plot """
+        stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
+                      'sep_units': 'degrees', 'nbins': 20}
+        cf = stile.sys_tests.CorrelationFunctionSysTest()
+        lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyShear', 'StarXStarShear']
+        for object_type in object_list:
+            obj = stile.CorrelationFunctionSysTest(object_type)
+            results = obj(lens_data, source_data, **stile_args)
+            pl = obj.plot(results)
+            self.assertIsInstance(pl, matplotlib.figure.Figure)
+        # Test underscore protection. If there's an underscore in the radius label somewhere,
+        # get rid of the non-underscore versions to make sure we hit that branch of the code,
+        # then test the plotting again
+        names = list(results.dtype.names)
+        names_no_units = [n.split(' [')[0] for n in names]
+        if 'R_nom' in names_no_units or 'R_nominal' in names_no_units:
+            for rname in ['meanR', '<R>', 'R']:
+                if rname in names_no_units:
+                    index = names_no_units.index(rname)
+                    names[index] = 'old_'+names[index]
+            results.dtype.names = names
+            pl = obj.plot(results)
+            self.assertIsInstance(pl, matplotlib.figure.Figure)
+            pl.savefig('examine.png')            
     def test_generator(self):
         """Make sure the CorrelationFunctionSysTest() generator returns the right objects"""
         object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyDensity', 'StarXGalaxyShear', 
