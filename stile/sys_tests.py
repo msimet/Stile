@@ -615,7 +615,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
             raise ValueError("requirement_bmode_range must be a 2-item tuple")
         if requirement_x is None and (requirement_emode is not None or requirement_bmode is not None
                                   or requirement_emode_range is not None or requirement_bmode_range is not None):
-            print "Cannot plot requirement curves without requirement_x--skipping"
+            print("Cannot plot requirement curves without requirement_x--skipping")
         if (requirement_emode is not None or requirement_emode_range is not None):
             if hasattr(requirement_color, '__iter__'):
                 reqecolor = requirement_color[0]
