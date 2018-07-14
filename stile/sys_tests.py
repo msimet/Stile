@@ -2024,7 +2024,6 @@ class BaseScatterPlotSysTest(SysTest):
         """
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        print histogram, "histogram"
         # mask data with nan. Emit a warning if an array has nan in it.
         x_isnan = numpy.isnan(x)
         y_isnan = numpy.isnan(y)
@@ -2269,7 +2268,6 @@ class ScatterPlotStarVsPSFG1SysTest(BaseScatterPlotSysTest):
 
     def __call__(self, array, per_ccd_stat=None, color='', lim=None,
                     histogram=False, histogram_n_bins=40, histogram_cmap='Blues'):
-        print "lalala", histogram
         return super(ScatterPlotStarVsPSFG1SysTest,
                      self).__call__(array, 'psf_g1', 'g1', 'g1_err', residual=False,
                                     per_ccd_stat=per_ccd_stat, xlabel=r'$g^{\rm PSF}_1$',
