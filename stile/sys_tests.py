@@ -1093,7 +1093,7 @@ class StatSysTest(SysTest):
 
         # Check types for input things and make sure it all makes sense, including consistency with
         # the field.  First of all, it should be iterable:
-        if not hasattr(array, '__iter__'):
+        if not hasattr(array, '__iter__') or isinstance(array, str):
             raise RuntimeError('Input array is not an iterable (list, tuple, NumPy array)!')
         # If it's a multi-dimensional NumPy array, tuple, or list, we don't care - the functions
         # we'll use below will simply work as if it's a 1d NumPy array, collapsing all rows of a
