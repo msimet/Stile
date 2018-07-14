@@ -590,9 +590,16 @@ class BaseCorrelationFunctionSysTest(SysTest):
         fields = data.dtype.names
         # Pick which radius measurement to use
         # TreeCorr changed the name of the output columns
+        # This catches the case where we added the units to the label
+        fields_no_units = [f.split(' [')[0] for f in fields]
         for t_r in ['meanR', 'R_nom', '<R>', 'R_nominal', 'R']:
             if t_r in fields:
-                r = t_r
+                # Protect underscores since they blow up the plotting routines
+                r = '\\_'.join(t_r.split('\\'))
+                break
+            elif t_r in fields_no_units:
+                t_i = fields_no_units.index(t_r)
+                r = '\\_'.join(fields[t_i].split('\\'))
                 break
         else:
             raise ValueError('No radius parameter found in data')
