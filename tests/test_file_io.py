@@ -85,10 +85,10 @@ class TestFileIO(unittest.TestCase):
             # that numpy.ndarray and FITSrecs should be compared to each other, and also to deal
             # with FITS vs Python byteorder things for machines where that matters.
             result = stile.ReadFITSTable('test_data/table.fits')
-            if result['status'][1]=='goodbye':
-                fits_table = self.fits_table
-            else:
+            if result.dtype[1]=='<U7':
                 fits_table = self.fits_table_bytestring
+            else:
+                fits_table = self.fits_table
             numpy.testing.assert_equal(*helper.FormatSame(result, fits_table))
             result = stile.ReadTable('test_data/table.fits')
             numpy.testing.assert_equal(*helper.FormatSame(result, fits_table))
