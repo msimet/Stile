@@ -23,10 +23,10 @@ class BinList:
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
-    def __init__(self, field, bin_list):
+    def __init__(self, bin_list, field=None):
         if not isinstance(field, str) and field is not None:
             raise TypeError('Field description must be a string or None. Passed value: '+str(field)+
-                              'of type'+str(type(field)))
+                              ' of type'+str(type(field)))
         if not bin_list:
             raise TypeError('Must pass a non-empty bin_list')
         self.field = field
@@ -83,10 +83,10 @@ class BinStep:
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
-    def __init__(self, field, low=None, high=None, step=None, n_bins=None, use_log=False):
+    def __init__(self, field=None, low=None, high=None, step=None, n_bins=None, use_log=False):
         if not isinstance(field, str):
             raise TypeError('Field description must be a string. Passed value: '+str(field)+
-                              'of type'+str(type(field)))
+                              ' of type'+str(type(field)))
         self.field = field
         n_none = (low is None) + (high is None) + (step is None) + (n_bins is None)
         if n_none > 1:
@@ -181,10 +181,7 @@ class SingleBinFieldless(object):
                        [default: ``"low-high"``].
     """
 
-    def __init__(self, field, low, high, short_name, long_name=None):
-        if not isinstance(field, str):
-            raise TypeError('Field description must be a string. Passed value: '+str(field)+
-                              'of type'+str(type(field)))
+    def __init__(self, low, high, short_name, long_name=None):
         if high <= low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
         if not isinstance(short_name, str) or (long_name and not isinstance(long_name, str)):
@@ -231,7 +228,7 @@ class SingleBin(SingleBinFieldless):
     def __init__(self, field, low, high, short_name, long_name=None):
         if not isinstance(field, str):
             raise TypeError('Field description must be a string. Passed value: '+str(field)+
-                              'of type'+str(type(field)))
+                              ' of type'+str(type(field)))
         self.field = field
         super(SingleBin, self).__init__(low, high, short_name, long_name)
 
