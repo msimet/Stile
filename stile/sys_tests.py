@@ -443,11 +443,11 @@ class BaseCorrelationFunctionSysTest(SysTest):
 
         # First, pull out the TreeCorr-relevant parameters from the stile_args dict, and add
         # anything passed as a kwarg to that dict.
-        if (random and len(random)) or (random2 and len(random2)):
-            treecorr_kwargs[correlation_function_type+'_statistic'] = \
-                treecorr_kwargs.get(correlation_function_type+'_statistic', 'compensated')
         treecorr_kwargs = stile.treecorr_utils.PickTreeCorrKeys(config)
         treecorr_kwargs.update(stile.treecorr_utils.PickTreeCorrKeys(kwargs))
+        if (random is not None and len(random)) or (random2 is not None and len(random2)):
+            treecorr_kwargs[correlation_function_type+'_statistic'] = \
+                treecorr_kwargs.get(correlation_function_type+'_statistic', 'compensated')
         treecorr.config.check_config(treecorr_kwargs, corr2_valid_params)
 
         if data is None:
@@ -542,11 +542,11 @@ class BaseCorrelationFunctionSysTest(SysTest):
                 func_random = previous_results.corrfunc_random
             else:
                 func_random = treecorr_func_dict[correlation_function_type](treecorr_kwargs)
-            if len(random2):
+            if random2 is not None and self._getlength(random2):
                 func_random.process(random, random2)
             else:
                 func_random.process(random)
-            if not len(data2):
+            if data2 is not None and not self._getlength(data2):
                 if previous_results is not None:
                     func_rr = previous_results.corrfunc_rr
                 else:
@@ -570,7 +570,7 @@ class BaseCorrelationFunctionSysTest(SysTest):
                 else:
                     func_rr = treecorr_func_dict['nn'](treecorr_kwargs)
                 func_rr.process(random, random2)
-                if treecorr_kwargs.get(['nn_statistic'],
+                if treecorr_kwargs.get('nn_statistic',
                    self.compensateDefault(data, data2, random, random2, both=True)
                    ) == 'compensated':
                     if previous_results is not None:
@@ -615,16 +615,24 @@ class BaseCorrelationFunctionSysTest(SysTest):
             corrfunc_gg=func_gg, corrfunc_dd=func_dd, corrfunc_rr=func_rr, corrfunc_dr=func_dr, 
             corrfunc_rd=func_rd, plot_details=self.plot_details)
 
+    def _getlength(self, d):
+        if hasattr(d, '__len__'):
+            return len(d)
+        elif hasattr(d, 'nobj'):
+            return d.nobj
+        else:
+            raise RuntimeError("No way to determine length of array!")
+
     def compensateDefault(self, data, data2, random, random2, both=False):
         """
         Figure out if a compensated statistic can be used from the data present.  Keyword ``both``
         indicates that both data sets if present must have randoms; the default, False, means only
         the first data set must have an associated random.
         """
-        if not random or (random and not len(random)):  # No random
+        if random is None or (random and not self._getlength(random)):  # No random
             return 'simple'
-        elif both and data2 and len(data2):  # Second data set exists and must have a random
-            if random2 and len(random2):
+        elif both and data2 is not None and self._getlength(data2)>0:  # Second data set exists and must have a random
+            if random2 is not None and self._getlength(random2):
                 return 'compensated'
             else:
                 return 'simple'
@@ -1796,7 +1804,6 @@ class HistogramSysTest(SysTest):
                     print "Unrecognized code for binning style, use default instead!"
                     bins = nbins
             else:
-<<<<<<< HEAD
                 old_counts = previous_results.getData()['counts'][ii]
                 old_edges = previous_results.getData()['edges'][ii]
                 if numpy.any(data_list[i]<old_edges[0]):
@@ -1811,10 +1818,6 @@ class HistogramSysTest(SysTest):
                     n_new_bins = (numpy.max(data_list[i])-old_edges[-1])/binsize
                     bins = numpy.concatenate([bins, [old_edges[-1]+i*binsize for i in range(1, n_new_bins+1)]])
                     old_counts = numpy.concatenate([old_counts, [0]*n_new_bins])
-=======
-                print("Unrecognized code for binning style, use default instead!")
-                bins = nbins
->>>>>>> master
 
             if weights is True:
                 weights = data['w']
