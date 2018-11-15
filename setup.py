@@ -6,11 +6,15 @@ from io import open
 with open('README.md', encoding="utf-8") as f:
     long_description = f.read()
 
+
+
 setup(name='Stile',
       version='0.1',
       description='Stile: Systematics Tests in Lensing pipeline',
       author='The Stile team',
-      install_requires=['numpy', 'treecorr', 'matplotlib', 'astropy<3'],
+      install_requires=['numpy', 'treecorr', 'matplotlib', 
+        'astropy<3;python_version<"3.0"',
+        'astropy;python_version>="3.0"'],
       author_email='melanie.simet@gmail.com',
       url='https://github.com/msimet/Stile',
       packages=['stile', 'stile.hsc'],
