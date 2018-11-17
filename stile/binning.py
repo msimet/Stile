@@ -23,10 +23,10 @@ class BinList:
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
-    def __init__(self, field, bin_list):
-        if not isinstance(field, str):
-            raise TypeError('Field description must be a string. Passed value: '+str(field)+
-                              'of type'+type(field))
+    def __init__(self, bin_list, field=None):
+        if not isinstance(field, str) and field is not None:
+            raise TypeError('Field description must be a string or None. Passed value: '+str(field)+
+                              ' of type'+str(type(field)))
         if not bin_list:
             raise TypeError('Must pass a non-empty bin_list')
         self.field = field
@@ -46,8 +46,12 @@ class BinList:
         Returns a list of :class:`SingleBin` objects following the definitions provided when the
         class was created.
         """
-        return_list = [SingleBin(field=self.field, low=low, high=high, short_name=str(i))
-                       for i, (low, high) in enumerate(zip(self.bin_list[:-1], self.bin_list[1:]))]
+        if self.field is not None:
+            bin_type = SingleBin
+        else:
+            bin_type = SingleBinFieldless
+        return_list = [bin_type(field=self.field, low=low, high=high, short_name=str(i))
+                       for i, (low, high) in  enumerate(zip(self.bin_list[:-1], self.bin_list[1:]))]
         if self.reverse:
             return_list.reverse()
         return return_list
@@ -79,10 +83,10 @@ class BinStep:
     :returns:         A list of :class:`SingleBin` objects determined by the input criteria.
     """
 
-    def __init__(self, field, low=None, high=None, step=None, n_bins=None, use_log=False):
+    def __init__(self, field=None, low=None, high=None, step=None, n_bins=None, use_log=False):
         if not isinstance(field, str):
             raise TypeError('Field description must be a string. Passed value: '+str(field)+
-                              'of type'+type(field))
+                              ' of type'+str(type(field)))
         self.field = field
         n_none = (low is None) + (high is None) + (step is None) + (n_bins is None)
         if n_none > 1:
@@ -143,12 +147,16 @@ class BinStep:
             self.reverse = False
 
     def __call__(self):
+        if self.field is not None:
+            bin_type = SingleBin
+        else:
+            bin_type = SingleBinFieldless
         if self.use_log:
-            return_list = [SingleBin(field=self.field, low=numpy.exp(self.low+i*self.step),
+            return_list = [bin_type(field=self.field, low=numpy.exp(self.low+i*self.step),
                                      high=numpy.exp(self.low+(i+1)*self.step),
                                      short_name=str(i)) for i in range(self.n_bins)]
         else:
-            return_list = [SingleBin(field=self.field, low=self.low+i*self.step,
+            return_list = [bin_type(field=self.field, low=self.low+i*self.step,
                                      high=self.low+(i+1)*self.step, short_name=str(i))
                                      for i in range(self.n_bins)]
         if self.reverse:
@@ -156,7 +164,7 @@ class BinStep:
         return return_list
 
 
-class SingleBin:
+class SingleBinFieldless(object):
     """
     A class that contains the information for one particular bin generated from one of
     the :class:`Bin*` classes. The attributes can be accessed directly for :class:`DataHandler`\s
@@ -173,15 +181,11 @@ class SingleBin:
                        [default: ``"low-high"``].
     """
 
-    def __init__(self, field, low, high, short_name, long_name=None):
-        if not isinstance(field, str):
-            raise TypeError('Field description must be a string. Passed value: '+str(field)+
-                              'of type'+type(field))
+    def __init__(self, low, high, short_name, long_name=None):
         if high <= low:
             raise ValueError("High ("+str(high)+") must be greater than low ("+str(low)+")")
         if not isinstance(short_name, str) or (long_name and not isinstance(long_name, str)):
             raise TypeError("Short_name and long_name must be strings")
-        self.field = field
         self.low = low
         self.high = high
         self.short_name = short_name
@@ -199,7 +203,46 @@ class SingleBin:
         :returns:      A NumPy array corresponding to the input data, restricted to the bin
                        described by this object.
         """
-        return data[numpy.logical_and(data[self.field] >= self.low, data[self.field] < self.high)]
+        return data[numpy.logical_and(data >= self.low, data < self.high)]
+
+
+class SingleBin(SingleBinFieldless):
+    """
+    A class that contains the information for one particular bin generated from one of the Bin*
+    classes. The attributes can be accessed directly for DataHandlers that read in the data
+    selectively. The class can also be called with a data array to bin it to the correct data
+    range: SingleBin(array) will return only the data within the bounds of the particular instance
+    of the class.  The endpoints are assumed to be [low,high), that is, low <= data < high, with
+    defined relational operators.
+    
+    This version is for data arrays with defined fields such as numpy.recarrays; see 
+    :class:`SingleBinFieldless` for the version that operates on raw arrays.
+
+    @param field      The index of the field containing the data to be binned (must be a string).
+    @param low        The lower edge of the bin (inclusive).
+    @param high       The upper edge of the bin (exclusive).
+    @param short_name A string denoting this bin in filenames.
+    @param long_name  A string denoting this bin in program text outputs/plots.
+                      [default: "low-high"]
+    """
+    def __init__(self, field, low, high, short_name, long_name=None):
+        if not isinstance(field, str):
+            raise TypeError('Field description must be a string. Passed value: '+str(field)+
+                              ' of type'+str(type(field)))
+        self.field = field
+        super(SingleBin, self).__init__(low, high, short_name, long_name)
+
+    def __call__(self, data):
+        """
+        Given data, returns only the data with data[self.field] within the bounds
+        [self.low, self.high).
+
+        @param data   A NumPy array of data that can be indexed by self.field.
+        @returns      A NumPy array corresponding to the input data, restricted to the bin
+                      described by this object.
+        """
+        return super(SingleBin, self).__call__(data[self.field])
+
 
 
 class BinFunction:
