@@ -4,8 +4,11 @@ program.
 """
 import numpy
 from . import file_io
-import treecorr
-from treecorr.corr2 import corr2_valid_params
+try:
+    import treecorr
+    from treecorr.corr2 import corr2_valid_params
+except ImportError:
+    pass
 
 
 def Parser():

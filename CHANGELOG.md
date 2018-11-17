@@ -1,3 +1,4 @@
+7/13/18: Fix TreeCorr imports, 1d arrays in FITS writing (#93)
 7/11/18: Update code to python3
 3/17/16: Update documentation to Sphinx standard and add documentation build files (issue #17)
 2/17/16: Changes to correlation function plots & documentation (issue #77)
