@@ -111,6 +111,40 @@ class TestCorrelationFunctions(unittest.TestCase):
             pl = obj.plot(results)
             self.assertIsInstance(pl, matplotlib.figure.Figure)
             pl.savefig('examine.png')            
+
+    def test_requirements_curves(self):        
+        """ Test that requirements curves can be plotted. """ 
+        stile_args = {'ra_units': 'degrees', 'dec_units': 'degrees', 'min_sep': 0.05, 'max_sep': 1,
+                      'sep_units': 'degrees', 'nbins': 20}
+        lens_data = stile.ReadASCIITable('../examples/example_lens_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        source_data = stile.ReadASCIITable('../examples/example_source_catalog.dat',
+                    fields={'id': 0, 'ra': 1, 'dec': 2, 'z': 3, 'g1': 4, 'g2': 5})
+        cf = stile.CorrelationFunctionSysTest("GalaxyShear")
+        results = cf(lens_data, source_data, config=stile_args)
+        x = results['R_nom [deg]']
+        y = 0.001/x
+        yrange = [0.9*y, 1.1*y]
+        plot = cf.plot(results)
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y)
+        plot = cf.plot(results, requirement_x=x, requirement_bmode=y)
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y, requirement_bmode=y)
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y,
+                       requirement_emode_range=yrange)
+        plot = cf.plot(results, requirement_x=x, requirement_bmode=y,
+                       requirement_bmode_range=yrange)
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y,
+                       requirement_emode_range=yrange, requirement_bmode=y,
+                       requirement_bmode_range=yrange)
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y,
+                       requirement_bmode_range=yrange)
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y, requirement_color='blue', 
+                       requirement_linestyle='dotted')
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y, requirement_bmode=y,
+                       requirement_color='blue', requirement_linestyle='dotted')
+        plot = cf.plot(results, requirement_x=x, requirement_emode=y, requirement_bmode=y,
+                       requirement_color=['blue', 'orange'], requirement_linestyle=['dotted', 'solid'])
+        
     def test_generator(self):
         """Make sure the CorrelationFunctionSysTest() generator returns the right objects"""
         object_list = ['GalaxyShear', 'BrightStarShear', 'StarXGalaxyDensity',  'StarXGalaxyShear', 
