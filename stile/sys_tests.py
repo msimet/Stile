@@ -543,10 +543,11 @@ class BaseCorrelationFunctionSysTest(SysTest):
         results = stile.ReadTreeCorrResultsFile(output_file)
         os.close(handle)
         os.remove(output_file)
-        names = results.dtype.names
-        # Add the sep units to the column names of radial bins from TreeCorr outputs
-        names = [n+' [%s]'%treecorr_kwargs['sep_units'] if 'R' in n else n for n in names]
-        results.dtype.names = names
+        if 'sep_units' in treecorr_kwargs:
+            names = results.dtype.names
+            # Add the sep units to the column names of radial bins from TreeCorr outputs
+            names = [n+' [%s]'%treecorr_kwargs['sep_units'] if 'R' in n else n for n in names]
+            results.dtype.names = names
         return results
 
     def compensateDefault(self, data, data2, random, random2, both=False):
