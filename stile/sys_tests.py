@@ -2369,3 +2369,266 @@ class ScatterPlotResidualSigmaVsPSFMagSysTest(BaseScatterPlotSysTest):
                                     color=color, lim=lim, equal_axis=False,
                                     linear_regression=True, reference_line='zero')
 
+class BinnedScatterPlotSysTest(BaseScatterPlotSysTest):
+    short_name = 'binnedscatterplot'
+    """
+    A base class for Stile systematics tests that generate scatter plots binned in one variable,
+    such as RMS ellipticity in magnitude bins or number density in longitude bins. This implements
+    a `__call__` method to produce a `matplotlib.figure.Figure`. Every child class of
+    BinnedScatterPlotSysTest should use binnedScatterPlotSysTest.scatterPlot through `super`. See
+    the docstring for BinnedScatterPlotSysTest.binnedScatterPlot for information on how to write
+    further tests using it.
+    
+    We automatically implement four statistics to report per bin: 'mean', 'median', 'rms' and 
+    'count'.  'mean' reports the mean of all y values in each bin; 'median' reports the median, with
+    an error estimate that is valid only for large numbers of points; 'rms' reports the root-mean-
+    square value, with an approximate error estimate; and 'count' simply report the number of
+    objects, with sqrt(n) errors.  The user may also pass a callable function that operates on the
+    entire data array (not just the fields defined by `x_field` and `y_field`, described below,
+    which are used by the four methods described here).  The function should return either a single
+    value that will be used for the bin, or a tuple of two numbers, the value for the bin and its
+    error.
+    
+    Weights or y errors can be given for any of the builtin methods except 'median'.  Y errors are
+    assumed to be Gaussian and the derived weights are 1/yerr**2.  Weighted `count`s are simply
+    the sums of the weights.
+    
+    The following quantities can be defined when the class is initialized, or passed to the 
+    `__call__` method as kwargs:
+        @param x_field         The name of the field in `array` to be used for x (the field that
+                               defines the bins--magnitude in a plot of RMS ellipticity as a
+                               function of magnitude, for example).
+        @param y_field         The name of the field in `array` to be used for y.
+        @param yerr_field      The name of the field in `array` to be used for y error.
+        @param w_field         The name of the field in `array` to be used for the weights.
+                               Defining both yerr_field and w_field will result in an error.
+        @param method          The method to combine the values of `array[y_field]` in each bin.
+                               Can be a string ('mean', 'median', 'rms' or 'count'), or a callable
+                               function which operates on the given array and returns either the
+                               desired value for the (already-binned) data, or a tuple of the value
+                               and its error.  [default: 'mean']
+        @param binning         The way to bin the values based on `array[x_field]`.  If not given,
+                               ten equally-sized bins will be used; if given, should be a number 
+                               indicating the number of requested equally-sized bins (will be
+                               rounded to nearest int) or one of the Binning* classes defined in
+                               Stile (BinStep, BinList, etc).
+                               [default: None, meaning ten equally-sized bins]
+    """
+    def __init__(self, x_field=None, y_field=None, yerr_field=None, w_field=None, method='mean',
+                 binning=10):
+        self.x_field = x_field
+        self.y_field = y_field
+        self.yerr_field = yerr_field
+        self.w_field = w_field
+        list_of_quantities = []
+        for quantity in [x_field, y_field, yerr_field, w_field]:
+            if quantity:
+                list_of_quantities.append(quantity)
+        self.required_quantities = [list_of_quantities]  # need a list per object type
+        self.method = method
+        self.binning = binning
+    
+    def __call__(self, array, x_field=None, y_field=None, yerr_field=None, w_field=None, 
+                 method=None, binning=None, xlabel=None, ylabel=None, zlabel=None, color = "",
+                 lim=None, equal_axis=False, linear_regression=False, reference_line = None,
+                 area=None, area_units=None):
+        """
+        Draw a binned scatter plot and return a `matplotlib.figure.Figure` object.
+        This method has a bunch of options for controlling appearance of a plot, which are
+        explained below. To implement a child class of BinnedScatterPlotSysTest, call
+        `super(classname, self).__call__(*args, **kwargs)` within the `__call__` method of the child
+        class and return the `matplotlib.figure.Figure` that this `__call__` method returns.
+        
+        Kwargs except `array`, `*_field`, `method` and `binning` are passed through to the parent
+        class function `scatterPlot()` unaltered.
+        
+        @param array           A structured NumPy array which contains data to be plotted.
+        @param x_field         The name of the field in `array` to be used for x (the field that
+                               defines the bins--magnitude in a plot of RMS ellipticity as a
+                               function of magnitude, for example).
+        @param y_field         The name of the field in `array` to be used for y.
+        @param yerr_field      The name of the field in `array` to be used for y error.
+        @param w_field         The name of the field in `array` to be used for the weights.
+                               Defining both yerr_field and w_field will result in an error.
+        @param method          The method to combine the values of `array[y_field]` in each bin.
+                               Can be a string ('mean', 'median', 'rms' or 'count'), or a callable
+                               function which operates on the given array and returns either the
+                               desired value for the (already-binned) data, or a tuple of the value
+                               and its error.  If 'count' is passed, the user can also pass the
+                               kwarg 'area' to instead return a number density, and optionally also
+                               a kwarg 'area_unit' for use in axis and column labels.
+                               [default: 'mean']
+        @param binning         The way to bin the values based on `array[x_field]`.  If not given,
+                               ten equally-sized bins will be used; if given, should be a number 
+                               indicating the number of requested equally-sized bins (will be
+                               rounded to nearest int) or one of the Binning* classes defined in
+                               Stile (BinStep, BinList, etc).
+                               [default: None, meaning ten equally-sized bins]
+        @param xlabel          The label for the x-axis.
+                               [default: None, meaning use the value of `x_field`]
+        @param ylabel          The label for the y-axis.
+                               [default: None, meaning use a string based on the `method` 
+                               and `y_value`]
+        @param color           The color of scattered points. This color is also applied to
+                               linear regression if argument `linear_regression` is True.
+                               [default: None, meaning follow a matplotlib's default color]
+        @param lim             The limit of the axes. This can be specified explicitly by
+                               using tuples such as ((xmin, xmax), (ymin, ymax)).
+                               [default: None, meaning do not set any limits]
+        @param equal_axis      If True, force ticks of the x-axis and y-axis equal to each other.
+                               [default: False]
+        @param linear_regression  If True, perform linear regression for x and y and plot a
+                               regression line. If yerr is not None, perform the linear
+                               regression incorporating the error into the standard chi^2
+                               and plot a regression line with a 1-sigma allowed region.
+                               [default: False]
+        @param reference_line  Draw a reference line. If reference_line == 'one-to-one', x=y
+                               is drawn. If reference_line == 'zero', y=0 is drawn.
+                               A user-specific function can be used by passing an object which
+                               has an attribute '__call__' and returns a 1-d Numpy array.
+        @returns               a matplotlib.figure.Figure object
+        """
+        if not method:
+            method = self.method
+        if not x_field:
+            if self.x_field:
+                x_field = self.x_field
+            else:
+                raise RuntimeError('Must pass x_field kwarg if not defined when initializing object')
+        if not y_field:
+            if self.y_field:
+                y_field = self.y_field
+            elif not hasattr(method, '__call__') and not method=='count':
+                raise RuntimeError('Must pass y_field kwarg if not defined when initializing object')
+        if not yerr_field:
+            yerr_field = self.yerr_field
+        if not w_field:
+            w_field = self.w_field
+        if w_field and yerr_field:
+            raise RuntimeError("Cannot pass both a yerr_field and a w_field")
+        if area is not None and method is not 'count':
+            raise RuntimeError('Can only pass keyword argument area if method is "count"')
+        if area_units is not None and area is None:
+            raise RuntimeError('Can only pass keyword argument area_units if also passing area')
+        nans = numpy.isnan(array[x_field])
+        if y_field:
+            nans = nans | numpy.isnan(array[y_field])
+        if w_field:
+            nans = nans | numpy.isnan(array[w_field])
+        if yerr_field:
+            nans = nans | numpy.isnan(array[yerr_field])
+        print("Skipping", numpy.sum(nans), "nans out of", len(array))
+        array = array[numpy.invert(nans)]
+        if not binning:
+            binning = self.binning
+        if not isinstance(binning, 
+                         (stile.binning.BinStep, stile.binning.BinList, stile.binning.BinFunction)):
+            try:
+                low = min(array[x_field])
+                high = max(array[x_field])
+                high += 1.E-6*(high-low) # to avoid <= upper bound problem
+                binning = stile.BinStep(field=x_field, low=low, high=high, n_bins=numpy.round(binning))
+            except:
+                raise RuntimeError("Cannot understand binning argument: %s. Must be a "
+                                   "stile.BinStep, stile.BinList, or stile.BinFunction, or "
+                                   "a number"%str(binning))
+        
+        x_vals = []
+        y_vals = []
+        yerr_vals = []
+        for ibin, bin in enumerate(binning()):
+            masked_array = bin(array)
+            if w_field:
+                weights = masked_array[w_field]
+            elif yerr_field:
+                weights = 1./masked_array[yerr_field]**2
+            else:
+                weights = numpy.ones(masked_array.shape[0])
+            x_vals.append(numpy.mean(masked_array[x_field]))
+            if method=='mean' or method=='rms':
+                sum_weights = numpy.sum(weights)
+                mean = numpy.sum(weights*masked_array[y_field])/sum_weights
+                # This is the unbiased sigma estimator for weighted data, with a further /sqrt(n)
+                # for error on the mean
+                sigma = numpy.sqrt(numpy.sum((weights*(masked_array[y_field]-mean))**2)/
+                    (sum_weights-numpy.sum(weights**2)/sum_weights))
+            if method=='mean':
+                y_vals.append(mean)
+                yerr_vals.append(sigma/numpy.sqrt(len(masked_array)))
+            elif method=='rms':
+                rms = numpy.sqrt(numpy.sum(weights*masked_array[y_field]**2)/
+                    numpy.sum(weights))
+                y_vals.append(rms)
+                # error estimate for rms: 
+                # sigma_x^2 = <x^2> - <x>^2
+                # x_{rms}^2 = <x^2> = sigma_x^2 + <x>^2
+                # x_{rms} = \sqrt{sigma_x^2 + <x>^2}
+                # By the Taylor expansion-type propagation of errors,
+                # sigma_{x_{rms}}^2 = (\partial x_{rms}/\partial sigma_x)^2 sigma_{sigma_x}^2 + 
+                #                     (\partial x_{rms}/\partial <x>)^2 sigma_{<x>}^2
+                #    = sigma_x^2/x_rms^2 * sigma_{sigma_x}^2 + <x>^2/x_rms^2 * sigma_{<x>}^2
+                # sigma_{<x>} is sigma_x/sqrt(n), and sigma_{sigma_x} is approx 
+                # 1/sqrt(2(n-1))*sigma_x for large n 
+                # (see http://ai.eecs.umich.edu/~fessler/papers/files/tr/stderr.pdf ).
+                yerr_vals.append(numpy.sqrt(
+                    (sigma**2/(numpy.sqrt(2*(len(masked_array)-1))*rms))**2 + 
+                    (mean*sigma/(numpy.sqrt(len(masked_array))*rms))**2))
+            elif method=='median':
+                y_vals.append(numpy.median(masked_array[y_field]))
+                # Only correct in the limit of lots of data--but probably where we are
+                yerr_vals.append(
+                    1.253*numpy.std(masked_array[y_field])/
+                    numpy.sqrt(len(masked_array)))
+            elif method=='count':
+                # I think there is a better method of weighted counting we could be using?
+                y_vals.append(numpy.sum(weights))
+                yerr_vals.append(numpy.sqrt(numpy.sum(weights)))
+                if area is not None:
+                    y_vals /= area
+                    yerr_vals /= area
+            elif hasattr(method, '__call__'):
+                val = method(masked_array)
+                if hasattr(val, 'len'):
+                    if len(val)==2:
+                        y_vals.append(val[0])
+                        yerr_vals.append(val[1])
+                    else:
+                        raise RuntimeError('method callable may return a tuple of at most length 2 '
+                                           '(a value and its error)')
+                else:
+                    y_vals.append(val)
+        if hasattr(method, '__call__'):
+            y_name = "f(data)"
+        elif method=='count':
+            if area:
+                if area_units:
+                    y_name = "number density [1/%s]"%area_units
+                else:
+                    y_name = "number density"
+            else:
+                y_name = 'number of objects'
+        else:
+            y_name = method + " of " + y_field
+        if isinstance(binning, stile.binning.BinFunction):
+            x_name = 'bin number'
+        else:
+            x_name = x_field
+        x_vals = numpy.array(x_vals)
+        y_vals = numpy.array(y_vals)
+        if yerr_vals:
+            yerr_vals = numpy.array(yerr_vals)
+            self.data = numpy.rec.fromarrays([x_vals, y_vals, yerr_vals], 
+                                            names = [x_name, y_name, y_name+'_err'])
+        else:
+            yerr_vals = None
+            self.data = numpy.rec.fromarrays([x_vals, y_vals], 
+                                            names = [x_name, y_name])
+        if not xlabel:
+            xlabel = x_name
+        if not ylabel:
+            ylabel = y_name
+        return self.scatterPlot(x_vals, y_vals, yerr_vals, None,
+                                xlabel=xlabel, ylabel=ylabel,
+                                color=color, lim=lim, equal_axis=equal_axis,
+                                linear_regression=linear_regression, reference_line=reference_line)
+
