@@ -24,13 +24,16 @@ class TestTreeCorrUtils(unittest.TestCase):
                       'k_col': 9, 'w_col': 10, 'flip_g1': False, 'flip_g2': False,
                       'pairwise': False, 'min_sep': 0.1, 'max_sep': 10, 'nbins': 10,
                       'bin_size': 0.99, 'sep_units': 'degrees', 'bin_slop': 0.8,
-                      'n2_file_name': 'o1.dat', 'n2_statistic': 'compensated',
                       'ng_file_name': 'o2.dat', 'ng_statistic': 'compensated',
-                      'g2_file_name': 'o3.dat', 'nk_file_name': 'o4.dat', 'nk_statistic': 'simple',
-                      'k2_file_name': 'o5.dat', 'kg_file_name': 'o6.dat', 'precision': 3,
+                      'nk_file_name': 'o4.dat', 'nk_statistic': 'simple',
+                      'kg_file_name': 'o6.dat', 'precision': 3,
                       'm2_file_name': 'o7.dat', 'm2_uform': 'Crittenden', 'nm_file_name': 'o8.dat',
                       'norm_file_name': 'o9.dat', 'verbose': 3, 'num_threads': 16,
                       'split_method': 'median'}
+        self.dict3_has2 = {'n2_file_name': 'o1.dat', 'n2_statistic': 'compensated',
+                           'g2_file_name': 'o3.dat', 'k2_file_name': 'o5.dat'}
+        self.dict3_no2 = {'nn_file_name': 'o1.dat', 'nn_statistic': 'compensated',
+                          'gg_file_name': 'o3.dat', 'kk_file_name': 'o5.dat'}
         # The output of a run of TreeCorr.
         self.treecorr_output = numpy.array(
             [(5.389e-02, 5.443e-02, 2.206e-02, -4.259e-02, 2.578e-02, 1.820e+02, 1.820e+02),
@@ -61,7 +64,7 @@ class TestTreeCorrUtils(unittest.TestCase):
         arr = stile.ReadTreeCorrResultsFile('test_data/TreeCorr_output.dat')
         numpy.testing.assert_equal(arr, self.treecorr_output)
         # Seems to depend on which version of NumPy which error is raised
-        self.assertRaises((TypeError, StopIteration), stile.ReadTreeCorrResultsFile,
+        self.assertRaises((TypeError, StopIteration, ValueError), stile.ReadTreeCorrResultsFile,
                                     'test_data/empty_file.dat')
 
     def test_PickTreeCorrKeys(self):
@@ -73,6 +76,14 @@ class TestTreeCorrUtils(unittest.TestCase):
         self.assertEqual(new_dict, self.dict2,
                          msg='All entries from the dict should have been copied to the '+
                              'new dict')
+        if stile.treecorr_utils.use_2form:
+            new_dict = stile.treecorr_utils.PickTreeCorrKeys(self.dict3_no2)
+            for key in new_dict:
+                self.assertIn(key[0]+'2'+key[2:], self.dict3_has2)
+        else:
+            new_dict = stile.treecorr_utils.PickTreeCorrKeys(self.dict3_has2)
+            for key in new_dict:
+                self.assertIn(key[0]+key[0]+key[2:], self.dict3_no2)
 
 
 if __name__ == '__main__':
