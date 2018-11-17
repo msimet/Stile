@@ -1,3 +1,7 @@
+branches:
+    only:
+        - master
+
 language: python
 
 python:
@@ -24,3 +28,4 @@ deploy:
   on:
     tags: true
     branch: master
+

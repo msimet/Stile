@@ -142,6 +142,15 @@ class Stats:
                 ret_str += '\t%f %f\n'%(self.percentiles[index], self.values[index])
 
         return ret_str
+        
+try:
+    import astropy.table
+    class Table(astropy.table.Table):
+        @property
+        def shape(self):
+            return (len(self), len(self.colnames))
+except ImportError:
+    pass
 
 fieldNames = {
     'dec': 'the declination of the object',

@@ -1,3 +1,4 @@
+7/13/18: Add codecov yaml files (issue #101)
 7/11/18: Update code to python3
 3/17/16: Update documentation to Sphinx standard and add documentation build files (issue #17)
 2/17/16: Changes to correlation function plots & documentation (issue #77)
